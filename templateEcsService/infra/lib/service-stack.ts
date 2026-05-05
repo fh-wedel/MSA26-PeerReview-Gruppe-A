@@ -49,11 +49,19 @@ export class ServiceStack extends cdk.Stack {
       taskDefinition: taskDefinition,
       assignPublicIp: true,
       desiredCount: 1,
+      circuitBreaker: {
+        rollback: true,
+      },
     });
 
     ecsService.taskDefinition.addToExecutionRolePolicy(new iam.PolicyStatement({
-      actions: ['ecr:GetAuthorizationToken', 'ecr:BatchCheckLayerAvailability', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchGetImage'],
+      actions: ['ecr:BatchCheckLayerAvailability', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchGetImage'],
       resources: [`arn:aws:ecr:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:repository/fh-wedel/${props.serviceName}`],
+    }));
+
+    ecsService.taskDefinition.addToExecutionRolePolicy(new iam.PolicyStatement({
+      actions: ['ecr:GetAuthorizationToken'],
+      resources: [`*`],
     }));
   }
 }
