@@ -15,5 +15,5 @@ const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   serviceName: 'template',
   imageVersion: 'latest',
   description: ' This stack is an example service for a microservice architecture.',
-  enablePublicIpV4: true,
+  enablePublicIpV4: false,
 });
