@@ -11,7 +11,7 @@ Die folgenden Features aus Businesssicht sind zentral für die Entwicklung der S
 - Benutzerverwaltung: 
     - Registrierung von Benutzern (Autoren, Gutachter, Prüfungsamt, System Administratoren)
     - Authentifizierung und Autorisierung von Benutzern
-    - Verwaltung von Benutzerrollen und  - ABAC?
+    - Verwaltung von Benutzerrollen und  - RBAC?
 - Zuweisung von Gutachtern zu Arbeiten: 
     - Das Prüfungsamt legt die Art des Gutachten fest (einfach-blind, doppeltblind, open review, etc.)
         - Bei Doppelblind: Das System stellt sicher, dass die Identität der Autoren und Gutachter anonym bleibt. Das System erstellt das Gutachten Autor Paar
@@ -42,7 +42,6 @@ Die folgenden Features aus Businesssicht sind zentral für die Entwicklung der S
     - Das System erlaubt es nach Abschluss aller Gutachten eines Moduls Statistiken für die Autoren zu erstellen, um ihnen Einblicke in die Bewertung ihrer Arbeiten im Vergleich zu anderen Einreichungen zu geben. Diese Statistiken können den Autoren helfen, ihre Stärken und Schwächen zu erkennen und ihre zukünftigen Arbeiten zu verbessern. (Notenspiegel)
 
 
-Microservice Komponenten:
- - Web-UI: Frontend-Komponente für die Interaktion mit Benutzern - Nutzt REST-APIs für die Kommunikation mit den anderen Microservices - Monolithise Web-UI um eine geschlossene Benutzererfahrung zu bieten
- - User Managment Service:
- - 
+Infra (Reporting) -- Marcel
+Security -- Gideon -- Matthias
+Web UI (Gideon) (Service Supplements) Framework (Groß) -- Matthias -- Luca -- Gideon
