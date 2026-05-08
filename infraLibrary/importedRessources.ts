@@ -41,10 +41,10 @@ export class ImportedRessources {
             privateSubnetRouteTableIds: [this.getPrivateIPV6SubnetRouteTableId()],
         });
     }
-    public static getECSClusterByAttributes(stack: cdk.Stack): ecs.ICluster {
+    public static getECSClusterByAttributes(stack: cdk.Stack, vpc: ec2.IVpc): ecs.ICluster {
         return ecs.Cluster.fromClusterAttributes(stack, 'EcsCluster', {
             clusterName: this.getECSClusterName(),
-            vpc: this.getVpcByAttributes(stack),
+            vpc: vpc,
         });
     }
 
