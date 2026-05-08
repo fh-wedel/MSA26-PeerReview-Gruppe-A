@@ -16,6 +16,8 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "inlineSourceMap": true,
     "inlineSources": true,
     "experimentalDecorators": true,

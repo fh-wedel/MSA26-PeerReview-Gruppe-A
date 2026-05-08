@@ -2,13 +2,11 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Template } from 'aws-cdk-lib/assertions';
 import { ECRRepositoryStack } from '../lib/ecr-stack';
 
-test('ECR two Repositories Created', () => {
+test('ECR repositories are created', () => {
     const app = new cdk.App();
-    // WHEN
     const stack = new ECRRepositoryStack(app, 'TestEcrStack', {
         ecrRepositoryNames: ['service-a', 'service-b'],
     });
-    // THEN
     const template = Template.fromStack(stack);
 
     template.resourceCountIs('AWS::ECR::Repository', 2);
@@ -24,13 +22,11 @@ test('ECR two Repositories Created', () => {
     });
 });
 
-test('ECR one Repository Created', () => {
+test('Single ECR repository is created', () => {
     const app = new cdk.App();
-    // WHEN
     const stack = new ECRRepositoryStack(app, 'TestEcrStack', {
         ecrRepositoryNames: ['service-a'],
     });
-    // THEN
     const template = Template.fromStack(stack);
 
     template.resourceCountIs('AWS::ECR::Repository', 1);

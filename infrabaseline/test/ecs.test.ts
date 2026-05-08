@@ -1,21 +1,19 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { ECSClusterStack } from '../lib/ecs-stack';
 
-test('ECS Cluster Created', () => {
+test('ECS cluster is created with capacity providers', () => {
     const app = new cdk.App();
-
     const vpcStack = new cdk.Stack(app, 'VpcStack');
     const vpc = new ec2.Vpc(vpcStack, 'TestVpc');
 
-    // WHEN
     const stack = new ECSClusterStack(app, 'TestEcsStack', {
-        vpc: vpc,
+        vpc,
     });
-
-    // THEN
     const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::ECS::Cluster', 1);
 
     template.hasResourceProperties('AWS::ECS::Cluster', {
         ClusterName: 'ecs-fh-wedel',
@@ -26,9 +24,6 @@ test('ECS Cluster Created', () => {
             },
         ],
     });
-
-    template.resourceCountIs('AWS::ECS::Cluster', 1);
-
 
     template.hasResourceProperties('AWS::ECS::ClusterCapacityProviderAssociations', {
         CapacityProviders: ['FARGATE', 'FARGATE_SPOT'],
