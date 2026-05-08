@@ -34,3 +34,5 @@ if there are conflicts DO NOT FIX THEM. notify me and I will fix them
 ## GIT STATUS --short
 
 !`git status --short`
+
+$ARGUMENTS

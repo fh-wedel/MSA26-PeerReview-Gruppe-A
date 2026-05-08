@@ -65,3 +65,5 @@ The infrastructure is organized into:
 - **Data Isolation & Communication:** If a service needs data from another, it must fetch it via a REST API call or, preferably, react to an asynchronous SQS event. 
 - **Avoid hardcoding:** Values like Account IDs, Regions, and VPC CIDRs are managed in `infrabaseline/lib/constants.ts`.
 - **IPv6 Networking:** Note that the private subnets use IPv6 (`ipv6Native = true`). Ensure security groups and routing are configured correctly for IPv6 when deploying private services.
+- **Multi-module Docker Builds:** Module Dockerfiles must be executed from the project root (`docker build -f module/Dockerfile .`) to access the parent `pom.xml`. The root `.dockerignore` enforces a strict allowlist pattern.
+- **Lombok Configuration:** Lombok must be explicitly added to the `maven-compiler-plugin`'s `<annotationProcessorPaths>` in the root `pom.xml`. Just adding the dependency causes silent processor failures and compile errors for `@Slf4j` in child modules. Also note that since we moved to `<dependencyManagement>`, you must declare `lombok` (and Spring Boot/AWS starters) explicitly in child modules that need them.

@@ -4,11 +4,15 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+# The build context must be the root directory to include the parent pom.xml.
+# Due to our root .dockerignore, this COPY will only include pom.xml files and src/ directories.
+COPY . .
 
-COPY src ./src
-RUN mvn clean package -DskipTests
+# Replace this ARG with your service's directory name when copying the template
+ARG MODULE_DIR=templateEcsService
+
+# Build only the specified module and its dependencies
+RUN mvn clean package -pl ${MODULE_DIR} -am -DskipTests
 
 # ==========================================
 # Stage 2: Create the lightweight runtime image
@@ -19,7 +23,9 @@ WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-COPY --from=builder /app/target/*.jar app.jar
+ARG MODULE_DIR=templateEcsService
+# Copy the built jar from the module's target directory
+COPY --from=builder /app/${MODULE_DIR}/target/*.jar app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
