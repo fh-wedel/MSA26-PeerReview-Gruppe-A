@@ -2,55 +2,41 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as logs from 'aws-cdk-lib/aws-logs'
-import * as iam from 'aws-cdk-lib/aws-iam';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import { ImportedRessources } from '../../../infraLibrary/importedRessources';
+import { EcsInfra } from '../../../infraLibrary/ecs';
+import { SqsInfra } from '../../../infraLibrary/sqs';
+import { LogsInfra } from '../../../infraLibrary/logs';
+import pino from 'pino';
 
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+});
 
 export interface ServiceCreationProps extends cdk.StackProps {
   serviceName: string;
   imageVersion: string;
   enablePublicIpV4?: boolean;
+  requestQueueName?: string;
+  responseQueueName?: string;
 }
 
 export class ServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ServiceCreationProps) {
     super(scope, id, props);
 
-    const vpc = ec2.Vpc.fromVpcAttributes(this, 'BaselineVPC', {
-      vpcId: cdk.Fn.importValue('Baseline:VpcId'),
-      availabilityZones: [cdk.Fn.importValue('Baseline:AvailabilityZone')],
-      publicSubnetIds: [cdk.Fn.importValue('Baseline:PublicIPV4SubnetId')],
-      publicSubnetRouteTableIds: [cdk.Fn.importValue('Baseline:PublicIPV4SubnetRouteTableId')],
-      privateSubnetIds: [cdk.Fn.importValue('Baseline:PrivateIPV6SubnetId')],
-      privateSubnetRouteTableIds: [cdk.Fn.importValue('Baseline:PrivateIPV6SubnetRouteTableId')],
-    });
+    const vpc = ImportedRessources.getVpcByAttributes(this);
+    const ecsCluster = ImportedRessources.getECSClusterByAttributes(this);
 
-    const ecsCluster = ecs.Cluster.fromClusterAttributes(this, 'EcsCluster', {
-      clusterName: cdk.Fn.importValue('Baseline:ECSClusterName'),
-      vpc: vpc,
-    });
-
-    let subnetId: string;
-    let routeTableId: string;
+    let subnet: ec2.ISubnet;
     if (props.enablePublicIpV4) {
-      subnetId = cdk.Fn.importValue('Baseline:PublicIPV4SubnetId');
-      routeTableId = cdk.Fn.importValue('Baseline:PublicIPV4SubnetRouteTableId');
+      logger.warn('Public IPv4 is enabled. The service will be accessible over the public internet. Ensure that this is intended and that appropriate security measures are in place. The costs will be higher compared to using private IPv6 connectivity.');
+      subnet = EcsInfra.getIpV4Subnet();
     } else {
-      subnetId = cdk.Fn.importValue('Baseline:PrivateIPV6SubnetId');
-      routeTableId = cdk.Fn.importValue('Baseline:PrivateIPV6SubnetRouteTableId');
+      subnet = EcsInfra.getIpV6Subnet();
     }
-    const subnet = ec2.Subnet.fromSubnetAttributes(this, 'BaselinePrivateSubnet', {
-      subnetId: subnetId,
-      availabilityZone: cdk.Fn.importValue('Baseline:AvailabilityZone'),
-      routeTableId: routeTableId,
-    });
 
-
-    const logGroup = new logs.LogGroup(this, 'EcsServiceLogGroup', {
+    const logGroup = LogsInfra.createLogGroup(this, {
       logGroupName: `/ecs/${props.serviceName}`,
-      retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
@@ -59,15 +45,18 @@ export class ServiceStack extends cdk.Stack {
     });
 
     const imageName = props.enablePublicIpV4
-      ? `${AWSConstants.ECR_REPOSITORY_PREFIX}fh-wedel/${props.serviceName}:${props.imageVersion}`
-      : `${AWSConstants.AWS_ACCOUNT_ID}.dkr-ecr.${AWSConstants.AWS_REGION}.on.aws/fh-wedel/${props.serviceName}:${props.imageVersion}`;
+      ? EcsInfra.getDefaultImageNameIpv4(props.serviceName, props.imageVersion)
+      : EcsInfra.getDefaultImageNameIpv6(props.serviceName, props.imageVersion);
 
     taskDefinition.addContainer('AppContainer', {
       image: ecs.ContainerImage.fromRegistry(imageName),
-      logging: ecs.LogDrivers.awsLogs({
-        streamPrefix: `ecs-${props.serviceName}`,
-        logGroup: logGroup,
-      }),
+      logging: LogsInfra.createEcsLogDriver(logGroup, props.serviceName),
+      portMappings: [
+        {
+          containerPort: 8080,
+          protocol: ecs.Protocol.TCP,
+        },
+      ],
     });
 
     const ecsSecurityGroup = new ec2.SecurityGroup(this, 'EcsSg', {
@@ -76,11 +65,12 @@ export class ServiceStack extends cdk.Stack {
     });
 
     if (props.enablePublicIpV4) {
-      ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Inbound HTTP IPv4');
+      ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8080), 'Inbound HTTP IPv4');
       ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Inbound HTTPS IPv4');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Outbound HTTP IPv4');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Outbound HTTPS IPv4');
     } else {
+      ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(8080), 'Inbound HTTP IPv6');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Outbound HTTPS IPv6');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
     }
@@ -98,14 +88,22 @@ export class ServiceStack extends cdk.Stack {
       securityGroups: [ecsSecurityGroup],
     });
 
-    ecsService.taskDefinition.addToExecutionRolePolicy(new iam.PolicyStatement({
-      actions: ['ecr:BatchCheckLayerAvailability', 'ecr:GetDownloadUrlForLayer', 'ecr:BatchGetImage'],
-      resources: [`arn:aws:ecr:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:repository/fh-wedel/${props.serviceName}`],
-    }));
+    if (props.requestQueueName) {
+      const requestQueues = SqsInfra.createQueue(this, {
+        queueName: props.requestQueueName,
+        enableDeadLetterQueue: false,
+      });
 
-    ecsService.taskDefinition.addToExecutionRolePolicy(new iam.PolicyStatement({
-      actions: ['ecr:GetAuthorizationToken'],
-      resources: [`*`],
-    }));
+      SqsInfra.grantReadPermissions(requestQueues, ecsService.taskDefinition.taskRole);
+    }
+
+    if (props.responseQueueName) {
+      const responseQueues = SqsInfra.createQueue(this, {
+        queueName: props.responseQueueName,
+        enableDeadLetterQueue: false,
+      });
+
+      SqsInfra.grantWritePermissions(responseQueues, ecsService.taskDefinition.taskRole);
+    }
   }
 }
