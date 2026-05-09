@@ -10,6 +10,7 @@ Bevor der Service Stack bereitgestellt werden kann, muss das Docker Image in ECR
 Zum bauen des Image stehen zwei Methoden zur auswahl:
 
 ### Manuelles Deployment:
+Alternativ zum lokalen Vorgehen kann das Deployment auch manuell ueber die CI (workflow_dispatch) gestartet werden. Das lokale Vorgehen bleibt weiterhin moeglich und ist unten beschrieben.
 1. Das Docker Image wird lokal gebaut und in das ECR Repository gepusht. Um das Image zu bauen (Aktuelles Arbeitsverzeichniss `<<ServiceName>>/`):
     `docker build -t fh-wedel/<<ServiceName>> .`
 2. Anschließend muss Docker sich bei AWS ECR authentifizieren:
@@ -36,4 +37,18 @@ npx cdk deploy --profile fh-wedel
 
 
 ### Automatisiertes Deployment mit GitHub Actions:
-ToDo
+Die Service-Pipeline wird in [.github/workflows/ci.yml](.github/workflows/ci.yml) definiert und ruft das Template aus [.github/workflows/reusable-service.yml](.github/workflows/reusable-service.yml) auf.
+
+Voraussetzungen im Repository:
+- GitHub Actions Variable `AWS_REGION`
+- GitHub Actions Secret `AWS_ROLE_ARN` (OIDC Role fuer `aws-actions/configure-aws-credentials`)
+
+So startest du den Pipeline-Lauf:
+1. Code aendern und pushen (Push auf `main` oder Pull Request).
+2. Optional im GitHub UI den Workflow "CI" manuell starten (workflow_dispatch).
+
+Was die Pipeline fuer den Service macht:
+- Maven Build und Tests fuer den Service
+- Infra Tests fuer den Service-Stack
+- Docker Build und Push nach ECR
+- `cdk diff` und optionales Deploy in die Umgebung `deploy-auto` oder `deploy-manual`

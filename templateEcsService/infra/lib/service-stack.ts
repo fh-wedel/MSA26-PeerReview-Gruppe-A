@@ -100,6 +100,8 @@ export class ServiceStack extends cdk.Stack {
         rollback: true,
       },
       securityGroups: [ecsSecurityGroup],
+      minHealthyPercent: 50,
+      maxHealthyPercent: 200,
     });
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
