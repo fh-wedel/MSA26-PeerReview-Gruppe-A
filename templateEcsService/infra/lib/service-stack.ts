@@ -8,6 +8,7 @@ import { SqsInfra } from '../../../infraLibrary/sqs';
 import { LogsInfra } from '../../../infraLibrary/logs';
 import pino from 'pino';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
+import { AWSConstants } from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -64,6 +65,7 @@ export class ServiceStack extends cdk.Stack {
         'SQS_REQUEST_QUEUE': props.requestQueueName ?? '',
         'SQS_RESPONSE_QUEUE': props.responseQueueName ?? '',
         'SERVER_PORT': containerPort.toString(),
+        "AWS_REGION": AWSConstants.AWS_REGION,
       },
       healthCheck: {
         command: ['CMD-SHELL', `wget -qO- http://localhost:${containerPort}/actuator/health || exit 1`],
