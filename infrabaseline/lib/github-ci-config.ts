@@ -17,10 +17,13 @@ export class GithubCIConfig extends cdk.Stack {
             roleName: 'GithubActionsRole',
             maxSessionDuration: cdk.Duration.hours(1),
             assumedBy: new iam.WebIdentityPrincipal('arn:aws:iam::' + cdk.Aws.ACCOUNT_ID + ':oidc-provider/token.actions.githubusercontent.com', {
-                StringEquals: {
-                    'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-                    'token.actions.githubusercontent.com:sub': 'repo:fh-wedel/MSA26-PeerReview-Gruppe-A:*',
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                 },
+                "StringLike": {
+                    "token.actions.githubusercontent.com:sub": "repo:fh-wedel/MSA26-PeerReview-Gruppe-A:*"
+                }
+
             }),
         });
 
