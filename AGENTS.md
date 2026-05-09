@@ -1,0 +1,69 @@
+# AI Agent Guidelines (AGENTS.md)
+
+Welcome to the **MSA26-PeerReview-Gruppe-A** repository. This document provides context, architectural guidelines, and conventions to help AI agents understand and contribute to this project effectively.
+
+## 1. Project Context
+This project is an AWS infrastructure and software setup for a "PeerReview" system (Ein System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten). It is built using an Event-Driven Microservice Architecture.
+
+## 2. Planned Architecture & Services
+Based on the high-level architecture, the system consists of a Web UI and several independent backend microservices. These communicate via REST (synchronous) and Amazon SQS (asynchronous events):
+
+- **Web UI:** The frontend interface for the system.
+- **API Gateway:** Central entry point routing REST requests to the respective microservices.
+- **User Management Service:** Manages users, roles, and authentication.
+- **Submission Service:** Handles document uploads and submission details.
+- **Workflow Service:** Orchestrates the life cycle of a submission. 
+  - *Crucial Requirement:* This service must implement a **Plugin Architecture** to support different kinds of review workflows (e.g., double-blind review, open-review).
+- **Review Service:** Manages the actual reviews, gradings, and comments.
+- **Notification Service:** Handles external notifications (triggered via SQS events).
+- **Communication Service:** Manages stored messages and communication between users.
+- **Analytics & Reporting Service:** Generates statistics and aggregates data.
+
+### Architectural Rules
+- **Database-per-Service:** Every backend service uses its own isolated JDBC-based database (e.g., AWS RDS/Aurora). Services must *never* share databases or perform cross-database joins. Data synchronization should happen via SQS events.
+- **Document Storage:** Actual reviewed documents and submissions are stored as objects in **AWS S3**, not in the relational databases.
+
+## 3. Technology Stack
+- **Frontend Application:** React and Vite
+- **Backend Services:** Java and Spring Boot
+- **Databases:** JDBC-based SQL databases per service (with potential NoSQL for the Communication Service) and AWS S3 for files.
+- **Asynchronous Messaging:** Amazon SQS (and potentially SNS).
+- **Infrastructure as Code (IaC):** AWS CDK v2 (TypeScript)
+- **Compute:** Amazon ECS with AWS Fargate
+- **Container Registry:** Amazon ECR
+- **Networking:** VPC with Public IPv4 and Private IPv6 subnets
+
+## 4. Repository Structure & IaC
+The infrastructure is organized into:
+- **`infrabaseline/`**: Foundational AWS infrastructure (Network/VPC, ECR Repositories, ECS Cluster). This must be deployed first as other stacks depend on its exported CloudFormation values.
+- **`templateEcsService/`**: A template for creating new microservices. Each service is deployed as an Amazon ECS Fargate task containing its specific CDK stack (`infra/`).
+
+## 5. Development & Deployment Workflow
+### AWS Baseline Deployment
+1. Navigate to `infrabaseline/`
+2. Install dependencies: `npm install`
+3. Deploy the baseline stacks: `npx cdk deploy --all`
+
+### Microservice Creation and Deployment
+1. Copy the `templateEcsService/` folder to a new directory named after the service.
+2. Replace the placeholder code in `src/` with a standard Java/Spring Boot application (or React/Vite for the Web UI).
+3. Build the Docker image and push it to the ECR repository.
+4. Navigate to the `infra/` folder, adjust the `ServiceStack` properties (e.g., injecting SQS queues, S3 buckets, RDS credentials), and deploy via `npx cdk deploy`.
+
+*Note: Deployment currently uses the AWS CLI configured via SSO.*
+
+## 6. Coding Conventions and Guidelines
+- **Backend Code:** Follow Spring Boot best practices. For the Workflow Service, leverage interfaces and dependency injection (or established Java plugin frameworks) to keep review processes pluggable.
+- **Frontend Code:** Use functional React components and hooks.
+- **AWS CDK:** 
+  - Prefer using L2 constructs.
+  - Use `cdk.Fn.importValue` to consume outputs from the `infrabaseline` stack.
+  - Keep stack definitions modular and pass configurations via `StackProps`.
+
+## 7. Important Notes for AI Agents
+- **Extensibility & Plugins:** Always design the Workflow Service features with the plugin system in mind. Avoid hardcoding review logic (like masking names for double-blind) into the core service. Instead, abstract this into configurable plugin strategies.
+- **Data Isolation & Communication:** If a service needs data from another, it must fetch it via a REST API call or, preferably, react to an asynchronous SQS event. 
+- **Avoid hardcoding:** Values like Account IDs, Regions, and VPC CIDRs are managed in `infrabaseline/lib/constants.ts`.
+- **IPv6 Networking:** Note that the private subnets use IPv6 (`ipv6Native = true`). Ensure security groups and routing are configured correctly for IPv6 when deploying private services.
+- **Multi-module Docker Builds:** Module Dockerfiles must be executed from the project root (`docker build -f module/Dockerfile .`) to access the parent `pom.xml`. The root `.dockerignore` enforces a strict allowlist pattern.
+- **Lombok Configuration:** Lombok must be explicitly added to the `maven-compiler-plugin`'s `<annotationProcessorPaths>` in the root `pom.xml`. Just adding the dependency causes silent processor failures and compile errors for `@Slf4j` in child modules. Also note that since we moved to `<dependencyManagement>`, you must declare `lombok` (and Spring Boot/AWS starters) explicitly in child modules that need them.
