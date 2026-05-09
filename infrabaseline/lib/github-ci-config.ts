@@ -19,7 +19,7 @@ export class GithubCIConfig extends cdk.Stack {
             assumedBy: new iam.WebIdentityPrincipal('arn:aws:iam::' + cdk.Aws.ACCOUNT_ID + ':oidc-provider/token.actions.githubusercontent.com', {
                 StringEquals: {
                     'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-                    'token.actions.githubusercontent.com:sub': 'repo:MSA26-PeerReview-Gruppe-A/*',
+                    'token.actions.githubusercontent.com:sub': 'repo:fh-wedel/MSA26-PeerReview-Gruppe-A/*',
                 },
             }),
         });
