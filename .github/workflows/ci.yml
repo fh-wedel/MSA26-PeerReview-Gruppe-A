@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      baseline: ${{ steps.filter.outputs.baseline }}
+      infra_library: ${{ steps.filter.outputs.infra_library }}
+      template_service_code: ${{ steps.filter.outputs.template_service_code }}
+      template_service_infra: ${{ steps.filter.outputs.template_service_infra }}
+      template_service_any: ${{ steps.filter.outputs.template_service_any }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            baseline:
+              - 'infraBaseline/**'
+            infra_library:
+              - 'infraLibrary/**'
+            template_service_code:
+              - 'templateEcsService/src/**'
+              - 'templateEcsService/pom.xml'
+              - 'templateEcsService/Dockerfile'
+            template_service_infra:
+              - 'templateEcsService/infra/**'
+            template_service_any:
+              - 'templateEcsService/**'
+              - 'infraLibrary/**'
+
+  infra-library-tests:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.infra_library == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: infraLibrary/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: infraLibrary
+      - name: Run tests
+        run: npm run test
+        working-directory: infraLibrary
+
+  baseline-build:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.baseline == 'true'
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: infraBaseline/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: infraBaseline
+      - name: Run tests
+        run: npm run test
+        working-directory: infraBaseline
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: CDK diff
+        run: npm run cdk -- diff --all
+        working-directory: infraBaseline
+
+  baseline-deploy:
+    runs-on: ubuntu-latest
+    needs: [baseline-build]
+    if: needs.baseline-build.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: infraBaseline/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: infraBaseline
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: CDK deploy
+        run: npm run cdk -- deploy --all --require-approval never
+        working-directory: infraBaseline
+
+  template-service:
+    needs: [changes, infra-library-tests]
+    if: needs.changes.outputs.template_service_any == 'true' && (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: template
+      service_path: templateEcsService
+      infra_path: templateEcsService/infra
+      docker_context: templateEcsService
+      stack_name: TemplateServiceStack
+      ecr_repository: fh-wedel/template
+      run_maven: ${{ needs.changes.outputs.template_service_code == 'true' }}
+      run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' }}
+      run_docker: ${{ needs.changes.outputs.template_service_code == 'true' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    secrets: inherit
