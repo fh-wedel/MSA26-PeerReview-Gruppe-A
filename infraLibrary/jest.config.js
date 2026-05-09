@@ -1,7 +1,7 @@
 module.exports = {
     testEnvironment: 'node',
-    roots: ['<rootDir>/test', '<rootDir>/../infraBaseline/lib'],
-    testMatch: ['<rootDir>/test/**/*.test.ts'],
+    roots: ['<rootDir>/test'],
+    testMatch: ['**/*.test.ts'],
     transform: {
         '^.+\\.tsx?$': 'ts-jest'
     },
