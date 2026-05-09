@@ -11,8 +11,13 @@ COPY . .
 # Replace this ARG with your service's directory name when copying the template
 ARG MODULE_DIR=templateEcsService
 
-# Build only the specified module and its dependencies
-RUN mvn clean package -pl ${MODULE_DIR} -am -DskipTests
+# Build only the specified module and its dependencies when the root pom is present.
+# Fallback to a single-module build when the build context is already the module folder.
+RUN if [ -f pom.xml ] && [ -d ${MODULE_DIR} ] && [ -f ${MODULE_DIR}/pom.xml ]; then \
+		mvn clean package -pl ${MODULE_DIR} -am -DskipTests; \
+	else \
+		mvn clean package -DskipTests; \
+	fi
 
 # ==========================================
 # Stage 2: Create the lightweight runtime image
