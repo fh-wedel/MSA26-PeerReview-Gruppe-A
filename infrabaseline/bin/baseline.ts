@@ -6,6 +6,7 @@ import { AWSConstants } from '../lib/constants';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { ECRRepositoryStack } from '../lib/ecr-stack';
+import { GithubCIConfig } from '../lib/github-ci-config';
 
 const app = new cdk.App();
 
@@ -37,3 +38,5 @@ const ecsClusterStack = new ECSClusterStack(app, 'BaselineECSClusterStack', {
 
 ecsClusterStack.addDependency(networkStack);
 ecsClusterStack.addDependency(ecrRepositoryStack);
+
+const githubCIConfigStack = new GithubCIConfig(app, 'BaselineGithubCIConfigStack', { env });
