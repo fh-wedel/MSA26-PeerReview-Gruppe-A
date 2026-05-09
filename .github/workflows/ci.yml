@@ -97,6 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [baseline-build]
     if: needs.baseline-build.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'deploy-manual' || 'deploy-auto' }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
@@ -132,5 +133,6 @@ jobs:
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' }}
       run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' }}
       run_docker: ${{ needs.changes.outputs.template_service_code == 'true' }}
-      allow_deploy: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' || true }}
+      allow_deploy: true
+      deploy_environment: ${{ github.event_name == 'pull_request' && 'deploy-manual' || (github.event_name == 'workflow_dispatch' && 'deploy-manual' || 'deploy-auto') }}
     secrets: inherit
