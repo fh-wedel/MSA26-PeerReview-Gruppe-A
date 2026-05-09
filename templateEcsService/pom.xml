@@ -32,6 +32,17 @@
 			<groupId>io.awspring.cloud</groupId>
 			<artifactId>spring-cloud-aws-starter-sqs</artifactId>
 		</dependency>
+
+		<!-- Required for AWS SSO local development -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sso</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>ssooidc</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

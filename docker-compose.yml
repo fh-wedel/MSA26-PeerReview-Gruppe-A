@@ -1,0 +1,18 @@
+services:
+  template-service:
+    image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
+    build:
+      context: .
+      dockerfile: templateEcsService/Dockerfile
+    # Run the container as the host user to ensure it has permission to read the mounted ~/.aws directory
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount your local AWS configuration and SSO cache into the container
+      - ~/.aws:/home/spring/.aws:ro
+    environment:
+      # Force the home directory so the AWS SDK knows where to find the mounted .aws folder
+      - HOME=/home/spring
+      # Replace 'fh-wedel-msa' with your actual AWS SSO profile name if different
+      - AWS_PROFILE=fh-wedel-msa
