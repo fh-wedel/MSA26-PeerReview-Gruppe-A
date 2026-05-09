@@ -33,7 +33,7 @@ jobs:
         with:
           filters: |
             baseline:
-              - 'infraBaseline/**'
+              - 'infrabaseline/**'
             infra_library:
               - 'infraLibrary/**'
             template_service_code:
@@ -77,13 +77,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: infraBaseline/package-lock.json
+          cache-dependency-path: infrabaseline/package-lock.json
       - name: Install dependencies
         run: npm ci
-        working-directory: infraBaseline
+        working-directory: infrabaseline
       - name: Run tests
         run: npm run test
-        working-directory: infraBaseline
+        working-directory: infrabaseline
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -91,7 +91,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: CDK diff
         run: npm run cdk -- diff --all
-        working-directory: infraBaseline
+        working-directory: infrabaseline
 
   baseline-deploy:
     runs-on: ubuntu-latest
@@ -106,10 +106,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: infraBaseline/package-lock.json
+          cache-dependency-path: infrabaseline/package-lock.json
       - name: Install dependencies
         run: npm ci
-        working-directory: infraBaseline
+        working-directory: infrabaseline
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -117,7 +117,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: CDK deploy
         run: npm run cdk -- deploy --all --require-approval never
-        working-directory: infraBaseline
+        working-directory: infrabaseline
 
   template-service:
     needs: [changes, infra-library-tests]
