@@ -15,12 +15,13 @@ on:
       docker_context:
         type: string
         required: true
-      stack_name:
-        type: string
-        required: true
       ecr_repository:
         type: string
         required: true
+      image_tag:
+        type: string
+        required: false
+        default: latest
       run_maven:
         type: boolean
         required: true
@@ -83,7 +84,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: CDK diff
         if: inputs.run_infra
-        run: npm run cdk -- diff ${{ inputs.stack_name }}
+        run: npm run cdk -- diff --all
         working-directory: ${{ inputs.infra_path }}
 
   check-ecr:
@@ -123,7 +124,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "${{ inputs.docker_context }}"
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
@@ -151,5 +152,5 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - name: CDK deploy
-        run: npm run cdk -- deploy ${{ inputs.stack_name }} --require-approval never
+        run: npm run cdk -- deploy --all --require-approval never
         working-directory: ${{ inputs.infra_path }}

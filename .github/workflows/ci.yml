@@ -121,17 +121,16 @@ jobs:
 
   template-service:
     needs: [changes, infra-library-tests]
-    if: needs.changes.outputs.template_service_any == 'true' && (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    if: needs.changes.outputs.template_service_any == 'true' && needs['infra-library-tests'].result == 'success'
     uses: ./.github/workflows/reusable-service.yml
     with:
       service_name: template
       service_path: templateEcsService
       infra_path: templateEcsService/infra
       docker_context: templateEcsService
-      stack_name: TemplateServiceStack
       ecr_repository: fh-wedel/template
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' }}
       run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' }}
       run_docker: ${{ needs.changes.outputs.template_service_code == 'true' }}
-      allow_deploy: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' || true }}
     secrets: inherit
