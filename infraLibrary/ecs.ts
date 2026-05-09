@@ -3,7 +3,7 @@ import * as flyod from 'cdk-iam-floyd';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import pino from 'pino';
-import { AWSConstants } from '../infraBaseline/lib/constants.js';
+import { AWSConstants } from '@shared/constants';
 import { ImportedRessources } from './importedRessources';
 
 const logger = pino({

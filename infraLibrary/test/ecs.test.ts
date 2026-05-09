@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { EcsInfra } from '../ecs';
-import { AWSConstants } from '../../infraBaseline/lib/constants.js';
+import { AWSConstants } from '@shared/constants';
 
 test('Default image names use expected registries', () => {
     const ipv4 = EcsInfra.getDefaultImageNameIpv4('orders', 'v1');

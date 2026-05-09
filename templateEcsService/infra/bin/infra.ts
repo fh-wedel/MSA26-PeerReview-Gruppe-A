@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
 import { ServiceStack } from '../lib/service-stack';
-import { AWSConstants } from '../../../infraBaseline/lib/constants.js';
+import { AWSConstants } from '@shared/constants';
 
 const app = new cdk.App();
 
