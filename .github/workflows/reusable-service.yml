@@ -50,6 +50,13 @@ jobs:
       AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            infraBaseline
+            infraLibrary
+            ${{ inputs.service_path }}
+            ${{ inputs.infra_path }}
+            ${{ inputs.docker_context }}
       - name: Setup Java
         if: inputs.run_maven
         uses: actions/setup-java@v4
@@ -111,6 +118,13 @@ jobs:
       AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            infraBaseline
+            infraLibrary
+            ${{ inputs.service_path }}
+            ${{ inputs.infra_path }}
+            ${{ inputs.docker_context }}
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -137,6 +151,13 @@ jobs:
       AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            infraBaseline
+            infraLibrary
+            ${{ inputs.service_path }}
+            ${{ inputs.infra_path }}
+            ${{ inputs.docker_context }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20

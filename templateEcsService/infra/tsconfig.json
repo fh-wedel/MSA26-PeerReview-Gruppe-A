@@ -5,11 +5,6 @@
     "moduleResolution": "NodeNext",
     "isolatedModules": true,
     "baseUrl": ".",
-    "paths": {
-      "@shared/constants": [
-        "../../infraBaseline/lib/constants.ts"
-      ]
-    },
     "lib": [
       "es2022"
     ],
