@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
-import { Brightness4, Brightness7, Notifications, Mail, AccountCircle, Assignment, Description } from '@mui/icons-material';
+import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description } from '@mui/icons-material';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { mockNotifications } from '../stubs/notifications';
@@ -10,11 +10,12 @@ import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
 
 export const Navbar: React.FC = () => {
-  const { toggleColorMode, mode } = useThemeContext();
+  const { themeMode, setThemeMode, mode } = useThemeContext();
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [anchorElTheme, setAnchorElTheme] = useState<null | HTMLElement>(null);
   const [anchorElNotifications, setAnchorElNotifications] = useState<null | HTMLElement>(null);
   const [anchorElMessages, setAnchorElMessages] = useState<null | HTMLElement>(null);
   const [anchorElProfile, setAnchorElProfile] = useState<null | HTMLElement>(null);
@@ -54,9 +55,24 @@ export const Navbar: React.FC = () => {
         )}
         {!isAuthenticated && <Box sx={{ flexGrow: 1 }} />}
 
-        <IconButton sx={{ ml: 1 }} onClick={toggleColorMode} color="inherit">
-          {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+        <IconButton sx={{ ml: 1 }} onClick={(e) => setAnchorElTheme(e.currentTarget)} color="inherit">
+          {themeMode === 'system' ? <SettingsBrightness /> : themeMode === 'dark' ? <Brightness7 /> : <Brightness4 />}
         </IconButton>
+        <Menu
+          anchorEl={anchorElTheme}
+          open={Boolean(anchorElTheme)}
+          onClose={() => setAnchorElTheme(null)}
+        >
+          <MenuItem onClick={() => { setThemeMode('light'); setAnchorElTheme(null); }} selected={themeMode === 'light'}>
+            Light
+          </MenuItem>
+          <MenuItem onClick={() => { setThemeMode('dark'); setAnchorElTheme(null); }} selected={themeMode === 'dark'}>
+            Dark
+          </MenuItem>
+          <MenuItem onClick={() => { setThemeMode('system'); setAnchorElTheme(null); }} selected={themeMode === 'system'}>
+            System
+          </MenuItem>
+        </Menu>
 
         {isAuthenticated ? (
           <>

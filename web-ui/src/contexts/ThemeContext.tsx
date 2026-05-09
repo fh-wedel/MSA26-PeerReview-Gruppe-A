@@ -1,37 +1,57 @@
 import React, { createContext, useContext, useState, useMemo } from 'react';
-import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, CssBaseline, useMediaQuery } from '@mui/material';
 import type { PaletteMode } from '@mui/material';
 import { getTheme } from '../theme/theme';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 interface ThemeContextType {
-  toggleColorMode: () => void;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
   mode: PaletteMode;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  toggleColorMode: () => {},
+  themeMode: 'system',
+  setThemeMode: () => {},
   mode: 'light',
 });
 
 export const useThemeContext = () => useContext(ThemeContext);
 
 export const CustomThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [mode, setMode] = useState<PaletteMode>('light');
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
+    const savedMode = localStorage.getItem('themeMode');
+    return (savedMode as ThemeMode) || 'system';
+  });
 
-  const colorMode = useMemo(
+  const setThemeMode = (newMode: ThemeMode) => {
+    setThemeModeState(newMode);
+    localStorage.setItem('themeMode', newMode);
+  };
+
+  const mode: PaletteMode = useMemo(() => {
+    if (themeMode === 'system') {
+      return prefersDarkMode ? 'dark' : 'light';
+    }
+    return themeMode;
+  }, [themeMode, prefersDarkMode]);
+
+  const contextValue = useMemo(
     () => ({
-      toggleColorMode: () => {
-        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-      },
+      themeMode,
+      setThemeMode,
       mode,
     }),
-    [mode],
+    [themeMode, mode],
   );
 
   const theme = useMemo(() => getTheme(mode), [mode]);
 
   return (
-    <ThemeContext.Provider value={colorMode}>
+    <ThemeContext.Provider value={contextValue}>
       <MuiThemeProvider theme={theme}>
         <CssBaseline />
         {children}

@@ -39,14 +39,14 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
             value={abstract}
             onChange={(e) => setAbstract(e.target.value)}
           />
-          <Button variant="outlined" component="label">
+          <Button variant="outlined" component="label" color="inherit">
             Upload PDF Document
             <input type="file" hidden accept="application/pdf" />
           </Button>
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} color="inherit">Cancel</Button>
         <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!title}>
           Submit
         </Button>
