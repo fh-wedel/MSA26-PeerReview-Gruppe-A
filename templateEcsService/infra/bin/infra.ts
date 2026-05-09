@@ -10,10 +10,21 @@ const env = {
   region: AWSConstants.AWS_REGION
 }
 
+const imageContext = app.node.tryGetContext('imageTag');
+const imageTag = imageContext || 'latest';
+
+const serviceNameContext = app.node.tryGetContext('serviceName');
+if (!serviceNameContext) {
+  throw new Error('Service name context is required. Please provide it using -c serviceName=your-service-name');
+}
+
+
 const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   env,
-  serviceName: 'template',
-  imageVersion: 'latest',
+  serviceName: serviceNameContext,
+  imageVersion: imageTag,
   description: ' This stack is an example service for a microservice architecture.',
   enablePublicIpV4: false,
+  requestQueueName: 'template-request-queue',
+  responseQueueName: 'template-response-queue',
 });

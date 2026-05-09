@@ -1,0 +1,164 @@
+name: Reusable Service Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        type: string
+        required: true
+      service_path:
+        type: string
+        required: true
+      infra_path:
+        type: string
+        required: true
+      docker_context:
+        type: string
+        required: true
+      ecr_repository:
+        type: string
+        required: true
+      image_tag:
+        type: string
+        required: false
+        default: latest
+      run_maven:
+        type: boolean
+        required: true
+      run_infra:
+        type: boolean
+        required: true
+      run_docker:
+        type: boolean
+        required: true
+      allow_deploy:
+        type: boolean
+        required: true
+      deploy_environment:
+        type: string
+        required: false
+        default: deploy-auto
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: service-${{ inputs.service_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        if: inputs.run_maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ${{ inputs.infra_path }}/package-lock.json
+      - name: Maven build and tests
+        if: inputs.run_maven
+        run: mvn -B -ntp clean verify
+        working-directory: ${{ inputs.service_path }}
+      - name: Install infra dependencies
+        if: inputs.run_infra
+        run: npm ci
+        working-directory: ${{ inputs.infra_path }}
+      - name: Infra tests
+        if: inputs.run_infra
+        run: npm run test
+        working-directory: ${{ inputs.infra_path }}
+      - name: Configure AWS credentials
+        if: inputs.run_infra
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: CDK diff
+        if: inputs.run_infra
+        run: npx cdk diff -c serviceName=${{ inputs.service_name }} -c imageTag=${{ inputs.image_tag }} --all
+        working-directory: ${{ inputs.infra_path }}
+
+  check-ecr:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: inputs.run_docker
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Check ECR repository
+        run: aws ecr describe-repositories --repository-names "${{ inputs.ecr_repository }}" --region "${{ env.AWS_REGION }}"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [check-ecr]
+    if: inputs.run_docker
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "${{ inputs.docker_context }}"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, docker-build]
+    if: inputs.allow_deploy && (inputs.run_infra || inputs.run_docker) && (needs['docker-build'].result == 'success' || needs['docker-build'].result == 'skipped')
+    environment: ${{ inputs.deploy_environment }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ${{ inputs.infra_path }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ inputs.infra_path }}
+      - name: Install infraLibrary dependencies
+        run: npm ci --prefix ../../infraLibrary
+        working-directory: ${{ inputs.infra_path }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: CDK deploy
+        run: npx cdk deploy -c serviceName=${{ inputs.service_name }} -c imageTag=${{ inputs.image_tag }} --all --require-approval never
+        working-directory: ${{ inputs.infra_path }}

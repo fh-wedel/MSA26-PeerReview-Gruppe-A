@@ -7,3 +7,4 @@
 
 ## Allgemein
 - KI kann eine große Hilfe sein, um spezifische kleine Fragen zu erlääutern. Beim generieren großer Code Passagen ist jedoch aufgefallen, dass der Lerneffekt deutlich geringer war als bei der manuellen Erstellung von Code. Es ist daher wichtig, die KI als Werkzeug zu nutzen, um spezifische Fragen zu klären, aber auch selbst aktiv zu bleiben und den Code manuell zu erstellen, um den Lerneffekt zu maximieren. KI als helfer oder intelligente Autokomplettierung zu nutzen, kann eine gute Möglichkeit sein, um den Lernprozess zu unterstützen, aber es ist wichtig, die KI nicht als Ersatz für das eigene Lernen und die eigene Entwicklung zu betrachten.
+- Die KI war nicht in der Lage Abhängigkeiten in neuen Versionen hinzuzufügen. Es wurden fast ausschließlich sehr alte Versionen von Abhängigkeiten vorgeschlagen.

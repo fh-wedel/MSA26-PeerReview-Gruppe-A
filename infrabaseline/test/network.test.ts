@@ -1,13 +1,11 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as Baseline from '../lib/network-stack';
 import { AWSConstants } from '../lib/constants';
 
-test('VPC Created', () => {
+test('VPC and subnets are created', () => {
   const app = new cdk.App();
-  // WHEN
   const stack = new Baseline.NetworkStack(app, 'TestNetworkStack');
-  // THEN
   const template = Template.fromStack(stack);
 
   const vpcId = template.getResourceId('AWS::EC2::VPC');
@@ -16,8 +14,8 @@ test('VPC Created', () => {
       VpcId: { Ref: vpcId },
       AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
       CidrBlock: '10.96.0.0/28',
-      MapPublicIpOnLaunch: false
-    }
+      MapPublicIpOnLaunch: false,
+    },
   });
   const privateIPV6SubnetId = template.getResourceId('AWS::EC2::Subnet', {
     Properties: {
@@ -25,8 +23,8 @@ test('VPC Created', () => {
       AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
       AssignIpv6AddressOnCreation: true,
       Ipv6Native: true,
-      MapPublicIpOnLaunch: false
-    }
+      MapPublicIpOnLaunch: false,
+    },
   });
 
   template.resourceCountIs('AWS::EC2::VPC', 1);
@@ -36,7 +34,6 @@ test('VPC Created', () => {
   template.resourceCountIs('AWS::EC2::Subnet', 2);
   template.resourceCountIs('AWS::EC2::NatGateway', 0);
   template.resourceCountIs('AWS::EC2::EgressOnlyInternetGateway', 1);
-
 
   template.hasResourceProperties('AWS::EC2::VPC', {
     EnableDnsHostnames: true,
@@ -49,30 +46,42 @@ test('VPC Created', () => {
     VpcId: { Ref: vpcId },
   });
 
-  template.hasResourceProperties('AWS::EC2::Subnet', Match.objectLike({
-    AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
-    AssignIpv6AddressOnCreation: false,
-    CidrBlock: '10.96.0.0/28',
-    Ipv6CidrBlock: Match.anyValue(),
-    VpcId: { Ref: vpcId },
-  }));
+  template.hasResourceProperties(
+    'AWS::EC2::Subnet',
+    Match.objectLike({
+      AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
+      AssignIpv6AddressOnCreation: false,
+      CidrBlock: '10.96.0.0/28',
+      Ipv6CidrBlock: Match.anyValue(),
+      VpcId: { Ref: vpcId },
+    })
+  );
 
-  template.hasResourceProperties('AWS::EC2::Subnet', Match.objectLike({
-    AssignIpv6AddressOnCreation: true,
-    Ipv6Native: true,
-    Ipv6CidrBlock: Match.anyValue(),
-    VpcId: { Ref: vpcId },
-  }));
+  template.hasResourceProperties(
+    'AWS::EC2::Subnet',
+    Match.objectLike({
+      AssignIpv6AddressOnCreation: true,
+      Ipv6Native: true,
+      Ipv6CidrBlock: Match.anyValue(),
+      VpcId: { Ref: vpcId },
+    })
+  );
 
-  template.hasResourceProperties('AWS::EC2::Route', Match.objectLike({
-    DestinationIpv6CidrBlock: '::/0',
-    GatewayId: { Ref: Match.anyValue() },
-  }));
+  template.hasResourceProperties(
+    'AWS::EC2::Route',
+    Match.objectLike({
+      DestinationIpv6CidrBlock: '::/0',
+      GatewayId: { Ref: Match.anyValue() },
+    })
+  );
 
-  template.hasResourceProperties('AWS::EC2::Route', Match.objectLike({
-    DestinationIpv6CidrBlock: '::/0',
-    EgressOnlyInternetGatewayId: { Ref: Match.anyValue() },
-  }));
+  template.hasResourceProperties(
+    'AWS::EC2::Route',
+    Match.objectLike({
+      DestinationIpv6CidrBlock: '::/0',
+      EgressOnlyInternetGatewayId: { Ref: Match.anyValue() },
+    })
+  );
 
   template.hasOutput('VPCId', {
     Value: { Ref: vpcId },

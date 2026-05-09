@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import { Construct } from 'constructs/lib/construct';
 
 export interface LogsCreationProps {
     /**
@@ -16,8 +17,8 @@ export interface LogsCreationProps {
 }
 
 export class LogsInfra {
-    public static createLogGroup(stack: cdk.Stack, props: LogsCreationProps): logs.LogGroup {
-        return new logs.LogGroup(stack, `${props.logGroupName}LogGroup`, {
+    public static createLogGroup(scope: Construct, props: LogsCreationProps): logs.LogGroup {
+        return new logs.LogGroup(scope, `${props.logGroupName}LogGroup`, {
             logGroupName: props.logGroupName,
             retention: props.retention ?? logs.RetentionDays.ONE_WEEK,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -27,7 +28,7 @@ export class LogsInfra {
     public static createEcsLogDriver(logGroup: logs.LogGroup, streamPrefix: string): ecs.LogDriver {
         return ecs.LogDriver.awsLogs({
             logGroup: logGroup,
-            streamPrefix: streamPrefix,            
+            streamPrefix: streamPrefix,
         });
     }
 }

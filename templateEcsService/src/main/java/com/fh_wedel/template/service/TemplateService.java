@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+
 @Service
 @Slf4j
 public class TemplateService {
@@ -23,6 +24,10 @@ public class TemplateService {
 
 
     public void respondToSqsQueue (String messageBody){
+        if(responseQueueName == null || responseQueueName.isBlank()){
+            log.error("No SQS response queue defined. Skipping sending Message {}", messageBody);
+            return;
+        }
         log.info("Responding to Queue {} message {}", responseQueueName, messageBody);
 
         sqsTemplate.send(responseQueueName, messageBody);
