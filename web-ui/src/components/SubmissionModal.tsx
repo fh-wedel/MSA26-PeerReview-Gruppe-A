@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 interface SubmissionModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (title: string, abstract: string) => void;
+  onSubmit: (title: string, reviewMode: string) => void;
 }
 
 export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose, onSubmit }) => {
   const [title, setTitle] = useState('');
-  const [abstract, setAbstract] = useState('');
+  const [reviewMode, setReviewMode] = useState('double blind');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   const handleSubmit = () => {
-    onSubmit(title, abstract);
+    onSubmit(title, reviewMode);
     setTitle('');
-    setAbstract('');
+    setReviewMode('double blind');
+    setPdfFile(null);
     onClose();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPdfFile(file);
+    }
   };
 
   return (
@@ -30,24 +39,28 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <TextField
-            label="Abstract"
-            variant="outlined"
-            fullWidth
-            multiline
-            rows={4}
-            value={abstract}
-            onChange={(e) => setAbstract(e.target.value)}
-          />
-          <Button variant="outlined" component="label" color="inherit">
-            Upload PDF Document
-            <input type="file" hidden accept="application/pdf" />
+          <FormControl fullWidth>
+            <InputLabel id="review-mode-label">Review Mode</InputLabel>
+            <Select
+              labelId="review-mode-label"
+              value={reviewMode}
+              label="Review Mode"
+              onChange={(e) => setReviewMode(e.target.value)}
+            >
+              <MenuItem value="double blind">Double Blind</MenuItem>
+              <MenuItem value="single blind">Single Blind</MenuItem>
+              <MenuItem value="open review">Open Review</MenuItem>
+            </Select>
+          </FormControl>
+          <Button variant="outlined" component="label" color={pdfFile ? 'primary' : 'inherit'}>
+            {pdfFile ? pdfFile.name : 'Upload PDF Document'}
+            <input type="file" hidden accept="application/pdf" onChange={handleFileChange} />
           </Button>
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">Cancel</Button>
-        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!title}>
+        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!title || !pdfFile}>
           Submit
         </Button>
       </DialogActions>

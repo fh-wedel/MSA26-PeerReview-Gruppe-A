@@ -28,8 +28,8 @@ export const Dashboard: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const deadlineDates = mockDeadlines.map((d) => d.date);
 
-  const handleSubmission = (title: string, abstract: string) => {
-    console.log('Submitted:', { title, abstract });
+  const handleSubmission = (title: string, reviewMode: string) => {
+    console.log('Submitted:', { title, reviewMode });
     setSnackbarOpen(true);
   };
 
