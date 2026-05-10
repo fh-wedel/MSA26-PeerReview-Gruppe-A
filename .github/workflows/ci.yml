@@ -133,6 +133,6 @@ jobs:
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' }}
       run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' }}
       run_docker: ${{ needs.changes.outputs.template_service_code == 'true' }}
-      allow_deploy: true
+      allow_deploy: false # This is a template service and should not be deployed automatically. Only manual testing
       deploy_environment: ${{ github.event_name == 'pull_request' && 'deploy-manual' || (github.event_name == 'workflow_dispatch' && 'deploy-manual' || 'deploy-auto') }}
     secrets: inherit
