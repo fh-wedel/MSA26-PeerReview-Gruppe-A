@@ -9,6 +9,7 @@ import { SignIn } from './pages/SignIn';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { MySubmissions } from './pages/MySubmissions';
+import { SubmissionDetails } from './pages/SubmissionDetails';
 import { Assignments } from './pages/Assignments';
 
 export const App: React.FC = () => {
@@ -26,6 +27,7 @@ export const App: React.FC = () => {
             <Route element={<AuthLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/submissions" element={<MySubmissions />} />
+              <Route path="/submissions/:submissionId" element={<SubmissionDetails />} />
               <Route path="/assignments" element={<Assignments />} />
             </Route>
           </Routes>

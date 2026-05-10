@@ -52,7 +52,7 @@ export const Navbar: React.FC = () => {
               <Button 
                 color="inherit" 
                 onClick={() => navigate('/submissions')}
-                sx={{ opacity: location.pathname === '/submissions' ? 1 : 0.7, fontSize: '1.05rem' }}
+                sx={{ opacity: location.pathname.startsWith('/submissions') ? 1 : 0.7, fontSize: '1.05rem' }}
               >
                 My Submissions
               </Button>
