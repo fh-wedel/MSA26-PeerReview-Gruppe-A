@@ -1,6 +1,5 @@
 ---
 description: git commit
-model: github-copilot/gpt-5.2-codex
 subtask: true
 ---
 

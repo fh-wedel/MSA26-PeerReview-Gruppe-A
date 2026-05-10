@@ -1,7 +1,6 @@
 ---
 description: Senior Software Architect
 mode: primary
-model: github-copilot/gemini-3.1-pro-preview
 temperature: 0.35
 reasoningEffort: high
 textVerbosity: low
