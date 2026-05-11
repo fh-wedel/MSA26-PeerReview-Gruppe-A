@@ -51,4 +51,4 @@ Was die Pipeline fuer den Service macht:
 - Maven Build und Tests fuer den Service
 - Infra Tests fuer den Service-Stack
 - Docker Build und Push nach ECR
-- `cdk diff` und optionales Deploy in die Umgebung `deploy-auto` oder `deploy-manual`
+- `cdk diff` und optionales Deploy in die Umgebung `fh-wedel-prod`
