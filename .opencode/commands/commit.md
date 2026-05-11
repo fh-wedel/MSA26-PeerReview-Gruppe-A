@@ -1,10 +1,9 @@
 ---
-description: git commit and push
-model: github-copilot/gpt-5.2-codex
+description: git commit
 subtask: true
 ---
 
-commit and push
+git commit
 
 make sure it includes a prefix like
 feat:
@@ -16,10 +15,7 @@ test:
 chore:
 
 prefer to explain WHY something was done from an end user perspective instead of
-WHAT was done.
-
-do not do generic messages like "improved agent experience" be very specific
-about what user facing changes were made
+WHAT was done. Try to avoid technical details and implementation specifics. Keep it short and concise.
 
 if there are conflicts DO NOT FIX THEM. notify me and I will fix them
 

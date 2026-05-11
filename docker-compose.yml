@@ -16,3 +16,9 @@ services:
       - HOME=/home/spring
       # Replace 'fh-wedel-msa' with your actual AWS SSO profile name if different
       - AWS_PROFILE=fh-wedel-msa
+  web-ui-service:
+    image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/web-ui:latest
+    build:
+      context: web-ui
+    ports:
+      - "3000:80"
