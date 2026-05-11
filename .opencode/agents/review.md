@@ -1,7 +1,6 @@
 ---
 description: Review uncommitted changes
 mode: subagent
-model: github-copilot/gemini-3.1-pro-preview
 temperature: 0.1
 reasoningEffort: high
 textVerbosity: low

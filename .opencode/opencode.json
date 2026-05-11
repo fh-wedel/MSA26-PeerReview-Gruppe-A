@@ -1,13 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "amazon-bedrock": {
-      "options": {
-        "region": "eu-north-1",
-        "profile": "fh-wedel"
-      }
-    }
-  },
   "agent": {
       "plan": {
           "disable": true

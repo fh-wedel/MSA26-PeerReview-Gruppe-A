@@ -1,7 +1,6 @@
 ---
 description: Programming agent with great Software Engineering skills
 mode: primary
-model: github-copilot/gpt-5.2-codex
 temperature: 0.2
 permission:
   bash:
