@@ -4,10 +4,10 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: 'The branch, tag or SHA to checkout'
+        description: "The branch, tag or SHA to checkout"
         type: string
         required: false
-        default: ''
+        default: ""
       service_name:
         type: string
         required: true
@@ -42,7 +42,7 @@ on:
       deploy_environment:
         type: string
         required: false
-        default: deploy-auto
+        default: fh-wedel-prod
 
 permissions:
   contents: read
@@ -62,7 +62,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      
+
       - name: Setup Java
         if: inputs.run_maven
         uses: actions/setup-java@v4
@@ -132,17 +132,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      
+
       - name: Build and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -168,27 +168,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: ${{ inputs.infra_path }}/package-lock.json
-      
+
       - name: Install dependencies
         run: npm ci
         working-directory: ${{ inputs.infra_path }}
-      
+
       - name: Install infraLibrary dependencies
         run: npm ci --prefix ../../infraLibrary
         working-directory: ${{ inputs.infra_path }}
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      
+
       - name: CDK deploy
         run: npx cdk deploy -c serviceName=${{ inputs.service_name }} -c imageTag=${{ inputs.image_tag }} --all --require-approval never
         working-directory: ${{ inputs.infra_path }}
