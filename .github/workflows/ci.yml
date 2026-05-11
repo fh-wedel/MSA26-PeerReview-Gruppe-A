@@ -31,7 +31,7 @@ jobs:
       - id: get-branch
         if: steps.check.outputs.triggered == 'true'
         run: |
-          BRANCH=$(gh pr view ${{ github.event.issue.number }} --json headRefName --jq '.headRefName')
+          BRANCH=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
