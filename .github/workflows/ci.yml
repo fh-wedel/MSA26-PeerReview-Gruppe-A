@@ -128,7 +128,7 @@ jobs:
     needs: [changes, infra-library-tests]
     if: |
       always() && 
-      needs.changes.outputs.template_service_any == 'true' && 
+      (needs.changes.outputs.template_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
       (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
     uses: ./.github/workflows/reusable-service.yml
     with:
