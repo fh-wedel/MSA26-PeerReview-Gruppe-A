@@ -7,6 +7,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { ECRRepositoryStack } from '../lib/ecr-stack';
 import { GithubCIConfig } from '../lib/github-ci-config';
+import { CloudMapStack } from '../lib/cloudmap';
 
 const app = new cdk.App();
 
@@ -40,3 +41,9 @@ ecsClusterStack.addDependency(networkStack);
 ecsClusterStack.addDependency(ecrRepositoryStack);
 
 const githubCIConfigStack = new GithubCIConfig(app, 'BaselineGithubCIConfigStack', { env });
+
+
+const cloudMapStack = new CloudMapStack(app, 'BaselineCloudMapStack', {
+  env,
+  namespaceName: 'internal.services',
+});

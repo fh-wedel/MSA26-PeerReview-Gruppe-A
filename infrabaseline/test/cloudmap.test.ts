@@ -1,0 +1,41 @@
+import * as cdk from 'aws-cdk-lib/core';
+import { Match, Template } from 'aws-cdk-lib/assertions';
+import { CloudMapStack } from '../lib/cloudmap';
+
+test('Cloud Map namespace is created with exports', () => {
+    const app = new cdk.App();
+    const stack = new CloudMapStack(app, 'TestCloudMapStack', {
+        namespaceName: 'internal.services',
+    });
+
+    const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::ServiceDiscovery::PrivateDnsNamespace', 1);
+    template.hasResourceProperties('AWS::ServiceDiscovery::PrivateDnsNamespace', {
+        Name: 'internal.services',
+        Vpc: {
+            'Fn::ImportValue': 'Baseline:VpcId',
+        },
+    });
+
+    template.hasOutput('CloudMapNamespaceId', {
+        Value: Match.anyValue(),
+        Export: {
+            Name: 'Baseline:CloudMapNamespaceId',
+        },
+    });
+
+    template.hasOutput('CloudMapNamespaceName', {
+        Value: Match.anyValue(),
+        Export: {
+            Name: 'Baseline:CloudMapNamespaceName',
+        },
+    });
+
+    template.hasOutput('CloudMapNamespaceArn', {
+        Value: Match.anyValue(),
+        Export: {
+            Name: 'Baseline:CloudMapNamespaceArn',
+        },
+    });
+});
