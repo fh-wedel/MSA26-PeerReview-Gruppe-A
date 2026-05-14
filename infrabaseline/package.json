@@ -4,6 +4,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "pretest": "npm ci --prefix ../infraLibrary",
     "test": "jest",
     "cdk": "cdk"
   },
