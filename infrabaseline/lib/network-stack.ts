@@ -20,13 +20,20 @@ export class NetworkStack extends cdk.Stack {
           name: 'PublicSubnetIPV4',
           subnetType: ec2.SubnetType.PUBLIC,
           ipv6AssignAddressOnCreation: false,
-          cidrMask: 28,
+          mapPublicIpOnLaunch: true,
+          cidrMask: 24,
         },
         {
           name: 'PrivateSubnetIPV6WithEgress',
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           ipv6AssignAddressOnCreation: true,
         },
+        {
+          name: 'PrivateSubnetDualStackIsolated',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+          ipv6AssignAddressOnCreation: true,
+          cidrMask: 24,
+        }
       ],
     });
 
@@ -51,6 +58,11 @@ export class NetworkStack extends cdk.Stack {
       description: 'Id of the private IPV6 subnet',
       exportName: 'Baseline:PrivateIPV6SubnetId',
     });
+    new cdk.CfnOutput(this, 'PrivateDualStackSubnetId', {
+      value: vpc.isolatedSubnets[0].subnetId,
+      description: 'Id of the private dual stack subnet',
+      exportName: 'Baseline:PrivateDualStackSubnetId',
+    });
     new cdk.CfnOutput(this, 'PublicSubnetRouteTableId', {
       value: vpc.publicSubnets[0].routeTable.routeTableId,
       description: 'Id of the public subnet route table',
@@ -60,6 +72,11 @@ export class NetworkStack extends cdk.Stack {
       value: vpc.privateSubnets[0].routeTable.routeTableId,
       description: 'Id of the private subnet route table',
       exportName: 'Baseline:PrivateIPV6SubnetRouteTableId',
+    });
+    new cdk.CfnOutput(this, 'PrivateDualStackSubnetRouteTableId', {
+      value: vpc.isolatedSubnets[0].routeTable.routeTableId,
+      description: 'Id of the private dual stack subnet route table',
+      exportName: 'Baseline:PrivateDualStackSubnetRouteTableId',
     });
   }
 }

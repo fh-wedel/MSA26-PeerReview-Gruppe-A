@@ -1,7 +1,8 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { ServiceStack } from '../lib/service-stack';
-import { EcsInfra } from '../../../infraLibrary/ecs';
+import { EcsInfra } from '../../../infraLibrary/lib/ecs';
+import { AWSConstants } from '../../../infrabaseline/lib/constants';
 
 const collectSecurityGroupRules = (
     template: Template,
@@ -40,6 +41,7 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
         enablePublicIpV4: false,
         requestQueueName: 'orders-request',
         responseQueueName: 'orders-response',
+        containerPort: 8081,
     });
 
     const template = Template.fromStack(stack);
@@ -62,6 +64,15 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                 AssignPublicIp: 'DISABLED',
             }),
         },
+        DeploymentConfiguration: Match.objectLike({
+            MaximumPercent: 200,
+            MinimumHealthyPercent: 50,
+        }),
+        ServiceRegistries: Match.arrayWith([
+            Match.objectLike({
+                RegistryArn: Match.anyValue(),
+            }),
+        ]),
     });
 
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
@@ -79,6 +90,7 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                     { Name: 'SQS_REQUEST_QUEUE', Value: 'orders-request' },
                     { Name: 'SQS_RESPONSE_QUEUE', Value: 'orders-response' },
                     { Name: 'SERVER_PORT', Value: '8081' },
+                    { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
                 ]),
                 HealthCheck: Match.objectLike({
                     Command: [
@@ -92,6 +104,15 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                 }),
             }),
         ]),
+    });
+
+    template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+        FromPort: 8081,
+        ToPort: 8081,
+        IpProtocol: 'tcp',
+        SourceSecurityGroupId: {
+            'Fn::ImportValue': 'orders:ProxyLambdaSecurityGroupId',
+        },
     });
 
     const egressRules = collectSecurityGroupRules(template, 'egress');
@@ -119,6 +140,7 @@ test('Service stack with public IPv4 enables public IP and ingress rules', () =>
         serviceName: 'orders',
         imageVersion: 'v2',
         enablePublicIpV4: true,
+        containerPort: 8081,
     });
 
     const template = Template.fromStack(stack);
@@ -131,14 +153,35 @@ test('Service stack with public IPv4 enables public IP and ingress rules', () =>
                 AssignPublicIp: 'ENABLED',
             }),
         },
+        DeploymentConfiguration: Match.objectLike({
+            MaximumPercent: 200,
+            MinimumHealthyPercent: 50,
+        }),
+        ServiceRegistries: Match.arrayWith([
+            Match.objectLike({
+                RegistryArn: Match.anyValue(),
+            }),
+        ]),
     });
 
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([
             Match.objectLike({
                 Image: EcsInfra.getDefaultImageNameIpv4('orders', 'v2'),
+                Environment: Match.arrayWith([
+                    { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
+                ]),
             }),
         ]),
+    });
+
+    template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+        FromPort: 8081,
+        ToPort: 8081,
+        IpProtocol: 'tcp',
+        SourceSecurityGroupId: {
+            'Fn::ImportValue': 'orders:ProxyLambdaSecurityGroupId',
+        },
     });
 
     const ingressRules = collectSecurityGroupRules(template, 'ingress');
@@ -164,15 +207,8 @@ test('Service stack with public IPv4 enables public IP and ingress rules', () =>
         expect.arrayContaining([
             expect.objectContaining({
                 CidrIp: '0.0.0.0/0',
-                FromPort: 80,
-                ToPort: 80,
-                IpProtocol: 'tcp',
-            }),
-            expect.objectContaining({
-                CidrIp: '0.0.0.0/0',
-                FromPort: 443,
-                ToPort: 443,
-                IpProtocol: 'tcp',
+                Description: 'Allow all outbound traffic by default',
+                IpProtocol: '-1',
             }),
         ])
     );

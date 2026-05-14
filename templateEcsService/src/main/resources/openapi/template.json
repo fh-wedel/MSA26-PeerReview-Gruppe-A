@@ -1,0 +1,33 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Status API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/template",
+      "description": "Basepath for the Template API"
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "Returns the current status of the API",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "OK"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

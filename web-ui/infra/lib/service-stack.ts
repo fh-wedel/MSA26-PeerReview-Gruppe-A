@@ -2,10 +2,10 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { ImportedRessources } from '../../../infraLibrary/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/ecs';
-import { SqsInfra } from '../../../infraLibrary/sqs';
-import { LogsInfra } from '../../../infraLibrary/logs';
+import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
+import { EcsInfra } from '../../../infraLibrary/lib/ecs';
+import { SqsInfra } from '../../../infraLibrary/lib/sqs';
+import { LogsInfra } from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
 
 const logger = pino({

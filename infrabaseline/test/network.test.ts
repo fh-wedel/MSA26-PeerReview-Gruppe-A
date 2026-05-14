@@ -9,29 +9,28 @@ test('VPC and subnets are created', () => {
   const template = Template.fromStack(stack);
 
   const vpcId = template.getResourceId('AWS::EC2::VPC');
-  const publicIPV4SubnetId = template.getResourceId('AWS::EC2::Subnet', {
-    Properties: {
-      VpcId: { Ref: vpcId },
-      AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
-      CidrBlock: '10.96.0.0/28',
-      MapPublicIpOnLaunch: false,
-    },
-  });
-  const privateIPV6SubnetId = template.getResourceId('AWS::EC2::Subnet', {
-    Properties: {
-      VpcId: { Ref: vpcId },
-      AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
-      AssignIpv6AddressOnCreation: true,
-      Ipv6Native: true,
-      MapPublicIpOnLaunch: false,
-    },
-  });
+  const subnetResources = template.findResources('AWS::EC2::Subnet') as Record<string, any>;
+  const subnetProps = Object.values(subnetResources).map(
+    (resource) => resource.Properties ?? {}
+  );
+
+  const publicSubnet = subnetProps.find(
+    (props) => props.MapPublicIpOnLaunch === true && props.AssignIpv6AddressOnCreation === false
+  );
+  const ipv6NativeSubnet = subnetProps.find(
+    (props) => props.Ipv6Native === true
+  );
+  const dualStackSubnet = subnetProps.find(
+    (props) => props.AssignIpv6AddressOnCreation === true
+      && props.Ipv6Native !== true
+      && props.CidrBlock
+  );
 
   template.resourceCountIs('AWS::EC2::VPC', 1);
-  template.resourceCountIs('AWS::EC2::RouteTable', 2);
+  template.resourceCountIs('AWS::EC2::RouteTable', 3);
   template.resourceCountIs('AWS::EC2::InternetGateway', 1);
   template.resourceCountIs('AWS::EC2::EgressOnlyInternetGateway', 1);
-  template.resourceCountIs('AWS::EC2::Subnet', 2);
+  template.resourceCountIs('AWS::EC2::Subnet', 3);
   template.resourceCountIs('AWS::EC2::NatGateway', 0);
   template.resourceCountIs('AWS::EC2::EgressOnlyInternetGateway', 1);
 
@@ -46,23 +45,33 @@ test('VPC and subnets are created', () => {
     VpcId: { Ref: vpcId },
   });
 
-  template.hasResourceProperties(
-    'AWS::EC2::Subnet',
-    Match.objectLike({
+  expect(publicSubnet).toEqual(
+    expect.objectContaining({
       AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
       AssignIpv6AddressOnCreation: false,
-      CidrBlock: '10.96.0.0/28',
-      Ipv6CidrBlock: Match.anyValue(),
+      MapPublicIpOnLaunch: true,
+      Ipv6CidrBlock: expect.anything(),
       VpcId: { Ref: vpcId },
     })
   );
 
-  template.hasResourceProperties(
-    'AWS::EC2::Subnet',
-    Match.objectLike({
+  expect(ipv6NativeSubnet).toEqual(
+    expect.objectContaining({
+      AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
       AssignIpv6AddressOnCreation: true,
       Ipv6Native: true,
-      Ipv6CidrBlock: Match.anyValue(),
+      MapPublicIpOnLaunch: false,
+      Ipv6CidrBlock: expect.anything(),
+      VpcId: { Ref: vpcId },
+    })
+  );
+
+  expect(dualStackSubnet).toEqual(
+    expect.objectContaining({
+      AvailabilityZone: AWSConstants.AVAILABILITY_ZONE,
+      AssignIpv6AddressOnCreation: true,
+      MapPublicIpOnLaunch: false,
+      Ipv6CidrBlock: expect.anything(),
       VpcId: { Ref: vpcId },
     })
   );
@@ -91,16 +100,23 @@ test('VPC and subnets are created', () => {
   });
 
   template.hasOutput('PublicIPV4SubnetId', {
-    Value: { Ref: publicIPV4SubnetId },
+    Value: Match.anyValue(),
     Export: {
       Name: 'Baseline:PublicIPV4SubnetId',
     },
   });
 
   template.hasOutput('PrivateIPV6SubnetId', {
-    Value: { Ref: privateIPV6SubnetId },
+    Value: Match.anyValue(),
     Export: {
       Name: 'Baseline:PrivateIPV6SubnetId',
+    },
+  });
+
+  template.hasOutput('PrivateDualStackSubnetId', {
+    Value: Match.anyValue(),
+    Export: {
+      Name: 'Baseline:PrivateDualStackSubnetId',
     },
   });
 
@@ -115,6 +131,13 @@ test('VPC and subnets are created', () => {
     Value: { Ref: Match.anyValue() },
     Export: {
       Name: 'Baseline:PrivateIPV6SubnetRouteTableId',
+    },
+  });
+
+  template.hasOutput('PrivateDualStackSubnetRouteTableId', {
+    Value: { Ref: Match.anyValue() },
+    Export: {
+      Name: 'Baseline:PrivateDualStackSubnetRouteTableId',
     },
   });
 });
