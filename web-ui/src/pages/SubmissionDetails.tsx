@@ -45,7 +45,8 @@ export const SubmissionDetails: React.FC = () => {
   }
 
   const reviewAvailable = Boolean(submission.review);
-  const documentAvailable = Boolean(submission.documentUrl);
+  const documentUrl = submission.documentUrl;
+  const documentAvailable = Boolean(documentUrl);
 
   return (
     <Box>
@@ -118,9 +119,13 @@ export const SubmissionDetails: React.FC = () => {
               size="large"
               fullWidth
               startIcon={<PictureAsPdf />}
-              href={submission.documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              {...(documentUrl
+                ? {
+                    href: documentUrl,
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                  }
+                : {})}
               disabled={!documentAvailable}
             >
               View Uploaded PDF
