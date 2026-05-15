@@ -22,7 +22,7 @@ Die CI/CD Pipelines laufen automatisch bei Push auf `main`, bei Pull Requests un
 
 ## Manuelles Deployment
 1. Im GitHub UI den Workflow "CI" starten (workflow_dispatch).
-2. Das Deploy läuft dann in der Umgebung `deploy-manual`.
+2. Das Deploy started dann automatisch für alle CDK Stacks
 
 ## Hinweise
 - `cdk diff` läuft immer vor einem Deploy.

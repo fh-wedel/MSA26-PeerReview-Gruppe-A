@@ -8,7 +8,9 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@types/jest": "^30",
+    "@types/aws-lambda": "^8.10.161",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.10.1",
     "aws-cdk": "2.1120.0",
     "jest": "^30",
@@ -17,9 +19,10 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.251.0",
+    "aws-cdk-lib": "2.253.1",
     "cdk-iam-floyd": "^0.786.0",
     "constructs": "^10.5.0",
+    "js-yaml": "^4.1.1",
     "pino": "^10.3.1"
   }
 }

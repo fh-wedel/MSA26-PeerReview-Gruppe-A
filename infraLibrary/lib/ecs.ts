@@ -3,8 +3,9 @@ import * as flyod from 'cdk-iam-floyd';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import pino from 'pino';
-import { AWSConstants } from '../infrabaseline/lib/constants';
-import { ImportedRessources } from './importedRessources';
+import { AWSConstants } from '../../infrabaseline/lib/constants';
+import { ImportedRessources } from '../lib/importedRessources';
+import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
@@ -73,5 +74,26 @@ export class EcsInfra {
 
     public static getDefaultImageNameIpv6(serviceName: string, imageVersion: string): string {
         return `${AWSConstants.AWS_ACCOUNT_ID}.dkr-ecr.${AWSConstants.AWS_REGION}.on.aws/fh-wedel/${serviceName}:${imageVersion}`;
+    }
+
+    public static createServiceDiscoveryAAAARecord(scope: Construct, serviceName: string, namespace: servicediscovery.INamespace): servicediscovery.CfnService {
+        const sdService = new servicediscovery.CfnService(scope, 'SdService', {
+            name: serviceName,
+            namespaceId: namespace.namespaceId,
+            dnsConfig: {
+                dnsRecords: [
+                    {
+                        type: 'AAAA',
+                        ttl: 30,
+                    },
+                ],
+                routingPolicy: 'MULTIVALUE',
+            },
+            healthCheckCustomConfig: {
+                failureThreshold: 1,
+            },
+        });
+
+        return sdService;
     }
 }

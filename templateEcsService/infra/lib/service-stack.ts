@@ -2,13 +2,13 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { ImportedRessources } from '../../../infraLibrary/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/ecs';
-import { SqsInfra } from '../../../infraLibrary/sqs';
-import { LogsInfra } from '../../../infraLibrary/logs';
+import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
+import { EcsInfra } from '../../../infraLibrary/lib/ecs';
+import { SqsInfra } from '../../../infraLibrary/lib/sqs';
+import { LogsInfra } from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -20,6 +20,7 @@ export interface ServiceCreationProps extends cdk.StackProps {
   enablePublicIpV4?: boolean;
   requestQueueName?: string;
   responseQueueName?: string;
+  containerPort: number;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -50,7 +51,7 @@ export class ServiceStack extends cdk.Stack {
       ? EcsInfra.getDefaultImageNameIpv4(props.serviceName, props.imageVersion)
       : EcsInfra.getDefaultImageNameIpv6(props.serviceName, props.imageVersion);
 
-    const containerPort = 8081;
+    const containerPort = props.containerPort;
 
     taskDefinition.addContainer('AppContainer', {
       image: ecs.ContainerImage.fromRegistry(imageName),
@@ -78,7 +79,7 @@ export class ServiceStack extends cdk.Stack {
 
     const ecsSecurityGroup = new ec2.SecurityGroup(this, 'EcsSg', {
       vpc,
-      allowAllOutbound: false,
+      allowAllOutbound: true,
     });
 
     if (props.enablePublicIpV4) {
@@ -90,6 +91,13 @@ export class ServiceStack extends cdk.Stack {
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Outbound HTTPS IPv6');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
     }
+
+    const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
+    const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
+    ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
+
+    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+    const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
       serviceName: props.serviceName,
@@ -105,6 +113,13 @@ export class ServiceStack extends cdk.Stack {
       minHealthyPercent: 50,
       maxHealthyPercent: 200,
     });
+
+    const cfnService = ecsService.node.defaultChild as ecs.CfnService;
+    cfnService.serviceRegistries = [
+      {
+        registryArn: sdService.attrArn,
+      },
+    ];
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 

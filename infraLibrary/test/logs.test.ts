@@ -1,7 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import { LogsInfra } from '../logs';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import { LogsInfra } from '../lib/logs';
 
 test('Log group created with default retention', () => {
     const app = new cdk.App();
@@ -54,5 +55,22 @@ test('ECS log driver is wired into task definition', () => {
                 },
             }),
         ]),
+    });
+});
+
+test('Log group created with custom retention', () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, 'TestStack');
+
+    LogsInfra.createLogGroup(stack, {
+        logGroupName: '/ecs/test-service',
+        retention: logs.RetentionDays.ONE_MONTH,
+    });
+
+    const template = Template.fromStack(stack);
+
+    template.hasResourceProperties('AWS::Logs::LogGroup', {
+        LogGroupName: '/ecs/test-service',
+        RetentionInDays: 30,
     });
 });

@@ -1,7 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import { EcsInfra } from '../ecs';
+import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
+import { EcsInfra } from '../lib/ecs';
 import { AWSConstants } from '../../infrabaseline/lib/constants';
 
 test('Default image names use expected registries', () => {
@@ -40,6 +41,9 @@ test('grantDefaultTaskRolePermissions adds ECR permissions', () => {
     const actions = statements.flatMap((statement: any) =>
         Array.isArray(statement.Action) ? statement.Action : [statement.Action]
     );
+    const resources = statements.flatMap((statement: any) =>
+        Array.isArray(statement.Resource) ? statement.Resource : [statement.Resource]
+    );
 
     expect(actions).toEqual(
         expect.arrayContaining([
@@ -49,4 +53,48 @@ test('grantDefaultTaskRolePermissions adds ECR permissions', () => {
             'ecr:BatchGetImage',
         ])
     );
+
+    const serializedResources = resources.map((resource) => JSON.stringify(resource));
+
+    expect(resources).toEqual(expect.arrayContaining(['*']));
+    expect(
+        serializedResources.some((resource) => resource.includes('repository/fh-wedel/orders'))
+    ).toBe(true);
+});
+
+test('createServiceDiscoveryAAAARecord creates a DNS AAAA service', () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, 'TestStack');
+
+    const namespace = servicediscovery.PrivateDnsNamespace.fromPrivateDnsNamespaceAttributes(
+        stack,
+        'Namespace',
+        {
+            namespaceId: 'ns-1234567890',
+            namespaceName: 'internal.local',
+            namespaceArn: 'arn:aws:servicediscovery:eu-north-1:123456789012:namespace/ns-1234567890',
+        }
+    );
+
+    EcsInfra.createServiceDiscoveryAAAARecord(stack, 'orders', namespace);
+
+    const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::ServiceDiscovery::Service', 1);
+    template.hasResourceProperties('AWS::ServiceDiscovery::Service', {
+        Name: 'orders',
+        NamespaceId: 'ns-1234567890',
+        DnsConfig: Match.objectLike({
+            RoutingPolicy: 'MULTIVALUE',
+            DnsRecords: Match.arrayWith([
+                Match.objectLike({
+                    Type: 'AAAA',
+                    TTL: 30,
+                }),
+            ]),
+        }),
+        HealthCheckCustomConfig: Match.objectLike({
+            FailureThreshold: 1,
+        }),
+    });
 });

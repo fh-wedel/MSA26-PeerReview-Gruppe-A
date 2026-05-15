@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { ECRRepositoryStack } from '../lib/ecr-stack';
 
 test('ECR repositories are created', () => {
@@ -19,6 +19,12 @@ test('ECR repositories are created', () => {
     template.hasResourceProperties('AWS::ECR::Repository', {
         RepositoryName: 'fh-wedel/service-b',
         ImageTagMutability: 'MUTABLE',
+    });
+
+    template.hasResourceProperties('AWS::ECR::Repository', {
+        LifecyclePolicy: Match.objectLike({
+            LifecyclePolicyText: Match.stringLikeRegexp('"countNumber"\\s*:\\s*5'),
+        }),
     });
 });
 
