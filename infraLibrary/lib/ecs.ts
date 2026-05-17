@@ -1,4 +1,5 @@
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as cdk from 'aws-cdk-lib/core';
 import * as flyod from 'cdk-iam-floyd';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
@@ -95,5 +96,26 @@ export class EcsInfra {
         });
 
         return sdService;
+    }
+
+    public static springBootHealthCheckCommand(containerPort: number, startPeriod: cdk.Duration = cdk.Duration.seconds(60)): ecs.HealthCheck {
+        return {
+            command: ['CMD-SHELL', `wget -qO- http://localhost:${containerPort}/actuator/health || exit 1`],
+            interval: cdk.Duration.seconds(15),
+            timeout: cdk.Duration.seconds(5),
+            retries: 5,
+            startPeriod: startPeriod,
+        };
+    }
+
+    public static addAutoScalingToService(service: ecs.FargateService, minTaskCount: number, maxTaskCount: number, cpuTargetUtilizationPercent: number) {
+        const scalableTarget = service.autoScaleTaskCount({
+            minCapacity: minTaskCount,
+            maxCapacity: maxTaskCount,
+        });
+
+        scalableTarget.scaleOnCpuUtilization('CpuScaling', {
+            targetUtilizationPercent: cpuTargetUtilizationPercent,
+        });
     }
 }

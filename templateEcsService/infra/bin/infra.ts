@@ -41,6 +41,10 @@ const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   containerPort: containerPort,
   requestQueueName: 'template-request-queue',
   responseQueueName: 'template-response-queue',
+  minTaskCount: 1,
+  maxTaskCount: 2,
+  memory: 512,
+  cpu: 256,
 });
 
 serviceStack.addDependency(apiGatewayStack);
