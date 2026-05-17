@@ -52,5 +52,5 @@ const cognitoStack = new CognitoStack(app, 'BaselineCognitoStack', {
   env,
   userPoolName: AWSConstants.COGNITO_USER_POOL_NAME,
   appClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
-  groups: ['Admins', 'Students', 'Guests', 'Teacher', 'ExaminationOfficer'],
+  groups: ['Admin', 'Student', 'Guest', 'Teacher', 'ExaminationOfficer'],
 });

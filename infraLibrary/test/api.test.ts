@@ -78,6 +78,27 @@ test('ApiStack creates proxy Lambda and REST API', () => {
     });
 });
 
+test('ApiStack creates Verified Permissions authorizer when configured', () => {
+    const app = new cdk.App();
+    const stack = new ApiStack(app, 'TestApiStack', {
+        apiName: 'orders',
+        description: 'Orders API',
+        targetServiceName: 'orders',
+        targetPort: 8081,
+        authorizerConfig: {
+            policyStoreId: 'store-123',
+            namespace: 'PeerReview',
+            tokenType: 'accessToken',
+        },
+    });
+
+    const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
+    template.resourceCountIs('Custom::ApiGatewayAuthorizerPatch', 1);
+    template.resourceCountIs('AWS::Lambda::Function', 3);
+});
+
 test('ApiStack applies OpenAPI base path and integrations', () => {
     const app = new cdk.App();
     const openApiSpecPath = path.resolve(__dirname, 'fixtures', 'openapi.json');

@@ -4,6 +4,11 @@ import { ServiceStack } from '../lib/service-stack';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
 import { ApiStack } from '../../../infraLibrary/lib/constructs/api/api';
 import path from 'path/win32';
+import {
+  VerifiedPermissionsStore,
+  VerifiedPermissionsPolicySet,
+  loadVerifiedPermissionsPolicyFile,
+} from '../../../infraLibrary/lib/constructs/verified-permissions/verified-permissions';
 
 
 const app = new cdk.App();
@@ -23,6 +28,31 @@ if (!serviceNameContext) {
 
 const containerPort = 8081
 
+const policyFilePath = path.join(__dirname, '..', 'verified-permissions', 'template-policies.json');
+const policyConfig = loadVerifiedPermissionsPolicyFile(policyFilePath);
+
+const authStack = new cdk.Stack(app, 'TemplateAuthStack', { env });
+const userPoolId = cdk.Fn.importValue(`${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`);
+const appClientId = cdk.Fn.importValue(`${AWSConstants.COGNITO_APP_CLIENT_NAME}-AppClientId`);
+
+const policyStore = new VerifiedPermissionsStore(authStack, 'TemplatePolicyStore', {
+  namespace: policyConfig.namespace,
+  userPoolId: userPoolId,
+  description: 'Policy store for Template service API',
+  appClientId: appClientId,
+  policies: policyConfig.policies,
+  validationMode: 'STRICT',
+});
+
+new VerifiedPermissionsPolicySet(authStack, 'TemplateApiPolicies', {
+  namespace: policyConfig.namespace,
+  policyStore: policyStore.policyStore,
+  userPoolId: userPoolId,
+  policies: policyConfig.policies,
+  resourceId: policyConfig.resourceId,
+  entityTypeNames: policyConfig.entityTypeNames,
+});
+
 const apiGatewayStack = new ApiStack(app, 'TemplateApiStack', {
   env,
   apiName: 'TemplateServiceAPI',
@@ -30,7 +60,14 @@ const apiGatewayStack = new ApiStack(app, 'TemplateApiStack', {
   targetServiceName: serviceNameContext,
   targetPort: containerPort,
   openApiSpecPath: '../src/main/resources/openapi/template.json',
+  authorizerConfig: {
+    policyStoreId: policyStore.policyStore.policyStoreId,
+    namespace: policyConfig.namespace,
+    tokenType: 'accessToken',
+  },
 });
+
+apiGatewayStack.addDependency(authStack);
 
 const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   env,
