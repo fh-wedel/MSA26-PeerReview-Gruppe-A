@@ -78,7 +78,7 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([
             Match.objectLike({
-                Name: 'AppContainer',
+                Name: 'orders',
                 Image: EcsInfra.getDefaultImageNameIpv6('orders', 'v1'),
                 PortMappings: Match.arrayWith([
                     Match.objectLike({
@@ -100,7 +100,7 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                     Interval: 15,
                     Timeout: 5,
                     Retries: 5,
-                    StartPeriod: 60,
+                    StartPeriod: 90,
                 }),
             }),
         ]),
