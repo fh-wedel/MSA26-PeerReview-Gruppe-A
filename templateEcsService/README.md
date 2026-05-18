@@ -3,6 +3,16 @@ Dieser Service Stack dient als Vorlage für die Bereitstellung eines ECS Service
 - ECS Service
 - ECS Task Definition
 - CloudWatch Log Group
+- API Gateway (Lambda Proxy auf den ECS Service)
+- AWS Verified Permissions Policy Store und Policies
+- AWS Cognito Integration (User Pool und App Client werden importiert)
+- ECS Service Autoscaling (min/max Tasks mit CPU Target)
+
+## API Gateway und Auth
+Der Template-Stack stellt eine API über API Gateway bereit, das Anfragen per Lambda Proxy an den ECS Service weiterleitet. Die Autorisierung erfolgt ueber einen Verified Permissions Authorizer, der Cognito Access Tokens gegen einen Policy Store prueft. Die Policy Definitionen werden aus [templateEcsService/infra/verified-permissions/template-policies.json](templateEcsService/infra/verified-permissions/template-policies.json) geladen.
+
+## Autoscaling
+Autoscaling wird aktiv, sobald `minTaskCount` und `maxTaskCount` unterschiedlich sind. Die Zielauslastung fuer CPU kann optional gesetzt werden; sonst wird ein Default genutzt.
 
 ## Deployment
 Bevor der Service Stack bereitgestellt werden kann, muss das Docker Image in ECR bereitgestellt werden. Dazu muss das Image gebaut und in das ECR Repository gepusht werden. Das ECR Repository wird im Baseline Stack bereitgestellt.

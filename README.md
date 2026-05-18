@@ -5,6 +5,12 @@ PeerReview: Ein System zum gegenseitigen Begutachten von wissenschaftlichen Arbe
 # AWS Infrastructure
 Die AWS Infrastruktur besteht aus einem Baseline Stack, welcher die grundlegende Infrastruktur bereitstellt, und mehreren Service Stacks, welcher die eigentliche Service-Infrastruktur in einer Microservice Architektur bereitstellt. Der Baseline Stack muss vor den Service Stacks bereitgestellt werden, da der Service Stack auf Ressourcen des Baseline Stacks zugreift.
 
+## Zentrale Services und Sicherheit
+- API Gateway ist der zentrale Einstiegspunkt fuer REST Requests und leitet Traffic per Lambda-Proxy an die ECS Services weiter.
+- AWS Cognito stellt User Pool und App Client fuer Authentifizierung bereit.
+- AWS Verified Permissions erzwingt feingranulare Autorisierung auf Basis von Cedar Policies und wird als API Gateway Authorizer genutzt.
+- Autoscaling wird pro Service Stack ueber ECS Service Auto Scaling konfiguriert (min/max Tasks und CPU Target).
+
 Zum Start sollte die AWS CLI installiert und konfiguriert sein. Aufgrund der kurzen Sessionszeit empfiehlt es sich, die AWS CLI über SSO zu konfigurieren. Dazu muss die AWS CLI mit dem folgenden Befehl konfiguriert werden:
     ``aws configure sso``
 

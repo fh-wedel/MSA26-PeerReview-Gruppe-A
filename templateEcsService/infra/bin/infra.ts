@@ -5,10 +5,9 @@ import { AWSConstants } from '../../../infrabaseline/lib/constants';
 import { ApiStack } from '../../../infraLibrary/lib/constructs/api/api';
 import path from 'path/win32';
 import {
-  VerifiedPermissionsStore,
-  VerifiedPermissionsPolicySet,
-  loadVerifiedPermissionsPolicyFile,
-} from '../../../infraLibrary/lib/constructs/verified-permissions/verified-permissions';
+  AuthStack,
+  AuthStackProps
+} from '../lib/auth-stack';
 
 
 const app = new cdk.App();
@@ -29,31 +28,12 @@ if (!serviceNameContext) {
 const containerPort = 8081
 
 const policyFilePath = path.join(__dirname, '..', 'verified-permissions', 'template-policies.json');
-const policyConfig = loadVerifiedPermissionsPolicyFile(policyFilePath);
-
-const authStack = new cdk.Stack(app, 'TemplateAuthStack', { env });
-const userPoolId = cdk.Fn.importValue(`${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`);
-const appClientId = cdk.Fn.importValue(`${AWSConstants.COGNITO_APP_CLIENT_NAME}-AppClientId`);
-
-const policyStore = new VerifiedPermissionsStore(authStack, 'TemplatePolicyStore', {
-  namespace: policyConfig.namespace,
-  userPoolId: userPoolId,
-  description: 'Policy store for Template service API',
-  appClientId: appClientId,
-  policies: policyConfig.policies,
-  validationMode: 'STRICT',
+const authStack = new AuthStack(app, 'TemplateAuthStack', {
+  env,
+  policyFilePath: policyFilePath,
 });
 
-new VerifiedPermissionsPolicySet(authStack, 'TemplateApiPolicies', {
-  namespace: policyConfig.namespace,
-  policyStore: policyStore.policyStore,
-  userPoolId: userPoolId,
-  policies: policyConfig.policies,
-  resourceId: policyConfig.resourceId,
-  entityTypeNames: policyConfig.entityTypeNames,
-});
-
-const apiGatewayStack = new ApiStack(app, 'TemplateApiStack', {
+const apiStack = new ApiStack(app, 'TemplateApiStack', {
   env,
   apiName: 'TemplateServiceAPI',
   description: 'API Gateway for Template project',
@@ -61,13 +41,13 @@ const apiGatewayStack = new ApiStack(app, 'TemplateApiStack', {
   targetPort: containerPort,
   openApiSpecPath: '../src/main/resources/openapi/template.json',
   authorizerConfig: {
-    policyStoreId: policyStore.policyStore.policyStoreId,
-    namespace: policyConfig.namespace,
+    policyStoreId: authStack.policyStore.policyStore.policyStoreId,
+    namespace: authStack.policyConfig.namespace,
     tokenType: 'accessToken',
   },
 });
 
-apiGatewayStack.addDependency(authStack);
+apiStack.addDependency(authStack);
 
 const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   env,
@@ -84,4 +64,4 @@ const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   cpu: 256,
 });
 
-serviceStack.addDependency(apiGatewayStack);
+serviceStack.addDependency(apiStack);
