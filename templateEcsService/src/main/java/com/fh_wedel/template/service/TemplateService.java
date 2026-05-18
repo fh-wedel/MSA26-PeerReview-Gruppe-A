@@ -4,7 +4,7 @@ import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
+import java.time.Instant;
 
 @Service
 @Slf4j
@@ -22,9 +22,22 @@ public class TemplateService {
         return "Template Service is up and running!";
     }
 
+    public String getCurrentTime() {
+        return Instant.now().toString();
+    }
 
-    public void respondToSqsQueue (String messageBody){
-        if(responseQueueName == null || responseQueueName.isBlank()){
+    public String getCurrentTimeWithIdentity(String username, String groups) {
+        String resolvedUsername = (username == null || username.isBlank()) ? "unknown" : username;
+        String resolvedGroups = (groups == null || groups.isBlank()) ? "unknown" : groups;
+        return String.format(
+                "time=%s, username=%s, groups=%s",
+                getCurrentTime(),
+                resolvedUsername,
+                resolvedGroups);
+    }
+
+    public void respondToSqsQueue(String messageBody) {
+        if (responseQueueName == null || responseQueueName.isBlank()) {
             log.error("No SQS response queue defined. Skipping sending Message {}", messageBody);
             return;
         }

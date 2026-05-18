@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
-import { ApiStack } from '../lib/constructs/api/api';
+import { ApiStack } from '../lib/stacks/api/api';
 
 jest.mock('aws-cdk-lib/aws-lambda-nodejs', () => {
     const lambdaActual = jest.requireActual('aws-cdk-lib/aws-lambda') as typeof lambda;
@@ -76,6 +76,27 @@ test('ApiStack creates proxy Lambda and REST API', () => {
             Name: 'orders:ProxyLambdaSecurityGroupId',
         },
     });
+});
+
+test('ApiStack creates Verified Permissions authorizer when configured', () => {
+    const app = new cdk.App();
+    const stack = new ApiStack(app, 'TestApiStack', {
+        apiName: 'orders',
+        description: 'Orders API',
+        targetServiceName: 'orders',
+        targetPort: 8081,
+        authorizerConfig: {
+            policyStoreId: 'store-123',
+            namespace: 'PeerReview',
+            tokenType: 'accessToken',
+        },
+    });
+
+    const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
+    template.resourceCountIs('Custom::ApiGatewayAuthorizerPatch', 1);
+    template.resourceCountIs('AWS::Lambda::Function', 3);
 });
 
 test('ApiStack applies OpenAPI base path and integrations', () => {

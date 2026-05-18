@@ -4,4 +4,6 @@ export class AWSConstants {
     static readonly AVAILABILITY_ZONE = 'eu-north-1a';
     static readonly VPC_CIDR = '10.96.0.0/16';
     static readonly ECR_REPOSITORY_PREFIX = '720830544039.dkr.ecr.eu-north-1.amazonaws.com/';
+    static readonly COGNITO_USER_POOL_NAME = 'PeerReviewUserPool';
+    static readonly COGNITO_APP_CLIENT_NAME = 'PeerReviewAppClient';
 }

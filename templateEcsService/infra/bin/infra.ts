@@ -2,8 +2,11 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { ServiceStack } from '../lib/service-stack';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
-import { ApiStack } from '../../../infraLibrary/lib/constructs/api/api';
-import path from 'path/win32';
+import { ApiStack } from '../../../infraLibrary/lib/stacks/api/api';
+import path from 'path';
+import {
+  AuthStack,
+} from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
 
 
 const app = new cdk.App();
@@ -23,14 +26,27 @@ if (!serviceNameContext) {
 
 const containerPort = 8081
 
-const apiGatewayStack = new ApiStack(app, 'TemplateApiStack', {
+const policyFilePath = path.resolve(__dirname, '..', 'verified-permissions', 'template-policies.json');
+const authStack = new AuthStack(app, 'TemplateAuthStack', {
+  env,
+  policyFilePath: policyFilePath,
+});
+
+const apiStack = new ApiStack(app, 'TemplateApiStack', {
   env,
   apiName: 'TemplateServiceAPI',
   description: 'API Gateway for Template project',
   targetServiceName: serviceNameContext,
   targetPort: containerPort,
   openApiSpecPath: '../src/main/resources/openapi/template.json',
+  authorizerConfig: {
+    policyStoreId: authStack.policyStore.policyStore.policyStoreId,
+    namespace: authStack.policyConfig.namespace,
+    tokenType: 'accessToken',
+  },
 });
+
+apiStack.addDependency(authStack);
 
 const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   env,
@@ -41,6 +57,10 @@ const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
   containerPort: containerPort,
   requestQueueName: 'template-request-queue',
   responseQueueName: 'template-response-queue',
+  minTaskCount: 1,
+  maxTaskCount: 2,
+  memory: 512,
+  cpu: 256,
 });
 
-serviceStack.addDependency(apiGatewayStack);
+serviceStack.addDependency(apiStack);

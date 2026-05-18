@@ -83,7 +83,7 @@ jobs:
 
       - name: Infra tests
         if: inputs.run_infra
-        run: npm run test
+        run: npm run test -- --runInBand --workerIdleMemoryLimit=512MB
         working-directory: ${{ inputs.infra_path }}
 
       - name: Configure AWS credentials

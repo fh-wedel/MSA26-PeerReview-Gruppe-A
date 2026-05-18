@@ -14,6 +14,41 @@ import path from 'path';
 import { LogsInfra } from '../../logs';
 
 
+export interface VerifiedPermissionsAuthorizerProps {
+    /**
+     * The Verified Permissions policy store ID.
+     */
+    policyStoreId: string;
+
+    /**
+     * The Cedar namespace used for entities and actions.
+     */
+    namespace: string;
+
+    /**
+     * Token type provided to Verified Permissions (accessToken or identityToken).
+     */
+    tokenType: 'accessToken' | 'identityToken';
+
+    /**
+     * Optional Verified Permissions endpoint override.
+     */
+    endpoint?: string;
+
+    /**
+     * Cache TTL for the authorizer in seconds. Set to 0 to disable caching.
+     * @default 0
+     */
+    cacheTtlSeconds?: number;
+
+    /**
+     * If true, a custom resource will attach the authorizer to every method.
+     * @default true
+     */
+    applyToAllMethods?: boolean;
+}
+
+
 export interface ApiStackProps extends cdk.StackProps {
     /**
      * The name of the REST API. The name is used to generate the API endpoint.
@@ -42,6 +77,11 @@ export interface ApiStackProps extends cdk.StackProps {
      * Supported only for HTTP APIs.
      */
     openApiSpecPath?: string;
+
+    /**
+     * Optional configuration for a Verified Permissions lambda authorizer.
+     */
+    authorizerConfig?: VerifiedPermissionsAuthorizerProps;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -52,6 +92,8 @@ export class ApiStack extends cdk.Stack {
         const subnet = ImportedRessources.getDualStackSubnetByAttributes(this, vpc);
         const cloudMapNamespaceName = ImportedRessources.getCloudMapNamespaceName();
         const targetUrl = `http://${props.targetServiceName}.${cloudMapNamespaceName}`;
+        const projectRoot = path.resolve(__dirname, '../../../../');
+        const depsLockFilePath = path.join(path.resolve(__dirname, '../../../'), 'package-lock.json');
 
         const apiName = props.apiName;
 
@@ -66,7 +108,8 @@ export class ApiStack extends cdk.Stack {
         const proxyLambda = new NodejsFunction(this, `${apiName}ProxyLambda`, {
             functionName: `${apiName}ProxyLambda`,
             runtime: lambda.Runtime.NODEJS_24_X,
-            projectRoot: path.resolve(__dirname, '../../../../'),
+            projectRoot: projectRoot,
+            depsLockFilePath: depsLockFilePath,
             entry: path.join(__dirname, 'lambda', 'api-lambda-proxy-ecs.ts'),
             handler: 'handler',
             bundling: {
@@ -103,12 +146,109 @@ export class ApiStack extends cdk.Stack {
             });
         }
 
+        let authorizer: apigateway.RequestAuthorizer | undefined;
+        const authorizerConfig = props.authorizerConfig;
+        if (authorizerConfig) {
+            const authorizerLogGroup = LogsInfra.createLogGroup(this, {
+                logGroupName: `/aws/lambda/${apiName}VerifiedPermissionsAuthorizer`,
+            });
+
+            const authorizerLambda = new NodejsFunction(this, `${apiName}VerifiedPermissionsAuthorizer`, {
+                functionName: `${apiName}VerifiedPermissionsAuthorizer`,
+                runtime: lambda.Runtime.NODEJS_24_X,
+                projectRoot: projectRoot,
+                depsLockFilePath: depsLockFilePath,
+                entry: path.join(__dirname, 'lambda', 'api-lambda-verified-permissions-authorizer.ts'),
+                handler: 'handler',
+                bundling: {
+                    format: OutputFormat.CJS,
+                    target: 'node24',
+                },
+                environment: {
+                    POLICY_STORE_ID: authorizerConfig.policyStoreId,
+                    NAMESPACE: authorizerConfig.namespace,
+                    TOKEN_TYPE: authorizerConfig.tokenType,
+                    ...(authorizerConfig.endpoint ? { ENDPOINT: authorizerConfig.endpoint } : {}),
+                },
+                timeout: cdk.Duration.seconds(10),
+                memorySize: 256,
+                logGroup: authorizerLogGroup,
+            });
+
+            authorizerLambda.addToRolePolicy(
+                new iam.PolicyStatement({
+                    actions: ['verifiedpermissions:IsAuthorizedWithToken'],
+                    resources: ['*'],
+                }),
+            );
+
+            authorizer = new apigateway.RequestAuthorizer(this, 'VerifiedPermissionsAuthorizer', {
+                handler: authorizerLambda,
+                identitySources: [apigateway.IdentitySource.header('Authorization')],
+                resultsCacheTtl: cdk.Duration.seconds(authorizerConfig.cacheTtlSeconds ?? 0),
+            });
+
+            if (authorizerConfig.applyToAllMethods ?? true) {
+                const patcherLogGroup = LogsInfra.createLogGroup(this, {
+                    logGroupName: `/aws/lambda/${apiName}AuthorizerPatcher`,
+                });
+
+                const patcherLambda = new NodejsFunction(this, `${apiName}AuthorizerPatcher`, {
+                    functionName: `${apiName}AuthorizerPatcher`,
+                    runtime: lambda.Runtime.NODEJS_24_X,
+                    projectRoot: projectRoot,
+                    depsLockFilePath: depsLockFilePath,
+                    entry: path.join(__dirname, 'lambda', 'api-lambda-authorizer-patcher.ts'),
+                    handler: 'handler',
+                    bundling: {
+                        format: OutputFormat.CJS,
+                        target: 'node24',
+                    },
+                    environment: {
+                        API_GATEWAY_ID: api.restApiId,
+                        API_GATEWAY_STAGE: api.deploymentStage.stageName,
+                        AUTHORIZER_ID: authorizer.authorizerId,
+                    },
+                    timeout: cdk.Duration.seconds(60),
+                    memorySize: 256,
+                    logGroup: patcherLogGroup,
+                });
+
+                patcherLambda.addPermission(`${apiName}AuthorizerPatcherInvoke`, {
+                    principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
+                    action: 'lambda:InvokeFunction',
+                });
+
+                patcherLambda.addToRolePolicy(
+                    new iam.PolicyStatement({
+                        actions: ['apigateway:GET', 'apigateway:PATCH', 'apigateway:POST'],
+                        resources: [`arn:aws:apigateway:${cdk.Aws.REGION}::/restapis/${api.restApiId}/*`],
+                    }),
+                );
+
+                const authorizerPatch = new cdk.CustomResource(this, 'ApiGatewayAuthorizerPatch', {
+                    serviceToken: patcherLambda.functionArn,
+                    resourceType: 'Custom::ApiGatewayAuthorizerPatch',
+                    properties: {
+                        RestApiId: api.restApiId,
+                        AuthorizerId: authorizer.authorizerId,
+                        StageName: api.deploymentStage.stageName,
+                    },
+                });
+                authorizerPatch.node.addDependency(api);
+                authorizerPatch.node.addDependency(authorizer);
+            }
+        }
+
         const integration = new apigateway.LambdaIntegration(proxyLambda, {
             proxy: true,
         });
 
-        // Here need to add the authorizer
-        api.root.addMethod('ANY', integration);
+        const methodOptions = authorizer
+            ? { authorizer, authorizationType: apigateway.AuthorizationType.CUSTOM }
+            : undefined;
+
+        api.root.addMethod('ANY', integration, methodOptions);
 
         new CfnOutput(this, 'ApiUrl', {
             value: api.url,
@@ -142,7 +282,7 @@ export class ApiStack extends cdk.Stack {
         } catch (error) {
             throw new Error(`Failed to parse OpenAPI spec file for api ${name}. Ensure it is valid JSON or YAML. Error: ${error}`);
         }
-        
+
         let basePath = '';
         if (specObj.servers && specObj.servers.length > 0 && specObj.servers[0].url) {
             basePath = specObj.servers[0].url;

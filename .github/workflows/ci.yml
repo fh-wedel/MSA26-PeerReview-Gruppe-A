@@ -61,7 +61,7 @@ jobs:
         run: npm ci
         working-directory: infraLibrary
       - name: Run tests
-        run: npm run test
+        run: npm run test -- --runInBand --workerIdleMemoryLimit=512MB
         working-directory: infraLibrary
 
   baseline-build:
@@ -85,7 +85,7 @@ jobs:
         run: npm ci
         working-directory: infraLibrary
       - name: Run tests
-        run: npm run test
+        run: npm run test -- --runInBand --workerIdleMemoryLimit=512MB
         working-directory: infrabaseline
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

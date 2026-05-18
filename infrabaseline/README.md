@@ -4,8 +4,12 @@ Dieser Stack stellt die grundlegende Infrastruktur für die Bereitstellung von E
 - Internet Gateway
 - ECS Cluster mit Fargate Spot Capacity Provider
 - ECR Repository für die Bereitstellung von Docker Images
+- Cognito User Pool und App Client für Authentifizierung
 
 Ebenfalls umfasst der Baseline Stack wichtige Konstanten und CDK Outputs, die von den Service Stacks benötigt werden, um auf die bereitgestellten Ressourcen zuzugreifen. Dazu gehören beispielsweise die VPC ID, die Subnet IDs, die Security Group IDs und die ECR Repository URI.
+
+## Zusammenspiel mit Service Stacks
+Die Service Stacks erstellen APIs in API Gateway, Verified Permissions Policy Stores und die eigentlichen ECS Services. Dabei greifen sie auf Baseline Outputs zu, insbesondere auf die Cognito IDs für Authentifizierung und Autorisierung. Autoscaling wird pro Service Stack konfiguriert, der Baseline Stack liefert dafür das ECS Cluster und die Netzwerkinfrastruktur.
 
 ## Gedanken zur Kostenoptimierung
 Damit ein ECS Service Internetzugriff hat muss er entweder in einem öffentlichen Subnetz bereitgestellt werden oder über einen NAT Gateway in einem privaten Subnetz Zugriff auf das Internet haben. Da NAT Gateways mit Kosten permanenten hohen verbunden sind, ist die Bereitstellung von ECS Services in öffentlichen Subnetzen eine kostengünstigere Alternative, wenn nur weniger Services deployed werden. Allerdings müssen dabei Sicherheitsaspekte berücksichtigt werden, da die Services direkt dem Internet ausgesetzt sind. Es ist wichtig, geeignete Sicherheitsgruppen und Netzwerk-ACLs zu konfigurieren, um den Zugriff auf die Services zu beschränken und potenzielle Angriffe zu verhindern.
