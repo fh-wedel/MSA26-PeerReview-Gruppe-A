@@ -3,7 +3,7 @@ import * as cdk from 'aws-cdk-lib/core';
 import { ServiceStack } from '../lib/service-stack';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
 import { ApiStack } from '../../../infraLibrary/lib/constructs/api/api';
-import path from 'path/win32';
+import path from 'path';
 import {
   AuthStack,
   AuthStackProps
@@ -27,7 +27,7 @@ if (!serviceNameContext) {
 
 const containerPort = 8081
 
-const policyFilePath = path.join(__dirname, '..', 'verified-permissions', 'template-policies.json');
+const policyFilePath = path.resolve(__dirname, '..', 'verified-permissions', 'template-policies.json');
 const authStack = new AuthStack(app, 'TemplateAuthStack', {
   env,
   policyFilePath: policyFilePath,
