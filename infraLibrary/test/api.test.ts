@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
-import { ApiStack } from '../lib/constructs/api/api';
+import { ApiStack } from '../lib/stacks/api/api';
 
 jest.mock('aws-cdk-lib/aws-lambda-nodejs', () => {
     const lambdaActual = jest.requireActual('aws-cdk-lib/aws-lambda') as typeof lambda;
