@@ -3,6 +3,7 @@ package com.fh_wedel.template.controller;
 import com.fh_wedel.template.service.TemplateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,8 +25,10 @@ public class TemplateController {
     }
 
     @GetMapping("/time")
-    public String getCurrentTime() {
+    public String getCurrentTime(
+            @RequestHeader(value = "x-auth-username", required = false) String username,
+            @RequestHeader(value = "x-auth-groups", required = false) String groups) {
         log.info("Request received for Time endpoint");
-        return templateService.getCurrentTime();
+        return templateService.getCurrentTimeWithIdentity(username, groups);
     }
 }

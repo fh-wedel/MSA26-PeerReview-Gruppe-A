@@ -39,7 +39,7 @@
               "text/plain": {
                 "schema": {
                   "type": "string",
-                  "example": "2026-05-18T12:34:56Z"
+                  "example": "time=2026-05-18T12:34:56Z, username=jdoe, groups=Guest"
                 }
               }
             }

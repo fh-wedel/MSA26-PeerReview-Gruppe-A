@@ -95,11 +95,23 @@ function decodeJwtPayload(token: string) {
     const json = Buffer.from(padded, 'base64').toString('utf-8');
 
     try {
-        return JSON.parse(json) as { iss?: string; sub?: string };
+        return JSON.parse(json) as Record<string, unknown>;
     } catch (error) {
         console.log('Failed to parse JWT payload:', error);
         return undefined;
     }
+}
+
+function normalizeGroups(value: unknown): string | undefined {
+    if (Array.isArray(value)) {
+        return value.filter((entry) => typeof entry === 'string').join(',');
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    return undefined;
 }
 
 export const handler = async (
@@ -142,17 +154,42 @@ export const handler = async (
 
         const parsedToken = decodeJwtPayload(bearerToken);
         let principalId = 'unknown';
-        if (parsedToken?.iss && parsedToken?.sub) {
-            const issuerParts = parsedToken.iss.split('/').filter(Boolean);
+        const issuer = typeof parsedToken?.iss === 'string' ? parsedToken.iss : undefined;
+        const subject = typeof parsedToken?.sub === 'string' ? parsedToken.sub : undefined;
+        if (issuer && subject) {
+            const issuerParts = issuer.split('/').filter(Boolean);
             const issuerId = issuerParts.length > 0 ? issuerParts[issuerParts.length - 1] : 'unknown';
-            principalId = `${issuerId}|${parsedToken.sub}`;
+            principalId = `${issuerId}|${subject}`;
         }
+
+        const username =
+            (typeof parsedToken?.['cognito:username'] === 'string'
+                ? parsedToken?.['cognito:username']
+                : undefined) ??
+            (typeof parsedToken?.username === 'string' ? parsedToken?.username : undefined) ??
+            subject;
+
+        const groups = normalizeGroups(parsedToken?.['cognito:groups'] ?? parsedToken?.groups);
 
         if (authResponse.principal) {
             principalId = `${authResponse.principal.entityType}::"${authResponse.principal.entityId}"`;
         }
 
         const effect = authResponse.decision?.toUpperCase() === 'ALLOW' ? 'Allow' : 'Deny';
+
+        const context: Record<string, string> = {
+            actionId,
+        };
+
+        if (username) {
+            context.username = username;
+        }
+
+        if (groups) {
+            context.groups = groups;
+        }
+
+        context.principalId = principalId;
 
         return {
             principalId,
@@ -166,9 +203,7 @@ export const handler = async (
                     },
                 ],
             },
-            context: {
-                actionId,
-            },
+            context,
         };
     } catch (error) {
         console.log('Error:', error);

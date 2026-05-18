@@ -26,6 +26,16 @@ public class TemplateService {
         return Instant.now().toString();
     }
 
+    public String getCurrentTimeWithIdentity(String username, String groups) {
+        String resolvedUsername = (username == null || username.isBlank()) ? "unknown" : username;
+        String resolvedGroups = (groups == null || groups.isBlank()) ? "unknown" : groups;
+        return String.format(
+                "time=%s, username=%s, groups=%s",
+                getCurrentTime(),
+                resolvedUsername,
+                resolvedGroups);
+    }
+
     public void respondToSqsQueue(String messageBody) {
         if (responseQueueName == null || responseQueueName.isBlank()) {
             log.error("No SQS response queue defined. Skipping sending Message {}", messageBody);
