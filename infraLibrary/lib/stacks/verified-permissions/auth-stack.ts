@@ -1,8 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { ApiStack } from '../../../infraLibrary/lib/constructs/api/api';
-import { loadVerifiedPermissionsPolicyFile, VerifiedPermissionsPolicySet, VerifiedPermissionsStore } from '../../../infraLibrary/lib/constructs/verified-permissions/verified-permissions';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import { ApiStack } from '../api/api';
+import { loadVerifiedPermissionsPolicyFile, VerifiedPermissionsPolicySet, VerifiedPermissionsStore } from './verified-permissions';
+import { AWSConstants } from '../../../../infrabaseline/lib/constants';
 
 export interface AuthStackProps extends cdk.StackProps {
     policyFilePath: string;

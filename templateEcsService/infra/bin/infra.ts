@@ -2,12 +2,11 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { ServiceStack } from '../lib/service-stack';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
-import { ApiStack } from '../../../infraLibrary/lib/constructs/api/api';
+import { ApiStack } from '../../../infraLibrary/lib/stacks/api/api';
 import path from 'path';
 import {
   AuthStack,
-  AuthStackProps
-} from '../lib/auth-stack';
+} from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
 
 
 const app = new cdk.App();
