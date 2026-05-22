@@ -8,6 +8,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { ECRRepositoryStack } from '../lib/ecr-stack';
 import { GithubCIConfig } from '../lib/github-ci-config';
 import { CloudMapStack } from '../lib/cloudmap';
+import { CognitoStack } from '../lib/cognito';
 
 const app = new cdk.App();
 
@@ -42,8 +43,14 @@ ecsClusterStack.addDependency(ecrRepositoryStack);
 
 const githubCIConfigStack = new GithubCIConfig(app, 'BaselineGithubCIConfigStack', { env });
 
-
 const cloudMapStack = new CloudMapStack(app, 'BaselineCloudMapStack', {
   env,
   namespaceName: 'internal.services',
+});
+
+const cognitoStack = new CognitoStack(app, 'BaselineCognitoStack', {
+  env,
+  userPoolName: AWSConstants.COGNITO_USER_POOL_NAME,
+  appClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
+  groups: ['Admin', 'Student', 'Guest', 'Teacher', 'ExaminationOfficer'],
 });

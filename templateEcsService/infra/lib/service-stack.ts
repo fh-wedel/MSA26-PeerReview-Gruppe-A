@@ -8,7 +8,6 @@ import { SqsInfra } from '../../../infraLibrary/lib/sqs';
 import { LogsInfra } from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
-import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -17,10 +16,15 @@ const logger = pino({
 export interface ServiceCreationProps extends cdk.StackProps {
   serviceName: string;
   imageVersion: string;
+  containerPort: number;
+  memory: number;
+  cpu: number;
+  minTaskCount: number;
+  maxTaskCount: number;
+  cpuTargetUtilizationPercent?: number;
   enablePublicIpV4?: boolean;
   requestQueueName?: string;
   responseQueueName?: string;
-  containerPort: number;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -43,8 +47,8 @@ export class ServiceStack extends cdk.Stack {
     });
 
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
-      memoryLimitMiB: 512,
-      cpu: 256,
+      memoryLimitMiB: props.memory,
+      cpu: props.cpu,
     });
 
     const imageName = props.enablePublicIpV4
@@ -54,6 +58,7 @@ export class ServiceStack extends cdk.Stack {
     const containerPort = props.containerPort;
 
     taskDefinition.addContainer('AppContainer', {
+      containerName: props.serviceName,
       image: ecs.ContainerImage.fromRegistry(imageName),
       logging: LogsInfra.createEcsLogDriver(logGroup, props.serviceName),
       portMappings: [
@@ -68,13 +73,7 @@ export class ServiceStack extends cdk.Stack {
         'SERVER_PORT': containerPort.toString(),
         "AWS_REGION": AWSConstants.AWS_REGION,
       },
-      healthCheck: {
-        command: ['CMD-SHELL', `wget -qO- http://localhost:${containerPort}/actuator/health || exit 1`],
-        interval: cdk.Duration.seconds(15),
-        timeout: cdk.Duration.seconds(5),
-        retries: 5,
-        startPeriod: cdk.Duration.seconds(60),
-      }
+      healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
 
     const ecsSecurityGroup = new ec2.SecurityGroup(this, 'EcsSg', {
@@ -100,11 +99,11 @@ export class ServiceStack extends cdk.Stack {
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
-      serviceName: props.serviceName,
+      serviceName: props.serviceName + '-service',
       cluster: ecsCluster,
       taskDefinition: taskDefinition,
       assignPublicIp: props.enablePublicIpV4,
-      desiredCount: 1,
+      desiredCount: props.minTaskCount,
       vpcSubnets: { subnets: [subnet] },
       circuitBreaker: {
         rollback: true,
@@ -122,6 +121,14 @@ export class ServiceStack extends cdk.Stack {
     ];
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
+
+    if (props.minTaskCount !== props.maxTaskCount) {
+      logger.info(`Setting up auto-scaling for service ${props.serviceName} with min ${props.minTaskCount} and max ${props.maxTaskCount} tasks.`);
+      if (!props.cpuTargetUtilizationPercent) {
+        logger.warn("CPU target utilization percent not provided. Defaulting to 75%.");
+      }
+      EcsInfra.addAutoScalingToService(ecsService, props.minTaskCount, props.maxTaskCount, props.cpuTargetUtilizationPercent ?? 75);
+    }
 
     if (props.requestQueueName) {
       const requestQueues = SqsInfra.createQueue(this, {

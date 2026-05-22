@@ -22,6 +22,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }
         }
 
+        const authorizerContext = event.requestContext?.authorizer ?? {};
+        const username = typeof authorizerContext.username === 'string' ? authorizerContext.username : undefined;
+        const groups = typeof authorizerContext.groups === 'string' ? authorizerContext.groups : undefined;
+        const principalId = typeof authorizerContext.principalId === 'string' ? authorizerContext.principalId : undefined;
+
+        if (username) {
+            requestHeaders['x-auth-username'] = username;
+        }
+
+        if (groups) {
+            requestHeaders['x-auth-groups'] = groups;
+        }
+
+        if (principalId) {
+            requestHeaders['x-auth-principal-id'] = principalId;
+        }
+
         const options: RequestInit = {
             method: event.httpMethod,
             headers: requestHeaders,
