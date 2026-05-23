@@ -2,6 +2,8 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as cr from 'aws-cdk-lib/custom-resources';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
 import { LogsInfra } from '../../../infraLibrary/lib/logs';
@@ -30,6 +32,10 @@ export class ServiceStack extends cdk.Stack {
 
     const vpc = ImportedRessources.getVpcByAttributes(this);
     const ecsCluster = ImportedRessources.getECSClusterByAttributes(this, vpc);
+
+    const userPoolId = cdk.Fn.importValue(`${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`);
+    const appClientId = cdk.Fn.importValue(`${AWSConstants.COGNITO_APP_CLIENT_NAME}-AppClientId`);
+    const apiGatewayUrl = cdk.Fn.importValue(':WebUiServiceAPI:ApiUrl');
 
     let subnet: ec2.ISubnet;
     if (props.enablePublicIpV4) {
@@ -67,6 +73,8 @@ export class ServiceStack extends cdk.Stack {
       environment: {
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
+        'COGNITO_CLIENT_ID': appClientId,
+        'COGNITO_DOMAIN': `${AWSConstants.COGNITO_USER_POOL_NAME.toLowerCase()}-domain.auth.${AWSConstants.AWS_REGION}.amazoncognito.com`,
       },
       // Nginx health check: request the root path; exit 1 on failure
       healthCheck: {
@@ -123,6 +131,50 @@ export class ServiceStack extends cdk.Stack {
     ];
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
+
+    // Custom Resource to dynamically update the Cognito App Client with the generated API Gateway URL
+    new cr.AwsCustomResource(this, 'UpdateCognitoClient', {
+      onCreate: {
+        service: 'CognitoIdentityProvider',
+        action: 'updateUserPoolClient',
+        parameters: {
+          UserPoolId: userPoolId,
+          ClientId: appClientId,
+          ClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
+          SupportedIdentityProviders: ['COGNITO'],
+          AllowedOAuthFlows: ['code'],
+          AllowedOAuthScopes: ['openid', 'email'],
+          AllowedOAuthFlowsUserPoolClient: true,
+          CallbackURLs: ['http://localhost:5173/', apiGatewayUrl],
+          LogoutURLs: ['http://localhost:5173/', apiGatewayUrl],
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(appClientId),
+      },
+      onUpdate: {
+        service: 'CognitoIdentityProvider',
+        action: 'updateUserPoolClient',
+        parameters: {
+          UserPoolId: userPoolId,
+          ClientId: appClientId,
+          ClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
+          SupportedIdentityProviders: ['COGNITO'],
+          AllowedOAuthFlows: ['code'],
+          AllowedOAuthScopes: ['openid', 'email'],
+          AllowedOAuthFlowsUserPoolClient: true,
+          CallbackURLs: ['http://localhost:5173/', apiGatewayUrl],
+          LogoutURLs: ['http://localhost:5173/', apiGatewayUrl],
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(appClientId),
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: ['cognito-idp:UpdateUserPoolClient'],
+          resources: [
+            `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${userPoolId}`,
+          ],
+        }),
+      ]),
+    });
 
     if (props.minTaskCount !== props.maxTaskCount) {
       logger.info(`Setting up auto-scaling for service ${props.serviceName} with min ${props.minTaskCount} and max ${props.maxTaskCount} tasks.`);

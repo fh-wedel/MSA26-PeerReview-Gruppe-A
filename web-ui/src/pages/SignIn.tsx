@@ -1,53 +1,43 @@
-import React, { useState } from 'react';
-import { Box, Paper, Typography, TextField, Button } from '@mui/material';
+import React, { useEffect } from 'react';
+import { Box, Paper, Typography, Button, CircularProgress } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import LoginIcon from '@mui/icons-material/Login';
 
 export const SignIn: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      login(email);
+  useEffect(() => {
+    if (isAuthenticated) {
       navigate('/dashboard');
+      return;
     }
-  };
+
+    if (!loading) {
+      login();
+    }
+  }, [isAuthenticated, loading, login, navigate]);
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400, borderRadius: 2 }}>
-        <Typography variant="h5" align="center" gutterBottom>
-          Sign In
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400, borderRadius: 3, textAlign: 'center' }}>
+        <CircularProgress sx={{ mb: 3 }} />
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+          Redirecting to Secure Login
         </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Email Address"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-            Sign In
-          </Button>
-        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          We are redirecting you to the PeerReview Single Sign-On service...
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<LoginIcon />}
+          onClick={() => login()}
+          sx={{ px: 4, py: 1.5, borderRadius: 2 }}
+        >
+          Click here if not redirected
+        </Button>
       </Paper>
     </Box>
   );
