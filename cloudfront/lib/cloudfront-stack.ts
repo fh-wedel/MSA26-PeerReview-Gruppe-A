@@ -99,44 +99,20 @@ export class CloudFrontStack extends cdk.Stack {
             // API Gateway requires HTTPS; keep the default read/connect timeouts.
         });
 
-        // ── Cache policy — forwards Authorization header and disables caching ────
-        // CloudFront does NOT allow passing Authorization via OriginRequestPolicy.
-        // Instead, include it in a CachePolicy with CachingDisabled TTLs (0s min/max).
-        // This effectively disables caching while still forwarding the header.
-        const apiCachePolicy = new cloudfront.CachePolicy(this, 'ApiCachePolicy', {
-            cachePolicyName: 'PeerReviewApiCachePolicy',
-            comment: 'No caching; forwards Authorization header to API Gateway origins',
-            defaultTtl: cdk.Duration.seconds(0),
-            minTtl: cdk.Duration.seconds(0),
-            maxTtl: cdk.Duration.seconds(0),
-            headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Authorization'),
-            queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-            cookieBehavior: cloudfront.CacheCookieBehavior.all(),
-            enableAcceptEncodingGzip: false,
-            enableAcceptEncodingBrotli: false,
-        });
-
-        // ── Origin request policy — forwards non-auth headers ────────────────────
-        // Authorization is already in the cache key (above), so exclude it here.
-        const apiOriginRequestPolicy = new cloudfront.OriginRequestPolicy(this, 'ApiOriginRequestPolicy', {
-            originRequestPolicyName: 'PeerReviewApiOriginRequestPolicy',
-            comment: 'Forward Content-Type, Accept, Origin and other safe headers to API Gateway',
-            headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList(
-                'Content-Type',
-                'Accept',
-                'Origin',
-                'X-Requested-With',
-            ),
-            queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
-            cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
-        });
+        // ── Cache and Origin Request Policies ─────────────────────────────────────
+        // We use managed policies for API Gateway origins:
+        // 1. CACHING_DISABLED: We don't want CloudFront to cache API responses.
+        // 2. ALL_VIEWER_EXCEPT_HOST_HEADER: Forwards all headers (including Authorization),
+        //    query strings, and cookies to API Gateway, except the Host header (which
+        //    CloudFront replaces with the origin's domain).
+        const cachePolicy = cloudfront.CachePolicy.CACHING_DISABLED;
+        const originRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
 
         // ── Default cache behavior (Web UI) ───────────────────────────────────────
         const defaultBehavior: cloudfront.BehaviorOptions = {
             origin: webUiOrigin,
-            // Use the custom cache policy so Authorization is forwarded but TTL is 0 (no actual caching).
-            cachePolicy: apiCachePolicy,
-            originRequestPolicy: apiOriginRequestPolicy,
+            cachePolicy,
+            originRequestPolicy,
             // The Web UI only needs GET/HEAD for static assets, but the API Gateway's
             // greedy proxy also handles POST/OPTIONS (e.g. Cognito redirects, preflight).
             allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
@@ -159,8 +135,8 @@ export class CloudFrontStack extends cdk.Stack {
 
             additionalBehaviors[service.pathPattern] = {
                 origin: svcOrigin,
-                cachePolicy: apiCachePolicy,
-                originRequestPolicy: apiOriginRequestPolicy,
+                cachePolicy,
+                originRequestPolicy,
                 // APIs need all HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD).
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
