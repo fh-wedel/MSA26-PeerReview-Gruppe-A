@@ -1,6 +1,23 @@
 # MSA26-PeerReview Gruppe A
 PeerReview: Ein System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten
 
+# Lokale Ausführung
+
+### Voraussetzungen
+1. **AWS SSO Login**:
+   ```bash
+   aws sso login
+   ```
+2. **AWS-Profil**: Standardmäßig verwenden die Services das lokale sso Profil `fh-wedel-msa`. Wenn das eigene Profil
+3. anders heißt, kann `AWS_PROFILE` in der `docker-compose.yml` angepasst werden.
+
+### Anwendung starten
+```bash
+docker compose up --build
+```
+
+- **Frontend (Web UI)**: [http://localhost:5173/prod/](http://localhost:5173/prod/)
+
 
 # AWS Infrastructure
 Die AWS Infrastruktur besteht aus einem Baseline Stack, welcher die grundlegende Infrastruktur bereitstellt, und mehreren Service Stacks, welcher die eigentliche Service-Infrastruktur in einer Microservice Architektur bereitstellt. Der Baseline Stack muss vor den Service Stacks bereitgestellt werden, da der Service Stack auf Ressourcen des Baseline Stacks zugreift.

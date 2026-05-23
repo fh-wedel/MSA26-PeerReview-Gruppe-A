@@ -16,6 +16,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
+ENV HOME=/home/spring
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 

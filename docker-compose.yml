@@ -11,14 +11,15 @@ services:
       # Mount your local AWS configuration and SSO cache into the container
       - ~/.aws:/home/spring/.aws:ro
     environment:
-      # Force the home directory so the AWS SDK knows where to find the mounted .aws folder
-      - HOME=/home/spring
       # Replace 'fh-wedel-msa' with your actual AWS SSO profile name if different
-      - AWS_PROFILE=fh-wedel-msa
+      - AWS_PROFILE=${AWS_PROFILE:-fh-wedel-msa}
       - SPRING_CLOUD_AWS_REGION_STATIC=eu-north-1
   web-ui-service:
     image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/web-ui:latest
     build:
       context: web-ui
     ports:
-      - "8081:80"
+      - "5173:80"
+    environment:
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-7b8qripeuu1p5c3ph6dd4jee5l}
+      - COGNITO_DOMAIN=${COGNITO_DOMAIN:-peerreviewuserpool-domain.auth.eu-north-1.amazoncognito.com}
