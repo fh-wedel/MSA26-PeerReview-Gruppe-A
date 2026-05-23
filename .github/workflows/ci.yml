@@ -24,6 +24,9 @@ jobs:
       template_service_code: ${{ steps.filter.outputs.template_service_code }}
       template_service_infra: ${{ steps.filter.outputs.template_service_infra }}
       template_service_any: ${{ steps.filter.outputs.template_service_any }}
+      web_ui_code: ${{ steps.filter.outputs.web_ui_code }}
+      web_ui_infra: ${{ steps.filter.outputs.web_ui_infra }}
+      web_ui_any: ${{ steps.filter.outputs.web_ui_any }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -44,6 +47,19 @@ jobs:
               - 'templateEcsService/infra/**'
             template_service_any:
               - 'templateEcsService/**'
+              - 'infraLibrary/**'
+            web_ui_code:
+              - 'web-ui/src/**'
+              - 'web-ui/public/**'
+              - 'web-ui/index.html'
+              - 'web-ui/vite.config.ts'
+              - 'web-ui/package*.json'
+              - 'web-ui/Dockerfile'
+              - 'web-ui/nginx.conf'
+            web_ui_infra:
+              - 'web-ui/infra/**'
+            web_ui_any:
+              - 'web-ui/**'
               - 'infraLibrary/**'
 
   infra-library-tests:
@@ -146,6 +162,26 @@ jobs:
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
+  web-ui:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() &&
+      (needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: web-ui
+      service_path: web-ui
+      infra_path: web-ui/infra
+      docker_context: web-ui
+      ecr_repository: fh-wedel/web-ui
+      run_maven: false
+      run_infra: ${{ needs.changes.outputs.web_ui_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.web_ui_code == 'true' || github.event_name == 'workflow_dispatch' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
