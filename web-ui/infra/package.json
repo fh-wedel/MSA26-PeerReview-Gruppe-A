@@ -4,6 +4,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "pretest": "npm ci --prefix ../../infraLibrary",
     "test": "jest",
     "cdk": "cdk"
   },
@@ -11,13 +12,16 @@
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
     "aws-cdk": "2.1120.0",
+    "esbuild": "^0.28.0",
     "jest": "^30",
     "ts-jest": "^29",
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.251.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1053.0",
+    "@types/aws-lambda": "^8.10.161",
+    "aws-cdk-lib": "2.253.1",
     "constructs": "^10.5.0",
     "pino": "^10.3.1"
   }

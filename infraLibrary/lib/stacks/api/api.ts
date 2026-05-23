@@ -82,6 +82,15 @@ export interface ApiStackProps extends cdk.StackProps {
      * Optional configuration for a Verified Permissions lambda authorizer.
      */
     authorizerConfig?: VerifiedPermissionsAuthorizerProps;
+
+    /**
+     * If true, a greedy `{proxy+}` catch-all resource will be added so that
+     * ALL URL paths are forwarded to the Lambda proxy. This is essential for
+     * serving static frontends (HTML/CSS/JS assets) or any service where
+     * sub-paths are not individually defined in an OpenAPI spec.
+     * @default false
+     */
+    enableGreedyProxy?: boolean;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -132,28 +141,17 @@ export class ApiStack extends cdk.Stack {
         lambdaSg.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(props.targetPort), 'Allow Lambda to send requests to ECS service over IPv6');
 
         let api;
-        if (props.openApiSpecPath) {
-            api = this.createApiFromOpenApiSpec(props.apiName, props.openApiSpecPath, props.description, proxyLambda.functionArn);
-        } else {
-            api = new apigateway.RestApi(this, 'RestApi', {
-                restApiName: props.apiName,
-                description: props.description,
-                endpointConfiguration: {
-                    types: [apigateway.EndpointType.REGIONAL],
-                    ipAddressType: apigateway.IpAddressType.DUAL_STACK
-                },
-                deploy: true,
-            });
-        }
-
-        let authorizer: apigateway.RequestAuthorizer | undefined;
+        let authorizerLambdaArn: string | undefined;
+        let authorizerLambdaObj: NodejsFunction | undefined;
+        
+        // We will create the authorizer lambda early so we can inject its ARN into the OpenAPI spec
         const authorizerConfig = props.authorizerConfig;
         if (authorizerConfig) {
             const authorizerLogGroup = LogsInfra.createLogGroup(this, {
                 logGroupName: `/aws/lambda/${apiName}VerifiedPermissionsAuthorizer`,
             });
 
-            const authorizerLambda = new NodejsFunction(this, `${apiName}VerifiedPermissionsAuthorizer`, {
+            authorizerLambdaObj = new NodejsFunction(this, `${apiName}VerifiedPermissionsAuthorizer`, {
                 functionName: `${apiName}VerifiedPermissionsAuthorizer`,
                 runtime: lambda.Runtime.NODEJS_24_X,
                 projectRoot: projectRoot,
@@ -175,69 +173,44 @@ export class ApiStack extends cdk.Stack {
                 logGroup: authorizerLogGroup,
             });
 
-            authorizerLambda.addToRolePolicy(
+            authorizerLambdaObj.addToRolePolicy(
                 new iam.PolicyStatement({
                     actions: ['verifiedpermissions:IsAuthorizedWithToken'],
                     resources: ['*'],
                 }),
             );
 
+            authorizerLambdaArn = authorizerLambdaObj.functionArn;
+        }
+
+        if (props.openApiSpecPath) {
+            api = this.createApiFromOpenApiSpec(props.apiName, props.openApiSpecPath, props.description, proxyLambda.functionArn, authorizerConfig, authorizerLambdaArn);
+        } else {
+            api = new apigateway.RestApi(this, 'RestApi', {
+                restApiName: props.apiName,
+                description: props.description,
+                endpointConfiguration: {
+                    types: [apigateway.EndpointType.REGIONAL],
+                    ipAddressType: apigateway.IpAddressType.DUAL_STACK
+                },
+                binaryMediaTypes: ['*/*'],
+                deploy: true,
+            });
+        }
+
+        let authorizer: apigateway.RequestAuthorizer | undefined;
+        if (authorizerConfig && authorizerLambdaObj) {
             authorizer = new apigateway.RequestAuthorizer(this, 'VerifiedPermissionsAuthorizer', {
-                handler: authorizerLambda,
+                handler: authorizerLambdaObj,
                 identitySources: [apigateway.IdentitySource.header('Authorization')],
                 resultsCacheTtl: cdk.Duration.seconds(authorizerConfig.cacheTtlSeconds ?? 0),
             });
-
-            if (authorizerConfig.applyToAllMethods ?? true) {
-                const patcherLogGroup = LogsInfra.createLogGroup(this, {
-                    logGroupName: `/aws/lambda/${apiName}AuthorizerPatcher`,
-                });
-
-                const patcherLambda = new NodejsFunction(this, `${apiName}AuthorizerPatcher`, {
-                    functionName: `${apiName}AuthorizerPatcher`,
-                    runtime: lambda.Runtime.NODEJS_24_X,
-                    projectRoot: projectRoot,
-                    depsLockFilePath: depsLockFilePath,
-                    entry: path.join(__dirname, 'lambda', 'api-lambda-authorizer-patcher.ts'),
-                    handler: 'handler',
-                    bundling: {
-                        format: OutputFormat.CJS,
-                        target: 'node24',
-                    },
-                    environment: {
-                        API_GATEWAY_ID: api.restApiId,
-                        API_GATEWAY_STAGE: api.deploymentStage.stageName,
-                        AUTHORIZER_ID: authorizer.authorizerId,
-                    },
-                    timeout: cdk.Duration.seconds(60),
-                    memorySize: 256,
-                    logGroup: patcherLogGroup,
-                });
-
-                patcherLambda.addPermission(`${apiName}AuthorizerPatcherInvoke`, {
-                    principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
-                    action: 'lambda:InvokeFunction',
-                });
-
-                patcherLambda.addToRolePolicy(
-                    new iam.PolicyStatement({
-                        actions: ['apigateway:GET', 'apigateway:PATCH', 'apigateway:POST'],
-                        resources: [`arn:aws:apigateway:${cdk.Aws.REGION}::/restapis/${api.restApiId}/*`],
-                    }),
-                );
-
-                const authorizerPatch = new cdk.CustomResource(this, 'ApiGatewayAuthorizerPatch', {
-                    serviceToken: patcherLambda.functionArn,
-                    resourceType: 'Custom::ApiGatewayAuthorizerPatch',
-                    properties: {
-                        RestApiId: api.restApiId,
-                        AuthorizerId: authorizer.authorizerId,
-                        StageName: api.deploymentStage.stageName,
-                    },
-                });
-                authorizerPatch.node.addDependency(api);
-                authorizerPatch.node.addDependency(authorizer);
-            }
+            
+            // Give API Gateway permission to invoke the lambda for the OpenAPI Spec integration
+            authorizerLambdaObj.addPermission('ApiGatewayInvoke', {
+                principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+                action: 'lambda:InvokeFunction',
+            });
         }
 
         const integration = new apigateway.LambdaIntegration(proxyLambda, {
@@ -249,6 +222,11 @@ export class ApiStack extends cdk.Stack {
             : undefined;
 
         api.root.addMethod('ANY', integration, methodOptions);
+
+        if (props.enableGreedyProxy) {
+            const proxyResource = api.root.addResource('{proxy+}');
+            proxyResource.addMethod('ANY', integration, methodOptions);
+        }
 
         new CfnOutput(this, 'ApiUrl', {
             value: api.url,
@@ -264,7 +242,7 @@ export class ApiStack extends cdk.Stack {
     }
 
 
-    private createApiFromOpenApiSpec(name: string, openApiSpecPath: string, description: string, lambdaArn: string): apigateway.SpecRestApi {
+    private createApiFromOpenApiSpec(name: string, openApiSpecPath: string, description: string, lambdaArn: string, authorizerConfig?: VerifiedPermissionsAuthorizerProps, authorizerLambdaArn?: string): apigateway.SpecRestApi {
         let openApiSpec: string;
         try {
             openApiSpec = fs.readFileSync(openApiSpecPath, 'utf-8');
@@ -316,6 +294,27 @@ export class ApiStack extends cdk.Stack {
             }
         }
 
+        if (authorizerConfig && authorizerLambdaArn) {
+            specObj.components = specObj.components || {};
+            specObj.components.securitySchemes = specObj.components.securitySchemes || {};
+            specObj.components.securitySchemes.VerifiedPermissionsAuthorizer = {
+                type: 'apiKey',
+                name: 'Authorization',
+                in: 'header',
+                'x-amazon-apigateway-authtype': 'custom',
+                'x-amazon-apigateway-authorizer': {
+                    type: 'request',
+                    authorizerUri: `arn:aws:apigateway:${cdk.Aws.REGION}:lambda:path/2015-03-31/functions/${authorizerLambdaArn}/invocations`,
+                    authorizerResultTtlInSeconds: authorizerConfig.cacheTtlSeconds ?? 0,
+                    identitySource: 'method.request.header.Authorization'
+                }
+            };
+            
+            if (authorizerConfig.applyToAllMethods ?? true) {
+                specObj.security = [{ VerifiedPermissionsAuthorizer: [] }];
+            }
+        }
+
         const api = new apigateway.SpecRestApi(this, 'SpecRestOpenApi', {
             restApiName: name,
             description: description,
@@ -324,6 +323,7 @@ export class ApiStack extends cdk.Stack {
                 types: [apigateway.EndpointType.REGIONAL],
                 ipAddressType: apigateway.IpAddressType.DUAL_STACK
             },
+            binaryMediaTypes: ['*/*'],
             deploy: true,
             deployOptions: {
                 stageName: 'prod',

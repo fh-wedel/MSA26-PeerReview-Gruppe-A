@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm install
 
 # 2. Copy only the necessary configuration files and source code
-COPY index.html vite.config.ts tsconfig.json tsconfig.*.json eslint.config.js ./
+COPY index.html vite.config.ts tsconfig.json tsconfig.*.json eslint.config.js .env ./
 COPY src ./src
 COPY public ./public
 
@@ -22,5 +22,10 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # 5. Copy the nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# 6. Copy and set entrypoint script to inject runtime env variables
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

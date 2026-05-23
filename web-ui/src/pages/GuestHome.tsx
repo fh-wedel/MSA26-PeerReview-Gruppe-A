@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Typography, Button, Paper, Card, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { School, AssignmentTurnedIn, Forum } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 
 export const GuestHome: React.FC = () => {
   const navigate = useNavigate();
+
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -16,12 +25,16 @@ export const GuestHome: React.FC = () => {
           A collaborative platform for mutual peer review of scientific papers at FH Wedel.
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/login')} sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}>
-            Sign In
-          </Button>
-          <Button variant="outlined" color="inherit" size="large" onClick={() => navigate('/register')} sx={{ px: 4, py: 1.5, fontSize: '1.1rem', borderColor: 'rgba(255,255,255,0.5)' }}>
-            Register
-          </Button>
+          {!isAuthenticated && (
+            <>
+              <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/login')} sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}>
+                Sign In
+              </Button>
+              <Button variant="outlined" color="inherit" size="large" onClick={() => navigate('/register')} sx={{ px: 4, py: 1.5, fontSize: '1.1rem', borderColor: 'rgba(255,255,255,0.5)' }}>
+                Register
+              </Button>
+            </>
+          )}
         </Box>
       </Paper>
 
