@@ -174,6 +174,7 @@ export class ServiceStack extends cdk.Stack {
           ],
         }),
       ]),
+      installLatestAwsSdk: true,
     });
 
     if (props.minTaskCount !== props.maxTaskCount) {
