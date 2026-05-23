@@ -21,4 +21,7 @@ services:
     build:
       context: web-ui
     ports:
-      - "8081:80"
+      - "5173:80"
+    environment:
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-7b8qripeuu1p5c3ph6dd4jee5l}
+      - COGNITO_DOMAIN=${COGNITO_DOMAIN:-peerreviewuserpool-domain.auth.eu-north-1.amazoncognito.com}

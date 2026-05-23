@@ -60,8 +60,8 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
       AllowedOAuthFlows: ['code'],
       AllowedOAuthScopes: ['openid', 'email'],
       AllowedOAuthFlowsUserPoolClient: true,
-      CallbackURLs: [apiGatewayUrl, 'http://localhost:5173/'],
-      LogoutURLs: [apiGatewayUrl, 'http://localhost:5173/'],
+      CallbackURLs: [apiGatewayUrl, 'http://localhost:5173/prod/'],
+      LogoutURLs: [apiGatewayUrl, 'http://localhost:5173/prod/'],
     });
 
     await cognito.send(command);
