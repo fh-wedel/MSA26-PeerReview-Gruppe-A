@@ -45,6 +45,7 @@ new CloudFrontStack(app, 'PeerReviewCloudFrontStack', {
     // Example (add when submission-service is deployed):
     //   { apiName: 'SubmissionServiceAPI', pathPattern: '/api/submission/*' },
     apiServices: [
+        { apiName: 'TemplateServiceAPI', pathPattern: '/api/template/*' },
         // Placeholder — uncomment and extend as services are deployed:
         // { apiName: 'SubmissionServiceAPI',      pathPattern: '/api/submission/*' },
         // { apiName: 'UserManagementServiceAPI',  pathPattern: '/api/user-management/*' },

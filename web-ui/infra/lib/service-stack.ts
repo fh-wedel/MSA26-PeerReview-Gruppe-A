@@ -38,7 +38,11 @@ export class ServiceStack extends cdk.Stack {
 
     const userPoolId = cdk.Fn.importValue(`${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`);
     const appClientId = cdk.Fn.importValue(`${AWSConstants.COGNITO_APP_CLIENT_NAME}-AppClientId`);
-    const apiGatewayUrl = cdk.Fn.importValue(':WebUiServiceAPI:ApiUrl');
+    
+    // Import the stable CloudFront distribution domain instead of the API Gateway URL
+    const cloudfrontDomain = cdk.Fn.importValue('Baseline:CloudFrontDomainName');
+    const webUrl = `https://${cloudfrontDomain}`;
+
 
     let subnet: ec2.ISubnet;
     if (props.enablePublicIpV4) {
@@ -135,10 +139,10 @@ export class ServiceStack extends cdk.Stack {
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
-    // Custom Resource to dynamically update the Cognito App Client with the generated API Gateway URL
+    // Custom Resource to dynamically update the Cognito App Client with the CloudFront URL
     const updateCognitoClientLambda = new lambda_nodejs.NodejsFunction(this, 'UpdateCognitoClientLambda', {
       functionName: `${AWSConstants.COGNITO_USER_POOL_NAME.toLowerCase()}-update-cognito-client`,
-      description: `Custom Resource to dynamically update the Cognito App Client ${AWSConstants.COGNITO_APP_CLIENT_NAME} with the generated API Gateway URL ${apiGatewayUrl}.`,
+      description: `Custom Resource to dynamically update the Cognito App Client ${AWSConstants.COGNITO_APP_CLIENT_NAME} with the CloudFront URL.`,
       runtime: lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, 'update-cognito-client.ts'),
       handler: 'handler',
@@ -150,7 +154,7 @@ export class ServiceStack extends cdk.Stack {
         USER_POOL_ID: userPoolId,
         CLIENT_ID: appClientId,
         CLIENT_NAME: AWSConstants.COGNITO_APP_CLIENT_NAME,
-        API_GATEWAY_URL: apiGatewayUrl,
+        WEB_URL: webUrl,
       },
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -175,7 +179,7 @@ export class ServiceStack extends cdk.Stack {
         // We use these properties to trigger updates when they change
         UserPoolId: userPoolId,
         ClientId: appClientId,
-        ApiGatewayUrl: apiGatewayUrl,
+        WebUrl: webUrl,
       },
     });
 

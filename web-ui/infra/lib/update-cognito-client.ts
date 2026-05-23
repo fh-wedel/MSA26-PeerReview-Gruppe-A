@@ -44,9 +44,9 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
   const userPoolId = process.env.USER_POOL_ID;
   const clientId = process.env.CLIENT_ID;
   const clientName = process.env.CLIENT_NAME;
-  const apiGatewayUrl = process.env.API_GATEWAY_URL;
+  const webUrl = process.env.WEB_URL;
 
-  if (!userPoolId || !clientId || !clientName || !apiGatewayUrl) {
+  if (!userPoolId || !clientId || !clientName || !webUrl) {
     await sendResponse(event, context, 'FAILED', { Message: 'Missing required environment variables' });
     return;
   }
@@ -60,8 +60,9 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
       AllowedOAuthFlows: ['code'],
       AllowedOAuthScopes: ['openid', 'email'],
       AllowedOAuthFlowsUserPoolClient: true,
-      CallbackURLs: [apiGatewayUrl, 'http://localhost:5173/'],
-      LogoutURLs: [apiGatewayUrl, 'http://localhost:5173/'],
+      CallbackURLs: [webUrl, 'http://localhost:5173/'],
+      LogoutURLs: [webUrl, 'http://localhost:5173/'],
+
     });
 
     await cognito.send(command);
