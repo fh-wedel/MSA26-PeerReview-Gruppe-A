@@ -179,7 +179,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionStorage.removeItem('id_token');
     sessionStorage.removeItem('access_token');
     sessionStorage.removeItem('refresh_token');
-    setUser(null);
     window.location.href = REDIRECT_URI;
   };
 
