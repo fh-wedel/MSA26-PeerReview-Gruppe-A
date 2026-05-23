@@ -18,6 +18,8 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1053.0",
+    "@types/aws-lambda": "^8.10.161",
     "aws-cdk-lib": "2.253.1",
     "constructs": "^10.5.0",
     "pino": "^10.3.1"

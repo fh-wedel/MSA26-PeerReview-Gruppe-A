@@ -4,6 +4,9 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda_nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
 import { LogsInfra } from '../../../infraLibrary/lib/logs';
@@ -133,48 +136,44 @@ export class ServiceStack extends cdk.Stack {
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
     // Custom Resource to dynamically update the Cognito App Client with the generated API Gateway URL
-    new cr.AwsCustomResource(this, 'UpdateCognitoClient', {
-      onCreate: {
-        service: 'CognitoIdentityProvider',
-        action: 'updateUserPoolClient',
-        parameters: {
-          UserPoolId: userPoolId,
-          ClientId: appClientId,
-          ClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
-          SupportedIdentityProviders: ['COGNITO'],
-          AllowedOAuthFlows: ['code'],
-          AllowedOAuthScopes: ['openid', 'email'],
-          AllowedOAuthFlowsUserPoolClient: true,
-          CallbackURLs: ['http://localhost:5173/', apiGatewayUrl],
-          LogoutURLs: ['http://localhost:5173/', apiGatewayUrl],
-        },
-        physicalResourceId: cr.PhysicalResourceId.of(appClientId),
+    const updateCognitoClientLambda = new lambda_nodejs.NodejsFunction(this, 'UpdateCognitoClientLambda', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry: path.join(__dirname, 'update-cognito-client.ts'),
+      handler: 'handler',
+      bundling: {
+        format: lambda_nodejs.OutputFormat.CJS,
       },
-      onUpdate: {
-        service: 'CognitoIdentityProvider',
-        action: 'updateUserPoolClient',
-        parameters: {
-          UserPoolId: userPoolId,
-          ClientId: appClientId,
-          ClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
-          SupportedIdentityProviders: ['COGNITO'],
-          AllowedOAuthFlows: ['code'],
-          AllowedOAuthScopes: ['openid', 'email'],
-          AllowedOAuthFlowsUserPoolClient: true,
-          CallbackURLs: ['http://localhost:5173/', apiGatewayUrl],
-          LogoutURLs: ['http://localhost:5173/', apiGatewayUrl],
-        },
-        physicalResourceId: cr.PhysicalResourceId.of(appClientId),
+      environment: {
+        USER_POOL_ID: userPoolId,
+        CLIENT_ID: appClientId,
+        CLIENT_NAME: AWSConstants.COGNITO_APP_CLIENT_NAME,
+        API_GATEWAY_URL: apiGatewayUrl,
       },
-      policy: cr.AwsCustomResourcePolicy.fromStatements([
-        new iam.PolicyStatement({
-          actions: ['cognito-idp:UpdateUserPoolClient'],
-          resources: [
-            `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${userPoolId}`,
-          ],
-        }),
-      ]),
-      installLatestAwsSdk: true,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+    });
+
+    updateCognitoClientLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['cognito-idp:UpdateUserPoolClient'],
+        resources: [
+          `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${userPoolId}`,
+        ],
+      })
+    );
+
+    const updateCognitoClientProvider = new cr.Provider(this, 'UpdateCognitoClientProvider', {
+      onEventHandler: updateCognitoClientLambda,
+    });
+
+    new cdk.CustomResource(this, 'UpdateCognitoClientCR', {
+      serviceToken: updateCognitoClientProvider.serviceToken,
+      properties: {
+        // We use these properties to trigger updates when they change
+        UserPoolId: userPoolId,
+        ClientId: appClientId,
+        ApiGatewayUrl: apiGatewayUrl,
+      },
     });
 
     if (props.minTaskCount !== props.maxTaskCount) {
