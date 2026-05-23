@@ -201,12 +201,13 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui]
+    needs: [changes, web-ui, template-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
       (needs.changes.outputs.cloudfront == 'true' || needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') &&
-      (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped')
+      (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') &&
+      (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}

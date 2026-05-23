@@ -62,7 +62,11 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
       AllowedOAuthFlowsUserPoolClient: true,
       CallbackURLs: [webUrl, 'http://localhost:5173/'],
       LogoutURLs: [webUrl, 'http://localhost:5173/'],
-
+      ExplicitAuthFlows: [
+        'ALLOW_USER_PASSWORD_AUTH',
+        'ALLOW_USER_SRP_AUTH',
+        'ALLOW_REFRESH_TOKEN_AUTH'
+      ],
     });
 
     await cognito.send(command);
