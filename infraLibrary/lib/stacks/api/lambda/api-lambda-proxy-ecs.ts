@@ -1,5 +1,53 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
+function extractBearerToken(headers?: Record<string, string | undefined>) {
+    if (!headers) {
+        return undefined;
+    }
+
+    const authHeader = headers.Authorization ?? headers.authorization;
+    if (!authHeader) {
+        return undefined;
+    }
+
+    const normalized = authHeader.trim();
+    if (normalized.toLowerCase().startsWith('bearer ')) {
+        return normalized.split(' ')[1];
+    }
+
+    return normalized;
+}
+
+function decodeJwtPayload(token: string) {
+    const parts = token.split('.');
+    if (parts.length < 2) {
+        return undefined;
+    }
+
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = payload.padEnd(payload.length + ((4 - (payload.length % 4)) % 4), '=');
+    const json = Buffer.from(padded, 'base64').toString('utf-8');
+
+    try {
+        return JSON.parse(json) as Record<string, unknown>;
+    } catch (error) {
+        console.log('Failed to parse JWT payload:', error);
+        return undefined;
+    }
+}
+
+function normalizeGroups(value: unknown): string | undefined {
+    if (Array.isArray(value)) {
+        return value.filter((entry) => typeof entry === 'string').join(',');
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    return undefined;
+}
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const baseUrl = process.env.TARGET_URL;
     if (!baseUrl) {
@@ -23,9 +71,37 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         const authorizerContext = event.requestContext?.authorizer ?? {};
-        const username = typeof authorizerContext.username === 'string' ? authorizerContext.username : undefined;
-        const groups = typeof authorizerContext.groups === 'string' ? authorizerContext.groups : undefined;
-        const principalId = typeof authorizerContext.principalId === 'string' ? authorizerContext.principalId : undefined;
+        let username = typeof authorizerContext.username === 'string' ? authorizerContext.username : undefined;
+        let groups = typeof authorizerContext.groups === 'string' ? authorizerContext.groups : undefined;
+        let principalId = typeof authorizerContext.principalId === 'string' ? authorizerContext.principalId : undefined;
+
+        if (!username || !groups || !principalId) {
+            const bearerToken = extractBearerToken(event.headers ?? undefined);
+            if (bearerToken) {
+                const payload = decodeJwtPayload(bearerToken);
+                const subject = typeof payload?.sub === 'string' ? payload.sub : undefined;
+                const issuer = typeof payload?.iss === 'string' ? payload.iss : undefined;
+
+                if (!username) {
+                    username =
+                        (typeof payload?.['cognito:username'] === 'string'
+                            ? payload?.['cognito:username']
+                            : undefined) ??
+                        (typeof payload?.username === 'string' ? payload?.username : undefined) ??
+                        subject;
+                }
+
+                if (!groups) {
+                    groups = normalizeGroups(payload?.['cognito:groups'] ?? payload?.groups);
+                }
+
+                if (!principalId && issuer && subject) {
+                    const issuerParts = issuer.split('/').filter(Boolean);
+                    const issuerId = issuerParts.length > 0 ? issuerParts[issuerParts.length - 1] : 'unknown';
+                    principalId = `${issuerId}|${subject}`;
+                }
+            }
+        }
 
         if (username) {
             requestHeaders['x-auth-username'] = username;

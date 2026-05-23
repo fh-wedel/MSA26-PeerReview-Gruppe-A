@@ -35,7 +35,7 @@ const authStack = new AuthStack(app, 'TemplateAuthStack', {
 const apiStack = new ApiStack(app, 'TemplateApiStack', {
   env,
   apiName: 'TemplateServiceAPI',
-  description: 'API Gateway for Template project',
+  description: 'API Gateway for Template service',
   targetServiceName: serviceNameContext,
   targetPort: containerPort,
   openApiSpecPath: '../src/main/resources/openapi/template.json',

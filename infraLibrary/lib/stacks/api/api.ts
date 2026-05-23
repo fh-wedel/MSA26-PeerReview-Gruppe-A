@@ -316,7 +316,7 @@ export class ApiStack extends cdk.Stack {
             }
         }
 
-        const api = new apigateway.SpecRestApi(this, 'SpecRestApi', {
+        const api = new apigateway.SpecRestApi(this, 'SpecRestOpenApi', {
             restApiName: name,
             description: description,
             apiDefinition: apigateway.ApiDefinition.fromInline(specObj),
