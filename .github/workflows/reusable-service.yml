@@ -77,6 +77,10 @@ jobs:
         run: npm ci
         working-directory: ${{ inputs.infra_path }}
 
+      - name: Install esbuild globally
+        if: inputs.run_infra
+        run: npm install -g esbuild
+
       - name: Infra tests
         if: inputs.run_infra
         run: npm run test -- --runInBand --workerIdleMemoryLimit=512MB
@@ -165,6 +169,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
         working-directory: ${{ inputs.infra_path }}
+
+      - name: Install esbuild globally
+        run: npm install -g esbuild
 
       - name: Install infraLibrary dependencies
         run: npm ci --prefix ../../infraLibrary

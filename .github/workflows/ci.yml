@@ -100,6 +100,8 @@ jobs:
       - name: Install infraLibrary dependencies
         run: npm ci
         working-directory: infraLibrary
+      - name: Install esbuild globally
+        run: npm install -g esbuild
       - name: Run tests
         run: npm run test -- --runInBand --workerIdleMemoryLimit=512MB
         working-directory: infrabaseline
@@ -137,6 +139,8 @@ jobs:
       - name: Install infraLibrary dependencies
         run: npm ci
         working-directory: infraLibrary
+      - name: Install esbuild globally
+        run: npm install -g esbuild
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
