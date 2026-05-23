@@ -169,7 +169,7 @@ jobs:
       ecr_repository: fh-wedel/template
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
-      run_docker: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
@@ -189,7 +189,7 @@ jobs:
       ecr_repository: fh-wedel/web-ui
       run_maven: false
       run_infra: ${{ needs.changes.outputs.web_ui_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
-      run_docker: ${{ needs.changes.outputs.web_ui_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.web_ui_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
