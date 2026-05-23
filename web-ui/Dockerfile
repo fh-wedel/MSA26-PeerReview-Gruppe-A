@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm install
 
 # 2. Copy only the necessary configuration files and source code
-COPY index.html vite.config.ts tsconfig.json tsconfig.*.json eslint.config.js ./
+COPY index.html vite.config.ts tsconfig.json tsconfig.*.json eslint.config.js .env ./
 COPY src ./src
 COPY public ./public
 
