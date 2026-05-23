@@ -2,6 +2,7 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { ServiceStack } from '../lib/service-stack';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import { ApiStack } from '../../../infraLibrary/lib/stacks/api/api';
 
 const app = new cdk.App();
 
@@ -20,15 +21,26 @@ if (!serviceNameContext) {
 
 const containerPort = 80;
 
-new ServiceStack(app, 'WebUiServiceStack', {
+const apiStack = new ApiStack(app, 'WebUiApiStack', {
+  env,
+  apiName: 'WebUiServiceAPI',
+  description: 'API Gateway for Web UI service',
+  targetServiceName: serviceNameContext,
+  targetPort: containerPort,
+  enableGreedyProxy: true,
+});
+
+const serviceStack = new ServiceStack(app, 'WebUiServiceStack', {
   env,
   serviceName: serviceNameContext,
   imageVersion: imageTag,
   description: 'ECS Fargate service for the PeerReview Web UI (React/Vite, served by Nginx).',
-  enablePublicIpV4: true,
+  enablePublicIpV4: false,
   containerPort: containerPort,
   minTaskCount: 1,
   maxTaskCount: 2,
   memory: 512,
   cpu: 256,
 });
+
+serviceStack.addDependency(apiStack);

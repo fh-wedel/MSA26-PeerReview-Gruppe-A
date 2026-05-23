@@ -93,6 +93,13 @@ export class ServiceStack extends cdk.Stack {
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
     }
 
+    const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
+    const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
+    ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
+
+    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+    const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
+
     const ecsService = new ecs.FargateService(this, 'FargateService', {
       serviceName: props.serviceName + '-service',
       cluster: ecsCluster,
@@ -107,6 +114,13 @@ export class ServiceStack extends cdk.Stack {
       minHealthyPercent: 50,
       maxHealthyPercent: 200,
     });
+
+    const cfnService = ecsService.node.defaultChild as ecs.CfnService;
+    cfnService.serviceRegistries = [
+      {
+        registryArn: sdService.attrArn,
+      },
+    ];
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 

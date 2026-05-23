@@ -1,5 +1,32 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
+/**
+ * Content types that should be treated as text (not base64-encoded).
+ * Everything else is considered binary and will be base64-encoded in the
+ * API Gateway response.
+ */
+const TEXT_CONTENT_TYPE_PATTERNS = [
+    'text/',
+    'application/json',
+    'application/xml',
+    'application/javascript',
+    'application/x-javascript',
+    'application/ecmascript',
+    'application/x-httpd-php',
+    'application/xhtml+xml',
+    'application/ld+json',
+    'application/manifest+json',
+    'image/svg+xml',
+];
+
+function isBinaryContentType(contentType: string | null): boolean {
+    if (!contentType) {
+        return false;
+    }
+    const lower = contentType.toLowerCase();
+    return !TEXT_CONTENT_TYPE_PATTERNS.some(pattern => lower.includes(pattern));
+}
+
 function extractBearerToken(headers?: Record<string, string | undefined>) {
     if (!headers) {
         return undefined;
@@ -128,9 +155,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
 
         const response = await fetch(targetUrl, options);
-        const responseBody = await response.text();
+        const contentType = response.headers.get('content-type');
+        const binary = isBinaryContentType(contentType);
 
-        console.log(`Proxied request to ${targetUrl} with method ${event.httpMethod}. Received status ${response.status}`);
+        let responseBody: string;
+        if (binary) {
+            const arrayBuffer = await response.arrayBuffer();
+            responseBody = Buffer.from(arrayBuffer).toString('base64');
+        } else {
+            responseBody = await response.text();
+        }
+
+        console.log(`Proxied request to ${targetUrl} with method ${event.httpMethod}. Received status ${response.status} (binary=${binary})`);
 
         const responseHeaders: Record<string, string> = {};
         response.headers.forEach((value, key) => {
@@ -141,6 +177,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             statusCode: response.status,
             headers: responseHeaders,
             body: responseBody,
+            isBase64Encoded: binary,
         };
 
     }

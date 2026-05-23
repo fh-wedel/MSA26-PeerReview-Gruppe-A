@@ -82,6 +82,15 @@ export interface ApiStackProps extends cdk.StackProps {
      * Optional configuration for a Verified Permissions lambda authorizer.
      */
     authorizerConfig?: VerifiedPermissionsAuthorizerProps;
+
+    /**
+     * If true, a greedy `{proxy+}` catch-all resource will be added so that
+     * ALL URL paths are forwarded to the Lambda proxy. This is essential for
+     * serving static frontends (HTML/CSS/JS assets) or any service where
+     * sub-paths are not individually defined in an OpenAPI spec.
+     * @default false
+     */
+    enableGreedyProxy?: boolean;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -142,6 +151,7 @@ export class ApiStack extends cdk.Stack {
                     types: [apigateway.EndpointType.REGIONAL],
                     ipAddressType: apigateway.IpAddressType.DUAL_STACK
                 },
+                binaryMediaTypes: ['*/*'],
                 deploy: true,
             });
         }
@@ -250,6 +260,11 @@ export class ApiStack extends cdk.Stack {
 
         api.root.addMethod('ANY', integration, methodOptions);
 
+        if (props.enableGreedyProxy) {
+            const proxyResource = api.root.addResource('{proxy+}');
+            proxyResource.addMethod('ANY', integration, methodOptions);
+        }
+
         new CfnOutput(this, 'ApiUrl', {
             value: api.url,
             description: `URL of the API endpoint for ${props.apiName}`,
@@ -324,6 +339,7 @@ export class ApiStack extends cdk.Stack {
                 types: [apigateway.EndpointType.REGIONAL],
                 ipAddressType: apigateway.IpAddressType.DUAL_STACK
             },
+            binaryMediaTypes: ['*/*'],
             deploy: true,
             deployOptions: {
                 stageName: 'prod',
