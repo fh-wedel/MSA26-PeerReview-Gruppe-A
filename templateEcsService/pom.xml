@@ -8,7 +8,7 @@
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.0.6</version>
     </parent>
-    <groupId>de.fh-wedel</groupId>
+    <groupId>com.fh-wedel</groupId>
     <artifactId>template</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
