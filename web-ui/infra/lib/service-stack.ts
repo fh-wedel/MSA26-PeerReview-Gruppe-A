@@ -70,7 +70,7 @@ export class ServiceStack extends cdk.Stack {
       },
       // Nginx health check: request the root path; exit 1 on failure
       healthCheck: {
-        command: ['CMD-SHELL', `wget -qO- http://localhost:${containerPort}/ || exit 1`],
+        command: ['CMD-SHELL', `wget -qO- http://127.0.0.1:${containerPort}/ || exit 1`],
         interval: cdk.Duration.seconds(15),
         timeout: cdk.Duration.seconds(5),
         retries: 5,
