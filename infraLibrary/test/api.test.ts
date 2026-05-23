@@ -95,8 +95,8 @@ test('ApiStack creates Verified Permissions authorizer when configured', () => {
     const template = Template.fromStack(stack);
 
     template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
-    template.resourceCountIs('Custom::ApiGatewayAuthorizerPatch', 1);
-    template.resourceCountIs('AWS::Lambda::Function', 3);
+    template.resourceCountIs('Custom::ApiGatewayAuthorizerPatch', 0);
+    template.resourceCountIs('AWS::Lambda::Function', 2);
 });
 
 test('ApiStack applies OpenAPI base path and integrations', () => {
