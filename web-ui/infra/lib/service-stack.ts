@@ -137,11 +137,14 @@ export class ServiceStack extends cdk.Stack {
 
     // Custom Resource to dynamically update the Cognito App Client with the generated API Gateway URL
     const updateCognitoClientLambda = new lambda_nodejs.NodejsFunction(this, 'UpdateCognitoClientLambda', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      functionName: `${AWSConstants.COGNITO_USER_POOL_NAME.toLowerCase()}-update-cognito-client`,
+      description: `Custom Resource to dynamically update the Cognito App Client ${AWSConstants.COGNITO_APP_CLIENT_NAME} with the generated API Gateway URL ${apiGatewayUrl}.`,
+      runtime: lambda.Runtime.NODEJS_24_X,
       entry: path.join(__dirname, 'update-cognito-client.ts'),
       handler: 'handler',
       bundling: {
         format: lambda_nodejs.OutputFormat.CJS,
+        target: 'node24'
       },
       environment: {
         USER_POOL_ID: userPoolId,
@@ -149,7 +152,7 @@ export class ServiceStack extends cdk.Stack {
         CLIENT_NAME: AWSConstants.COGNITO_APP_CLIENT_NAME,
         API_GATEWAY_URL: apiGatewayUrl,
       },
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(10),
       memorySize: 256,
     });
 
