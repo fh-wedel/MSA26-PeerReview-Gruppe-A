@@ -180,11 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionStorage.removeItem('access_token');
     sessionStorage.removeItem('refresh_token');
     setUser(null);
-
-    if (CLIENT_ID && COGNITO_DOMAIN) {
-      const logoutUrl = `https://${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(REDIRECT_URI)}`;
-      window.location.href = logoutUrl;
-    }
+    window.location.href = REDIRECT_URI;
   };
 
   return (
