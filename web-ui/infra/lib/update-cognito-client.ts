@@ -1,4 +1,4 @@
-import { CognitoIdentityProviderClient, UpdateUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient, UpdateUserPoolClientCommand, DescribeUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
 import type { CloudFormationCustomResourceEvent, Context } from 'aws-lambda';
 
 const cognito = new CognitoIdentityProviderClient({});
@@ -44,27 +44,48 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
   const userPoolId = process.env.USER_POOL_ID;
   const clientId = process.env.CLIENT_ID;
   const clientName = process.env.CLIENT_NAME;
-  const apiGatewayUrl = process.env.API_GATEWAY_URL;
+  const webUrl = process.env.WEB_URL;
 
-  if (!userPoolId || !clientId || !clientName || !apiGatewayUrl) {
+  if (!userPoolId || !clientId || !clientName || !webUrl) {
     await sendResponse(event, context, 'FAILED', { Message: 'Missing required environment variables' });
     return;
   }
 
   try {
-    const command = new UpdateUserPoolClientCommand({
+    const describeCommand = new DescribeUserPoolClientCommand({
+      UserPoolId: userPoolId,
+      ClientId: clientId,
+    });
+    const { UserPoolClient } = await cognito.send(describeCommand);
+
+    if (!UserPoolClient) {
+      throw new Error('UserPoolClient not found');
+    }
+
+    const updateCommand = new UpdateUserPoolClientCommand({
+      ...UserPoolClient,
       UserPoolId: userPoolId,
       ClientId: clientId,
       ClientName: clientName,
+      CallbackURLs: [webUrl, `${webUrl}/`],
+      LogoutURLs: [webUrl, `${webUrl}/`],
+      AllowedOAuthFlowsUserPoolClient: true,
       SupportedIdentityProviders: ['COGNITO'],
       AllowedOAuthFlows: ['code'],
       AllowedOAuthScopes: ['openid', 'email'],
-      AllowedOAuthFlowsUserPoolClient: true,
-      CallbackURLs: [apiGatewayUrl, 'http://localhost:5173/prod/'],
-      LogoutURLs: [apiGatewayUrl, 'http://localhost:5173/prod/'],
+      ExplicitAuthFlows: [
+        'ALLOW_USER_PASSWORD_AUTH',
+        'ALLOW_USER_SRP_AUTH',
+        'ALLOW_REFRESH_TOKEN_AUTH'
+      ],
     });
 
-    await cognito.send(command);
+    // Remove read-only properties returned by DescribeUserPoolClient that cause Update to fail
+    delete (updateCommand.input as any).CreationDate;
+    delete (updateCommand.input as any).LastModifiedDate;
+    delete (updateCommand.input as any).ClientSecret;
+
+    await cognito.send(updateCommand);
 
     await sendResponse(event, context, 'SUCCESS', { Message: 'Successfully updated User Pool Client' });
   } catch (error) {

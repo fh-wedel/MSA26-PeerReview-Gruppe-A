@@ -97,4 +97,22 @@ export class ImportedRessources {
             namespaceArn: this.getCloudMapNamespaceArn(),
         });
     }
-}
+
+    /**
+     * Returns the regional domain name (hostname only) of the API Gateway for the given API name.
+     * This is the value exported by ApiStack as `<apiName>:ApiDomainName`.
+     * Used by CloudFront as the origin domain.
+     */
+    public static getApiDomainName(apiName: string): string {
+        return cdk.Fn.importValue(`${apiName}:ApiDomainName`);
+    }
+
+    /**
+     * Returns the deployment stage name of the API Gateway for the given API name.
+     * This is the value exported by ApiStack as `<apiName>:ApiStageName`.
+     * Used by CloudFront as the origin path prefix (e.g. '/prod').
+     */
+    public static getApiStageName(apiName: string): string {
+        return cdk.Fn.importValue(`${apiName}:ApiStageName`);
+    }
+}

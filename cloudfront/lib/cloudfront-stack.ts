@@ -1,0 +1,177 @@
+import * as cdk from 'aws-cdk-lib/core';
+import { Construct } from 'constructs';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import { CfnOutput } from 'aws-cdk-lib/core';
+import { ImportedRessources } from '../../infraLibrary/lib/importedRessources';
+
+
+/**
+ * Describes a backend microservice API that should be reachable through CloudFront.
+ *
+ * CloudFront will create a dedicated behavior for the given pathPattern
+ * and route matching requests to the API Gateway identified by apiName.
+ */
+export interface ApiServiceOriginProps {
+    /**
+     * The API name used when the ApiStack was deployed (matches the `apiName` prop).
+     * This is used to look up the exported domain name and stage name via CloudFormation imports.
+     *
+     * Example: 'SubmissionServiceAPI'
+     */
+    apiName: string;
+
+    /**
+     * CloudFront path pattern for this service (must include a wildcard).
+     * All requests matching this pattern are forwarded to the service's API Gateway.
+     *
+     * Example: '/api/submission/*'
+     *
+     * Convention: always use the prefix  /api/<service-short-name>/*
+     * The backend service's OpenAPI spec must set  servers: [{url: '/api/<service-short-name>'}]
+     * so that API Gateway routes include this prefix and match the forwarded path.
+     */
+    pathPattern: string;
+}
+
+export interface CloudFrontStackProps extends cdk.StackProps {
+    /**
+     * The API name of the Web UI service. Its API Gateway will be the CloudFront default origin,
+     * meaning ALL requests that do not match a more-specific apiServices path pattern will be
+     * forwarded here (including '/', '/index.html', '/assets/*' etc.).
+     *
+     * Example: 'WebUiServiceAPI'
+     */
+    webUiApiName: string;
+
+    /**
+     * List of backend microservice APIs to expose under /api/<service>/*.
+     * Each entry creates a CloudFront cache behavior with the given pathPattern
+     * forwarding to the respective API Gateway.
+     *
+     * When a new service is deployed, add an entry here and re-deploy this stack.
+     */
+    apiServices: ApiServiceOriginProps[];
+}
+
+/**
+ * Creates a CloudFront distribution that acts as the single stable entry point for the
+ * entire PeerReview system.
+ *
+ * URL structure:
+ *   https://<dist>.cloudfront.net/              → Web UI (default behavior)
+ *   https://<dist>.cloudfront.net/api/<svc>/*   → Backend microservice API (per-service behavior)
+ *
+ * How path forwarding works:
+ *   CloudFront forwards the full request URI to the origin.
+ *   Each API Gateway origin uses originPath = '/<stageName>' so that CloudFront
+ *   prepends the stage path before forwarding. The result:
+ *
+ *     Request:  GET /api/submission/documents
+ *     Forwarded: GET /prod/api/submission/documents  (origin = submission-apigw, originPath = /prod)
+ *
+ *   The backend service's OpenAPI spec sets servers[0].url = '/api/submission' which causes
+ *   api.ts to register the route  /api/submission/documents  on the API Gateway — this matches.
+ *
+ * Caching:
+ *   All behaviors use CachingDisabled to ensure every request reaches the origin.
+ *   Enable caching for the Web UI's static assets if desired by updating the default behavior.
+ *
+ * CORS:
+ *   Since the Web UI and all APIs share the same CloudFront domain, there are no cross-origin
+ *   requests from the browser perspective. No CORS headers are required.
+ */
+export class CloudFrontStack extends cdk.Stack {
+    /** The CloudFront distribution domain name (e.g. xxxx.cloudfront.net). */
+    public readonly distributionDomainName: string;
+
+    constructor(scope: Construct, id: string, props: CloudFrontStackProps) {
+        super(scope, id, props);
+
+        // ── Web UI origin (default / fallback) ────────────────────────────────────
+        const webUiDomainName = ImportedRessources.getApiDomainName(props.webUiApiName);
+        const webUiStageName  = ImportedRessources.getApiStageName(props.webUiApiName);
+
+        const webUiOrigin = new origins.HttpOrigin(webUiDomainName, {
+            // Prepend the stage name so CloudFront forwards /prod/<path> to API Gateway.
+            originPath: cdk.Fn.join('', ['/', webUiStageName]),
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            // API Gateway requires HTTPS; keep the default read/connect timeouts.
+        });
+
+        // ── Cache and Origin Request Policies ─────────────────────────────────────
+        // We use managed policies for API Gateway origins:
+        // 1. CACHING_DISABLED: We don't want CloudFront to cache API responses.
+        // 2. ALL_VIEWER_EXCEPT_HOST_HEADER: Forwards all headers (including Authorization),
+        //    query strings, and cookies to API Gateway, except the Host header (which
+        //    CloudFront replaces with the origin's domain).
+        const cachePolicy = cloudfront.CachePolicy.CACHING_DISABLED;
+        const originRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
+
+        // ── Default cache behavior (Web UI) ───────────────────────────────────────
+        const defaultBehavior: cloudfront.BehaviorOptions = {
+            origin: webUiOrigin,
+            cachePolicy,
+            originRequestPolicy,
+            // The Web UI only needs GET/HEAD for static assets, but the API Gateway's
+            // greedy proxy also handles POST/OPTIONS (e.g. Cognito redirects, preflight).
+            allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+            cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+            viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            compress: true,
+        };
+
+        // ── Per-service API behaviors ─────────────────────────────────────────────
+        const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {};
+
+        for (const service of props.apiServices) {
+            const svcDomainName = ImportedRessources.getApiDomainName(service.apiName);
+            const svcStageName  = ImportedRessources.getApiStageName(service.apiName);
+
+            const svcOrigin = new origins.HttpOrigin(svcDomainName, {
+                originPath: cdk.Fn.join('', ['/', svcStageName]),
+                protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            });
+
+            additionalBehaviors[service.pathPattern] = {
+                origin: svcOrigin,
+                cachePolicy,
+                originRequestPolicy,
+                // APIs need all HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD).
+                allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+                cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                compress: false,
+            };
+        }
+
+        // ── CloudFront Distribution ───────────────────────────────────────────────
+        const distribution = new cloudfront.Distribution(this, 'PeerReviewDistribution', {
+            comment: 'PeerReview system — single entry point for Web UI and all microservice APIs',
+            defaultBehavior,
+            additionalBehaviors,
+            // Use the default CloudFront certificate (*.cloudfront.net) — no custom domain needed.
+            // HTTP requests are automatically redirected to HTTPS by viewerProtocolPolicy above.
+            httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
+            // eu-north-1 is in Price Class 100 (Europe + North America).
+            // Use ALL if you need global coverage (higher cost).
+            priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+            minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+        });
+
+        this.distributionDomainName = distribution.distributionDomainName;
+
+        // ── Outputs ───────────────────────────────────────────────────────────────
+        new CfnOutput(this, 'CloudFrontDomainName', {
+            value: distribution.distributionDomainName,
+            description: 'Stable HTTPS entry point for the PeerReview system (Web UI + all APIs)',
+            exportName: 'Baseline:CloudFrontDomainName',
+        });
+
+        new CfnOutput(this, 'CloudFrontDistributionId', {
+            value: distribution.distributionId,
+            description: 'CloudFront distribution ID (useful for cache invalidations)',
+            exportName: 'Baseline:CloudFrontDistributionId',
+        });
+    }
+}

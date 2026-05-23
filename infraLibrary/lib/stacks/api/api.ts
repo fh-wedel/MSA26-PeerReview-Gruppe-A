@@ -234,6 +234,21 @@ export class ApiStack extends cdk.Stack {
             exportName: `:${props.apiName}:ApiUrl`,
         });
 
+        // Domain name (hostname only, no protocol or stage path) used by CloudFront as the origin domain.
+        // Constructed from restApiId so it is a safe CloudFormation token — no string manipulation on the URL.
+        new CfnOutput(this, 'ApiDomainName', {
+            value: `${api.restApiId}.execute-api.${AWSConstants.AWS_REGION}.amazonaws.com`,
+            description: `Regional domain name of the API Gateway for ${props.apiName}`,
+            exportName: `${props.apiName}:ApiDomainName`,
+        });
+
+        // Stage name used by CloudFront as the originPath prefix (e.g. '/prod').
+        new CfnOutput(this, 'ApiStageName', {
+            value: api.deploymentStage.stageName,
+            description: `Deployment stage name of the API Gateway for ${props.apiName}`,
+            exportName: `${props.apiName}:ApiStageName`,
+        });
+
         new CfnOutput(this, 'ProxyLambdaSecurityGroupId', {
             value: lambdaSg.securityGroupId,
             description: `Security group ID of the proxy Lambda function for ${props.apiName}`,
