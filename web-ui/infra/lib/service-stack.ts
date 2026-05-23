@@ -162,7 +162,7 @@ export class ServiceStack extends cdk.Stack {
 
     updateCognitoClientLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['cognito-idp:UpdateUserPoolClient'],
+        actions: ['cognito-idp:UpdateUserPoolClient', 'cognito-idp:DescribeUserPoolClient'],
         resources: [
           `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${userPoolId}`,
         ],
@@ -180,6 +180,7 @@ export class ServiceStack extends cdk.Stack {
         UserPoolId: userPoolId,
         ClientId: appClientId,
         WebUrl: webUrl,
+        Timestamp: Date.now().toString(), // Force execution on every deploy to ensure client is updated
       },
     });
 
