@@ -30,7 +30,7 @@ export const useAuth = () => useContext(AuthContext);
 
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
 const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN || '';
-const REDIRECT_URI = window.location.origin + window.location.pathname;
+const REDIRECT_URI = window.location.origin + import.meta.env.BASE_URL;
 
 function decodeJwt(token: string): any {
   try {

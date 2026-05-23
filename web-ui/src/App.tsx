@@ -14,7 +14,7 @@ import { Assignments } from './pages/Assignments';
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/prod/">
       <CustomThemeProvider>
         <AuthProvider>
           <Routes>
