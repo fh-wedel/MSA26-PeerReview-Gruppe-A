@@ -5,7 +5,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'STUDENT' | 'REVIEWER' | 'ADMIN';
+  roles: string[];
 }
 
 interface AuthContextType {
@@ -21,9 +21,9 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   user: null,
   loading: true,
-  login: async () => {},
-  signup: async () => {},
-  logout: () => {},
+  login: async () => { },
+  signup: async () => { },
+  logout: () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -54,18 +54,13 @@ function parseTokenToUser(token: string): User | null {
   if (!decoded) return null;
 
   const groups = decoded['cognito:groups'] || [];
-  let role: 'STUDENT' | 'REVIEWER' | 'ADMIN' = 'STUDENT';
-  if (groups.includes('ADMIN')) {
-    role = 'ADMIN';
-  } else if (groups.includes('REVIEWER')) {
-    role = 'REVIEWER';
-  }
+  const roles = groups.length > 0 ? groups : ['Guest'];
 
   return {
     id: decoded.sub || '',
     name: decoded.name || decoded.email || decoded['cognito:username'] || 'User',
     email: decoded.email || '',
-    role: role,
+    roles: roles,
   };
 }
 
@@ -120,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (codeVerifier) {
           try {
             const tokens = await exchangeCodeForTokens(code, codeVerifier);
-            
+
             // Store tokens in sessionStorage
             sessionStorage.setItem('id_token', tokens.id_token);
             sessionStorage.setItem('access_token', tokens.access_token);
