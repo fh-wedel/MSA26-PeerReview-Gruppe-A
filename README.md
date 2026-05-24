@@ -16,7 +16,7 @@ PeerReview: Ein System zum gegenseitigen Begutachten von wissenschaftlichen Arbe
 docker compose up --build
 ```
 
-- **Frontend (Web UI)**: [http://localhost:5173/prod/](http://localhost:5173/prod/)
+- **Frontend (Web UI)**: [http://localhost:5173](http://localhost:5173)
 
 
 # AWS Infrastructure
