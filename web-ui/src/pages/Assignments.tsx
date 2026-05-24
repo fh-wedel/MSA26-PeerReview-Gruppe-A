@@ -1,58 +1,63 @@
 import React from 'react';
 import { Box, Typography, Paper, List, ListItem, ListItemButton, ListItemText, Chip } from '@mui/material';
-
-const mockAssignments = [
-  {
-    id: 'assignment-1',
-    title: 'Review: Architecture Patterns in Microservices',
-    dateText: 'Due: Oct 20, 2023',
-    statusLabel: 'Pending',
-    statusColor: 'error' as const,
-    actionLabel: 'Start Review',
-    actionColor: 'default' as const,
-  },
-  {
-    id: 'assignment-2',
-    title: 'Review: Serverless Computing Benefits',
-    dateText: 'Completed: Oct 01, 2023',
-    statusLabel: 'Completed',
-    statusColor: 'success' as const,
-    actionLabel: 'View Feedback',
-    actionColor: 'default' as const,
-  },
-];
+import { useNavigate } from 'react-router-dom';
+import { mockSubmissions } from '../stubs/submissions';
+import { formatDateTime } from '../utils/date';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Assignments: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const currentUserId = user?.id ?? 'current_user';
+  const roles = (user?.roles || []).map(r => r.toLowerCase());
+  
+  const isAdminOrExaminer = roles.includes('admin') || roles.includes('examinationofficer');
+
+  const myAssignments = isAdminOrExaminer 
+    ? mockSubmissions 
+    : mockSubmissions.filter(s => s.reviewerId === currentUserId);
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        My Assignments
+        Assignments
       </Typography>
       <Paper sx={{ mt: 3 }}>
-        <List>
-          {mockAssignments.map((assignment, index) => (
-            <ListItem key={assignment.id} disablePadding divider={index < mockAssignments.length - 1}>
-              <ListItemButton>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: 2,
-                    width: '100%',
-                  }}
-                >
-                  <Box>
-                    <ListItemText primary={assignment.title} secondary={assignment.dateText} />
-                    <Chip label={assignment.statusLabel} color={assignment.statusColor} size="small" sx={{ mt: 1 }} />
+        {myAssignments.length === 0 ? (
+          <Box sx={{ p: 3 }}>
+            <Typography color="text.secondary">You have no assignments at the moment.</Typography>
+          </Box>
+        ) : (
+          <List>
+            {myAssignments.map((assignment, index) => (
+              <ListItem key={assignment.id} disablePadding divider={index < myAssignments.length - 1}>
+                <ListItemButton onClick={() => navigate(`/assignments/${assignment.id}`)}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'flex-start', sm: 'center' },
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: 2,
+                      width: '100%',
+                    }}
+                  >
+                    <ListItemText
+                      primary={assignment.title}
+                      secondary={`Submitted on: ${formatDateTime(assignment.createdAt, 'PPP')}`}
+                    />
+                    <Chip
+                      label={assignment.status}
+                      color={assignment.status === 'Published' ? 'success' : assignment.status === 'Under Review' ? 'warning' : 'default'}
+                      size="small"
+                    />
                   </Box>
-                  <Chip label={assignment.actionLabel} color={assignment.actionColor} size="small" variant="outlined" />
-                </Box>
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        )}
       </Paper>
     </Box>
   );

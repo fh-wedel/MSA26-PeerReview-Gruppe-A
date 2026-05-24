@@ -46,7 +46,7 @@ export const Dashboard: React.FC = () => {
         <Box sx={{ flex: 2 }}>
           <Paper sx={{ p: 3, mb: 4 }}>
             <Typography variant="h6" gutterBottom>
-              Your Active Tasks
+              Your Active Assignments
             </Typography>
             <List>
               {mockDeadlines.map((deadline) => (

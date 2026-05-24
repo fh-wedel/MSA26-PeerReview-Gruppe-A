@@ -13,20 +13,39 @@ import {
   ListItemText,
   Paper,
   Typography,
+  Autocomplete,
+  TextField,
 } from '@mui/material';
 import { ArrowBack, PictureAsPdf } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { formatSubmissionReviewMode, getMockSubmissionById } from '../stubs/submissions';
+import type { SubmissionReviewMode } from '../stubs/submissions';
+import { mockUsers } from '../stubs/users';
+import type { MockUser } from '../stubs/users';
 import { formatDateTime } from '../utils/date';
+import { useAuth } from '../contexts/AuthContext';
 
 export const SubmissionDetails: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const { submissionId } = useParams<{ submissionId: string }>();
+  const { user } = useAuth();
   const [reviewOpen, setReviewOpen] = useState(false);
 
+  const isAssignmentsPage = location.pathname.startsWith('/assignments');
+  const backTarget = isAssignmentsPage ? '/assignments' : '/submissions';
+  const backText = isAssignmentsPage ? 'Back to Assignments' : 'Back to Submissions';
+
   const submission = submissionId ? getMockSubmissionById(submissionId) : undefined;
+
+  const [author, setAuthor] = useState<MockUser | null>(
+    submission ? mockUsers.find((u) => u.id === submission.authorId) || null : null
+  );
+  const [reviewer, setReviewer] = useState<MockUser | null>(
+    submission ? mockUsers.find((u) => u.id === submission.reviewerId) || null : null
+  );
 
   if (!submission) {
     return (
@@ -37,12 +56,28 @@ export const SubmissionDetails: React.FC = () => {
         <Typography color="text.secondary" sx={{ mb: 3 }}>
           We could not find the submission you were looking for.
         </Typography>
-        <Button variant="contained" onClick={() => navigate('/submissions')}>
-          Back to My Submissions
+        <Button variant="contained" onClick={() => navigate(backTarget)}>
+          {backText}
         </Button>
       </Box>
     );
   }
+
+  const isPrivileged =
+    user?.roles?.some((role) => {
+      const r = role.toLowerCase();
+      return r === 'admin' || r === 'examinationofficer';
+    }) ?? false;
+
+  const getVisibleName = (id: string | undefined, name: string | undefined, mode: SubmissionReviewMode) => {
+    if (isPrivileged) return name || 'Not assigned yet';
+    if (mode === 'open review') return name || 'Not assigned yet';
+    
+    if (!id) return 'Not assigned yet';
+    if (id === user?.id) return name;
+    
+    return 'Hidden due to blind review';
+  };
 
   const reviewAvailable = Boolean(submission.review);
   const documentUrl = submission.documentUrl;
@@ -55,9 +90,9 @@ export const SubmissionDetails: React.FC = () => {
         color="primary"
         startIcon={<ArrowBack />}
         sx={{ mb: 2 }}
-        onClick={() => navigate('/submissions')}
+        onClick={() => navigate(backTarget)}
       >
-        Back to My Submissions
+        {backText}
       </Button>
 
       <Paper sx={{ p: 3 }}>
@@ -80,36 +115,67 @@ export const SubmissionDetails: React.FC = () => {
               sx={{ mb: 3 }}
             />
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-              <Box sx={{ minWidth: 180 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 3, alignItems: 'flex-start' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Created
                 </Typography>
-                <Typography>{formatDateTime(submission.createdAt)}</Typography>
+                <Typography sx={{ py: 1 }}>{formatDateTime(submission.createdAt)}</Typography>
               </Box>
 
-              <Box sx={{ minWidth: 180 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Review Mode
                 </Typography>
-                <Typography>{formatSubmissionReviewMode(submission.reviewMode)}</Typography>
+                <Typography sx={{ py: 1 }}>{formatSubmissionReviewMode(submission.reviewMode)}</Typography>
               </Box>
 
-              <Box sx={{ minWidth: 180 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Current Status
                 </Typography>
-                <Typography>{submission.status}</Typography>
+                <Typography sx={{ py: 1 }}>{submission.status}</Typography>
               </Box>
 
-              {submission.reviewMode === 'open review' && (
-                <Box sx={{ minWidth: 180 }}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Reviewer
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Author
+                </Typography>
+                {isPrivileged ? (
+                  <Autocomplete
+                    options={mockUsers}
+                    getOptionLabel={(option) => option.name}
+                    value={author}
+                    onChange={(_e, newValue) => setAuthor(newValue)}
+                    renderInput={(params) => <TextField {...params} size="small" />}
+                    sx={{ width: '100%' }}
+                  />
+                ) : (
+                  <Typography sx={{ py: 1 }}>
+                    {getVisibleName(author?.id || submission.authorId, author?.name || submission.authorName, submission.reviewMode)}
                   </Typography>
-                  <Typography>{submission.reviewerName ?? 'Not assigned yet'}</Typography>
-                </Box>
-              )}
+                )}
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Reviewer
+                </Typography>
+                {isPrivileged ? (
+                  <Autocomplete
+                    options={mockUsers}
+                    getOptionLabel={(option) => option.name}
+                    value={reviewer}
+                    onChange={(_e, newValue) => setReviewer(newValue)}
+                    renderInput={(params) => <TextField {...params} size="small" />}
+                    sx={{ width: '100%' }}
+                  />
+                ) : (
+                  <Typography sx={{ py: 1 }}>
+                    {getVisibleName(reviewer?.id || submission.reviewerId, reviewer?.name || submission.reviewerName, submission.reviewMode)}
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </Box>
 
@@ -225,7 +291,7 @@ export const SubmissionDetails: React.FC = () => {
                     </Box>
                   ))}
                 </Box>
-              </Box>
+               </Box>
             </Box>
           )}
         </DialogContent>

@@ -8,9 +8,9 @@ import { GuestHome } from './pages/GuestHome';
 import { SignIn } from './pages/SignIn';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
-import { MySubmissions } from './pages/MySubmissions';
-import { SubmissionDetails } from './pages/SubmissionDetails';
 import { Assignments } from './pages/Assignments';
+import { Submissions } from './pages/Submissions';
+import { SubmissionDetails } from './pages/SubmissionDetails';
 
 export const App: React.FC = () => {
   return (
@@ -26,9 +26,10 @@ export const App: React.FC = () => {
             
             <Route element={<AuthLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/submissions" element={<MySubmissions />} />
-              <Route path="/submissions/:submissionId" element={<SubmissionDetails />} />
               <Route path="/assignments" element={<Assignments />} />
+              <Route path="/assignments/:submissionId" element={<SubmissionDetails />} />
+              <Route path="/submissions" element={<Submissions />} />
+              <Route path="/submissions/:submissionId" element={<SubmissionDetails />} />
             </Route>
           </Routes>
         </AuthProvider>

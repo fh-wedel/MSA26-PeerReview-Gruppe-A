@@ -30,6 +30,9 @@ export interface SubmissionDetail {
   documentUrl?: string;
   reviewMode: SubmissionReviewMode;
   status: SubmissionStatus;
+  authorId?: string;
+  authorName?: string;
+  reviewerId?: string;
   reviewerName?: string;
   history: SubmissionHistoryEntry[];
   review?: SubmissionReview;
@@ -57,6 +60,10 @@ export const mockSubmissions: SubmissionDetail[] = [
     documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
     reviewMode: 'double blind',
     status: 'Under Review',
+    authorId: 'u1',
+    authorName: 'Alice Smith',
+    reviewerId: 'current_user',
+    reviewerName: 'John Doe',
     history: [
       {
         id: 'submitted',
@@ -86,6 +93,9 @@ export const mockSubmissions: SubmissionDetail[] = [
     documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
     reviewMode: 'open review',
     status: 'Published',
+    authorId: 'u2',
+    authorName: 'Bob Johnson',
+    reviewerId: 'u3',
     reviewerName: 'Prof. Dr. Ada Sommer',
     history: [
       {
