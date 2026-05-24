@@ -6,3 +6,4 @@
 - **Submission routing coupling:** Submission detail navigation is split across `src/App.tsx`, `src/pages/MySubmissions.tsx`, and `src/components/Navbar.tsx`; when adding `/submissions/:submissionId`, the navbar must use `location.pathname.startsWith('/submissions')` or the active state breaks on detail pages.
 - **Canonical submission URLs:** Submission detail routes should use the backend-facing submission UUID directly, not a derived slug. Keep `src/stubs/submissions.ts`, list-page navigation, and detail-page lookup aligned on the same ID.
 - **Safe date rendering:** For submission timestamps, prefer `src/utils/date.ts` over raw `format(new Date(value))`; malformed or missing API values can otherwise throw during render.
+- **UI verification command:** `npm run lint` currently covers both `src/` and `infra/` and may fail on unrelated baseline lint debt; for scoped frontend changes, `npm run build` is the reliable regression check unless lint cleanup is in scope.

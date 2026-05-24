@@ -33,6 +33,14 @@ export const Navbar: React.FC = () => {
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.filter((m) => m.unread).length;
 
+  const displayMessages = [...messages]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5);
+
+  const displayNotifications = [...notifications]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
   const handleMarkAllNotificationsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
@@ -197,47 +205,50 @@ export const Navbar: React.FC = () => {
                     onClick={handleMarkAllMessagesRead} 
                     disabled={unreadMessages === 0}
                     startIcon={<DoneAll fontSize="small" />}
+                    sx={{ color: mode === 'dark' ? 'primary.light' : 'primary.main', fontWeight: 'bold' }}
                   >
                     Mark all read
                   </Button>
                 </Box>
                 <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
-                  {messages.length === 0 ? (
+                  {displayMessages.length === 0 ? (
                     <ListItem>
                       <ListItemText primary="No messages" sx={{ textAlign: 'center', color: 'text.secondary' }} />
                     </ListItem>
                   ) : (
-                    messages.map((msg, index) => (
+                    displayMessages.map((msg, index) => (
                       <React.Fragment key={msg.id}>
                         <ListItem disablePadding>
                           <ListItemButton alignItems="flex-start" onClick={() => handleMessageClick(msg)} sx={{ bgcolor: msg.unread ? 'action.hover' : 'transparent' }}>
                             <ListItemAvatar>
-                              <Avatar><AccountCircle /></Avatar>
+                              <Badge color="secondary" variant="dot" invisible={!msg.unread}>
+                                <Avatar><AccountCircle /></Avatar>
+                              </Badge>
                             </ListItemAvatar>
                             <ListItemText
                               primary={
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Typography variant="subtitle2">{msg.sender}</Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography variant="subtitle2" sx={{ fontWeight: msg.unread ? 'bold' : 'normal' }}>{msg.sender}</Typography>
+                                  <Typography variant="caption" color={msg.unread ? 'text.primary' : 'text.secondary'} sx={{ fontWeight: msg.unread ? 'bold' : 'normal' }}>
                                     {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
                                   </Typography>
                                 </Box>
                               }
                               secondary={
-                                <Typography variant="body2" color="text.secondary" noWrap>
+                                <Typography variant="body2" color={msg.unread ? 'text.primary' : 'text.secondary'} noWrap sx={{ fontWeight: msg.unread ? 500 : 400 }}>
                                   {msg.preview}
                                 </Typography>
                               }
                             />
                           </ListItemButton>
                         </ListItem>
-                        {index < messages.length - 1 && <Divider component="li" />}
+                        {index < displayMessages.length - 1 && <Divider component="li" />}
                       </React.Fragment>
                     ))
                   )}
                 </List>
                 <Divider />
-                <MenuItem onClick={handleViewAllMessages} sx={{ justifyContent: 'center', py: 1.5, color: 'primary.main' }}>
+                <MenuItem onClick={handleViewAllMessages} sx={{ justifyContent: 'center', py: 1.5, color: mode === 'dark' ? 'primary.light' : 'primary.main' }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>View all messages</Typography>
                 </MenuItem>
               </Menu>
@@ -260,43 +271,46 @@ export const Navbar: React.FC = () => {
                     onClick={handleMarkAllNotificationsRead} 
                     disabled={unreadNotifications === 0}
                     startIcon={<DoneAll fontSize="small" />}
+                    sx={{ color: mode === 'dark' ? 'primary.light' : 'primary.main', fontWeight: 'bold' }}
                   >
                     Mark all read
                   </Button>
                 </Box>
                 <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
-                  {notifications.length === 0 ? (
+                  {displayNotifications.length === 0 ? (
                     <ListItem>
                       <ListItemText primary="No notifications" sx={{ textAlign: 'center', color: 'text.secondary' }} />
                     </ListItem>
                   ) : (
-                    notifications.map((notif, index) => (
+                    displayNotifications.map((notif, index) => (
                       <React.Fragment key={notif.id}>
                         <ListItem disablePadding>
                           <ListItemButton alignItems="flex-start" onClick={() => handleNotificationClick(notif.id)} sx={{ bgcolor: !notif.read ? 'action.hover' : 'transparent' }}>
                             <ListItemAvatar>
-                              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                                {notif.title.includes('Review') ? <Assignment /> : <Description />}
-                              </Avatar>
+                              <Badge color="secondary" variant="dot" invisible={notif.read}>
+                                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                  {notif.title.includes('Review') ? <Assignment /> : <Description />}
+                                </Avatar>
+                              </Badge>
                             </ListItemAvatar>
                             <ListItemText
                               primary={
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Typography variant="subtitle2">{notif.title}</Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography variant="subtitle2" sx={{ fontWeight: !notif.read ? 'bold' : 'normal' }}>{notif.title}</Typography>
+                                  <Typography variant="caption" color={!notif.read ? 'text.primary' : 'text.secondary'} sx={{ fontWeight: !notif.read ? 'bold' : 'normal' }}>
                                     {formatDistanceToNow(new Date(notif.date), { addSuffix: true })}
                                   </Typography>
                                 </Box>
                               }
                               secondary={
-                                <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                <Typography variant="body2" color={!notif.read ? 'text.primary' : 'text.secondary'} sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: !notif.read ? 500 : 400 }}>
                                   {notif.message}
                                 </Typography>
                               }
                             />
                           </ListItemButton>
                         </ListItem>
-                        {index < notifications.length - 1 && <Divider component="li" />}
+                        {index < displayNotifications.length - 1 && <Divider component="li" />}
                       </React.Fragment>
                     ))
                   )}
