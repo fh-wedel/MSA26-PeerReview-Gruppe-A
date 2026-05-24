@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Box, Container, CircularProgress } from '@mui/material';
 import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
 
 export const AuthLayout: React.FC = () => {
@@ -25,6 +26,7 @@ export const AuthLayout: React.FC = () => {
       <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4, flex: 1 }}>
         <Outlet />
       </Container>
+      <Footer />
     </Box>
   );
 };
