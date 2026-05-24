@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
-import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description } from '@mui/icons-material';
+import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description, DoneAll } from '@mui/icons-material';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { mockNotifications } from '../stubs/notifications';
 import { mockMessages } from '../stubs/messages';
+import { mockChatThreads, mockUsers } from '../stubs/chats';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
+import { ChatModal } from './ChatModal';
 
 export const Navbar: React.FC = () => {
   const { themeMode, setThemeMode, mode } = useThemeContext();
@@ -20,8 +22,95 @@ export const Navbar: React.FC = () => {
   const [anchorElMessages, setAnchorElMessages] = useState<null | HTMLElement>(null);
   const [anchorElProfile, setAnchorElProfile] = useState<null | HTMLElement>(null);
 
-  const unreadNotifications = mockNotifications.filter((n) => !n.read).length;
-  const unreadMessages = mockMessages.filter((m) => m.unread).length;
+  // Local state for notifications and messages
+  const [notifications, setNotifications] = useState(mockNotifications);
+  const [messages, setMessages] = useState(mockMessages);
+  const [chatThreads, setChatThreads] = useState(mockChatThreads);
+
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+
+  const unreadNotifications = notifications.filter((n) => !n.read).length;
+  const unreadMessages = messages.filter((m) => m.unread).length;
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
+
+  const handleMarkAllMessagesRead = () => {
+    setMessages(messages.map(m => ({ ...m, unread: false })));
+  };
+
+  const handleNotificationClick = (id: string) => {
+    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    setAnchorElNotifications(null);
+  };
+
+  const handleMessageClick = (msg: typeof messages[0]) => {
+    setMessages(messages.map(m => m.id === msg.id ? { ...m, unread: false } : m));
+    setAnchorElMessages(null);
+    if (msg.threadId) {
+      setSelectedThreadId(msg.threadId);
+    } else {
+      setSelectedThreadId(null);
+    }
+    setIsChatModalOpen(true);
+  };
+
+  const handleViewAllMessages = () => {
+    setAnchorElMessages(null);
+    setSelectedThreadId(null);
+    setIsChatModalOpen(true);
+  };
+
+  const handleSendMessage = (threadId: string, text: string, msgFormat?: { bold?: boolean; italic?: boolean; underline?: boolean }) => {
+    const newMessage = {
+      id: `m${Date.now()}`,
+      senderId: user?.id ?? 'current_user',
+      text,
+      timestamp: new Date().toISOString(),
+      format: msgFormat
+    };
+    
+    setChatThreads(threads => threads.map(t => {
+      if (t.id === threadId) {
+        return {
+          ...t,
+          messages: [...t.messages, newMessage]
+        };
+      }
+      return t;
+    }));
+  };
+
+  const handleStartChat = (userId: string) => {
+    setChatThreads(prevThreads => {
+      // Check if thread with this user already exists
+      const existingThread = prevThreads.find(t => 
+        t.participants.length === 2 && 
+        t.participants.some(p => p.id === userId)
+      );
+
+      if (existingThread) {
+        setSelectedThreadId(existingThread.id);
+        return prevThreads;
+      } else {
+        // Create new thread
+        const targetUser = mockUsers.find(u => u.id === userId);
+        if (targetUser) {
+          const currentUserId = user?.id ?? 'current_user';
+          const newThread = {
+            id: `t${Date.now()}`,
+            participants: [{ id: currentUserId, name: user?.name ?? 'Me' }, targetUser],
+            messages: []
+          };
+          setSelectedThreadId(newThread.id);
+          return [newThread, ...prevThreads];
+        }
+        return prevThreads;
+      }
+    });
+  };
 
   return (
     <AppBar position="static" color="primary">
@@ -99,37 +188,58 @@ export const Navbar: React.FC = () => {
                 anchorEl={anchorElMessages}
                 open={Boolean(anchorElMessages)}
                 onClose={() => setAnchorElMessages(null)}
-                slotProps={{ paper: { sx: { width: 320, maxHeight: 400 } } }}
+                slotProps={{ paper: { sx: { width: 320, maxHeight: 400, display: 'flex', flexDirection: 'column' } } }}
               >
-                <List sx={{ p: 0 }}>
-                  {mockMessages.map((msg, index) => (
-                    <React.Fragment key={msg.id}>
-                      <ListItem disablePadding>
-                        <ListItemButton alignItems="flex-start" onClick={() => setAnchorElMessages(null)} sx={{ bgcolor: msg.unread ? 'action.hover' : 'transparent' }}>
-                          <ListItemAvatar>
-                            <Avatar><AccountCircle /></Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="subtitle2">{msg.sender}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Messages</Typography>
+                  <Button 
+                    size="small" 
+                    onClick={handleMarkAllMessagesRead} 
+                    disabled={unreadMessages === 0}
+                    startIcon={<DoneAll fontSize="small" />}
+                  >
+                    Mark all read
+                  </Button>
+                </Box>
+                <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
+                  {messages.length === 0 ? (
+                    <ListItem>
+                      <ListItemText primary="No messages" sx={{ textAlign: 'center', color: 'text.secondary' }} />
+                    </ListItem>
+                  ) : (
+                    messages.map((msg, index) => (
+                      <React.Fragment key={msg.id}>
+                        <ListItem disablePadding>
+                          <ListItemButton alignItems="flex-start" onClick={() => handleMessageClick(msg)} sx={{ bgcolor: msg.unread ? 'action.hover' : 'transparent' }}>
+                            <ListItemAvatar>
+                              <Avatar><AccountCircle /></Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <Typography variant="subtitle2">{msg.sender}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
+                                  </Typography>
+                                </Box>
+                              }
+                              secondary={
+                                <Typography variant="body2" color="text.secondary" noWrap>
+                                  {msg.preview}
                                 </Typography>
-                              </Box>
-                            }
-                            secondary={
-                              <Typography variant="body2" color="text.secondary" noWrap>
-                                {msg.preview}
-                              </Typography>
-                            }
-                          />
-                        </ListItemButton>
-                      </ListItem>
-                      {index < mockMessages.length - 1 && <Divider component="li" />}
-                    </React.Fragment>
-                  ))}
+                              }
+                            />
+                          </ListItemButton>
+                        </ListItem>
+                        {index < messages.length - 1 && <Divider component="li" />}
+                      </React.Fragment>
+                    ))
+                  )}
                 </List>
+                <Divider />
+                <MenuItem onClick={handleViewAllMessages} sx={{ justifyContent: 'center', py: 1.5, color: 'primary.main' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>View all messages</Typography>
+                </MenuItem>
               </Menu>
 
               <IconButton color="inherit" onClick={(e) => setAnchorElNotifications(e.currentTarget)}>
@@ -141,38 +251,55 @@ export const Navbar: React.FC = () => {
                 anchorEl={anchorElNotifications}
                 open={Boolean(anchorElNotifications)}
                 onClose={() => setAnchorElNotifications(null)}
-                slotProps={{ paper: { sx: { width: 320, maxHeight: 400 } } }}
+                slotProps={{ paper: { sx: { width: 320, maxHeight: 400, display: 'flex', flexDirection: 'column' } } }}
               >
-                <List sx={{ p: 0 }}>
-                  {mockNotifications.map((notif, index) => (
-                    <React.Fragment key={notif.id}>
-                      <ListItem disablePadding>
-                        <ListItemButton alignItems="flex-start" onClick={() => setAnchorElNotifications(null)} sx={{ bgcolor: !notif.read ? 'action.hover' : 'transparent' }}>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: 'primary.main' }}>
-                              {notif.title.includes('Review') ? <Assignment /> : <Description />}
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="subtitle2">{notif.title}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {formatDistanceToNow(new Date(notif.date), { addSuffix: true })}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Notifications</Typography>
+                  <Button 
+                    size="small" 
+                    onClick={handleMarkAllNotificationsRead} 
+                    disabled={unreadNotifications === 0}
+                    startIcon={<DoneAll fontSize="small" />}
+                  >
+                    Mark all read
+                  </Button>
+                </Box>
+                <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <ListItem>
+                      <ListItemText primary="No notifications" sx={{ textAlign: 'center', color: 'text.secondary' }} />
+                    </ListItem>
+                  ) : (
+                    notifications.map((notif, index) => (
+                      <React.Fragment key={notif.id}>
+                        <ListItem disablePadding>
+                          <ListItemButton alignItems="flex-start" onClick={() => handleNotificationClick(notif.id)} sx={{ bgcolor: !notif.read ? 'action.hover' : 'transparent' }}>
+                            <ListItemAvatar>
+                              <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                {notif.title.includes('Review') ? <Assignment /> : <Description />}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <Typography variant="subtitle2">{notif.title}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDistanceToNow(new Date(notif.date), { addSuffix: true })}
+                                  </Typography>
+                                </Box>
+                              }
+                              secondary={
+                                <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {notif.message}
                                 </Typography>
-                              </Box>
-                            }
-                            secondary={
-                              <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {notif.message}
-                              </Typography>
-                            }
-                          />
-                        </ListItemButton>
-                      </ListItem>
-                      {index < mockNotifications.length - 1 && <Divider component="li" />}
-                    </React.Fragment>
-                  ))}
+                              }
+                            />
+                          </ListItemButton>
+                        </ListItem>
+                        {index < notifications.length - 1 && <Divider component="li" />}
+                      </React.Fragment>
+                    ))
+                  )}
                 </List>
               </Menu>
 
@@ -197,6 +324,21 @@ export const Navbar: React.FC = () => {
           )}
         </Box>
       </Toolbar>
+
+      {/* Chat Modal */}
+      {isAuthenticated && (
+        <ChatModal
+          open={isChatModalOpen}
+          onClose={() => setIsChatModalOpen(false)}
+          threads={chatThreads}
+          selectedThreadId={selectedThreadId}
+          currentUserId={user?.id ?? 'current_user'}
+          users={mockUsers}
+          onSelectThread={setSelectedThreadId}
+          onSendMessage={handleSendMessage}
+          onStartChat={handleStartChat}
+        />
+      )}
     </AppBar>
   );
 };

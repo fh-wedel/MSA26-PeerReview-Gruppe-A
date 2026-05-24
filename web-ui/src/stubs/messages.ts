@@ -4,6 +4,7 @@ export interface Message {
   preview: string;
   unread: boolean;
   timestamp: string;
+  threadId?: string;
 }
 
 export const mockMessages: Message[] = [
@@ -13,6 +14,7 @@ export const mockMessages: Message[] = [
     preview: 'Please make sure to submit your review by tomorrow.',
     unread: true,
     timestamp: new Date().toISOString(),
+    threadId: 't1',
   },
   {
     id: '2',
@@ -20,5 +22,6 @@ export const mockMessages: Message[] = [
     preview: 'Maintenance scheduled for this weekend.',
     unread: false,
     timestamp: new Date(Date.now() - 172800000).toISOString(),
+    threadId: 't2',
   },
 ];
