@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, FormControl, Select, MenuItem, Typography } from '@mui/material';
+
+type ReviewMode = 'double blind' | 'single blind' | 'open review';
 
 interface SubmissionModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (title: string, reviewMode: string) => void;
+  authorName: string;
 }
 
-export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose, onSubmit }) => {
+const REVIEWER_COUNT_BY_MODE: Record<ReviewMode, number> = {
+  'double blind': 2,
+  'single blind': 1,
+  'open review': 1,
+};
+
+export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose, onSubmit, authorName }) => {
   const [title, setTitle] = useState('');
-  const [reviewMode, setReviewMode] = useState('double blind');
+  const [reviewMode, setReviewMode] = useState<ReviewMode>('double blind');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+
+  const reviewerCount = REVIEWER_COUNT_BY_MODE[reviewMode];
 
   const handleSubmit = () => {
     onSubmit(title, reviewMode);
@@ -39,13 +50,17 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          <TextField label="Authors" variant="outlined" fullWidth value={authorName} disabled />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary">Review Mode</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {reviewerCount} {reviewerCount === 1 ? 'reviewer' : 'reviewers'}
+            </Typography>
+          </Box>
           <FormControl fullWidth>
-            <InputLabel id="review-mode-label">Review Mode</InputLabel>
             <Select
-              labelId="review-mode-label"
               value={reviewMode}
-              label="Review Mode"
-              onChange={(e) => setReviewMode(e.target.value)}
+              onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
             >
               <MenuItem value="double blind">Double Blind</MenuItem>
               <MenuItem value="single blind">Single Blind</MenuItem>

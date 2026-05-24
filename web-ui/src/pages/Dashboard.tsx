@@ -82,6 +82,7 @@ export const Dashboard: React.FC = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmission}
+        authorName={user?.name ?? ''}
       />
       
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
