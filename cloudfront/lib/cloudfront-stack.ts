@@ -267,11 +267,5 @@ export class CloudFrontStack extends cdk.Stack {
             description: 'Stable HTTPS entry point for the PeerReview system (Web UI + all APIs)',
             exportName: 'Baseline:CloudFrontDomainName',
         });
-
-        new CfnOutput(this, 'CloudFrontDistributionId', {
-            value: distribution.distributionId,
-            description: 'CloudFront distribution ID (useful for cache invalidations)',
-            exportName: 'Baseline:CloudFrontDistributionId',
-        });
     }
 }
