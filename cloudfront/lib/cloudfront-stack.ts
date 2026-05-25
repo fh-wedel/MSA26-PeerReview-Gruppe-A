@@ -100,7 +100,7 @@ export class CloudFrontStack extends cdk.Stack {
                     Name: '/acm/cloudfront/certificate-arn',
                 },
                 region: 'us-east-1',
-                physicalResourceId: cr.PhysicalResourceId.of('CrossRegionCertReader'),
+                physicalResourceId: cr.PhysicalResourceId.of('CrossRegionCertReaderCertificateArn'),
             },
             policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
                 resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
