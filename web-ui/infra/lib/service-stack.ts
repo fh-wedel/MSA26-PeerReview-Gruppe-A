@@ -139,6 +139,10 @@ export class ServiceStack extends cdk.Stack {
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
+    const lambdaLogGroup = LogsInfra.createLogGroup(this, {
+      logGroupName: `/aws/lambda/${props.serviceName}-update-cognito-client`,
+    });
+
     // Custom Resource to dynamically update the Cognito App Client with the CloudFront URL
     const updateCognitoClientLambda = new lambda_nodejs.NodejsFunction(this, 'UpdateCognitoClientLambda', {
       functionName: `${AWSConstants.COGNITO_USER_POOL_NAME.toLowerCase()}-update-cognito-client`,
@@ -157,6 +161,7 @@ export class ServiceStack extends cdk.Stack {
         WEB_URL: webUrl,
       },
       timeout: cdk.Duration.seconds(10),
+      logGroup: lambdaLogGroup,
       memorySize: 256,
     });
 
