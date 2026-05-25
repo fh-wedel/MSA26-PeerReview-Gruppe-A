@@ -49,7 +49,7 @@ new CloudFrontStack(app, 'PeerReviewCloudFrontStack', {
         // Placeholder — uncomment and extend as services are deployed:
         // { apiName: 'SubmissionServiceAPI',      pathPattern: '/api/submission/*' },
         // { apiName: 'UserManagementServiceAPI',  pathPattern: '/api/user-management/*' },
-        // { apiName: 'WorkflowServiceAPI',        pathPattern: '/api/workflow/*' },
+        { apiName: 'WorkflowServiceAPI',        pathPattern: '/api/workflow/*' },
         // { apiName: 'ReviewServiceAPI',          pathPattern: '/api/review/*' },
         // { apiName: 'NotificationServiceAPI',    pathPattern: '/api/notification/*' },
         // { apiName: 'CommunicationServiceAPI',   pathPattern: '/api/communication/*' },

@@ -1,0 +1,102 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminListPlugins",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/plugins",
+            "description": "Allow Admin to list workflow plugins"
+        },
+        {
+            "id": "AdminGetPlugin",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/plugins/{pluginName}",
+            "description": "Allow Admin to get workflow plugin details"
+        },
+        {
+            "id": "AdminGetPluginRules",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
+            "description": "Allow Admin to get workflow plugin rules"
+        },
+        {
+            "id": "StudentListPlugins",
+            "groupName": "Student",
+            "actionId": "get /api/workflow/plugins",
+            "description": "Allow Student to list workflow plugins"
+        },
+        {
+            "id": "StudentGetPlugin",
+            "groupName": "Student",
+            "actionId": "get /api/workflow/plugins/{pluginName}",
+            "description": "Allow Student to get workflow plugin details"
+        },
+        {
+            "id": "StudentGetPluginRules",
+            "groupName": "Student",
+            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
+            "description": "Allow Student to get workflow plugin rules"
+        },
+        {
+            "id": "TeacherListPlugins",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/plugins",
+            "description": "Allow Teacher to list workflow plugins"
+        },
+        {
+            "id": "TeacherGetPlugin",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/plugins/{pluginName}",
+            "description": "Allow Teacher to get workflow plugin details"
+        },
+        {
+            "id": "TeacherGetPluginRules",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
+            "description": "Allow Teacher to get workflow plugin rules"
+        },
+        {
+            "id": "GuestListPlugins",
+            "groupName": "Guest",
+            "actionId": "get /api/workflow/plugins",
+            "description": "Allow Guest to list workflow plugins"
+        },
+        {
+            "id": "GuestGetPlugin",
+            "groupName": "Guest",
+            "actionId": "get /api/workflow/plugins/{pluginName}",
+            "description": "Allow Guest to get workflow plugin details"
+        },
+        {
+            "id": "GuestGetPluginRules",
+            "groupName": "Guest",
+            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
+            "description": "Allow Guest to get workflow plugin rules"
+        },
+        {
+            "id": "OfficerListPlugins",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/plugins",
+            "description": "Allow ExaminationOfficer to list workflow plugins"
+        },
+        {
+            "id": "OfficerGetPlugin",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/plugins/{pluginName}",
+            "description": "Allow ExaminationOfficer to get workflow plugin details"
+        },
+        {
+            "id": "OfficerGetPluginRules",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
+            "description": "Allow ExaminationOfficer to get workflow plugin rules"
+        }
+    ]
+}
