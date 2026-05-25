@@ -9,7 +9,11 @@ import { ImportedRessources } from '../../infraLibrary/lib/importedRessources';
 import { AWSConstants } from '../../infrabaseline/lib/constants';
 import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
 import * as cr from 'aws-cdk-lib/custom-resources';
+import pino from 'pino';
 
+const logger = pino({
+    level: process.env.LOG_LEVEL || 'info',
+});
 
 /**
  * Describes a backend microservice API that should be reachable through CloudFront.
@@ -100,7 +104,7 @@ export class CloudFrontStack extends cdk.Stack {
                     Name: '/acm/cloudfront/certificate-arn',
                 },
                 region: 'us-east-1',
-                physicalResourceId: cr.PhysicalResourceId.of('CrossRegionCertReaderCertificateArn'),
+                physicalResourceId: cr.PhysicalResourceId.of(`CrossRegionCertReaderCertificateArn-${Date.now()}`),
             },
             policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
                 resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
@@ -115,7 +119,7 @@ export class CloudFrontStack extends cdk.Stack {
                     Name: '/route53/cloudfront/hosted-zone-id',
                 },
                 region: 'us-east-1',
-                physicalResourceId: cr.PhysicalResourceId.of('CrossRegionHostedZoneIdReader'),
+                physicalResourceId: cr.PhysicalResourceId.of(`CrossRegionHostedZoneIdReader-${Date.now()}`),
             },
             policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
                 resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
@@ -124,6 +128,7 @@ export class CloudFrontStack extends cdk.Stack {
 
         const domainName = AWSConstants.DNS_DOMAIN_NAME;
         const certArn = crossRegionSsmReaderCertificate.getResponseField('Parameter.Value');
+        logger.info(`Cross-region SSM reader returned certificate ARN: ${certArn}`);
         const certificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificate', certArn);
         const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'DomainHostedZone', {
             hostedZoneId: crossRegionSsmReaderHostedZoneId.getResponseField('Parameter.Value'),
@@ -153,20 +158,20 @@ export class CloudFrontStack extends cdk.Stack {
 
         const redirectFunction = new cloudfront.Function(this, 'RedirectFunction', {
             code: cloudfront.FunctionCode.fromInline(`
-function handler(event) {
-    var request = event.request;
-    var host = request.headers.host ? request.headers.host.value : '';
-    if (host === '${AWSConstants.REDIRECT_DOMAIN_NAME}' || host === '${AWSConstants.REDIRECT_WWW_DOMAIN_NAME}') {
-        return {
-            statusCode: 301,
-            statusDescription: 'Moved Permanently',
-            headers: {
-                'location': { value: '${AWSConstants.REDIRECT_TARGET_URL}' }
-            }
-        };
-    }
-    return request;
-}
+                function handler(event) {
+                    var request = event.request;
+                    var host = request.headers.host ? request.headers.host.value : '';
+                    if (host === '${AWSConstants.REDIRECT_DOMAIN_NAME}' || host === '${AWSConstants.REDIRECT_WWW_DOMAIN_NAME}') {
+                        return {
+                            statusCode: 301,
+                            statusDescription: 'Moved Permanently',
+                            headers: {
+                                'location': { value: '${AWSConstants.REDIRECT_TARGET_URL}' }
+                            }
+                        };
+                    }
+                    return request;
+                }
             `),
         });
 
