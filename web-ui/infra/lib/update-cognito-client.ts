@@ -71,7 +71,7 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
       ClientId: clientId,
       ClientName: clientName,
       CallbackURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/`, 'http://localhost:5173/'],
-      LogoutURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/, 'http://localhost:5173/'],
+      LogoutURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/`, 'http://localhost:5173/'],
       AllowedOAuthFlowsUserPoolClient: true,
       SupportedIdentityProviders: ['COGNITO'],
       AllowedOAuthFlows: ['code'],
