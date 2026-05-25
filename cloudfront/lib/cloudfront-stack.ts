@@ -151,6 +151,25 @@ export class CloudFrontStack extends cdk.Stack {
         const cachePolicy = cloudfront.CachePolicy.CACHING_DISABLED;
         const originRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
 
+        const redirectFunction = new cloudfront.Function(this, 'RedirectFunction', {
+            code: cloudfront.FunctionCode.fromInline(`
+function handler(event) {
+    var request = event.request;
+    var host = request.headers.host ? request.headers.host.value : '';
+    if (host === '${AWSConstants.REDIRECT_DOMAIN_NAME}' || host === '${AWSConstants.REDIRECT_WWW_DOMAIN_NAME}') {
+        return {
+            statusCode: 301,
+            statusDescription: 'Moved Permanently',
+            headers: {
+                'location': { value: '${AWSConstants.REDIRECT_TARGET_URL}' }
+            }
+        };
+    }
+    return request;
+}
+            `),
+        });
+
         // ── Default cache behavior (Web UI) ───────────────────────────────────────
         const defaultBehavior: cloudfront.BehaviorOptions = {
             origin: webUiOrigin,
@@ -162,6 +181,10 @@ export class CloudFrontStack extends cdk.Stack {
             cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
             viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             compress: true,
+            functionAssociations: [{
+                function: redirectFunction,
+                eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            }],
         };
 
         // ── Per-service API behaviors ─────────────────────────────────────────────
@@ -185,6 +208,10 @@ export class CloudFrontStack extends cdk.Stack {
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 compress: false,
+                functionAssociations: [{
+                    function: redirectFunction,
+                    eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+                }],
             };
         }
 
@@ -193,7 +220,12 @@ export class CloudFrontStack extends cdk.Stack {
             comment: 'PeerReview system — single entry point for Web UI and all microservice APIs',
             defaultBehavior,
             additionalBehaviors,
-            domainNames: [domainName],
+            domainNames: [
+                AWSConstants.APP_DOMAIN_NAME,
+                AWSConstants.APP_WWW_DOMAIN_NAME,
+                AWSConstants.REDIRECT_DOMAIN_NAME,
+                AWSConstants.REDIRECT_WWW_DOMAIN_NAME
+            ],
             certificate: certificate,
             // Use the default CloudFront certificate (*.cloudfront.net) — no custom domain needed.
             // HTTP requests are automatically redirected to HTTPS by viewerProtocolPolicy above.
@@ -205,22 +237,33 @@ export class CloudFrontStack extends cdk.Stack {
         });
 
         // ── Route 53 Alias Record ────────────────────────────────────────────────
-        new route53.ARecord(this, 'CloudFrontAliasRecordIPv4', {
-            zone: hostedZone,
-            recordName: domainName,
-            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
-        });
+        const records = [
+            AWSConstants.APP_DOMAIN_NAME,
+            AWSConstants.APP_WWW_DOMAIN_NAME,
+            AWSConstants.REDIRECT_DOMAIN_NAME,
+            AWSConstants.REDIRECT_WWW_DOMAIN_NAME
+        ];
 
-        new route53.AaaaRecord(this, 'CloudFrontAliasRecordIPv6', {
-            zone: hostedZone,
-            recordName: domainName,
-            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
+        records.forEach((recordName) => {
+            // Replace dots to make a valid Construct ID (e.g. www.peer-review.fh-wedel.dev -> wwwpeer-reviewfh-wedeldev)
+            const idSuffix = recordName.replace(/\./g, '-');
+            new route53.ARecord(this, `CloudFrontAliasRecordIPv4-${idSuffix}`, {
+                zone: hostedZone,
+                recordName: recordName,
+                target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
+            });
+
+            new route53.AaaaRecord(this, `CloudFrontAliasRecordIPv6-${idSuffix}`, {
+                zone: hostedZone,
+                recordName: recordName,
+                target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
+            });
         });
 
 
         // ── Outputs ───────────────────────────────────────────────────────────────
         new CfnOutput(this, 'CloudFrontDomainName', {
-            value: distribution.distributionDomainName,
+            value: AWSConstants.APP_DOMAIN_NAME,
             description: 'Stable HTTPS entry point for the PeerReview system (Web UI + all APIs)',
             exportName: 'Baseline:CloudFrontDomainName',
         });

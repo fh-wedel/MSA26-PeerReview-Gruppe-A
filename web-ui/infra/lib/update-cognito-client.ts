@@ -62,16 +62,13 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
     if (!UserPoolClient) {
       throw new Error('UserPoolClient not found');
     }
-
-    AWSConstants.DNS_DOMAIN_NAME
-
     const updateCommand = new UpdateUserPoolClientCommand({
       ...UserPoolClient,
       UserPoolId: userPoolId,
       ClientId: clientId,
       ClientName: clientName,
-      CallbackURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/`, 'http://localhost:5173/'],
-      LogoutURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/`, 'http://localhost:5173/'],
+      CallbackURLs: [webUrl, `${webUrl}/`, `https://${AWSConstants.APP_WWW_DOMAIN_NAME}`, `https://${AWSConstants.APP_WWW_DOMAIN_NAME}/`, 'http://localhost:5173/'],
+      LogoutURLs: [webUrl, `${webUrl}/`, `https://${AWSConstants.APP_WWW_DOMAIN_NAME}`, `https://${AWSConstants.APP_WWW_DOMAIN_NAME}/`, 'http://localhost:5173/'],
       AllowedOAuthFlowsUserPoolClient: true,
       SupportedIdentityProviders: ['COGNITO'],
       AllowedOAuthFlows: ['code'],

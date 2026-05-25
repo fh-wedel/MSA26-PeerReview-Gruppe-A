@@ -20,6 +20,11 @@ export class CertificateStack extends cdk.Stack {
 
         this.certificate = new acm.Certificate(this, 'SiteCertificate', {
             domainName: domainName,
+            subjectAlternativeNames: [
+                AWSConstants.APP_DOMAIN_NAME,
+                AWSConstants.APP_WWW_DOMAIN_NAME,
+                AWSConstants.REDIRECT_WWW_DOMAIN_NAME,
+            ],
             validation: acm.CertificateValidation.fromDns(this.hostedZone),
         });
 
