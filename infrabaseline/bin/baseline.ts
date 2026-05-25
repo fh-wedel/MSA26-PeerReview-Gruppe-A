@@ -44,7 +44,6 @@ ecsClusterStack.addDependency(ecrRepositoryStack);
 
 const certificateStack = new CertificateStack(app, 'BaselineCertificateStack', {
   env: { account: AWSConstants.AWS_ACCOUNT_ID, region: 'us-east-1' },
-  crossRegionReferences: true
 });
 
 const githubCIConfigStack = new GithubCIConfig(app, 'BaselineGithubCIConfigStack', { env });

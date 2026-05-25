@@ -55,5 +55,4 @@ new CloudFrontStack(app, 'PeerReviewCloudFrontStack', {
         // { apiName: 'CommunicationServiceAPI',   pathPattern: '/api/communication/*' },
         // { apiName: 'AnalyticsServiceAPI',       pathPattern: '/api/analytics/*' },
     ],
-    crossRegionReferences: true,
 });

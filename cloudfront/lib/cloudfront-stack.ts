@@ -8,6 +8,7 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { ImportedRessources } from '../../infraLibrary/lib/importedRessources';
 import { AWSConstants } from '../../infrabaseline/lib/constants';
 import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
+import * as cr from 'aws-cdk-lib/custom-resources';
 
 
 /**
@@ -90,12 +91,42 @@ export class CloudFrontStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props: CloudFrontStackProps) {
         super(scope, id, props);
 
+
+        const crossRegionSsmReaderCertificate = new cr.AwsCustomResource(this, 'GetCrossRegionCertArn', {
+            onUpdate: {
+                service: 'SSM',
+                action: 'getParameter',
+                parameters: {
+                    Name: '/acm/cloudfront/certificate-arn',
+                },
+                region: 'us-east-1',
+                physicalResourceId: cr.PhysicalResourceId.of('CrossRegionCertReader'),
+            },
+            policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
+                resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
+            }),
+        });
+
+        const crossRegionSsmReaderHostedZoneId = new cr.AwsCustomResource(this, 'GetCrossRegionHostedZoneId', {
+            onUpdate: {
+                service: 'SSM',
+                action: 'getParameter',
+                parameters: {
+                    Name: '/route53/cloudfront/hosted-zone-id',
+                },
+                region: 'us-east-1',
+                physicalResourceId: cr.PhysicalResourceId.of('CrossRegionHostedZoneIdReader'),
+            },
+            policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
+                resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
+            }),
+        });
+
         const domainName = AWSConstants.DNS_DOMAIN_NAME;
-        const certificateArn = cdk.Fn.importValue('DomainCertificateArn');
-        const certificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificate', certificateArn);
-        const hostedZoneId = cdk.Fn.importValue('DomainHostedZoneId');
+        const certArn = crossRegionSsmReaderCertificate.getResponseField('Parameter.Value');
+        const certificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificate', certArn);
         const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'DomainHostedZone', {
-            hostedZoneId: hostedZoneId,
+            hostedZoneId: crossRegionSsmReaderHostedZoneId.getResponseField('Parameter.Value'),
             zoneName: domainName,
         });
 
