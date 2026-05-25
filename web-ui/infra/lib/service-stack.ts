@@ -40,8 +40,7 @@ export class ServiceStack extends cdk.Stack {
     const appClientId = cdk.Fn.importValue(`${AWSConstants.COGNITO_APP_CLIENT_NAME}-AppClientId`);
 
     // Import the stable CloudFront distribution domain instead of the API Gateway URL
-    //const cloudfrontDomain = cdk.Fn.importValue('Baseline:CloudFrontDomainName');
-    const cloudfrontDomain = "d2h8g1l7m9s3jz.cloudfront.net";
+    const cloudfrontDomain = cdk.Fn.importValue('Baseline:CloudFrontDomainName');
     const webUrl = `https://${cloudfrontDomain}`;
 
 
