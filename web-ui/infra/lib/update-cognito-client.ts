@@ -1,5 +1,6 @@
 import { CognitoIdentityProviderClient, UpdateUserPoolClientCommand, DescribeUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
 import type { CloudFormationCustomResourceEvent, Context } from 'aws-lambda';
+import { AWSConstants } from '../../../infrabaseline/lib/constants';
 
 const cognito = new CognitoIdentityProviderClient({});
 
@@ -62,13 +63,15 @@ export async function handler(event: CloudFormationCustomResourceEvent, context:
       throw new Error('UserPoolClient not found');
     }
 
+    AWSConstants.DNS_DOMAIN_NAME
+
     const updateCommand = new UpdateUserPoolClientCommand({
       ...UserPoolClient,
       UserPoolId: userPoolId,
       ClientId: clientId,
       ClientName: clientName,
-      CallbackURLs: [webUrl, `${webUrl}/`, 'http://localhost:5173/'],
-      LogoutURLs: [webUrl, `${webUrl}/`, 'http://localhost:5173/'],
+      CallbackURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/`, 'http://localhost:5173/'],
+      LogoutURLs: [webUrl, `${webUrl}/`, `{AWSConstants.DNS_DOMAIN_NAME}`, `{AWSConstants.DNS_DOMAIN_NAME}/, 'http://localhost:5173/'],
       AllowedOAuthFlowsUserPoolClient: true,
       SupportedIdentityProviders: ['COGNITO'],
       AllowedOAuthFlows: ['code'],
