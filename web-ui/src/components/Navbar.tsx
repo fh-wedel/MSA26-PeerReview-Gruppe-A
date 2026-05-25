@@ -5,11 +5,10 @@ import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { mockNotifications } from '../stubs/notifications';
 import { mockMessages } from '../stubs/messages';
-import { mockChatThreads, mockUsers } from '../stubs/chats';
+import { mockChatThreads } from '../stubs/chats';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
-import { ChatModal } from './ChatModal';
 
 export const Navbar: React.FC = () => {
   const { themeMode, setThemeMode, mode } = useThemeContext();
@@ -25,10 +24,7 @@ export const Navbar: React.FC = () => {
   // Local state for notifications and messages
   const [notifications, setNotifications] = useState(mockNotifications);
   const [messages, setMessages] = useState(mockMessages);
-  const [chatThreads, setChatThreads] = useState(mockChatThreads);
 
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const unreadMessages = messages.filter((m) => m.unread).length;
@@ -58,67 +54,15 @@ export const Navbar: React.FC = () => {
     setMessages(messages.map(m => m.id === msg.id ? { ...m, unread: false } : m));
     setAnchorElMessages(null);
     if (msg.threadId) {
-      setSelectedThreadId(msg.threadId);
-    } else {
-      setSelectedThreadId(null);
+      const thread = mockChatThreads.find(t => t.id === msg.threadId);
+      if (thread && thread.submissionId) {
+        const basePath = hasAdminOrExamOfficerRole ? '/submissions' : '/assignments';
+        navigate(`${basePath}/${thread.submissionId}?chat=true`);
+      }
     }
-    setIsChatModalOpen(true);
   };
 
-  const handleViewAllMessages = () => {
-    setAnchorElMessages(null);
-    setSelectedThreadId(null);
-    setIsChatModalOpen(true);
-  };
 
-  const handleSendMessage = (threadId: string, text: string, msgFormat?: { bold?: boolean; italic?: boolean; underline?: boolean }) => {
-    const newMessage = {
-      id: `m${Date.now()}`,
-      senderId: user?.id ?? 'current_user',
-      text,
-      timestamp: new Date().toISOString(),
-      format: msgFormat
-    };
-    
-    setChatThreads(threads => threads.map(t => {
-      if (t.id === threadId) {
-        return {
-          ...t,
-          messages: [...t.messages, newMessage]
-        };
-      }
-      return t;
-    }));
-  };
-
-  const handleStartChat = (userId: string) => {
-    setChatThreads(prevThreads => {
-      // Check if thread with this user already exists
-      const existingThread = prevThreads.find(t => 
-        t.participants.length === 2 && 
-        t.participants.some(p => p.id === userId)
-      );
-
-      if (existingThread) {
-        setSelectedThreadId(existingThread.id);
-        return prevThreads;
-      } else {
-        // Create new thread
-        const targetUser = mockUsers.find(u => u.id === userId);
-        if (targetUser) {
-          const currentUserId = user?.id ?? 'current_user';
-          const newThread = {
-            id: `t${Date.now()}`,
-            participants: [{ id: currentUserId, name: user?.name ?? 'Me' }, targetUser],
-            messages: []
-          };
-          setSelectedThreadId(newThread.id);
-          return [newThread, ...prevThreads];
-        }
-        return prevThreads;
-      }
-    });
-  };
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAdminOrExamOfficerRole = userRoles.includes('admin') || userRoles.includes('examinationofficer');
@@ -252,10 +196,6 @@ export const Navbar: React.FC = () => {
                     ))
                   )}
                 </List>
-                <Divider />
-                <MenuItem onClick={handleViewAllMessages} sx={{ justifyContent: 'center', py: 1.5, color: mode === 'dark' ? 'primary.light' : 'primary.main' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>View all messages</Typography>
-                </MenuItem>
               </Menu>
 
               <IconButton color="inherit" onClick={(e) => setAnchorElNotifications(e.currentTarget)}>
@@ -344,20 +284,6 @@ export const Navbar: React.FC = () => {
         </Box>
       </Toolbar>
 
-      {/* Chat Modal */}
-      {isAuthenticated && (
-        <ChatModal
-          open={isChatModalOpen}
-          onClose={() => setIsChatModalOpen(false)}
-          threads={chatThreads}
-          selectedThreadId={selectedThreadId}
-          currentUserId={user?.id ?? 'current_user'}
-          users={mockUsers}
-          onSelectThread={setSelectedThreadId}
-          onSendMessage={handleSendMessage}
-          onStartChat={handleStartChat}
-        />
-      )}
     </AppBar>
   );
 };

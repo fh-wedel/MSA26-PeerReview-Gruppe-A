@@ -16,6 +16,7 @@ export interface ChatMessage {
 }
 
 export interface ChatThread {
+  submissionId?: string;
   id: string;
   participants: ChatUser[];
   messages: ChatMessage[];
@@ -31,6 +32,7 @@ export const mockUsers: ChatUser[] = [
 export const mockChatThreads: ChatThread[] = [
   {
     id: 't1',
+    submissionId: '7f4d5b51-4fb7-4033-9f52-2f9df08f02f1',
     participants: [
       { id: 'current_user', name: 'Me' },
       { id: 'u3', name: 'Prof. Schmidt' },
@@ -46,6 +48,7 @@ export const mockChatThreads: ChatThread[] = [
   },
   {
     id: 't2',
+    submissionId: '1f0a6d1c-77ab-4a28-b7d7-0b1b8f8f9059',
     participants: [
       { id: 'current_user', name: 'Me' },
       { id: 'u4', name: 'System Admin' },
