@@ -9,11 +9,7 @@ import { ImportedRessources } from '../../infraLibrary/lib/importedRessources';
 import { AWSConstants } from '../../infrabaseline/lib/constants';
 import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
 import * as cr from 'aws-cdk-lib/custom-resources';
-import pino from 'pino';
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
-});
 
 /**
  * Describes a backend microservice API that should be reachable through CloudFront.
@@ -128,7 +124,6 @@ export class CloudFrontStack extends cdk.Stack {
 
         const domainName = AWSConstants.DNS_DOMAIN_NAME;
         const certArn = crossRegionSsmReaderCertificate.getResponseField('Parameter.Value');
-        logger.info(`Cross-region SSM reader returned certificate ARN: ${certArn}`);
         const certificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificate', certArn);
         const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'DomainHostedZone', {
             hostedZoneId: crossRegionSsmReaderHostedZoneId.getResponseField('Parameter.Value'),
