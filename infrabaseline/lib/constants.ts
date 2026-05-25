@@ -6,4 +6,5 @@ export class AWSConstants {
     static readonly ECR_REPOSITORY_PREFIX = '720830544039.dkr.ecr.eu-north-1.amazonaws.com/';
     static readonly COGNITO_USER_POOL_NAME = 'PeerReviewUserPool';
     static readonly COGNITO_APP_CLIENT_NAME = 'PeerReviewAppClient';
+    static readonly DNS_DOMAIN_NAME = 'fh-wedel.dev';
 }

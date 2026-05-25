@@ -3,7 +3,11 @@ import { Construct } from 'constructs';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { CfnOutput } from 'aws-cdk-lib/core';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { ImportedRessources } from '../../infraLibrary/lib/importedRessources';
+import { AWSConstants } from '../../infrabaseline/lib/constants';
+import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
 
 
 /**
@@ -82,15 +86,23 @@ export interface CloudFrontStackProps extends cdk.StackProps {
  *   requests from the browser perspective. No CORS headers are required.
  */
 export class CloudFrontStack extends cdk.Stack {
-    /** The CloudFront distribution domain name (e.g. xxxx.cloudfront.net). */
-    public readonly distributionDomainName: string;
 
     constructor(scope: Construct, id: string, props: CloudFrontStackProps) {
         super(scope, id, props);
 
+        const domainName = AWSConstants.DNS_DOMAIN_NAME;
+        const certificateArn = cdk.Fn.importValue('DomainCertificateArn');
+        const certificate = acm.Certificate.fromCertificateArn(this, 'DomainCertificate', certificateArn);
+        const hostedZoneId = cdk.Fn.importValue('DomainHostedZoneId');
+        const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'DomainHostedZone', {
+            hostedZoneId: hostedZoneId,
+            zoneName: domainName,
+        });
+
+
         // ── Web UI origin (default / fallback) ────────────────────────────────────
         const webUiDomainName = ImportedRessources.getApiDomainName(props.webUiApiName);
-        const webUiStageName  = ImportedRessources.getApiStageName(props.webUiApiName);
+        const webUiStageName = ImportedRessources.getApiStageName(props.webUiApiName);
 
         const webUiOrigin = new origins.HttpOrigin(webUiDomainName, {
             // Prepend the stage name so CloudFront forwards /prod/<path> to API Gateway.
@@ -126,7 +138,7 @@ export class CloudFrontStack extends cdk.Stack {
 
         for (const service of props.apiServices) {
             const svcDomainName = ImportedRessources.getApiDomainName(service.apiName);
-            const svcStageName  = ImportedRessources.getApiStageName(service.apiName);
+            const svcStageName = ImportedRessources.getApiStageName(service.apiName);
 
             const svcOrigin = new origins.HttpOrigin(svcDomainName, {
                 originPath: cdk.Fn.join('', ['/', svcStageName]),
@@ -150,6 +162,8 @@ export class CloudFrontStack extends cdk.Stack {
             comment: 'PeerReview system — single entry point for Web UI and all microservice APIs',
             defaultBehavior,
             additionalBehaviors,
+            domainNames: [domainName],
+            certificate: certificate,
             // Use the default CloudFront certificate (*.cloudfront.net) — no custom domain needed.
             // HTTP requests are automatically redirected to HTTPS by viewerProtocolPolicy above.
             httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
@@ -159,7 +173,19 @@ export class CloudFrontStack extends cdk.Stack {
             minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
         });
 
-        this.distributionDomainName = distribution.distributionDomainName;
+        // ── Route 53 Alias Record ────────────────────────────────────────────────
+        new route53.ARecord(this, 'CloudFrontAliasRecordIPv4', {
+            zone: hostedZone,
+            recordName: domainName,
+            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
+        });
+
+        new route53.AaaaRecord(this, 'CloudFrontAliasRecordIPv6', {
+            zone: hostedZone,
+            recordName: domainName,
+            target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
+        });
+
 
         // ── Outputs ───────────────────────────────────────────────────────────────
         new CfnOutput(this, 'CloudFrontDomainName', {
