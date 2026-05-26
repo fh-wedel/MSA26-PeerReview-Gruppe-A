@@ -23,3 +23,9 @@ services:
     environment:
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-7b8qripeuu1p5c3ph6dd4jee5l}
       - COGNITO_DOMAIN=${COGNITO_DOMAIN:-peerreviewuserpool-domain.auth.eu-north-1.amazoncognito.com}
+  workflow-service:
+    image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/workflow:latest
+    build:
+      context: workflow-service
+    ports:
+      - "8081:8080"
