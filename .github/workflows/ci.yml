@@ -53,7 +53,7 @@ jobs:
               - 'templateEcsService/**'
               - 'infraLibrary/**'
             workflow_service_code:
-              - 'workflow-service/src/**'
+              - 'workflow-service/workflow-*/**'
               - 'workflow-service/pom.xml'
               - 'workflow-service/Dockerfile'
             workflow_service_infra:
