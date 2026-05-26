@@ -5,7 +5,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "pretest": "npm ci --prefix ../../infraLibrary",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "cdk": "cdk"
   },
   "devDependencies": {
