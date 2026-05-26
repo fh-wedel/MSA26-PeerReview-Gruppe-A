@@ -24,6 +24,9 @@ jobs:
       template_service_code: ${{ steps.filter.outputs.template_service_code }}
       template_service_infra: ${{ steps.filter.outputs.template_service_infra }}
       template_service_any: ${{ steps.filter.outputs.template_service_any }}
+      workflow_service_code: ${{ steps.filter.outputs.workflow_service_code }}
+      workflow_service_infra: ${{ steps.filter.outputs.workflow_service_infra }}
+      workflow_service_any: ${{ steps.filter.outputs.workflow_service_any }}
       web_ui_code: ${{ steps.filter.outputs.web_ui_code }}
       web_ui_infra: ${{ steps.filter.outputs.web_ui_infra }}
       web_ui_any: ${{ steps.filter.outputs.web_ui_any }}
@@ -48,6 +51,15 @@ jobs:
               - 'templateEcsService/infra/**'
             template_service_any:
               - 'templateEcsService/**'
+              - 'infraLibrary/**'
+            workflow_service_code:
+              - 'workflow-service/workflow-*/**'
+              - 'workflow-service/pom.xml'
+              - 'workflow-service/Dockerfile'
+            workflow_service_infra:
+              - 'workflow-service/infra/**'
+            workflow_service_any:
+              - 'workflow-service/**'
               - 'infraLibrary/**'
             web_ui_code:
               - 'web-ui/src/**'
@@ -174,6 +186,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  workflow-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() && 
+      (needs.changes.outputs.workflow_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: workflow
+      service_path: workflow-service
+      infra_path: workflow-service/infra
+      docker_context: workflow-service
+      ecr_repository: fh-wedel/workflow
+      run_maven: ${{ needs.changes.outputs.workflow_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.workflow_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.workflow_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   web-ui:
     needs: [changes, infra-library-tests]
     if: |
@@ -201,13 +233,14 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service]
+    needs: [changes, web-ui, template-service, workflow-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
       (needs.changes.outputs.cloudfront == 'true' || needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') &&
       (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') &&
-      (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped')
+      (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') &&
+      (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
