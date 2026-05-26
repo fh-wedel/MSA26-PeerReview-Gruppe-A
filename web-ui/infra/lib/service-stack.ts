@@ -38,7 +38,7 @@ export class ServiceStack extends cdk.Stack {
 
     const userPoolId = cdk.Fn.importValue(`${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`);
     const appClientId = cdk.Fn.importValue(`${AWSConstants.COGNITO_APP_CLIENT_NAME}-AppClientId`);
-    
+
     // Import the stable CloudFront distribution domain instead of the API Gateway URL
     const cloudfrontDomain = cdk.Fn.importValue('Baseline:CloudFrontDomainName');
     const webUrl = `https://${cloudfrontDomain}`;
@@ -139,6 +139,10 @@ export class ServiceStack extends cdk.Stack {
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
+    const lambdaLogGroup = LogsInfra.createLogGroup(this, {
+      logGroupName: `/aws/lambda/${props.serviceName}-update-cognito-client`,
+    });
+
     // Custom Resource to dynamically update the Cognito App Client with the CloudFront URL
     const updateCognitoClientLambda = new lambda_nodejs.NodejsFunction(this, 'UpdateCognitoClientLambda', {
       functionName: `${AWSConstants.COGNITO_USER_POOL_NAME.toLowerCase()}-update-cognito-client`,
@@ -157,6 +161,7 @@ export class ServiceStack extends cdk.Stack {
         WEB_URL: webUrl,
       },
       timeout: cdk.Duration.seconds(10),
+      logGroup: lambdaLogGroup,
       memorySize: 256,
     });
 

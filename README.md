@@ -1,7 +1,7 @@
 # MSA26-PeerReview Gruppe A
 PeerReview: Ein System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten.
 
-Website: [d2zubp31kamdos.cloudfront.net](https://d2zubp31kamdos.cloudfront.net)
+Website: [peer-review.fh-wedel.dev](https://peer-review.fh-wedel.dev)
 
 # Lokale Ausführung
 

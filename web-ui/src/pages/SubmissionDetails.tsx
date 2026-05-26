@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import {
   Stack,
   Box,
+  Snackbar,
+  Alert,
   Button,
   Chip,
   Dialog,
@@ -15,8 +17,9 @@ import {
   Typography,
   Autocomplete,
   TextField,
+  Badge,
 } from '@mui/material';
-import { ArrowBack, PictureAsPdf } from '@mui/icons-material';
+import { ArrowBack, PictureAsPdf, Chat as ChatIcon, Edit as EditIcon, Save as SaveIcon, Close as CloseIcon } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { formatSubmissionReviewMode, getMockSubmissionById } from '../stubs/submissions';
@@ -25,6 +28,10 @@ import { mockUsers } from '../stubs/users';
 import type { MockUser } from '../stubs/users';
 import { formatDateTime } from '../utils/date';
 import { useAuth } from '../contexts/AuthContext';
+import { ChatModal } from '../components/ChatModal';
+import { mockChatThreads } from '../stubs/chats';
+import { mockMessages } from '../stubs/messages';
+import { useSearchParams } from 'react-router-dom';
 
 export const SubmissionDetails: React.FC = () => {
   const theme = useTheme();
@@ -33,6 +40,35 @@ export const SubmissionDetails: React.FC = () => {
   const { submissionId } = useParams<{ submissionId: string }>();
   const { user } = useAuth();
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [chatOpenState, setChatOpenState] = useState(false);
+  const chatOpen = searchParams.get('chat') === 'true' || chatOpenState;
+
+  const setChatOpen = setChatOpenState;
+  const [chatThreads, setChatThreads] = useState(mockChatThreads);
+  const [hasUnread, setHasUnread] = useState(() => {
+    if (searchParams.get('chat') === 'true') return false;
+    const initialThread = mockChatThreads.find(t => t.submissionId === submissionId);
+    if (!initialThread) return false;
+    return mockMessages.some(m => m.threadId === initialThread.id && m.unread);
+  });
+
+  const handleOpenChat = () => {
+    setChatOpen(true);
+    setHasUnread(false);
+  };
+
+  const handleCloseChat = () => {
+    setChatOpen(false);
+    if (searchParams.get('chat') === 'true') {
+      searchParams.delete('chat');
+      setSearchParams(searchParams);
+    }
+  };
+
+  const thread = chatThreads.find(t => t.submissionId === submissionId);
+
+
 
   const isAssignmentsPage = location.pathname.startsWith('/assignments');
   const backTarget = isAssignmentsPage ? '/assignments' : '/submissions';
@@ -46,6 +82,75 @@ export const SubmissionDetails: React.FC = () => {
   const [reviewer, setReviewer] = useState<MockUser | null>(
     submission ? mockUsers.find((u) => u.id === submission.reviewerId) || null : null
   );
+
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [originalAuthor, setOriginalAuthor] = useState<MockUser | null>(author);
+  const [originalReviewer, setOriginalReviewer] = useState<MockUser | null>(reviewer);
+
+  const handleEdit = () => {
+    setOriginalAuthor(author);
+    setOriginalReviewer(reviewer);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setAuthor(originalAuthor);
+    setReviewer(originalReviewer);
+    setIsEditing(false);
+  };
+
+  const handleSave = () => {
+    setIsEditing(false);
+    showToast('Changes saved successfully');
+  };
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+
+  const handleSnackbarClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  const showToast = (message: string, severity: 'success' | 'error' = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+
+  const handleSendMessage = React.useCallback((text: string, msgFormat?: { bold?: boolean; italic?: boolean; underline?: boolean }) => {
+    const newMessage = {
+      id: `m${Date.now()}`,
+      senderId: user?.id ?? 'current_user',
+      text,
+      timestamp: new Date().toISOString(),
+      format: msgFormat
+    };
+    
+    setChatThreads(threads => {
+      const existingThread = threads.find(t => t.submissionId === submissionId);
+      if (existingThread) {
+        return threads.map(t => t.id === existingThread.id ? { ...t, messages: [...t.messages, newMessage] } : t);
+      } else {
+        const participants = [{ id: user?.id ?? 'current_user', name: user?.name ?? 'Me' }];
+        if (author && author.id !== user?.id) participants.push(author);
+        if (reviewer && reviewer.id !== user?.id) participants.push(reviewer);
+        
+        const newThread = {
+          id: `t${Date.now()}`,
+          submissionId: submissionId,
+          participants,
+          messages: [newMessage]
+        };
+        return [...threads, newThread];
+      }
+    });
+  }, [submissionId, user, author, reviewer]);
 
   if (!submission) {
     return (
@@ -106,9 +211,11 @@ export const SubmissionDetails: React.FC = () => {
           }}
         >
           <Box sx={{ flex: 1 }}>
+            
             <Typography variant="h4" gutterBottom>
               {submission.title}
             </Typography>
+
             <Chip
               label={submission.status}
               color={submission.status === 'Published' ? 'success' : submission.status === 'Under Review' ? 'warning' : 'default'}
@@ -141,12 +248,15 @@ export const SubmissionDetails: React.FC = () => {
                 <Typography variant="subtitle2" color="text.secondary">
                   Author
                 </Typography>
-                {isPrivileged ? (
+                
+                {isPrivileged && isEditing ? (
                   <Autocomplete
                     options={mockUsers}
                     getOptionLabel={(option) => option.name}
                     value={author}
-                    onChange={(_e, newValue) => setAuthor(newValue)}
+                    onChange={(_e, newValue) => {
+                      setAuthor(newValue);
+                    }}
                     renderInput={(params) => <TextField {...params} size="small" />}
                     sx={{ width: '100%' }}
                   />
@@ -155,18 +265,22 @@ export const SubmissionDetails: React.FC = () => {
                     {getVisibleName(author?.id || submission.authorId, author?.name || submission.authorName, submission.reviewMode)}
                   </Typography>
                 )}
+
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Reviewer
                 </Typography>
-                {isPrivileged ? (
+                
+                {isPrivileged && isEditing ? (
                   <Autocomplete
                     options={mockUsers}
                     getOptionLabel={(option) => option.name}
                     value={reviewer}
-                    onChange={(_e, newValue) => setReviewer(newValue)}
+                    onChange={(_e, newValue) => {
+                      setReviewer(newValue);
+                    }}
                     renderInput={(params) => <TextField {...params} size="small" />}
                     sx={{ width: '100%' }}
                   />
@@ -175,11 +289,30 @@ export const SubmissionDetails: React.FC = () => {
                     {getVisibleName(reviewer?.id || submission.reviewerId, reviewer?.name || submission.reviewerName, submission.reviewMode)}
                   </Typography>
                 )}
+
               </Box>
             </Box>
           </Box>
 
           <Stack spacing={1.5} sx={{ minWidth: { md: 260 }, width: { xs: '100%', md: 'auto' } }}>
+            {isPrivileged && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 1.5 }}>
+                {isEditing ? (
+                  <>
+                    <Button onClick={handleCancel} color="inherit" size="small" startIcon={<CloseIcon />}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSave} color="primary" size="small" startIcon={<SaveIcon />}>
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={handleEdit} color="primary" size="small" startIcon={<EditIcon />}>
+                    Edit
+                  </Button>
+                )}
+              </Box>
+            )}
             <Button
               variant={theme.palette.mode === 'dark' ? 'contained' : 'outlined'}
               size="large"
@@ -206,6 +339,21 @@ export const SubmissionDetails: React.FC = () => {
             >
               View Review
             </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              fullWidth
+              startIcon={
+                <Badge color="error" variant="dot" invisible={!hasUnread}>
+                  <ChatIcon />
+                </Badge>
+              }
+              onClick={handleOpenChat}
+            >
+              Open Chat
+            </Button>
+
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
               {reviewAvailable
                 ? 'The completed review is available for this submission.'
@@ -299,6 +447,26 @@ export const SubmissionDetails: React.FC = () => {
           <Button onClick={() => setReviewOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <ChatModal
+        open={chatOpen}
+        onClose={handleCloseChat}
+        thread={thread}
+        currentUserId={user?.id ?? 'current_user'}
+        onSendMessage={handleSendMessage}
+      />
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ mt: 8 }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

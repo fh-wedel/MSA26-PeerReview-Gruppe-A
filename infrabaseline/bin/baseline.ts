@@ -9,6 +9,7 @@ import { ECRRepositoryStack } from '../lib/ecr-stack';
 import { GithubCIConfig } from '../lib/github-ci-config';
 import { CloudMapStack } from '../lib/cloudmap';
 import { CognitoStack } from '../lib/cognito';
+import { CertificateStack } from '../lib/certificate';
 
 const app = new cdk.App();
 
@@ -40,6 +41,10 @@ const ecsClusterStack = new ECSClusterStack(app, 'BaselineECSClusterStack', {
 
 ecsClusterStack.addDependency(networkStack);
 ecsClusterStack.addDependency(ecrRepositoryStack);
+
+const certificateStack = new CertificateStack(app, 'BaselineCertificateStack', {
+  env: { account: AWSConstants.AWS_ACCOUNT_ID, region: 'us-east-1' },
+});
 
 const githubCIConfigStack = new GithubCIConfig(app, 'BaselineGithubCIConfigStack', { env });
 
