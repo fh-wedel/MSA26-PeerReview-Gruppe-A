@@ -37,6 +37,11 @@ export interface ApiServiceOriginProps {
      * so that API Gateway routes include this prefix and match the forwarded path.
      */
     pathPattern: string;
+
+    /**
+     * Whether to enable caching for this API. Defaults to false.
+     */
+    enableCaching?: boolean;
 }
 
 export interface CloudFrontStackProps extends cdk.StackProps {
@@ -199,9 +204,11 @@ export class CloudFrontStack extends cdk.Stack {
                 protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
             });
 
+            const serviceCachePolicy = service.enableCaching ? cloudfront.CachePolicy.CACHING_OPTIMIZED : cachePolicy;
+
             additionalBehaviors[service.pathPattern] = {
                 origin: svcOrigin,
-                cachePolicy,
+                cachePolicy: serviceCachePolicy,
                 originRequestPolicy,
                 // APIs need all HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD).
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
