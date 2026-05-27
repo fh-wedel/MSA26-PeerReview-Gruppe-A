@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Container, Stack, Typography, Link } from '@mui/material';
+import {Box, Container, Link, Stack, Typography} from '@mui/material';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -36,6 +36,15 @@ export const Footer: React.FC = () => {
             >
               FH Wedel
             </Link>
+              <Link
+                  href="https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="text.secondary"
+                  underline="hover"
+                  variant="body2">
+                  GitHub
+              </Link>
           </Stack>
         </Stack>
       </Container>

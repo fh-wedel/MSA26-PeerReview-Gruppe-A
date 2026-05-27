@@ -18,11 +18,11 @@ services:
     image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/web-ui:latest
     build:
       context: web-ui
+      target: dev
     ports:
-      - "5173:80"
-    environment:
-      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-7b8qripeuu1p5c3ph6dd4jee5l}
-      - COGNITO_DOMAIN=${COGNITO_DOMAIN:-peerreviewuserpool-domain.auth.eu-north-1.amazoncognito.com}
+      - "5173:5173"
+    volumes:
+      - ./web-ui:/app
   workflow-service:
     image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/workflow:latest
     build:

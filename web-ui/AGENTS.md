@@ -7,3 +7,6 @@
 - **Canonical submission URLs:** Submission detail routes should use the backend-facing submission UUID directly, not a derived slug. Keep `src/stubs/submissions.ts`, list-page navigation, and detail-page lookup aligned on the same ID.
 - **Safe date rendering:** For submission timestamps, prefer `src/utils/date.ts` over raw `format(new Date(value))`; malformed or missing API values can otherwise throw during render.
 - **UI verification command:** `npm run lint` currently covers both `src/` and `infra/` and may fail on unrelated baseline lint debt; for scoped frontend changes, `npm run build` is the reliable regression check unless lint cleanup is in scope.
+- **Vite Proxy Configuration:** To mirror production AWS API Gateway routing, the Vite dev server must proxy `/api` requests to the local Spring Boot backend (e.g., `http://localhost:8080`) via `vite.config.ts`.
+- **Frontend-Backend Plugin Name Coupling:** The frontend `SubmissionReviewMode` type and stubs must use the exact string identifiers returned by the backend workflow plugins (e.g., `double-blind`, not `double blind`).
+- **MUI Snackbar Positioning:** To maintain consistency with the application's toast notification style, `Snackbar` components should use `anchorOrigin={{ vertical: 'top', horizontal: 'right' }}` and `sx={{ mt: 8 }}`.

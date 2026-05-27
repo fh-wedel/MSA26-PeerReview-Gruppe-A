@@ -23,11 +23,11 @@ import { ArrowBack, PictureAsPdf, Chat as ChatIcon, Edit as EditIcon, Save as Sa
 import { useTheme } from '@mui/material/styles';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { formatSubmissionReviewMode, getMockSubmissionById } from '../stubs/submissions';
-import type { SubmissionReviewMode } from '../stubs/submissions';
 import { mockUsers } from '../stubs/users';
 import type { MockUser } from '../stubs/users';
 import { formatDateTime } from '../utils/date';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkflowPlugins } from '../hooks/useWorkflowPlugins';
 import { ChatModal } from '../components/ChatModal';
 import { mockChatThreads } from '../stubs/chats';
 import { mockMessages } from '../stubs/messages';
@@ -39,6 +39,7 @@ export const SubmissionDetails: React.FC = () => {
   const location = useLocation();
   const { submissionId } = useParams<{ submissionId: string }>();
   const { user } = useAuth();
+  const { plugins } = useWorkflowPlugins();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [chatOpenState, setChatOpenState] = useState(false);
@@ -174,9 +175,14 @@ export const SubmissionDetails: React.FC = () => {
       return r === 'admin' || r === 'examinationofficer';
     }) ?? false;
 
-  const getVisibleName = (id: string | undefined, name: string | undefined, mode: SubmissionReviewMode) => {
+  const getVisibleName = (id: string | undefined, name: string | undefined, role: 'author' | 'reviewer') => {
     if (isPrivileged) return name || 'Not assigned yet';
-    if (mode === 'open review') return name || 'Not assigned yet';
+    
+    const plugin = plugins.find(p => p.name === submission.reviewMode);
+    // Default to anonymous (true) if plugin is not loaded to prevent privacy leaks
+    const isAnonymous = plugin ? (role === 'author' ? plugin.rules.authorAnonymous : plugin.rules.reviewerAnonymous) : true;
+    
+    if (!isAnonymous) return name || 'Not assigned yet';
     
     if (!id) return 'Not assigned yet';
     if (id === user?.id) return name;
@@ -234,7 +240,7 @@ export const SubmissionDetails: React.FC = () => {
                 <Typography variant="subtitle2" color="text.secondary">
                   Review Mode
                 </Typography>
-                <Typography sx={{ py: 1 }}>{formatSubmissionReviewMode(submission.reviewMode)}</Typography>
+                <Typography sx={{ py: 1 }}>{plugins.find(p => p.name === submission.reviewMode) ? submission.reviewMode.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : formatSubmissionReviewMode(submission.reviewMode)}</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>
@@ -262,7 +268,7 @@ export const SubmissionDetails: React.FC = () => {
                   />
                 ) : (
                   <Typography sx={{ py: 1 }}>
-                    {getVisibleName(author?.id || submission.authorId, author?.name || submission.authorName, submission.reviewMode)}
+                    {getVisibleName(author?.id || submission.authorId, author?.name || submission.authorName, 'author')}
                   </Typography>
                 )}
 
@@ -286,7 +292,7 @@ export const SubmissionDetails: React.FC = () => {
                   />
                 ) : (
                   <Typography sx={{ py: 1 }}>
-                    {getVisibleName(reviewer?.id || submission.reviewerId, reviewer?.name || submission.reviewerName, submission.reviewMode)}
+                    {getVisibleName(reviewer?.id || submission.reviewerId, reviewer?.name || submission.reviewerName, 'reviewer')}
                   </Typography>
                 )}
 
@@ -344,6 +350,7 @@ export const SubmissionDetails: React.FC = () => {
               color="secondary"
               size="large"
               fullWidth
+              disabled={!plugins.find(p => p.name === submission.reviewMode)?.rules.authorReviewerChatAllowed && !isPrivileged}
               startIcon={
                 <Badge color="error" variant="dot" invisible={!hasUnread}>
                   <ChatIcon />

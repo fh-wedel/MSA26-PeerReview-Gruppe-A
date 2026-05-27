@@ -1,4 +1,4 @@
-export type SubmissionReviewMode = 'double blind' | 'single blind' | 'open review';
+export type SubmissionReviewMode = string;
 
 export type SubmissionStatus =
   | 'Submitted'
@@ -40,11 +40,11 @@ export interface SubmissionDetail {
 
 export const formatSubmissionReviewMode = (reviewMode: SubmissionReviewMode): string => {
   switch (reviewMode) {
-    case 'double blind':
+    case 'double-blind':
       return 'Double Blind';
-    case 'single blind':
+    case 'single-blind':
       return 'Single Blind';
-    case 'open review':
+    case 'open-review':
       return 'Open Review';
     default:
       return reviewMode;
@@ -58,7 +58,7 @@ export const mockSubmissions: SubmissionDetail[] = [
     createdAt: '2023-10-12T09:30:00Z',
     documentName: 'event-driven-systems.pdf',
     documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    reviewMode: 'double blind',
+    reviewMode: 'double-blind',
     status: 'Under Review',
     authorId: 'u1',
     authorName: 'Alice Smith',
@@ -91,7 +91,7 @@ export const mockSubmissions: SubmissionDetail[] = [
     createdAt: '2023-09-05T14:15:00Z',
     documentName: 'microfrontend-patterns.pdf',
     documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    reviewMode: 'open review',
+    reviewMode: 'open-review',
     status: 'Published',
     authorId: 'u2',
     authorName: 'Bob Johnson',

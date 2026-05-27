@@ -21,7 +21,7 @@ export const Assignments: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Assignments
+        My Assignments
       </Typography>
       <Paper sx={{ mt: 3 }}>
         {myAssignments.length === 0 ? (

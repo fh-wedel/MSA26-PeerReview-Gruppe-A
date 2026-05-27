@@ -1,3 +1,9 @@
+# Development Stage
+FROM node:26-alpine AS dev
+WORKDIR /app
+EXPOSE 5173
+# The --host flag is required to expose the Vite server outside the container
+CMD ["npx", "vite", "--host"]
 # Build Stage
 FROM node:26-alpine AS builder
 WORKDIR /app
@@ -23,8 +29,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 6. Copy and set entrypoint script to inject runtime env variables
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY --chmod=755 entrypoint.sh /entrypoint.sh
 
 EXPOSE 80
 ENTRYPOINT ["/entrypoint.sh"]
