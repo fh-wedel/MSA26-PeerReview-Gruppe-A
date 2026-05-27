@@ -22,7 +22,15 @@ export const useWorkflowPlugins = () => {
   useEffect(() => {
     const fetchPlugins = async () => {
       try {
-        const response = await fetch('/api/workflow/plugins');
+        const token = sessionStorage.getItem('access_token');
+        const headers: HeadersInit = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch('/api/workflow/plugins', {
+          headers
+        });
         if (!response.ok) {
           throw new Error(`Failed to fetch plugins: ${response.statusText}`);
         }
