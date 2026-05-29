@@ -1,0 +1,51 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Submission API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/submission",
+      "description": "Basepath for the Submission API"
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "Returns the current status of the API",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "OK"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/time": {
+      "get": {
+        "summary": "Returns the current server time",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "time=2026-05-18T12:34:56Z, username=jdoe, groups=Guest"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
