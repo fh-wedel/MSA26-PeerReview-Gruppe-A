@@ -43,10 +43,13 @@ public class SubmissionController {
             @RequestHeader(value = "x-auth-groups", required = false) String groups) {
         log.info("Creating submission configuration by {}", username);
         
-        // Assert authorization: only Reviewer or ExamOffice can create submission configurations
-        boolean isAuthorized = groups != null && (groups.contains("Reviewer") || groups.contains("ExamOffice") || groups.contains("Admin"));
-        if (!isAuthorized && dto.getCreatedByType() != CreatedByType.AUTHOR) {
-            return ResponseEntity.status(403).build();
+        boolean isPrivileged = groups != null && (groups.contains("Reviewer") || groups.contains("ExamOffice") || groups.contains("Admin"));
+        boolean isAuthor = groups != null && groups.contains("Author");
+
+        if (!isPrivileged) {
+            if (!isAuthor || dto.getCreatedByType() != CreatedByType.AUTHOR || username == null || !username.equals(dto.getCreatedById())) {
+                return ResponseEntity.status(403).build();
+            }
         }
 
         SubmissionConfiguration config = submissionService.createConfiguration(dto);

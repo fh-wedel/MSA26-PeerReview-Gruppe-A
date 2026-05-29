@@ -1,5 +1,6 @@
 package com.fh_wedel.submission.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.submission.dto.*;
 import com.fh_wedel.submission.model.*;
 import com.fh_wedel.submission.repository.*;
@@ -26,8 +27,9 @@ public class SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final SqsTemplate sqsTemplate;
     private final S3Presigner s3Presigner;
+    private final ObjectMapper objectMapper;
 
-    @Value("${aws.sqs.response-queue-name:submission-response-queue}")
+    @Value("${aws.sqs.response.queue-name:submission-response-queue}")
     private String responseQueueName;
 
     @Value("${aws.s3.bucket-name:peerreview-submissions-bucket}")
@@ -44,6 +46,7 @@ public class SubmissionService {
         this.submissionRepository = submissionRepository;
         this.sqsTemplate = sqsTemplate;
         this.s3Presigner = s3Presigner;
+        this.objectMapper = new ObjectMapper();
     }
 
     public String getServiceStatus() {
@@ -62,6 +65,20 @@ public class SubmissionService {
                 getCurrentTime(),
                 resolvedUsername,
                 resolvedGroups);
+    }
+
+    // Restore respondToSqsQueue for listener compilation
+    public void respondToSqsQueue(String message) {
+        if (responseQueueName == null || responseQueueName.trim().isEmpty()) {
+            log.warn("Response SQS queue name is not configured. Cannot send response message.");
+            return;
+        }
+        log.info("Sending response message to queue {}: {}", responseQueueName, message);
+        try {
+            sqsTemplate.send(responseQueueName, message);
+        } catch (Exception e) {
+            log.error("Failed to send response message to queue {}", responseQueueName, e);
+        }
     }
 
     // 1. Create a Submission Configuration with grading form and criteria
@@ -227,7 +244,15 @@ public class SubmissionService {
         submission.setFileS3Key(fileS3Key);
         
         if (additionalS3Keys != null && !additionalS3Keys.isEmpty()) {
-            submission.setAdditionalFilesS3Keys(String.join(",", additionalS3Keys));
+            try {
+                // Fix JSONB parsing error by saving a valid JSON array string
+                submission.setAdditionalFilesS3Keys(objectMapper.writeValueAsString(additionalS3Keys));
+            } catch (Exception e) {
+                log.error("Failed to serialize additional files keys to JSON array", e);
+                submission.setAdditionalFilesS3Keys("[]");
+            }
+        } else {
+            submission.setAdditionalFilesS3Keys("[]");
         }
 
         submission.setUpdatedAt(Instant.now());
@@ -263,7 +288,7 @@ public class SubmissionService {
 
         Submission savedSubmission = submissionRepository.save(submission);
 
-        // Dispatch SQS Event asynchronously (conceptually we push to a queue to notify matching/notification services)
+        // Dispatch SQS Event
         publishEvent("SUBMISSION_SUBMITTED", savedSubmission);
 
         return savedSubmission;
@@ -285,22 +310,24 @@ public class SubmissionService {
 
     private void publishEvent(String eventType, Submission submission) {
         try {
-            // Build simple event json payload
-            String authorsList = submission.getAuthors().stream()
-                    .map(SubmissionAuthor::getAuthorId)
-                    .collect(Collectors.joining("\",\"", "[\"", "\"]"));
+            // Fix fragile String.format by utilizing secure Jackson ObjectMapper
+            Map<String, Object> eventMap = new HashMap<>();
+            eventMap.put("eventId", UUID.randomUUID().toString());
+            eventMap.put("eventType", eventType);
+            eventMap.put("timestamp", Instant.now().toString());
 
-            String messageBody = String.format(
-                    "{\"eventId\":\"%s\",\"eventType\":\"%s\",\"timestamp\":\"%s\",\"data\":{\"submissionId\":\"%s\",\"configurationId\":\"%s\",\"title\":\"%s\",\"authors\":%s,\"fileS3Key\":\"%s\"}}",
-                    UUID.randomUUID(),
-                    eventType,
-                    Instant.now(),
-                    submission.getId(),
-                    submission.getConfigurationId(),
-                    submission.getTitle().replace("\"", "\\\""),
-                    authorsList,
-                    submission.getFileS3Key()
-            );
+            Map<String, Object> data = new HashMap<>();
+            data.put("submissionId", submission.getId().toString());
+            data.put("configurationId", submission.getConfigurationId().toString());
+            data.put("title", submission.getTitle());
+            data.put("authors", submission.getAuthors().stream()
+                    .map(SubmissionAuthor::getAuthorId)
+                    .collect(Collectors.toList()));
+            data.put("fileS3Key", submission.getFileS3Key());
+
+            eventMap.put("data", data);
+
+            String messageBody = objectMapper.writeValueAsString(eventMap);
 
             log.info("Publishing {} event to queue {}: {}", eventType, responseQueueName, messageBody);
             sqsTemplate.send(responseQueueName, messageBody);
