@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
 import { SqsInfra } from '../../../infraLibrary/lib/sqs';
@@ -25,6 +26,12 @@ export interface ServiceCreationProps extends cdk.StackProps {
   enablePublicIpV4?: boolean;
   requestQueueName?: string;
   responseQueueName?: string;
+  databaseHost?: string;
+  databasePort?: number;
+  databaseName?: string;
+  databaseUser?: string;
+  databasePassword?: string;
+  s3BucketName?: string;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -71,7 +78,13 @@ export class ServiceStack extends cdk.Stack {
         'SQS_REQUEST_QUEUE': props.requestQueueName ?? '',
         'SQS_RESPONSE_QUEUE': props.responseQueueName ?? '',
         'SERVER_PORT': containerPort.toString(),
-        "AWS_REGION": AWSConstants.AWS_REGION,
+        'AWS_REGION': AWSConstants.AWS_REGION,
+        'DB_HOST': props.databaseHost ?? 'localhost',
+        'DB_PORT': (props.databasePort ?? 5432).toString(),
+        'DB_NAME': props.databaseName ?? 'submission_db',
+        'DB_USER': props.databaseUser ?? 'postgres',
+        'DB_PASSWORD': props.databasePassword ?? 'postgres',
+        'S3_BUCKET_NAME': props.s3BucketName ?? 'peerreview-submissions-bucket',
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -146,6 +159,11 @@ export class ServiceStack extends cdk.Stack {
       });
 
       SqsInfra.grantWritePermissions(responseQueues, ecsService.taskDefinition.taskRole);
+    }
+
+    if (props.s3BucketName) {
+      const bucket = s3.Bucket.fromBucketName(this, 'SubmissionsBucket', props.s3BucketName);
+      bucket.grantReadWrite(ecsService.taskDefinition.taskRole);
     }
   }
 }

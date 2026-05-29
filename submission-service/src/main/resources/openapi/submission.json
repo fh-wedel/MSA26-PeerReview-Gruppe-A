@@ -46,6 +46,128 @@
           }
         }
       }
+    },
+    "/configurations": {
+      "post": {
+        "summary": "Create a new submission configuration",
+        "responses": {
+          "200": {
+            "description": "Created successfully"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/submissions": {
+      "post": {
+        "summary": "Create a new student submission",
+        "responses": {
+          "200": {
+            "description": "Created successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/submissions/{id}/presigned-url": {
+      "post": {
+        "summary": "Generate an S3 presigned upload URL",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL generated successfully"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/submissions/{id}": {
+      "put": {
+        "summary": "Update student submission draft details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated successfully"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/submissions/{id}/submit": {
+      "post": {
+        "summary": "Finalize and lock a student submission",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submitted successfully"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/configurations/{id}/grading-form": {
+      "get": {
+        "summary": "Fetch grading criteria form",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
     }
   }
 }
