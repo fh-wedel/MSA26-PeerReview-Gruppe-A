@@ -9,6 +9,7 @@ import { ImportedRessources } from '../../infraLibrary/lib/importedRessources';
 import { AWSConstants } from '../../infrabaseline/lib/constants';
 import * as route53_targets from 'aws-cdk-lib/aws-route53-targets';
 import * as cr from 'aws-cdk-lib/custom-resources';
+import { Duration } from 'aws-cdk-lib';
 
 
 /**
@@ -227,12 +228,12 @@ export class CloudFrontStack extends cdk.Stack {
             comment: 'PeerReview system — single entry point for Web UI and all microservice APIs',
             defaultBehavior,
             additionalBehaviors,
-            domainNames: [
-                AWSConstants.APP_DOMAIN_NAME,
-                AWSConstants.APP_WWW_DOMAIN_NAME,
-                AWSConstants.REDIRECT_DOMAIN_NAME,
-                AWSConstants.REDIRECT_WWW_DOMAIN_NAME
-            ],
+            // domainNames: [
+            //     AWSConstants.APP_DOMAIN_NAME,
+            //     AWSConstants.APP_WWW_DOMAIN_NAME,
+            //     AWSConstants.REDIRECT_DOMAIN_NAME,
+            //     AWSConstants.REDIRECT_WWW_DOMAIN_NAME
+            // ],
             certificate: certificate,
             // Use the default CloudFront certificate (*.cloudfront.net) — no custom domain needed.
             // HTTP requests are automatically redirected to HTTPS by viewerProtocolPolicy above.
@@ -264,6 +265,13 @@ export class CloudFrontStack extends cdk.Stack {
                 zone: hostedZone,
                 recordName: recordName,
                 target: route53.RecordTarget.fromAlias(new route53_targets.CloudFrontTarget(distribution)),
+            });
+
+            new route53.TxtRecord(this, `CloudFrontVerificationTxt-${idSuffix}`, {
+                zone: hostedZone,
+                recordName: `_${recordName}`,
+                values: [distribution.distributionDomainName],
+                ttl: Duration.minutes(5),
             });
         });
 
