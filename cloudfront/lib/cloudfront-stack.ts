@@ -228,12 +228,13 @@ export class CloudFrontStack extends cdk.Stack {
             comment: 'PeerReview system — single entry point for Web UI and all microservice APIs',
             defaultBehavior,
             additionalBehaviors,
-            // domainNames: [
-            //     AWSConstants.APP_DOMAIN_NAME,
-            //     AWSConstants.APP_WWW_DOMAIN_NAME,
-            //     AWSConstants.REDIRECT_DOMAIN_NAME,
-            //     AWSConstants.REDIRECT_WWW_DOMAIN_NAME
-            // ],
+            domainNames: [
+                AWSConstants.APP_DOMAIN_NAME,
+                AWSConstants.APP_WWW_DOMAIN_NAME,
+                // Currently Disbaled because the Domain is still blocked by the old account. After 90 it would be released and can be used again.
+                // AWSConstants.REDIRECT_DOMAIN_NAME,
+                // AWSConstants.REDIRECT_WWW_DOMAIN_NAME
+            ],
             certificate: certificate,
             // Use the default CloudFront certificate (*.cloudfront.net) — no custom domain needed.
             // HTTP requests are automatically redirected to HTTPS by viewerProtocolPolicy above.
