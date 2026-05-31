@@ -24,11 +24,11 @@ Alternativ zum lokalen Vorgehen kann das Deployment auch manuell ueber die CI (w
 1. Das Docker Image wird lokal gebaut und in das ECR Repository gepusht. Um das Image zu bauen (Aktuelles Arbeitsverzeichniss `<<ServiceName>>/`):
     `docker build -t fh-wedel/<<ServiceName>> .`
 2. Anschließend muss Docker sich bei AWS ECR authentifizieren:
-    `aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 720830544039.dkr.ecr.eu-north-1.amazonaws.com`
+    `aws ecr get-login-password --region eu-north-1 --profile fh-wedel-msa | docker login --username AWS --password-stdin 395982336633.dkr.ecr.eu-north-1.amazonaws.com`
 3. Das Image muss mit getaggt werden:
-    `docker tag fh-wedel/<<ServiceName>>:latest 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/<<ServiceName>>:latest`
+    `docker tag fh-wedel/<<ServiceName>>:latest 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/<<ServiceName>>:latest`
 4. Das Image wird in das ECR Repository gepusht:
-    `docker push 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/<<ServiceName>>:latest`
+    `docker push 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/<<ServiceName>>:latest`
 5. Optional kann mit dem folgenden Befehl vor dem Deployment überprüft werden welche CDK Änderungen vorgenommen werden:
     `npx cdk diff`
 6. Der Service Stack wird mit dem folgenden Befehl deployt (Aktuelles Arbeitsverzeichniss `<<ServiceName>>/infra`):
@@ -38,9 +38,9 @@ Ein gesamtes Beispiel für den `template` Service mit einer AWS SSO konfiguriert
 ```bash
 cd templateEcsService/
 docker build -t fh-wedel/template .
-aws ecr get-login-password --region eu-north-1 --profile fh-wedel | docker login --username AWS --password-stdin 720830544039.dkr.ecr.eu-north-1.amazonaws.com
-docker tag fh-wedel/template:latest 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
-docker push 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
+aws ecr get-login-password --region eu-north-1 --profile fh-wedel-msa | docker login --username AWS --password-stdin 395982336633.dkr.ecr.eu-north-1.amazonaws.com
+docker tag fh-wedel/template:latest 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
+docker push 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
 cd infra/
 npx cdk deploy --profile fh-wedel
 ```

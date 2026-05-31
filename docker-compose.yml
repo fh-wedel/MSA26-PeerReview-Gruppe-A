@@ -1,6 +1,6 @@
 services:
   template-service:
-    image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
+    image: 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/template:latest
     build:
       context: templateEcsService
     # Run the container as the host user to ensure it has permission to read the mounted ~/.aws directory
@@ -15,7 +15,7 @@ services:
       - AWS_PROFILE=${AWS_PROFILE:-fh-wedel-msa}
       - SPRING_CLOUD_AWS_REGION_STATIC=eu-north-1
   web-ui-service:
-    image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/web-ui:latest
+    image: 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/web-ui:latest
     build:
       context: web-ui
       target: dev
@@ -24,7 +24,7 @@ services:
     volumes:
       - ./web-ui:/app
   workflow-service:
-    image: 720830544039.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/workflow:latest
+    image: 395982336633.dkr.ecr.eu-north-1.amazonaws.com/fh-wedel/workflow:latest
     build:
       context: workflow-service
     ports:

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Replace placeholders with environment variables in the built assets
 echo "Replacing placeholders with actual environment variables..."
