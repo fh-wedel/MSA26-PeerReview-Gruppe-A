@@ -1,0 +1,24 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminStatusAccess",
+            "groupName": "Admin",
+            "actionId": "get /api/matching/status",
+            "description": "Allow Admin to access matching status"
+        },
+        {
+            "id": "GuestTimeAccess",
+            "groupName": "Guest",
+            "actionId": "get /api/matching/time",
+            "description": "Allow Guest to access matching time"
+        }
+    ]
+}
