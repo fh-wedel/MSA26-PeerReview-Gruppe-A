@@ -152,7 +152,7 @@ jobs:
       always() && 
       inputs.allow_deploy && 
       (inputs.run_infra || inputs.run_docker) && 
-      (needs['docker-build'].result == 'success' || needs['docker-build'].result == 'skipped')
+      (needs['docker-build'].result == 'success')
     environment: ${{ inputs.deploy_environment }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
