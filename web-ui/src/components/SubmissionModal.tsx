@@ -7,7 +7,7 @@ type ReviewMode = string;
 interface SubmissionModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (title: string, reviewMode: string) => void;
+  onSubmit: (title: string, reviewMode: string, file: File | null) => void;
   authorName: string;
 }
 
@@ -25,7 +25,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
   }, [error]);
 
   const handleSubmit = () => {
-    onSubmit(title, reviewMode);
+    onSubmit(title, reviewMode, pdfFile);
     setTitle('');
     setReviewMode('double-blind');
     setPdfFile(null);
@@ -42,7 +42,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
   return (
     <>
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Submit Paper for Review</DialogTitle>
+      <DialogTitle>Create Submission</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <TextField
@@ -75,16 +75,16 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
               )}
             </Select>
           </FormControl>
-          <Button variant="outlined" component="label" color={pdfFile ? 'primary' : 'inherit'}>
-            {pdfFile ? pdfFile.name : 'Upload PDF Document'}
+          <Button variant="contained" component="label" color={pdfFile ? "primary" : "inherit"}>
+            {pdfFile ? pdfFile.name : 'Upload PDF Document (Optional)'}
             <input type="file" hidden accept="application/pdf" onChange={handleFileChange} />
           </Button>
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">Cancel</Button>
-        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!title || !pdfFile}>
-          Submit
+        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!title}>
+          Create
         </Button>
       </DialogActions>
     </Dialog>

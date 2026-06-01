@@ -1,6 +1,7 @@
 export type SubmissionReviewMode = string;
 
 export type SubmissionStatus =
+  | 'Draft'
   | 'Submitted'
   | 'Reviewer Assigned'
   | 'Under Review'
