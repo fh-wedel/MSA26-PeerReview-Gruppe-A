@@ -2,6 +2,8 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
 import { SqsInfra } from '../../../infraLibrary/lib/sqs';
@@ -25,6 +27,8 @@ export interface ServiceCreationProps extends cdk.StackProps {
   enablePublicIpV4?: boolean;
   requestQueueName?: string;
   responseQueueName?: string;
+  dynamoDbTableName?: string;
+  cognitoReviewerGroupName?: string;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -46,6 +50,37 @@ export class ServiceStack extends cdk.Stack {
       logGroupName: `/ecs/${props.serviceName}`,
     });
 
+    // =============================================
+    // DynamoDB Table for Match Records
+    // =============================================
+    const dynamoTableName = props.dynamoDbTableName ?? 'matching-service-matches';
+    const matchesTable = new dynamodb.Table(this, 'MatchesTable', {
+      tableName: dynamoTableName,
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    matchesTable.addGlobalSecondaryIndex({
+      indexName: 'ExaminerIndex',
+      partitionKey: { name: 'examinerId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // =============================================
+    // Import Cognito User Pool ID from baseline
+    // =============================================
+    const cognitoUserPoolId = cdk.Fn.importValue(
+      `${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`
+    );
+
+    const reviewerGroupName = props.cognitoReviewerGroupName ?? 'Reviewer';
+
+    // =============================================
+    // ECS Task Definition
+    // =============================================
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: props.memory,
       cpu: props.cpu,
@@ -71,11 +106,17 @@ export class ServiceStack extends cdk.Stack {
         'SQS_REQUEST_QUEUE': props.requestQueueName ?? '',
         'SQS_RESPONSE_QUEUE': props.responseQueueName ?? '',
         'SERVER_PORT': containerPort.toString(),
-        "AWS_REGION": AWSConstants.AWS_REGION,
+        'AWS_REGION': AWSConstants.AWS_REGION,
+        'COGNITO_USER_POOL_ID': cognitoUserPoolId,
+        'COGNITO_REVIEWER_GROUP_NAME': reviewerGroupName,
+        'DYNAMODB_TABLE_NAME': dynamoTableName,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
 
+    // =============================================
+    // Security Group
+    // =============================================
     const ecsSecurityGroup = new ec2.SecurityGroup(this, 'EcsSg', {
       vpc,
       allowAllOutbound: true,
@@ -120,8 +161,36 @@ export class ServiceStack extends cdk.Stack {
       },
     ];
 
+    // =============================================
+    // IAM Permissions
+    // =============================================
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
+    // DynamoDB permissions
+    matchesTable.grantReadWriteData(taskDefinition.taskRole);
+
+    // Cognito admin permissions for the User Proxy API and reviewer lookup
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'cognito-idp:ListUsersInGroup',
+          'cognito-idp:AdminGetUser',
+          'cognito-idp:AdminCreateUser',
+          'cognito-idp:AdminUpdateUserAttributes',
+          'cognito-idp:AdminDeleteUser',
+          'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:AdminRemoveUserFromGroup',
+        ],
+        resources: [
+          `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${cognitoUserPoolId}`,
+        ],
+      })
+    );
+
+    // =============================================
+    // Auto Scaling
+    // =============================================
     if (props.minTaskCount !== props.maxTaskCount) {
       logger.info(`Setting up auto-scaling for service ${props.serviceName} with min ${props.minTaskCount} and max ${props.maxTaskCount} tasks.`);
       if (!props.cpuTargetUtilizationPercent) {
@@ -130,6 +199,9 @@ export class ServiceStack extends cdk.Stack {
       EcsInfra.addAutoScalingToService(ecsService, props.minTaskCount, props.maxTaskCount, props.cpuTargetUtilizationPercent ?? 75);
     }
 
+    // =============================================
+    // SQS Queues
+    // =============================================
     if (props.requestQueueName) {
       const requestQueues = SqsInfra.createQueue(this, {
         queueName: props.requestQueueName,

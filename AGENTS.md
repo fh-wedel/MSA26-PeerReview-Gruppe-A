@@ -50,6 +50,12 @@ The infrastructure is organized into:
 3. Build the Docker image and push it to the ECR repository.
 4. Navigate to the `infra/` folder, adjust the `ServiceStack` properties (e.g., injecting SQS queues, S3 buckets, RDS credentials), and deploy via `npx cdk deploy`.
 
+### Adding a Microservice to CI/CD
+When a new microservice is fully structured, integrate it into `.github/workflows/ci.yml`:
+1. **Path Filters:** Add new outputs and filters in the `dorny/paths-filter` step for `_code`, `_infra`, and `_any`.
+2. **Workflow Job:** Create a new job utilizing `.github/workflows/reusable-service.yml` alongside the other services.
+3. **CloudFront Integration:** Update the `cloudfront-deploy` job to `needs` your new service, and register your API routing (e.g. `/api/<service>/*`) in `cloudfront/bin/cloudfront.ts`.
+
 *Note: Deployment currently uses the AWS CLI configured via SSO.*
 
 ## 6. Coding Conventions and Guidelines
@@ -67,3 +73,5 @@ The infrastructure is organized into:
 - **IPv6 Networking:** Note that the private subnets use IPv6 (`ipv6Native = true`). Ensure security groups and routing are configured correctly for IPv6 when deploying private services.
 - **Multi-module Docker Builds:** Module Dockerfiles must be executed from the project root (`docker build -f module/Dockerfile .`) to access the parent `pom.xml`. The root `.dockerignore` enforces a strict allowlist pattern.
 - **Lombok Configuration:** Lombok must be explicitly added to the `maven-compiler-plugin`'s `<annotationProcessorPaths>` in the root `pom.xml`. Just adding the dependency causes silent processor failures and compile errors for `@Slf4j` in child modules. Also note that since we moved to `<dependencyManagement>`, you must declare `lombok` (and Spring Boot/AWS starters) explicitly in child modules that need them.
+- **Testing Spring Security:** Avoid using `@WebMvcTest` when unit-testing controllers that rely on custom ABAC rules (`@PreAuthorize`). Write pure Mockito tests that inject the mock `Authentication` object directly. This bypasses missing/conflicting Spring Boot 4/3 test auto-configurations and speeds up testing.
+- **AWS SQS Listeners:** If using `@ConditionalOnExpression` to disable AWS `@SqsListener` locally, ensure required dependencies (like `ObjectMapper`) are explicitly registered as `@Bean`s in an `@Configuration` class to prevent "missing bean" errors during deployment.

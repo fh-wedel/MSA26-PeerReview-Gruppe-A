@@ -1,7 +1,8 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Status API",
+    "title": "Matching Service API",
+    "description": "API for managing reviewer-submission matches and Cognito reviewer proxy operations.",
     "version": "1.0.0"
   },
   "servers": [
@@ -11,17 +12,39 @@
     }
   ],
   "paths": {
-    "/status": {
+    "/matches/submissions/{submissionId}": {
       "get": {
-        "summary": "Returns the current status of the API",
+        "operationId": "getMatchesBySubmission",
+        "summary": "Returns all matched reviewers and matching status for a submission",
+        "tags": ["matches"],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier of the submission"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "Matching details for the submission",
             "content": {
-              "text/plain": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "example": "OK"
+                  "$ref": "#/components/schemas/SubmissionMatchResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No matching record found for this submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -29,22 +52,377 @@
         }
       }
     },
-    "/time": {
+    "/matches/examiners/{examinerId}": {
       "get": {
-        "summary": "Returns the current server time",
+        "operationId": "getMatchesByExaminer",
+        "summary": "Returns all submissions assigned to a specific examiner",
+        "tags": ["matches"],
+        "parameters": [
+          {
+            "name": "examinerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Cognito sub (UUID) of the examiner"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "List of submissions assigned to the examiner",
             "content": {
-              "text/plain": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "example": "time=2026-05-18T12:34:56Z, username=jdoe, groups=Guest"
+                  "$ref": "#/components/schemas/ExaminerMatchResponse"
                 }
               }
             }
           }
         }
+      }
+    },
+    "/examiners": {
+      "get": {
+        "operationId": "listExaminers",
+        "summary": "Lists all available reviewers from the Cognito Reviewer group",
+        "tags": ["examiners"],
+        "responses": {
+          "200": {
+            "description": "List of all reviewers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExaminerResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createExaminer",
+        "summary": "Creates a new reviewer in the Cognito Reviewer group",
+        "tags": ["examiners"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExaminerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reviewer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExaminerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examiners/{examinerId}": {
+      "get": {
+        "operationId": "getExaminer",
+        "summary": "Returns details of a specific reviewer from Cognito",
+        "tags": ["examiners"],
+        "parameters": [
+          {
+            "name": "examinerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Cognito sub (UUID) of the reviewer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviewer details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExaminerResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reviewer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateExaminer",
+        "summary": "Updates the metadata/custom attributes of a reviewer in Cognito",
+        "tags": ["examiners"],
+        "parameters": [
+          {
+            "name": "examinerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Cognito sub (UUID) of the reviewer"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExaminerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reviewer updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExaminerResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reviewer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteExaminer",
+        "summary": "Deletes a reviewer from the Cognito User Pool",
+        "tags": ["examiners"],
+        "parameters": [
+          {
+            "name": "examinerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Cognito sub (UUID) of the reviewer"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reviewer deleted successfully"
+          },
+          "404": {
+            "description": "Reviewer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SubmissionMatchResponse": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["MATCHED", "FAILED"]
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Failure reason, only present when status is FAILED"
+          },
+          "numberOfExaminers": {
+            "type": "integer"
+          },
+          "submitterId": {
+            "type": "string"
+          },
+          "matchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchEntry"
+            }
+          }
+        },
+        "required": ["submissionId", "status", "matchedAt"]
+      },
+      "MatchEntry": {
+        "type": "object",
+        "properties": {
+          "examinerId": {
+            "type": "string",
+            "description": "Cognito sub (UUID) of the assigned reviewer"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["examinerId", "assignedAt"]
+      },
+      "ExaminerMatchResponse": {
+        "type": "object",
+        "properties": {
+          "examinerId": {
+            "type": "string"
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssignmentEntry"
+            }
+          }
+        },
+        "required": ["examinerId", "assignments"]
+      },
+      "AssignmentEntry": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["submissionId", "assignedAt"]
+      },
+      "ExaminerResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Cognito sub (UUID)"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "description": "Cognito user status (e.g., CONFIRMED, FORCE_CHANGE_PASSWORD)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customAttributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom Cognito attributes (e.g., specialty, availability)"
+          }
+        },
+        "required": ["userId", "username", "email"]
+      },
+      "CreateExaminerRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "temporaryPassword": {
+            "type": "string",
+            "description": "Optional temporary password. If not provided, Cognito will generate one."
+          },
+          "customAttributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["username", "email"]
+      },
+      "UpdateExaminerRequest": {
+        "type": "object",
+        "properties": {
+          "customAttributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom attributes to update on the Cognito user"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["message"]
       }
     }
   }

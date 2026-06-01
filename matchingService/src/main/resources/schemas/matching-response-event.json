@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MatchingResponseEvent",
+  "description": "SQS event payload sent by the Matching Service to notify the Submission Service of a successful match.",
+  "type": "object",
+  "properties": {
+    "submissionId": {
+      "type": "string",
+      "description": "Unique identifier of the submission that was successfully matched."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["MATCHED"],
+      "description": "Status of the matching operation. Only success events are published to SQS."
+    }
+  },
+  "required": ["submissionId", "status"],
+  "additionalProperties": false
+}

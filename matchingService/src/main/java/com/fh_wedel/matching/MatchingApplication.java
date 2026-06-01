@@ -16,26 +16,38 @@ public class MatchingApplication {
 	}
 
 	@Bean
-	public CommandLineRunner startupRunner(@Value("${aws.sqs.request.queue-name}") String requestQueue,
-			@Value("${aws.sqs.response.queue-name}") String responseQueue) {
+	public CommandLineRunner startupRunner(
+			@Value("${aws.sqs.request.queue-name}") String requestQueue,
+			@Value("${aws.sqs.response.queue-name}") String responseQueue,
+			@Value("${aws.cognito.user-pool-id}") String userPoolId,
+			@Value("${aws.cognito.reviewer-group-name}") String reviewerGroup,
+			@Value("${aws.dynamodb.table-name}") String dynamoTableName) {
 
 		return args -> {
 			log.info("==========================================");
-			log.info("  Template Microservice has started!      ");
-			log.info("  Ready to process requests and SQS msgs! ");
+			log.info("  Matching Service has started!           ");
 			log.info("==========================================");
 
 			if (requestQueue.isBlank()) {
 				log.warn("No request Queue Active!");
 			} else {
-				log.info("Request Queue {} Active", requestQueue);
+				log.info("Request Queue: {}", requestQueue);
 			}
 
 			if (responseQueue.isBlank()) {
 				log.warn("No response Queue Active!");
 			} else {
-				log.info("Response Queue {} Active", responseQueue);
+				log.info("Response Queue: {}", responseQueue);
 			}
+
+			if (userPoolId.isBlank()) {
+				log.warn("No Cognito User Pool ID configured!");
+			} else {
+				log.info("Cognito User Pool: {} (group: {})", userPoolId, reviewerGroup);
+			}
+
+			log.info("DynamoDB Table: {}", dynamoTableName);
+			log.info("==========================================");
 		};
 	}
 
