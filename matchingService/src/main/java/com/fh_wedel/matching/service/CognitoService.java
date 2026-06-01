@@ -60,6 +60,28 @@ public class CognitoService {
     }
 
     /**
+     * Gets the reviewer group name.
+     */
+    public String getReviewerGroupName() {
+        return reviewerGroupName;
+    }
+
+    /**
+     * Gets the groups a specific user belongs to.
+     *
+     * @param username the Cognito username
+     * @return list of group names
+     */
+    public List<String> getUserGroups(String username) {
+        log.info("Getting groups for user '{}'", username);
+        AdminListGroupsForUserResponse response = cognitoClient.adminListGroupsForUser(AdminListGroupsForUserRequest.builder()
+                .userPoolId(userPoolId)
+                .username(username)
+                .build());
+        return response.groups().stream().map(GroupType::groupName).toList();
+    }
+
+    /**
      * Gets a specific user by their Cognito username.
      *
      * @param username the Cognito username

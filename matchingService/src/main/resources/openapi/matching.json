@@ -369,6 +369,13 @@
               "type": "string"
             },
             "description": "Custom Cognito attributes (e.g., specialty, availability)"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The Cognito groups the user belongs to"
           }
         },
         "required": ["userId", "username", "email"]

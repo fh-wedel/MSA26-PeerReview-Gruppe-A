@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreate
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -45,7 +46,7 @@ public class ExaminerController {
         List<UserType> reviewers = cognitoService.listReviewers();
 
         List<ExaminerResponse> response = reviewers.stream()
-                .map(this::mapUserTypeToResponse)
+                .map(u -> mapUserTypeToResponse(u, List.of(cognitoService.getReviewerGroupName())))
                 .toList();
 
         return ResponseEntity.ok(response);
@@ -60,8 +61,13 @@ public class ExaminerController {
         log.info("Request received: GET /examiners/{}", examinerId);
 
         try {
+            List<String> groups = cognitoService.getUserGroups(examinerId);
+            if (!groups.contains(cognitoService.getReviewerGroupName())) {
+                log.warn("User {} is not a reviewer", examinerId);
+                return ResponseEntity.notFound().build();
+            }
             AdminGetUserResponse user = cognitoService.getUser(examinerId);
-            ExaminerResponse response = mapAdminGetUserToResponse(user);
+            ExaminerResponse response = mapAdminGetUserToResponse(user, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
             log.warn("Examiner not found: {}", examinerId);
@@ -83,7 +89,8 @@ public class ExaminerController {
                 request.getCustomAttributes()
         );
 
-        ExaminerResponse response = mapAdminGetUserToResponse(promotedUser);
+        List<String> groups = cognitoService.getUserGroups(request.getUsername());
+        ExaminerResponse response = mapAdminGetUserToResponse(promotedUser, groups);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -99,6 +106,12 @@ public class ExaminerController {
         log.info("Request received: PATCH /examiners/{}", examinerId);
 
         try {
+            List<String> groups = cognitoService.getUserGroups(examinerId);
+            if (!groups.contains(cognitoService.getReviewerGroupName())) {
+                log.warn("User {} is not a reviewer, cannot update", examinerId);
+                return ResponseEntity.notFound().build();
+            }
+
             Map<String, String> attrs = request.getCustomAttributes();
             if (attrs != null && !attrs.isEmpty()) {
                 cognitoService.updateReviewerAttributes(examinerId, attrs);
@@ -106,11 +119,14 @@ public class ExaminerController {
 
             // Return the updated user
             AdminGetUserResponse updatedUser = cognitoService.getUser(examinerId);
-            ExaminerResponse response = mapAdminGetUserToResponse(updatedUser);
+            ExaminerResponse response = mapAdminGetUserToResponse(updatedUser, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
             log.warn("Examiner not found for update: {}", examinerId);
             return ResponseEntity.notFound().build();
+        } catch (InvalidParameterException e) {
+            log.warn("Invalid attribute provided for update: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
     }
 
@@ -124,6 +140,12 @@ public class ExaminerController {
         log.info("Request received: DELETE /examiners/{}", examinerId);
 
         try {
+            List<String> groups = cognitoService.getUserGroups(examinerId);
+            if (!groups.contains(cognitoService.getReviewerGroupName())) {
+                log.warn("User {} is not a reviewer, cannot delete", examinerId);
+                return ResponseEntity.notFound().build();
+            }
+
             cognitoService.deleteReviewer(examinerId);
             return ResponseEntity.noContent().build();
         } catch (UserNotFoundException e) {
@@ -136,7 +158,7 @@ public class ExaminerController {
     // Mapping helpers
     // ========================
 
-    private ExaminerResponse mapUserTypeToResponse(UserType user) {
+    private ExaminerResponse mapUserTypeToResponse(UserType user, List<String> groups) {
         ExaminerResponse response = new ExaminerResponse();
         response.setUserId(CognitoService.extractSub(user));
         response.setUsername(user.username());
@@ -147,10 +169,11 @@ public class ExaminerController {
             response.setCreatedAt(OffsetDateTime.ofInstant(user.userCreateDate(), ZoneOffset.UTC));
         }
         response.setCustomAttributes(CognitoService.extractCustomAttributes(user));
+        response.setGroups(groups);
         return response;
     }
 
-    private ExaminerResponse mapAdminGetUserToResponse(AdminGetUserResponse user) {
+    private ExaminerResponse mapAdminGetUserToResponse(AdminGetUserResponse user, List<String> groups) {
         ExaminerResponse response = new ExaminerResponse();
         response.setUserId(CognitoService.extractAttribute(user, "sub"));
         response.setUsername(user.username());
@@ -161,6 +184,7 @@ public class ExaminerController {
             response.setCreatedAt(OffsetDateTime.ofInstant(user.userCreateDate(), ZoneOffset.UTC));
         }
         response.setCustomAttributes(CognitoService.extractCustomAttributes(user));
+        response.setGroups(groups);
         return response;
     }
 }
