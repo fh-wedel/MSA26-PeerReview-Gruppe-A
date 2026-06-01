@@ -1,6 +1,7 @@
 package com.fh_wedel.matching.controller;
 
 import com.fh_wedel.matching.model.api.CreateExaminerRequest;
+import com.fh_wedel.matching.model.api.ErrorResponse;
 import com.fh_wedel.matching.model.api.ExaminerResponse;
 import com.fh_wedel.matching.model.api.UpdateExaminerRequest;
 import com.fh_wedel.matching.service.CognitoService;
@@ -57,21 +58,23 @@ public class ExaminerController {
      */
     @GetMapping("/{examinerId}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<ExaminerResponse> getExaminer(@PathVariable String examinerId) {
+    public ResponseEntity<?> getExaminer(@PathVariable String examinerId) {
         log.info("Request received: GET /examiners/{}", examinerId);
 
         try {
             List<String> groups = cognitoService.getUserGroups(examinerId);
             if (!groups.contains(cognitoService.getReviewerGroupName())) {
                 log.warn("User {} is not a reviewer", examinerId);
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
             AdminGetUserResponse user = cognitoService.getUser(examinerId);
             ExaminerResponse response = mapAdminGetUserToResponse(user, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
             log.warn("Examiner not found: {}", examinerId);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
         }
     }
 
@@ -101,7 +104,7 @@ public class ExaminerController {
      */
     @PatchMapping("/{examinerId}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<ExaminerResponse> updateExaminer(@PathVariable String examinerId,
+    public ResponseEntity<?> updateExaminer(@PathVariable String examinerId,
                                                            @RequestBody UpdateExaminerRequest request) {
         log.info("Request received: PATCH /examiners/{}", examinerId);
 
@@ -109,7 +112,8 @@ public class ExaminerController {
             List<String> groups = cognitoService.getUserGroups(examinerId);
             if (!groups.contains(cognitoService.getReviewerGroupName())) {
                 log.warn("User {} is not a reviewer, cannot update", examinerId);
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
 
             Map<String, String> attrs = request.getCustomAttributes();
@@ -123,10 +127,12 @@ public class ExaminerController {
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
             log.warn("Examiner not found for update: {}", examinerId);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
         } catch (InvalidParameterException e) {
             log.warn("Invalid attribute provided for update: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Invalid attribute provided: " + e.getMessage()).code("BAD_REQUEST").timestamp(OffsetDateTime.now()));
         }
     }
 
@@ -136,21 +142,23 @@ public class ExaminerController {
      */
     @DeleteMapping("/{examinerId}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<Void> deleteExaminer(@PathVariable String examinerId) {
+    public ResponseEntity<?> deleteExaminer(@PathVariable String examinerId) {
         log.info("Request received: DELETE /examiners/{}", examinerId);
 
         try {
             List<String> groups = cognitoService.getUserGroups(examinerId);
             if (!groups.contains(cognitoService.getReviewerGroupName())) {
                 log.warn("User {} is not a reviewer, cannot delete", examinerId);
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
 
             cognitoService.deleteReviewer(examinerId);
             return ResponseEntity.noContent().build();
         } catch (UserNotFoundException e) {
             log.warn("Examiner not found for deletion: {}", examinerId);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
         }
     }
 
