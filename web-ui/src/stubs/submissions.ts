@@ -39,18 +39,6 @@ export interface SubmissionDetail {
   review?: SubmissionReview;
 }
 
-export const formatSubmissionReviewMode = (reviewMode: SubmissionReviewMode): string => {
-  switch (reviewMode) {
-    case 'double-blind':
-      return 'Double Blind';
-    case 'single-blind':
-      return 'Single Blind';
-    case 'open-review':
-      return 'Open Review';
-    default:
-      return reviewMode;
-  }
-};
 
 export const mockSubmissions: SubmissionDetail[] = [
   {

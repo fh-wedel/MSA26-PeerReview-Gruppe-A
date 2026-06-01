@@ -64,7 +64,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
             >
               {plugins.length > 0 ? plugins.map(plugin => (
                 <MenuItem key={plugin.name} value={plugin.name}>
-                  {plugin.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                  {plugin.title}
                 </MenuItem>
               )) : (
                 <>

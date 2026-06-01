@@ -5,6 +5,11 @@ import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
 public class SingleBlindPlugin implements ReviewWorkflowPlugin {
 
     @Override
+    public String getTitle() {
+        return "Single Blind";
+    }
+
+    @Override
     public String getName() {
         return "single-blind";
     }

@@ -21,8 +21,8 @@ import {
 } from '@mui/material';
 import { ArrowBack, PictureAsPdf, Chat as ChatIcon, Edit as EditIcon, Save as SaveIcon, Close as CloseIcon } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import { getMockSubmissionById } from "../stubs/submissions";
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { formatSubmissionReviewMode, getMockSubmissionById } from '../stubs/submissions';
 import { mockUsers } from '../stubs/users';
 import type { MockUser } from '../stubs/users';
 import { formatDateTime } from '../utils/date';
@@ -240,7 +240,7 @@ export const SubmissionDetails: React.FC = () => {
                 <Typography variant="subtitle2" color="text.secondary">
                   Review Mode
                 </Typography>
-                <Typography sx={{ py: 1 }}>{plugins.find(p => p.name === submission.reviewMode) ? submission.reviewMode.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : formatSubmissionReviewMode(submission.reviewMode)}</Typography>
+                <Typography sx={{ py: 1 }}>{plugins.find(p => p.name === submission.reviewMode)?.title || submission.reviewMode}</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 64 }}>

@@ -30,6 +30,7 @@ class WorkflowServiceTest {
         ReviewWorkflowPlugin plugin = mock(ReviewWorkflowPlugin.class);
         lenient().when(plugin.getName()).thenReturn(name);
         lenient().when(plugin.getDescription()).thenReturn(name + " description");
+        lenient().when(plugin.getTitle()).thenReturn(name + " title");
         lenient().when(plugin.isAuthorAnonymous()).thenReturn(true);
         lenient().when(plugin.isReviewerAnonymous()).thenReturn(false);
         lenient().when(plugin.isReviewerToReviewerAnonymous()).thenReturn(true);

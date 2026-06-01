@@ -5,6 +5,11 @@ import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
 public class DoubleBlindPlugin implements ReviewWorkflowPlugin {
 
     @Override
+    public String getTitle() {
+        return "Double Blind";
+    }
+
+    @Override
     public String getName() {
         return "double-blind";
     }
