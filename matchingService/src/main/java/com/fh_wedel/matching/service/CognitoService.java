@@ -75,49 +75,29 @@ public class CognitoService {
     }
 
     /**
-     * Creates a new user in Cognito and adds them to the Reviewer group.
+     * Promotes an existing Cognito user to a Reviewer by adding them to the Reviewer group.
+     * Optionally updates custom attributes.
      *
-     * @param username         the desired username
-     * @param email            the user's email
-     * @param temporaryPassword optional temporary password (Cognito generates one if null)
+     * @param username         the Cognito username
      * @param customAttributes  optional custom attributes
-     * @return the created user
+     * @return the user details
      */
-    public AdminCreateUserResponse createReviewer(String username, String email,
-                                                   String temporaryPassword,
-                                                   Map<String, String> customAttributes) {
-        log.info("Creating new reviewer '{}' with email '{}'", username, email);
+    public AdminGetUserResponse createReviewer(String username, Map<String, String> customAttributes) {
+        log.info("Promoting user '{}' to reviewer", username);
 
-        List<AttributeType> attributes = new ArrayList<>();
-        attributes.add(AttributeType.builder().name("email").value(email).build());
-        attributes.add(AttributeType.builder().name("email_verified").value("true").build());
-
-        if (customAttributes != null) {
-            customAttributes.forEach((key, value) ->
-                    attributes.add(AttributeType.builder().name("custom:" + key).value(value).build()));
-        }
-
-        AdminCreateUserRequest.Builder requestBuilder = AdminCreateUserRequest.builder()
-                .userPoolId(userPoolId)
-                .username(username)
-                .userAttributes(attributes)
-                .desiredDeliveryMediums(DeliveryMediumType.EMAIL);
-
-        if (temporaryPassword != null && !temporaryPassword.isBlank()) {
-            requestBuilder.temporaryPassword(temporaryPassword);
-        }
-
-        AdminCreateUserResponse response = cognitoClient.adminCreateUser(requestBuilder.build());
-
-        // Add the new user to the Reviewer group
+        // Add the user to the Reviewer group
         cognitoClient.adminAddUserToGroup(AdminAddUserToGroupRequest.builder()
                 .userPoolId(userPoolId)
                 .username(username)
                 .groupName(reviewerGroupName)
                 .build());
 
-        log.info("Created reviewer '{}' and added to group '{}'", username, reviewerGroupName);
-        return response;
+        if (customAttributes != null && !customAttributes.isEmpty()) {
+            updateReviewerAttributes(username, customAttributes);
+        }
+
+        log.info("Promoted user '{}' to group '{}'", username, reviewerGroupName);
+        return getUser(username);
     }
 
     /**
@@ -146,19 +126,20 @@ public class CognitoService {
     }
 
     /**
-     * Deletes a user from Cognito.
+     * Removes a user from the Reviewer group without deleting the user.
      *
      * @param username the Cognito username
      */
     public void deleteReviewer(String username) {
-        log.info("Deleting reviewer '{}'", username);
+        log.info("Removing reviewer group from user '{}'", username);
 
-        cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
+        cognitoClient.adminRemoveUserFromGroup(AdminRemoveUserFromGroupRequest.builder()
                 .userPoolId(userPoolId)
                 .username(username)
+                .groupName(reviewerGroupName)
                 .build());
 
-        log.info("Deleted reviewer '{}'", username);
+        log.info("Removed reviewer group from user '{}'", username);
     }
 
     /**

@@ -70,7 +70,7 @@ public class ExaminerController {
     }
 
     /**
-     * Creates a new reviewer in Cognito and adds them to the Reviewer group.
+     * Promotes an existing user in Cognito to a reviewer by adding them to the Reviewer group.
      * Restricted to Admin and ExaminationOfficer role.
      */
     @PostMapping
@@ -78,15 +78,12 @@ public class ExaminerController {
     public ResponseEntity<ExaminerResponse> createExaminer(@RequestBody CreateExaminerRequest request) {
         log.info("Request received: POST /examiners (username={})", request.getUsername());
 
-        AdminCreateUserResponse createResponse = cognitoService.createReviewer(
+        AdminGetUserResponse promotedUser = cognitoService.createReviewer(
                 request.getUsername(),
-                request.getEmail(),
-                request.getTemporaryPassword(),
                 request.getCustomAttributes()
         );
 
-        UserType createdUser = createResponse.user();
-        ExaminerResponse response = mapUserTypeToResponse(createdUser);
+        ExaminerResponse response = mapAdminGetUserToResponse(promotedUser);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

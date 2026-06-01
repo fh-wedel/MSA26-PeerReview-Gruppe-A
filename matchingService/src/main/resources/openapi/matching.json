@@ -377,15 +377,8 @@
         "type": "object",
         "properties": {
           "username": {
-            "type": "string"
-          },
-          "email": {
             "type": "string",
-            "format": "email"
-          },
-          "temporaryPassword": {
-            "type": "string",
-            "description": "Optional temporary password. If not provided, Cognito will generate one."
+            "description": "The Cognito username / sub of an existing user to promote"
           },
           "customAttributes": {
             "type": "object",
@@ -394,7 +387,7 @@
             }
           }
         },
-        "required": ["username", "email"]
+        "required": ["username"]
       },
       "UpdateExaminerRequest": {
         "type": "object",
