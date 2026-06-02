@@ -47,7 +47,7 @@ Die Autorisierung erfolgt zentral über AWS Verified Permissions (Cedar Policies
 * **ExaminationOfficer (Prüfungsamt)**: Lesezugriff auf Matches pro Abgabe (`/matches/submissions/*`) sowie Lese- und Schreibzugriff zur Prüferverwaltung (User Proxy API).
 * **Reviewer (Gutachter)**: Lesezugriff auf die *eigenen* zugewiesenen Abgaben (`/matches/examiners/*`).
 * **Author (Verfasser)**: Lesezugriff auf die Matches der *eigenen* Abgabe (`/matches/submissions/*`).
-* **Teacher (Dozent)**: Kein zusätlzicher Zugriff, da sowieso Berechtigung des Reviewers gegeben ist.
+* **Teacher (Dozent)**: Kein zusätzlicher Zugriff, da sowieso Berechtigung des Reviewers gegeben ist.
 
 ### Datenbank (DynamoDB Single Table Design)
 Die Speicherung der Matches erfolgt in einer einzigen DynamoDB-Tabelle, die auf Abfrage-Performance optimiert ist.
