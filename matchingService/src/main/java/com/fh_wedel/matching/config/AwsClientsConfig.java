@@ -10,6 +10,10 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 
 /**
  * Provides AWS SDK client beans for DynamoDB and Cognito.
+ * Dual-stack is enabled explicitly on every client so that they resolve to
+ * AAAA-addressable endpoints when the ECS task runs in an IPv6-only subnet.
+ * The spring.cloud.aws.*.dualstack-enabled property is only honoured by the
+ * Spring Cloud AWS auto-configured clients and is silently ignored here.
  */
 @Configuration
 public class AwsClientsConfig {
@@ -21,6 +25,7 @@ public class AwsClientsConfig {
     public DynamoDbClient dynamoDbClient() {
         return DynamoDbClient.builder()
                 .region(Region.of(awsRegion))
+                .dualstackEnabled(true)
                 .build();
     }
 
@@ -35,6 +40,7 @@ public class AwsClientsConfig {
     public CognitoIdentityProviderClient cognitoClient() {
         return CognitoIdentityProviderClient.builder()
                 .region(Region.of(awsRegion))
+                .dualstackEnabled(true)
                 .build();
     }
 }

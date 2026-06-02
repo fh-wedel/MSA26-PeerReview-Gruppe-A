@@ -83,18 +83,28 @@ public class ExaminerController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<ExaminerResponse> createExaminer(@RequestBody CreateExaminerRequest request) {
+    public ResponseEntity<?> createExaminer(@RequestBody CreateExaminerRequest request) {
         log.info("Request received: POST /examiners (username={})", request.getUsername());
 
-        AdminGetUserResponse promotedUser = cognitoService.createReviewer(
-                request.getUsername(),
-                request.getCustomAttributes()
-        );
+        try {
+            AdminGetUserResponse promotedUser = cognitoService.createReviewer(
+                    request.getUsername(),
+                    request.getCustomAttributes()
+            );
 
-        List<String> groups = cognitoService.getUserGroups(request.getUsername());
-        ExaminerResponse response = mapAdminGetUserToResponse(promotedUser, groups);
+            List<String> groups = cognitoService.getUserGroups(request.getUsername());
+            ExaminerResponse response = mapAdminGetUserToResponse(promotedUser, groups);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (UserNotFoundException e) {
+            log.warn("Examiner not found for creation: {}", request.getUsername());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
+        } catch (InvalidParameterException e) {
+            log.warn("Invalid parameter provided for creation: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Invalid parameter provided: " + e.getMessage()).code("BAD_REQUEST").timestamp(OffsetDateTime.now()));
+        }
     }
 
     /**

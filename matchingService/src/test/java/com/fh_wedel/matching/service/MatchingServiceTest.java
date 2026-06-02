@@ -1,5 +1,7 @@
 package com.fh_wedel.matching.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.fh_wedel.matching.model.MatchRecord;
 import com.fh_wedel.matching.model.MatchStatus;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
@@ -43,9 +45,11 @@ class MatchingServiceTest {
 
     private MatchingService matchingService;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @BeforeEach
     void setUp() {
-        matchingService = new MatchingService(cognitoService, matchRepository, sqsTemplate, "test-response-queue");
+        matchingService = new MatchingService(cognitoService, matchRepository, sqsTemplate, objectMapper, "test-response-queue");
     }
 
     @Test
