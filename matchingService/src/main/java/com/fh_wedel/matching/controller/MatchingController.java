@@ -7,7 +7,10 @@ import com.fh_wedel.matching.model.api.ExaminerMatchResponse;
 import com.fh_wedel.matching.model.api.MatchEntry;
 import com.fh_wedel.matching.model.api.SubmissionMatchResponse;
 import com.fh_wedel.matching.service.MatchingService;
+import com.fh_wedel.matching.service.CognitoService;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,9 +33,11 @@ import java.util.List;
 public class MatchingController {
 
     private final MatchingService matchingService;
+    private final CognitoService cognitoService;
 
-    public MatchingController(MatchingService matchingService) {
+    public MatchingController(MatchingService matchingService, CognitoService cognitoService) {
         this.matchingService = matchingService;
+        this.cognitoService = cognitoService;
     }
 
     /**
@@ -84,12 +89,24 @@ public class MatchingController {
     public ResponseEntity<ExaminerMatchResponse> getMatchesByExaminer(@PathVariable String examinerId, Authentication authentication) {
         log.info("Request received: GET /matches/examiners/{}", examinerId);
 
-        if (!isAdminOrOfficer(authentication) && !isCurrentUser(authentication, examinerId)) {
+        String resolvedExaminerId = examinerId;
+        try {
+            AdminGetUserResponse user = cognitoService.getUser(examinerId);
+            String sub = CognitoService.extractAttribute(user, "sub");
+            if (sub != null) {
+                resolvedExaminerId = sub;
+            }
+        } catch (UserNotFoundException e) {
+            log.warn("Examiner {} not found in Cognito", examinerId);
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!isAdminOrOfficer(authentication) && !isCurrentUser(authentication, resolvedExaminerId)) {
             log.warn("Access Denied: User attempted to fetch matches for examiner {}", examinerId);
             throw new AccessDeniedException("Access Denied: You can only access your own matches.");
         }
 
-        List<MatchRecord> matches = matchingService.getMatchesByExaminer(examinerId);
+        List<MatchRecord> matches = matchingService.getMatchesByExaminer(resolvedExaminerId);
 
         List<AssignmentEntry> assignments = matches.stream()
                 .map(m -> {
@@ -101,7 +118,7 @@ public class MatchingController {
                 .toList();
 
         ExaminerMatchResponse response = new ExaminerMatchResponse();
-        response.setExaminerId(examinerId);
+        response.setExaminerId(resolvedExaminerId);
         response.setAssignments(assignments);
 
         return ResponseEntity.ok(response);

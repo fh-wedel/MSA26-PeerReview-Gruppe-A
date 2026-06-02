@@ -16,6 +16,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,12 +25,16 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import com.fh_wedel.matching.service.CognitoService;
 
 @ExtendWith(MockitoExtension.class)
 class MatchingControllerSecurityTest {
 
     @Mock
     private MatchingService matchingService;
+
+    @Mock
+    private CognitoService cognitoService;
 
     @InjectMocks
     private MatchingController controller;
@@ -98,6 +104,11 @@ class MatchingControllerSecurityTest {
     @Test
     @DisplayName("Reviewer can access their own examiner matches")
     void getMatchesByExaminer_reviewerOwn_success() {
+        AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
+                .userAttributes(AttributeType.builder().name("sub").value("reviewer-uuid").build())
+                .build();
+        when(cognitoService.getUser("reviewer-uuid")).thenReturn(mockResponse);
+
         when(matchingService.getMatchesByExaminer("reviewer-uuid"))
                 .thenReturn(Collections.emptyList());
 
@@ -110,6 +121,11 @@ class MatchingControllerSecurityTest {
     @Test
     @DisplayName("Reviewer CANNOT access other examiner's matches")
     void getMatchesByExaminer_reviewerOther_forbidden() {
+        AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
+                .userAttributes(AttributeType.builder().name("sub").value("other-uuid").build())
+                .build();
+        when(cognitoService.getUser("other-uuid")).thenReturn(mockResponse);
+
         Authentication auth = createAuth("Reviewer", "reviewer-uuid");
 
         assertThatThrownBy(() -> controller.getMatchesByExaminer("other-uuid", auth))
