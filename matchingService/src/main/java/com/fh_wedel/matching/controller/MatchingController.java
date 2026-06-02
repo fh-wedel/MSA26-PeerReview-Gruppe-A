@@ -53,7 +53,22 @@ public class MatchingController {
             return ResponseEntity.notFound().build();
         }
 
-        if (!isAdminOrOfficer(authentication) && !isCurrentUser(authentication, status.getSubmitterId())) {
+        String resolvedSubmitterId = status.getSubmitterId();
+        if (resolvedSubmitterId != null && !resolvedSubmitterId.isEmpty()) {
+            try {
+                AdminGetUserResponse submitter = cognitoService.getUser(resolvedSubmitterId);
+                if (submitter != null) {
+                    String sub = CognitoService.extractAttribute(submitter, "sub");
+                    if (sub != null) {
+                        resolvedSubmitterId = sub;
+                    }
+                }
+            } catch (UserNotFoundException e) {
+                log.warn("Submitter {} not found in Cognito", resolvedSubmitterId);
+            }
+        }
+
+        if (!isAdminOrOfficer(authentication) && !isCurrentUser(authentication, resolvedSubmitterId)) {
             log.warn("Access Denied: User is not the author of submission {}", submissionId);
             throw new AccessDeniedException("Access Denied: You are not the author of this submission.");
         }
