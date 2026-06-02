@@ -39,11 +39,15 @@ class MatchingControllerSecurityTest {
     @InjectMocks
     private MatchingController controller;
 
-    private Authentication createAuth(String role, String principalSub) {
-        // In production the JWT filter sets the principal to the Cognito sub UUID.
-        // auth.getName() returns the principal, so we pass the sub UUID as the first argument.
-        return new UsernamePasswordAuthenticationToken(
-                principalSub, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+    /**
+     * Creates a mock Authentication matching the {@code AuthHeaderFilter} behavior:
+     * principal = Cognito username (auth.getName()), details = "poolId|subUUID".
+     */
+    private Authentication createAuth(String role, String username, String sub) {
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                username, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+        auth.setDetails("pool123|" + sub);
+        return auth;
     }
 
     @Test

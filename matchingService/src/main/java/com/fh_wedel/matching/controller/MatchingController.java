@@ -175,15 +175,37 @@ public class MatchingController {
      * Returns {@code true} if the authenticated caller's Cognito sub UUID matches
      * the given {@code targetSub}.
      *
-     * <p>{@code auth.getName()} carries the {@code sub} claim extracted from the JWT
-     * by the Spring Security filter chain. DynamoDB always stores sub UUIDs, so a
-     * direct equality check is correct and no further Cognito lookup is needed.
+     * <p>The {@link AuthHeaderFilter} populates the {@code Authentication} as follows:
+     * <ul>
+     *   <li>{@code auth.getName()} → Cognito <b>username</b> (e.g. "Marcel")</li>
+     *   <li>{@code auth.getDetails()} → the {@code x-auth-principal-id} header,
+     *       formatted as {@code "poolId|subUUID"} (e.g. "eu-central-1_abc|b0ac99ec-...")</li>
+     * </ul>
+     * DynamoDB stores the sub UUID, so we extract it from the details string.
      *
      * @param auth      the current authentication token
      * @param targetSub the Cognito sub UUID to compare against (from DynamoDB)
      */
     private boolean isCallerSub(Authentication auth, String targetSub) {
         if (auth == null || targetSub == null) return false;
-        return targetSub.equals(auth.getName());
+        String callerSub = extractSubFromDetails(auth);
+        return targetSub.equals(callerSub);
+    }
+
+    /**
+     * Extracts the Cognito sub UUID from the {@code x-auth-principal-id} value
+     * stored in {@code auth.getDetails()}.
+     *
+     * <p>The format is {@code "poolId|subUUID"}. If there is no {@code |}, the
+     * entire details string is treated as the sub (fallback).
+     */
+    private String extractSubFromDetails(Authentication auth) {
+        if (auth.getDetails() == null) return null;
+        String principalId = auth.getDetails().toString();
+        int pipeIndex = principalId.lastIndexOf('|');
+        if (pipeIndex >= 0 && pipeIndex < principalId.length() - 1) {
+            return principalId.substring(pipeIndex + 1);
+        }
+        return principalId;
     }
 }
