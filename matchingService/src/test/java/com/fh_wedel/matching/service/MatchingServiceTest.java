@@ -1,6 +1,5 @@
 package com.fh_wedel.matching.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.matching.model.MatchRecord;
 import com.fh_wedel.matching.model.MatchStatus;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
