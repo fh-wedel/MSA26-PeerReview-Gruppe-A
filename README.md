@@ -1,54 +1,118 @@
 # MSA26-PeerReview Gruppe A
-PeerReview: Ein System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten.
 
-Website: [peer-review.fh-wedel.dev](https://peer-review.fh-wedel.dev)
+**Zweck:** Ein verteiltes System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten (Peer-Review).
+**Umgebung:** [msa26-peer-review.fh-wedel.dev](https://msa26-peer-review.fh-wedel.dev)
 
-# Lokale Ausführung
+---
+
+## 1. Lokale Ausführung
 
 ### Voraussetzungen
-1. **AWS SSO Login**:
+Für die lokale Entwicklung und das Deployment werden **Docker** sowie die **AWS CLI** benötigt. 
+
+1. **AWS CLI & SSO konfigurieren:** Aufgrund der kurzen Session-Laufzeiten wird die Konfiguration über AWS SSO dringend empfohlen:
+   ```bash
+   aws configure sso
+   ```
+2. **AWS SSO Login initiieren:**
    ```bash
    aws sso login
    ```
-2. **AWS-Profil**: Standardmäßig verwenden die Services das lokale sso Profil `fh-wedel-msa`. Wenn das eigene Profil
-3. anders heißt, kann `AWS_PROFILE` in der `docker-compose.yml` angepasst werden.
+3. **AWS-Profil konfigurieren:** Standardmäßig wird das lokale SSO-Profil `fh-wedel-msa` verwendet. Bei abweichender Benennung muss die Umgebungsvariable `AWS_PROFILE` in der `docker-compose.yml` angepasst werden.
+4. **Anwendung starten:**
+   ```bash
+   docker compose up --build
+   ```
+5. **Web-UI aufrufen:** Das Frontend ist lokal unter [http://localhost:5173](http://localhost:5173) erreichbar.
 
-### Anwendung starten
-```bash
-docker compose up --build
-```
+---
 
-- **Frontend (Web UI)**: [http://localhost:5173](http://localhost:5173)
+## 2. AWS Infrastruktur & Architektur
 
+Die Gesamtanwendung basiert auf einer cloud-nativen Microservice-Architektur in AWS. Die Bereitstellung (Infrastructure as Code via AWS CDK) ist modular in einen **Baseline Stack** und mehrere **Service Stacks** unterteilt. Der Baseline Stack stellt die geteilte Kerninfrastruktur (VPC, Cluster, zentrale Rollen) bereit und muss zwingend vor den einzelnen Service Stacks deployt werden.
 
-# AWS Infrastructure
-Die AWS Infrastruktur besteht aus einem Baseline Stack, welcher die grundlegende Infrastruktur bereitstellt, und mehreren Service Stacks, welcher die eigentliche Service-Infrastruktur in einer Microservice Architektur bereitstellt. Der Baseline Stack muss vor den Service Stacks bereitgestellt werden, da der Service Stack auf Ressourcen des Baseline Stacks zugreift.
+### Zentrale Services und Sicherheit
+* **Zentraler Einstiegspunkt:** Das **AWS API Gateway** nimmt REST-Anfragen entgegen und leitet den Traffic per Lambda-Proxy-Integration an die jeweiligen ECS-Services weiter.
+* **Authentifizierung:** **AWS Cognito** stellt zentrale User Pools und App Clients bereit.
+* **Endpoint Security:** **AWS Verified Permissions** fungiert als API Gateway Authorizer und erzwingt eine feingranulare Autorisierung auf Basis von **Cedar-Policies**, bevor Anfragen die Services überhaupt erreichen.
+* **Application Security:** Spring Security validiert innerhalb der Java-Services die durch Cognito übergebenen Rollen (bzw. JWT-Claims), um Aktionen auf Ressourcen-Ebene (z.B. "Darf Nutzer X dieses spezifische Review sehen?") abzusichern.
+* **Skalierung:** Das Autoscaling wird feingranular pro Service Stack über **ECS Service Auto Scaling** gesteuert (Definition von minimalen/maximalen Tasks und CPU-Target-Tracking).
+* **Datenhaltung:** Jeder Service besitzt eine eigene **AWS DynamoDB-Tabelle**.
+* **Orchestrierung:** Es existiert kein zentraler Orchestrator. Die Workflow-Steuerung erfolgt rein choreografisch über einen definierten Event-Ablauf via **AWS SQS** (Message Queues). Alle Backend-Services sind in Java mit Spring Boot implementiert.
 
-## Zentrale Services und Sicherheit
-- API Gateway ist der zentrale Einstiegspunkt fuer REST Requests und leitet Traffic per Lambda-Proxy an die ECS Services weiter.
-- AWS Cognito stellt User Pool und App Client fuer Authentifizierung bereit.
-- AWS Verified Permissions erzwingt feingranulare Autorisierung auf Basis von Cedar Policies und wird als API Gateway Authorizer genutzt.
-- Autoscaling wird pro Service Stack ueber ECS Service Auto Scaling konfiguriert (min/max Tasks und CPU Target).
+---
 
-Zum Start sollte die AWS CLI installiert und konfiguriert sein. Aufgrund der kurzen Sessionszeit empfiehlt es sich, die AWS CLI über SSO zu konfigurieren. Dazu muss die AWS CLI mit dem folgenden Befehl konfiguriert werden:
-    ``aws configure sso``
+## 3. Service-Struktur
 
-# GitHub Actions Pipeline
-Die CI/CD Pipelines laufen automatisch bei Push auf `main`, bei Pull Requests und manuell über "Run workflow".
+### Workflow-Services (Haupt-Framework)
+Die Services kommunizieren untereinander asynchron über SQS und bieten synchrone REST-Schnittstellen für das Frontend an.
 
-## Voraussetzungen
-- GitHub Actions Variable `AWS_REGION`
-- GitHub Actions Secret `AWS_ROLE_ARN` (OIDC Role für `aws-actions/configure-aws-credentials`)
+1. **Creation Service:**
+   * **Aufgabe:** Verantwortlich für die Erstellung von Reviews.
+   * **Ablauf:** Empfängt REST-Requests, validiert die Eingaben (nur Autoren dürfen für sich selbst Reviews anlegen) und speichert diese. Nach erfolgreicher Erstellung sendet er ein Event an die SQS Queue des Matching Services.
+2. **Matching Service:**
+   * **Aufgabe:** Zuordnung von Reviewern zu den erstellten Reviews.
+   * **Ablauf:** Empfängt SQS-Nachrichten des Creation Services und ordnet Reviews automatisch passenden Reviewern zu (basierend auf Kriterien wie Fachgebiet und Verfügbarkeit). Nach dem erfolgreichen Matching sendet er ein Event an den Submission Service.
+3. **Submission Service:**
+   * **Aufgabe:** Entgegennahme der eigentlichen wissenschaftlichen Arbeiten/Dokumente.
+   * **Ablauf:** Der Service konsumiert die eingehende SQS-Nachricht des Matching Services *sofort* und speichert den Status "Wartet auf Abgabe" in seiner eigenen DynamoDB. Er wartet persistent, bis der Autor das Dokument via REST einreicht. Nach erfolgreicher Einreichung triggert er den Workflow Service via SQS.
+4. **Workflow Service:**
+   * **Aufgabe:** Steuert den eigentlichen Gutachter-Prozess.
+   * **Ablauf:** Empfängt die SQS-Nachricht des Submission Services. Nutzt eine interne Plugin-Architektur, um flexibel verschiedene Review-Verfahren (z.B. Double-Blind, Open Review) abzubilden. Nach Abschluss der Begutachtung wird ein SQS-Event an den Response Service gesendet.
+5. **Response Service:**
+   * **Aufgabe:** Ablage und Kommunikation der Ergebnisse.
+   * **Ablauf:** Konsumiert das Event des Workflow Services, speichert die finalen Review-Ergebnisse und stellt diese den Autoren über REST-Endpunkte bereit.
 
-## Verhalten
-- Änderungen in [infrabaseline/](infrabaseline/) triggern Tests und ein `cdk diff`; Deploy läuft nur bei `main` oder manueller Ausführung.
-- Änderungen in [infraLibrary/](infraLibrary/) triggern deren Tests und können Service-Infrastruktur beeinflussen.
-- Änderungen in [templateEcsService/](templateEcsService/) triggern Maven-Tests, Infra-Tests, Docker Build/Push und optional Deploy.
+### Zusätzliche Services
+* **Web UI (Frontend):** Ein Service, der über REST mit allen Workflow-Services kommuniziert, um Status und Daten zu aggregieren und darzustellen. Die Datenhoheit liegt bei den jeweiligen Backend-Services, das Frontend fungiert als reiner Konsument.
+* **Analytics Service (Zukünftig / Non-MVP):** Aggregiert asynchron (via SQS) Daten aus allen Services, bereitet diese für statistische Analysen auf und stellt sie über REST-Endpunkte für das Prüfungsamt (Gesamtübersicht) bereit.
 
-## Manuelles Deployment
-1. Im GitHub UI den Workflow "CI" starten (workflow_dispatch).
-2. Das Deploy started dann automatisch für alle CDK Stacks
+---
 
-## Hinweise
-- `cdk diff` läuft immer vor einem Deploy.
-- Docker Images werden in das konfigurierte ECR Repository gepusht.
+## 4. Rollen- und Berechtigungskonzept
+
+Die Zugriffssteuerung ist strikt nach dem Least-Privilege-Prinzip implementiert.
+
+| Rolle | Berechtigungen innerhalb der Services |
+| :--- | :--- |
+| **Admin** | Systemadministrator mit uneingeschränktem Vollzugriff auf alle Ressourcen und Endpunkte. |
+| **ExaminationOfficer** <br>*(Prüfungsamt)* | **Matching Service:** Schreib-/Lesezugriff zur Prüferverwaltung (Anlegen, Bearbeiten, Löschen) sowie Lesezugriff auf zugewiesene Prüfer pro Abgabe.<br>**Analytics Service:** Voller Zugriff für statistische Auswertungen.<br>**Sonstige:** Kein Zugriff auf laufende Reviews, Abgaben oder Ergebnisse. |
+| **Reviewer** <br>*(Gutachter)* | **Matching Service:** Lesezugriff, um zugewiesene Arbeiten zu sehen.<br>**Submission Service:** Lesezugriff auf zugewiesene Dokumente.<br>**Workflow Service:** Lese-/Schreibzugriff zur Durchführung der Begutachtung.<br>**Response Service:** Lesezugriff auf finale Ergebnisse.<br>**Sonstige:** Kein Zugriff auf Analytics oder Creation. |
+| **Author** <br>*(Verfasser)* | **Creation Service:** Schreibzugriff zur Erstellung *eigener* Reviews.<br>**Matching Service:** Lesezugriff auf zugewiesene Prüfer (nur eigene Reviews).<br>**Submission Service:** Schreib-/Lesezugriff für *eigene* Abgaben.<br>**Workflow/Response Service:** Lesezugriff auf Status und Ergebnisse der *eigenen* Arbeiten. |
+| **Teacher** <br>*(Dozent - Non-MVP)* | **Creation Service:** Schreibzugriff, um stellvertretend Abgaben für Studierende anzulegen.<br>Agiert im weiteren Verlauf des Workflows automatisch in der Rolle des **Reviewers** für diese spezifischen Prüfungen. Daher muss er immer die Rolle **Reviewer** innehaben. |
+
+---
+
+## 5. CI/CD Pipeline (GitHub Actions)
+
+Die Continuous Integration und Deployment (CI/CD) Pipelines sind vollständig über GitHub Actions automatisiert. Sie werden bei einem Push auf den `main`-Branch, bei Pull Requests oder manuell via `workflow_dispatch` gestartet.
+
+### Voraussetzungen & Secrets
+Für die Interaktion mit AWS müssen folgende Variablen und Secrets in GitHub hinterlegt sein:
+* **Variable:** `AWS_REGION` (Zielregion für das Deployment)
+* **Secret:** `AWS_ROLE_ARN` (OIDC-Rolle für den passwortlosen, sicheren AWS-Zugriff via `aws-actions/configure-aws-credentials`)
+
+### Pfadabhängiges Pipeline-Verhalten
+Die Pipeline reagiert gezielt auf Änderungen in spezifischen Unterverzeichnissen des Repositories:
+* **`infrabaseline/`:** Änderungen triggern automatisierte Infrastruktur-Tests und ein `cdk diff`. Das tatsächliche Deployment in AWS erfolgt ausschließlich bei einem Push auf den `main`-Branch oder bei manueller Freigabe.
+* **`infraLibrary/`:** Änderungen triggern die zugehörigen Unit- und Integrationstests der Core-Library, da diese direkte Auswirkungen auf die restliche Service-Infrastruktur haben können.
+* **`templateEcsService/`:** Änderungen triggern die vollständige Anwendungs-Pipeline: Maven Build & Software-Tests, CDK-Infrastruktur-Tests, Docker Build & Push in das konfigurierte AWS ECR Repository sowie das optionale Deployment des ECS-Services.
+
+### Manuelles Deployment
+1. Navigiere im GitHub-Repository zum Reiter **Actions**.
+2. Wähle den Workflow **CI** aus.
+3. Klicke auf **Run workflow** (`workflow_dispatch`).
+4. Das Deployment startet automatisch sequenziell für alle definierten CDK Stacks. Vor jeder Bereitstellung wird automatisch ein `cdk diff` ausgeführt und protokolliert.
+
+---
+
+## 6. Architekturentscheidungen & Trade-offs
+
+Da es sich um ein universitäres Projekt mit einer überschaubaren Anzahl an Services (ca. 5-10) handelt, wurden folgende pragmatische Architekturentscheidungen getroffen:
+
+1. **Client-Side Aggregation vs. BFF/CQRS:**
+   Da jeder Service seine eigene Datenbank besitzt, muss die Web-UI die benötigten Daten für Übersichtstabellen durch parallele REST-Aufrufe an die jeweiligen Services aggregieren (Chatty Client). In großen Enterprise-Systemen würde dies zu signifikanten Latenzen (N+1 Problem) führen und den Einsatz eines Backend-for-Frontend (BFF) oder CQRS-Patterns (dedizierte Read-Models) erfordern. Für den Scope und die Skalierung dieses Projekts ist die clientseitige Aggregation jedoch ausreichend und reduziert die Komplexität der Infrastruktur massiv.
+2. **Umgang mit langlaufenden Prozessen in SQS (Retention Limits):**
+   AWS SQS hat eine maximale Message Retention Period von 14 Tagen. Da der Peer-Review-Prozess (z.B. die Zeit zwischen Matching und dem finalen Upload einer Hausarbeit im Submission Service) Wochen dauern kann, warten die Services *nicht* blockierend auf der Queue. Stattdessen konsumieren Services eingehende SQS-Nachrichten *sofort* und persistieren den aktuellen Zustand (z.B. "Wartet auf Dokument") in ihrer lokalen DynamoDB. Der Prozess wird erst durch einen expliziten REST-Call (Upload) fortgesetzt. Dadurch ist ein Nachrichtenverlust durch SQS-Timeouts bei langlaufenden, menschlichen Prozessen ausgeschlossen.
+3. **Datenmodellierung in DynamoDB:**
+   Anstelle eines komplexen relationalen Datenmodells nutzt jeder Service eine isolierte DynamoDB-Tabelle (Single Table Design). Abfragemuster, die über einfache Key-Value-Lookups hinausgehen (z. B. "Zeige dem Prüfungsamt alle offenen Reviews eines spezifischen Prüfers aus Fachgebiet X"), werden durch gezielt gesetzte **Global Secondary Indexes (GSIs)** auf den Tabellen gelöst. Dies ermöglicht die notwendigen performanten Abfragen, ohne die lose Kopplung und Datenhoheit der einzelnen Microservices aufzugeben.

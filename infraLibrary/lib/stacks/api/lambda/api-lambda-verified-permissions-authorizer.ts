@@ -18,53 +18,7 @@ const verifiedpermissions = endpoint
     })
     : new VerifiedPermissions();
 
-function toSmithyStringRecord(input: Record<string, string | undefined>) {
-    const cleaned = Object.keys(input).reduce((acc, key) => {
-        const value = input[key];
-        if (typeof value === 'string') {
-            acc[key] = value;
-        }
-        return acc;
-    }, {} as Record<string, string>);
 
-    return {
-        record: Object.keys(cleaned).reduce((acc, key) => {
-            acc[key] = { string: cleaned[key] };
-            return acc;
-        }, {} as Record<string, { string: string }>),
-    };
-}
-
-function getContextMap(event: APIGatewayRequestAuthorizerEvent) {
-    const pathParams = event.pathParameters ?? {};
-    const queryParams = event.queryStringParameters ?? {};
-
-    const hasPathParameters = Object.keys(pathParams).length > 0;
-    const hasQueryString = Object.keys(queryParams).length > 0;
-
-    if (!hasPathParameters && !hasQueryString) {
-        return undefined;
-    }
-
-    const pathParametersObj = !hasPathParameters
-        ? {}
-        : {
-            pathParameters: toSmithyStringRecord(pathParams),
-        };
-
-    const queryStringObj = !hasQueryString
-        ? {}
-        : {
-            queryStringParameters: toSmithyStringRecord(queryParams),
-        };
-
-    return {
-        contextMap: {
-            ...queryStringObj,
-            ...pathParametersObj,
-        },
-    };
-}
 
 function extractBearerToken(headers?: Record<string, string | undefined>) {
     if (!headers) {
@@ -129,7 +83,6 @@ export const handler = async (
 
         const actionPath = event.resource || event.path || '/';
         const actionId = `${event.httpMethod.toLowerCase()} ${actionPath}`;
-        const contextMap = getContextMap(event);
 
         const input: Record<string, unknown> = {
             policyStoreId: policyStoreId,
@@ -142,10 +95,6 @@ export const handler = async (
                 entityId: resourceId,
             },
         };
-
-        if (contextMap) {
-            input.context = contextMap;
-        }
 
         input[tokenType] = bearerToken;
 

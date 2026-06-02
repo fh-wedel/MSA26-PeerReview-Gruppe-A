@@ -20,7 +20,7 @@ const env = {
 
 const networkStack = new NetworkStack(app, 'BaselineNetworkStack', { env });
 
-const ecrRepositoryNames = ['template', 'web-ui', 'workflow'];
+const ecrRepositoryNames = ['template', 'web-ui', 'workflow', 'matching'];
 const ecrRepositoryStack = new ECRRepositoryStack(app, 'BaselineECRRepositoryStack', {
   env,
   ecrRepositoryNames: ecrRepositoryNames,
@@ -57,5 +57,5 @@ const cognitoStack = new CognitoStack(app, 'BaselineCognitoStack', {
   env,
   userPoolName: AWSConstants.COGNITO_USER_POOL_NAME,
   appClientName: AWSConstants.COGNITO_APP_CLIENT_NAME,
-  groups: ['Admin', 'Student', 'Guest', 'Teacher', 'ExaminationOfficer'],
+  groups: ['Admin', 'Author', 'ExaminationOfficer', 'Reviewer', 'Teacher'],
 });

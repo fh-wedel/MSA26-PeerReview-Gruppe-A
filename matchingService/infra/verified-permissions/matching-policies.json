@@ -1,0 +1,102 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminMatchesBySubmission",
+            "groupName": "Admin",
+            "actionId": "get /api/matching/matches/submissions/{submissionId}",
+            "description": "Allow Admin to view matches by submission"
+        },
+        {
+            "id": "AdminMatchesByExaminer",
+            "groupName": "Admin",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
+            "description": "Allow Admin to view matches by examiner"
+        },
+        {
+            "id": "AdminListExaminers",
+            "groupName": "Admin",
+            "actionId": "get /api/matching/examiners",
+            "description": "Allow Admin to list all examiners"
+        },
+        {
+            "id": "AdminGetExaminer",
+            "groupName": "Admin",
+            "actionId": "get /api/matching/examiners/{examinerUsername}",
+            "description": "Allow Admin to get examiner details"
+        },
+        {
+            "id": "AdminCreateExaminer",
+            "groupName": "Admin",
+            "actionId": "post /api/matching/examiners",
+            "description": "Allow Admin to create a new examiner"
+        },
+        {
+            "id": "AdminUpdateExaminer",
+            "groupName": "Admin",
+            "actionId": "patch /api/matching/examiners/{examinerUsername}",
+            "description": "Allow Admin to update an examiner"
+        },
+        {
+            "id": "AdminDeleteExaminer",
+            "groupName": "Admin",
+            "actionId": "delete /api/matching/examiners/{examinerUsername}",
+            "description": "Allow Admin to delete an examiner"
+        },
+        {
+            "id": "ReviewerViewOwnMatches",
+            "groupName": "Reviewer",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
+            "description": "Allow Reviewer to view their own assigned submissions"
+        },
+        {
+            "id": "AuthorViewOwnSubmissionMatches",
+            "groupName": "Author",
+            "actionId": "get /api/matching/matches/submissions/{submissionId}",
+            "description": "Allow Author to view matches for their own submission"
+        },
+        {
+            "id": "ExamOfficerViewMatchesBySubmission",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/matching/matches/submissions/{submissionId}",
+            "description": "Allow ExaminationOfficer to view matches for a submission"
+        },
+        {
+            "id": "ExamOfficerListExaminers",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/matching/examiners",
+            "description": "Allow ExaminationOfficer to list all examiners"
+        },
+        {
+            "id": "ExamOfficerGetExaminer",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/matching/examiners/{examinerUsername}",
+            "description": "Allow ExaminationOfficer to view examiner details"
+        },
+        {
+            "id": "ExamOfficerCreateExaminer",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/matching/examiners",
+            "description": "Allow ExaminationOfficer to create a new examiner"
+        },
+        {
+            "id": "ExamOfficerUpdateExaminer",
+            "groupName": "ExaminationOfficer",
+            "actionId": "patch /api/matching/examiners/{examinerUsername}",
+            "description": "Allow ExaminationOfficer to update an examiner"
+        },
+        {
+            "id": "ExamOfficerDeleteExaminer",
+            "groupName": "ExaminationOfficer",
+            "actionId": "delete /api/matching/examiners/{examinerUsername}",
+            "description": "Allow ExaminationOfficer to delete an examiner"
+        }
+    ]
+}

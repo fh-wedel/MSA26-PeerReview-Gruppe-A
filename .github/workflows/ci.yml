@@ -30,6 +30,9 @@ jobs:
       web_ui_code: ${{ steps.filter.outputs.web_ui_code }}
       web_ui_infra: ${{ steps.filter.outputs.web_ui_infra }}
       web_ui_any: ${{ steps.filter.outputs.web_ui_any }}
+      matching_service_code: ${{ steps.filter.outputs.matching_service_code }}
+      matching_service_infra: ${{ steps.filter.outputs.matching_service_infra }}
+      matching_service_any: ${{ steps.filter.outputs.matching_service_any }}
       cloudfront: ${{ steps.filter.outputs.cloudfront }}
     steps:
       - uses: actions/checkout@v6
@@ -73,6 +76,15 @@ jobs:
               - 'web-ui/infra/**'
             web_ui_any:
               - 'web-ui/**'
+              - 'infraLibrary/**'
+            matching_service_code:
+              - 'matchingService/src/**'
+              - 'matchingService/pom.xml'
+              - 'matchingService/Dockerfile'
+            matching_service_infra:
+              - 'matchingService/infra/**'
+            matching_service_any:
+              - 'matchingService/**'
               - 'infraLibrary/**'
             cloudfront:
               - 'cloudfront/**'
@@ -226,6 +238,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  matching-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() && 
+      (needs.changes.outputs.matching_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: matching
+      service_path: matchingService
+      infra_path: matchingService/infra
+      docker_context: matchingService
+      ecr_repository: fh-wedel/matching
+      run_maven: ${{ needs.changes.outputs.matching_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.matching_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.matching_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   # ── CloudFront distribution ─────────────────────────────────────────────────
   # Pure CDK deploy — no Docker image, no Maven. Runs after web-ui because it
   # imports the Web UI API Gateway domain name from CloudFormation exports.
@@ -233,14 +265,15 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service, workflow-service]
+    needs: [changes, web-ui, template-service, workflow-service, matching-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
       (needs.changes.outputs.cloudfront == 'true' || needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') &&
       (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') &&
       (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') &&
-      (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped')
+      (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped') &&
+      (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}

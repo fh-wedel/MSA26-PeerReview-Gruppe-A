@@ -6,6 +6,7 @@ import { AWSConstants } from '../../../../infrabaseline/lib/constants';
 
 export interface AuthStackProps extends cdk.StackProps {
     policyFilePath: string;
+    serviceName: string;
 }
 
 export class AuthStack extends cdk.Stack {
@@ -23,7 +24,7 @@ export class AuthStack extends cdk.Stack {
         this.policyStore = new VerifiedPermissionsStore(this, 'TemplatePolicyStore', {
             namespace: this.policyConfig.namespace,
             userPoolId: userPoolId,
-            description: 'Policy store for Template service API',
+            description: `Policy store for ${props.serviceName} service API`,
             appClientId: appClientId,
             policies: this.policyConfig.policies,
             validationMode: 'STRICT',
