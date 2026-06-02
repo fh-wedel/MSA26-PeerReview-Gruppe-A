@@ -50,13 +50,27 @@ Die Autorisierung erfolgt zentral über AWS Verified Permissions (Cedar Policies
 * **Teacher (Dozent)**: Kein zusätzlicher Zugriff, da sowieso Berechtigung des Reviewers gegeben ist.
 
 ### Datenbank (DynamoDB Single Table Design)
-Die Speicherung der Matches erfolgt in einer einzigen DynamoDB-Tabelle, die auf Abfrage-Performance optimiert ist.
+Die Speicherung erfolgt in einer einzigen DynamoDB-Tabelle unter Anwendung des **Single-Table Design** Patterns. Anstatt relationale Tabellen mit Foreign Keys (JOINs) zu nutzen, werden verschiedene Entity-Typen in einer gemeinsamen Tabelle abgelegt. Dies ist Best Practice für DynamoDB, um extrem schnelle, vorhersehbare Abfragezeiten bei minimalen Kosten zu erzielen.
 
-* **Primärschlüssel (Für Abfragen pro Abgabe):**
-    * **Partition Key (PK):** `SUBMISSION#{SubmissionID}`
-    * **Sort Key (SK):** `MATCH#{ExaminerID}`
-    * *Attribute:* `Timestamp`
+Alle Einträge zu einer spezifischen Abgabe werden über den gleichen **Partition Key (PK)** gruppiert. Der **Sort Key (SK)** unterscheidet dabei den Typ des Eintrags:
+
+1. **Submission Status Eintrag (Metadaten):**
+   * **PK:** `SUBMISSION#{SubmissionID}`
+   * **SK:** `STATUS`
+   * *Attribute:* `status` (z.B. MATCHED), `submitterId`, `numberOfExaminers`, `timestamp`
+   * *Zweck:* Hält den übergreifenden Status und die Meta-Informationen (wer hat die Abgabe eingereicht, wie viele Prüfer werden gesucht).
+
+2. **Match Einträge (1-zu-N Beziehung):**
+   * **PK:** `SUBMISSION#{SubmissionID}`
+   * **SK:** `MATCH#{ExaminerID}`
+   * *Attribute:* `examinerId`, `submissionId`, `timestamp`
+   * *Zweck:* Repräsentiert die Zuweisung eines konkreten Prüfers. Da eine Abgabe mehrere Prüfer haben kann, existieren für eine Abgabe potenziell mehrere `MATCH#...` Einträge.
+
+**Warum dieses Format?**
+Durch diese Struktur können wir mit **einer einzigen Query-Operation** (`PK = SUBMISSION#123`) sowohl den aktuellen Status der Abgabe (`STATUS`) als auch alle zugewiesenen Prüfer (`MATCH#...`) abrufen. Die Trennung in einen Status-Eintrag und mehrere Match-Einträge verhindert, dass wir Arrays aktualisieren müssen, was Konflikte bei zeitgleichen Updates (Race Conditions) verhindert.
+
 * **Global Secondary Index / GSI (Für Abfragen pro Prüfer):**
+    Um effizient beantworten zu können, welche Abgaben einem bestimmten Prüfer zugewiesen sind (Inverted Query):
     * **GSI-PK:** `{ExaminerID}`
     * **GSI-SK:** `{SubmissionID}` (oder `Timestamp`)
 
