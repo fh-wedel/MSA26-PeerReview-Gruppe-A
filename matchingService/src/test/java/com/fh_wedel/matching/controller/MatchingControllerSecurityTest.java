@@ -58,7 +58,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
 
-        Authentication auth = createAuth("Admin", "admin-uuid");
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
         ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -72,7 +72,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
 
-        Authentication auth = createAuth("ExaminationOfficer", "officer-uuid");
+        Authentication auth = createAuth("ExaminationOfficer", "officer-user", "officer-uuid");
         ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -86,7 +86,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
 
-        Authentication auth = createAuth("Author", "author-uuid");
+        Authentication auth = createAuth("Author", "author-user", "author-uuid");
         ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -98,7 +98,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getStatusBySubmission("sub-1"))
                 .thenReturn(new SubmissionStatusRecord("sub-1", "other-uuid", MatchStatus.MATCHED, 1, null));
 
-        Authentication auth = createAuth("Author", "author-uuid");
+        Authentication auth = createAuth("Author", "author-user", "author-uuid");
 
         assertThatThrownBy(() -> controller.getMatchesBySubmission("sub-1", auth))
                 .isInstanceOf(AccessDeniedException.class)
@@ -118,8 +118,8 @@ class MatchingControllerSecurityTest {
         when(cognitoService.getUser(examinerUsername)).thenReturn(mockResponse);
         when(matchingService.getMatchesByExaminer(examinerSub)).thenReturn(Collections.emptyList());
 
-        // The caller's JWT principal (auth.getName()) must be the resolved sub UUID.
-        Authentication auth = createAuth("Reviewer", examinerSub);
+        // The caller's details must contain the resolved sub UUID.
+        Authentication auth = createAuth("Reviewer", examinerUsername, examinerSub);
         ResponseEntity<?> response = controller.getMatchesByExaminer(examinerUsername, auth);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -138,7 +138,7 @@ class MatchingControllerSecurityTest {
         when(cognitoService.getUser(otherExaminerUsername)).thenReturn(mockResponse);
 
         // The caller's sub is different from the resolved examiner sub.
-        Authentication auth = createAuth("Reviewer", "reviewer-uuid");
+        Authentication auth = createAuth("Reviewer", "reviewer-username", "reviewer-uuid");
 
         assertThatThrownBy(() -> controller.getMatchesByExaminer(otherExaminerUsername, auth))
                 .isInstanceOf(AccessDeniedException.class)

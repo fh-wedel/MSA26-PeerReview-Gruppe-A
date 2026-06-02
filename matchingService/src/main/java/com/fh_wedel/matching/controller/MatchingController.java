@@ -75,8 +75,8 @@ public class MatchingController {
         String submitterSub = status.getSubmitterId();
 
         if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, submitterSub)) {
-            log.warn("Access Denied: caller sub '{}' does not match submitter sub '{}' for submission {}",
-                    authentication.getName(), submitterSub, submissionId);
+            log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter sub '{}' for submission {}",
+                    authentication.getName(), authentication.getDetails(), submitterSub, submissionId);
             throw new AccessDeniedException("Access Denied: You are not the author of this submission.");
         }
 
@@ -138,8 +138,8 @@ public class MatchingController {
         // The caller's JWT sub UUID must match the resolved examiner sub UUID
         // (or the caller must be an Admin/ExaminationOfficer).
         if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, examinerSub)) {
-            log.warn("Access Denied: caller sub '{}' does not match examiner sub '{}' (username: '{}')",
-                    authentication.getName(), examinerSub, examinerUsername);
+            log.warn("Access Denied: caller '{}' (details: '{}') does not match examiner sub '{}' (username: '{}')",
+                    authentication.getName(), authentication.getDetails(), examinerSub, examinerUsername);
             throw new AccessDeniedException("Access Denied: You can only access your own matches.");
         }
 
