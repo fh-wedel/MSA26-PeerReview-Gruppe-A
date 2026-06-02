@@ -39,11 +39,11 @@ class MatchingControllerSecurityTest {
     @InjectMocks
     private MatchingController controller;
 
-    private Authentication createAuth(String role, String targetId) {
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                "user", null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-        auth.setDetails("pool123|" + targetId);
-        return auth;
+    private Authentication createAuth(String role, String principalSub) {
+        // In production the JWT filter sets the principal to the Cognito sub UUID.
+        // auth.getName() returns the principal, so we pass the sub UUID as the first argument.
+        return new UsernamePasswordAuthenticationToken(
+                principalSub, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
     }
 
     @Test
@@ -104,16 +104,19 @@ class MatchingControllerSecurityTest {
     @Test
     @DisplayName("Reviewer can access their own examiner matches")
     void getMatchesByExaminer_reviewerOwn_success() {
+        // The path param is the Cognito username; the controller resolves it to a sub UUID.
+        String examinerUsername = "reviewer-username";
+        String examinerSub = "reviewer-uuid";
+
         AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
-                .userAttributes(AttributeType.builder().name("sub").value("reviewer-uuid").build())
+                .userAttributes(AttributeType.builder().name("sub").value(examinerSub).build())
                 .build();
-        when(cognitoService.getUser("reviewer-uuid")).thenReturn(mockResponse);
+        when(cognitoService.getUser(examinerUsername)).thenReturn(mockResponse);
+        when(matchingService.getMatchesByExaminer(examinerSub)).thenReturn(Collections.emptyList());
 
-        when(matchingService.getMatchesByExaminer("reviewer-uuid"))
-                .thenReturn(Collections.emptyList());
-
-        Authentication auth = createAuth("Reviewer", "reviewer-uuid");
-        ResponseEntity<?> response = controller.getMatchesByExaminer("reviewer-uuid", auth);
+        // The caller's JWT principal (auth.getName()) must be the resolved sub UUID.
+        Authentication auth = createAuth("Reviewer", examinerSub);
+        ResponseEntity<?> response = controller.getMatchesByExaminer(examinerUsername, auth);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
     }
@@ -121,14 +124,19 @@ class MatchingControllerSecurityTest {
     @Test
     @DisplayName("Reviewer CANNOT access other examiner's matches")
     void getMatchesByExaminer_reviewerOther_forbidden() {
-        AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
-                .userAttributes(AttributeType.builder().name("sub").value("other-uuid").build())
-                .build();
-        when(cognitoService.getUser("other-uuid")).thenReturn(mockResponse);
+        // Path param is a username belonging to a DIFFERENT user.
+        String otherExaminerUsername = "other-username";
+        String otherExaminerSub = "other-uuid";
 
+        AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
+                .userAttributes(AttributeType.builder().name("sub").value(otherExaminerSub).build())
+                .build();
+        when(cognitoService.getUser(otherExaminerUsername)).thenReturn(mockResponse);
+
+        // The caller's sub is different from the resolved examiner sub.
         Authentication auth = createAuth("Reviewer", "reviewer-uuid");
 
-        assertThatThrownBy(() -> controller.getMatchesByExaminer("other-uuid", auth))
+        assertThatThrownBy(() -> controller.getMatchesByExaminer(otherExaminerUsername, auth))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("You can only access your own matches");
     }
