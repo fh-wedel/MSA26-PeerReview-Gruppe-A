@@ -41,12 +41,13 @@ class MatchingControllerSecurityTest {
 
     /**
      * Creates a mock Authentication matching the {@code AuthHeaderFilter} behavior:
-     * principal = Cognito username (auth.getName()), details = "poolId|subUUID".
+     * principal = Cognito username (auth.getName()),
+     * details = Cedar entity ID: {@code PeerReview::User::"poolId|subUUID"}.
      */
     private Authentication createAuth(String role, String username, String sub) {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 username, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-        auth.setDetails("pool123|" + sub);
+        auth.setDetails("PeerReview::User::\"pool123|" + sub + "\"");
         return auth;
     }
 

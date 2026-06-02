@@ -196,16 +196,32 @@ public class MatchingController {
      * Extracts the Cognito sub UUID from the {@code x-auth-principal-id} value
      * stored in {@code auth.getDetails()}.
      *
-     * <p>The format is {@code "poolId|subUUID"}. If there is no {@code |}, the
-     * entire details string is treated as the sub (fallback).
+     * <p>The value is a Cedar entity identifier in the format:
+     * {@code PeerReview::User::"poolId|subUUID"}
+     * <br>We extract the content between the quotes, then take the part after the {@code |}.
+     * <p>Falls back gracefully if the format is just {@code "poolId|subUUID"} (no Cedar prefix)
+     * or a bare UUID.
      */
     private String extractSubFromDetails(Authentication auth) {
         if (auth.getDetails() == null) return null;
-        String principalId = auth.getDetails().toString();
-        int pipeIndex = principalId.lastIndexOf('|');
-        if (pipeIndex >= 0 && pipeIndex < principalId.length() - 1) {
-            return principalId.substring(pipeIndex + 1);
+        String raw = auth.getDetails().toString();
+
+        // Extract the content between the outermost double quotes, if present.
+        // e.g. PeerReview::User::"eu-north-1_xxx|b0ac99ec-..." → eu-north-1_xxx|b0ac99ec-...
+        int firstQuote = raw.indexOf('"');
+        int lastQuote = raw.lastIndexOf('"');
+        String inner;
+        if (firstQuote >= 0 && lastQuote > firstQuote) {
+            inner = raw.substring(firstQuote + 1, lastQuote);
+        } else {
+            inner = raw;
         }
-        return principalId;
+
+        // Split on | and take the sub UUID (the part after the pipe).
+        int pipeIndex = inner.lastIndexOf('|');
+        if (pipeIndex >= 0 && pipeIndex < inner.length() - 1) {
+            return inner.substring(pipeIndex + 1);
+        }
+        return inner;
     }
 }
