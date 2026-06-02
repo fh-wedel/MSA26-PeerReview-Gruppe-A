@@ -53,25 +53,25 @@ public class ExaminerController {
     }
 
     /**
-     * Gets details of a specific reviewer by their Cognito sub (UUID) or username.
+     * Gets details of a specific reviewer by their Cognito username.
      */
-    @GetMapping("/{examinerId}")
+    @GetMapping("/{examinerUsername}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<?> getExaminer(@PathVariable String examinerId) {
-        log.info("Request received: GET /examiners/{}", examinerId);
+    public ResponseEntity<?> getExaminer(@PathVariable String examinerUsername) {
+        log.info("Request received: GET /examiners/{} (username)", examinerUsername);
 
         try {
-            List<String> groups = cognitoService.getUserGroups(examinerId);
+            List<String> groups = cognitoService.getUserGroups(examinerUsername);
             if (!groups.contains(cognitoService.getReviewerGroupName())) {
-                log.warn("User {} is not a reviewer", examinerId);
+                log.warn("User '{}' (username) is not a reviewer", examinerUsername);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
-            AdminGetUserResponse user = cognitoService.getUser(examinerId);
+            AdminGetUserResponse user = cognitoService.getUser(examinerUsername);
             ExaminerResponse response = mapAdminGetUserToResponse(user, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
-            log.warn("Examiner not found: {}", examinerId);
+            log.warn("Examiner username '{}' not found in Cognito", examinerUsername);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
         }
@@ -111,31 +111,31 @@ public class ExaminerController {
      * Updates custom attributes of a reviewer in Cognito.
      * Restricted to Admin and ExaminationOfficer role.
      */
-    @PatchMapping("/{examinerId}")
+    @PatchMapping("/{examinerUsername}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<?> updateExaminer(@PathVariable String examinerId,
+    public ResponseEntity<?> updateExaminer(@PathVariable String examinerUsername,
                                                            @RequestBody UpdateExaminerRequest request) {
-        log.info("Request received: PATCH /examiners/{}", examinerId);
+        log.info("Request received: PATCH /examiners/{} (username)", examinerUsername);
 
         try {
-            List<String> groups = cognitoService.getUserGroups(examinerId);
+            List<String> groups = cognitoService.getUserGroups(examinerUsername);
             if (!groups.contains(cognitoService.getReviewerGroupName())) {
-                log.warn("User {} is not a reviewer, cannot update", examinerId);
+                log.warn("User '{}' (username) is not a reviewer, cannot update", examinerUsername);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
 
             Map<String, String> attrs = request.getCustomAttributes();
             if (attrs != null && !attrs.isEmpty()) {
-                cognitoService.updateReviewerAttributes(examinerId, attrs);
+                cognitoService.updateReviewerAttributes(examinerUsername, attrs);
             }
 
             // Return the updated user
-            AdminGetUserResponse updatedUser = cognitoService.getUser(examinerId);
+            AdminGetUserResponse updatedUser = cognitoService.getUser(examinerUsername);
             ExaminerResponse response = mapAdminGetUserToResponse(updatedUser, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
-            log.warn("Examiner not found for update: {}", examinerId);
+            log.warn("Examiner username '{}' not found in Cognito for update", examinerUsername);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
         } catch (InvalidParameterException e) {
@@ -149,23 +149,23 @@ public class ExaminerController {
      * Deletes a reviewer from the Cognito User Pool.
      * Restricted to Admin and ExaminationOfficer role.
      */
-    @DeleteMapping("/{examinerId}")
+    @DeleteMapping("/{examinerUsername}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
-    public ResponseEntity<?> deleteExaminer(@PathVariable String examinerId) {
-        log.info("Request received: DELETE /examiners/{}", examinerId);
+    public ResponseEntity<?> deleteExaminer(@PathVariable String examinerUsername) {
+        log.info("Request received: DELETE /examiners/{} (username)", examinerUsername);
 
         try {
-            List<String> groups = cognitoService.getUserGroups(examinerId);
+            List<String> groups = cognitoService.getUserGroups(examinerUsername);
             if (!groups.contains(cognitoService.getReviewerGroupName())) {
-                log.warn("User {} is not a reviewer, cannot delete", examinerId);
+                log.warn("User '{}' (username) is not a reviewer, cannot delete", examinerUsername);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
 
-            cognitoService.deleteReviewer(examinerId);
+            cognitoService.deleteReviewer(examinerUsername);
             return ResponseEntity.noContent().build();
         } catch (UserNotFoundException e) {
-            log.warn("Examiner not found for deletion: {}", examinerId);
+            log.warn("Examiner username '{}' not found in Cognito for deletion", examinerUsername);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponse("Examiner not found").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
         }

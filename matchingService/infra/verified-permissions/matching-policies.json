@@ -17,7 +17,7 @@
         {
             "id": "AdminMatchesByExaminer",
             "groupName": "Admin",
-            "actionId": "get /api/matching/matches/examiners/{examinerId}",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
             "description": "Allow Admin to view matches by examiner"
         },
         {
@@ -29,7 +29,7 @@
         {
             "id": "AdminGetExaminer",
             "groupName": "Admin",
-            "actionId": "get /api/matching/examiners/{examinerId}",
+            "actionId": "get /api/matching/examiners/{examinerUsername}",
             "description": "Allow Admin to get examiner details"
         },
         {
@@ -41,19 +41,19 @@
         {
             "id": "AdminUpdateExaminer",
             "groupName": "Admin",
-            "actionId": "patch /api/matching/examiners/{examinerId}",
+            "actionId": "patch /api/matching/examiners/{examinerUsername}",
             "description": "Allow Admin to update an examiner"
         },
         {
             "id": "AdminDeleteExaminer",
             "groupName": "Admin",
-            "actionId": "delete /api/matching/examiners/{examinerId}",
+            "actionId": "delete /api/matching/examiners/{examinerUsername}",
             "description": "Allow Admin to delete an examiner"
         },
         {
             "id": "ReviewerViewOwnMatches",
             "groupName": "Reviewer",
-            "actionId": "get /api/matching/matches/examiners/{examinerId}",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
             "description": "Allow Reviewer to view their own assigned submissions"
         },
         {
@@ -77,7 +77,7 @@
         {
             "id": "ExamOfficerGetExaminer",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/matching/examiners/{examinerId}",
+            "actionId": "get /api/matching/examiners/{examinerUsername}",
             "description": "Allow ExaminationOfficer to view examiner details"
         },
         {
@@ -89,13 +89,13 @@
         {
             "id": "ExamOfficerUpdateExaminer",
             "groupName": "ExaminationOfficer",
-            "actionId": "patch /api/matching/examiners/{examinerId}",
+            "actionId": "patch /api/matching/examiners/{examinerUsername}",
             "description": "Allow ExaminationOfficer to update an examiner"
         },
         {
             "id": "ExamOfficerDeleteExaminer",
             "groupName": "ExaminationOfficer",
-            "actionId": "delete /api/matching/examiners/{examinerId}",
+            "actionId": "delete /api/matching/examiners/{examinerUsername}",
             "description": "Allow ExaminationOfficer to delete an examiner"
         }
     ]

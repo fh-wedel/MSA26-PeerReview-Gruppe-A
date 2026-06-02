@@ -52,20 +52,21 @@
         }
       }
     },
-    "/matches/examiners/{examinerId}": {
+    "/matches/examiners/{examinerUsername}": {
       "get": {
         "operationId": "getMatchesByExaminer",
         "summary": "Returns all submissions assigned to a specific examiner",
+        "description": "The path parameter is the human-readable Cognito username (e.g. 'Marcel'). The service resolves it to the internal Cognito sub UUID for DynamoDB queries and access-control checks.",
         "tags": ["matches"],
         "parameters": [
           {
-            "name": "examinerId",
+            "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The Cognito sub (UUID) of the examiner"
+            "description": "The Cognito username of the examiner (e.g. 'Marcel'). Not the sub UUID."
           }
         ],
         "responses": {
@@ -141,20 +142,20 @@
         }
       }
     },
-    "/examiners/{examinerId}": {
+    "/examiners/{examinerUsername}": {
       "get": {
         "operationId": "getExaminer",
         "summary": "Returns details of a specific reviewer from Cognito",
         "tags": ["examiners"],
         "parameters": [
           {
-            "name": "examinerId",
+            "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The Cognito sub (UUID) of the reviewer"
+            "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
           }
         ],
         "responses": {
@@ -186,13 +187,13 @@
         "tags": ["examiners"],
         "parameters": [
           {
-            "name": "examinerId",
+            "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The Cognito sub (UUID) of the reviewer"
+            "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
           }
         ],
         "requestBody": {
@@ -234,13 +235,13 @@
         "tags": ["examiners"],
         "parameters": [
           {
-            "name": "examinerId",
+            "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The Cognito sub (UUID) of the reviewer"
+            "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
           }
         ],
         "responses": {
@@ -282,7 +283,8 @@
             "type": "integer"
           },
           "submitterId": {
-            "type": "string"
+            "type": "string",
+            "description": "Cognito sub UUID of the submitter (as stored in DynamoDB)"
           },
           "matchedAt": {
             "type": "string",
@@ -315,7 +317,8 @@
         "type": "object",
         "properties": {
           "examinerId": {
-            "type": "string"
+            "type": "string",
+            "description": "Cognito sub UUID of the examiner (resolved from the username path parameter)"
           },
           "assignments": {
             "type": "array",
@@ -385,7 +388,7 @@
         "properties": {
           "username": {
             "type": "string",
-            "description": "The Cognito username / sub of an existing user to promote"
+            "description": "The Cognito username (e.g. 'Marcel') of an existing user to promote to reviewer. Not the sub UUID."
           },
           "customAttributes": {
             "type": "object",
