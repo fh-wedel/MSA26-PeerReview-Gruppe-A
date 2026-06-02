@@ -46,7 +46,7 @@ public class MatchingService {
                            MatchRepository matchRepository,
                            SqsTemplate sqsTemplate,
                            ObjectMapper objectMapper,
-                           @Value("${aws.sqs.response.queue-name}") String responseQueueName) {
+                           @Value("${aws.sqs.next.request.queue-name}") String responseQueueName) {
         this.cognitoService = cognitoService;
         this.matchRepository = matchRepository;
         this.sqsTemplate = sqsTemplate;

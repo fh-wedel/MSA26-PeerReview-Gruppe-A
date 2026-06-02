@@ -88,7 +88,6 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                 ]),
                 Environment: Match.arrayWith([
                     { Name: 'SQS_REQUEST_QUEUE', Value: 'orders-request' },
-                    { Name: 'SQS_RESPONSE_QUEUE', Value: 'orders-response' },
                     { Name: 'SERVER_PORT', Value: '8081' },
                     { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
                 ]),
