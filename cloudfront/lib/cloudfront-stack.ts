@@ -194,7 +194,13 @@ export class CloudFrontStack extends cdk.Stack {
         };
 
         // ── Per-service API behaviors ─────────────────────────────────────────────
-        const shortCachePolicy = new cloudfront.CachePolicy(this, "ShortCachePolicy", { defaultTtl: Duration.minutes(1), minTtl: Duration.seconds(1), maxTtl: Duration.minutes(5) });
+        const shortCachePolicy = new cloudfront.CachePolicy(this, "ShortCachePolicy", {
+            defaultTtl: Duration.minutes(15),
+            minTtl: Duration.minutes(5),
+            maxTtl: Duration.hours(1),
+            // This ensures CloudFront caches per-user, preventing data leaks:
+            headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Authorization')
+        });
         const additionalBehaviors: Record<string, cloudfront.BehaviorOptions> = {};
 
         for (const service of props.apiServices) {
