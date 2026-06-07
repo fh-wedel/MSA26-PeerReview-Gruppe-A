@@ -28,6 +28,9 @@ export const Dashboard: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const deadlineDates = mockDeadlines.map((d) => d.date);
 
+  const roles = (user?.roles || []).map(r => r.toLowerCase());
+  const hasAuthorOrAdminRole = roles.includes('admin') || roles.includes('author');
+
   const handleSubmission = (title: string, reviewMode: string, file: File | null) => {
     const status = file ? 'Submitted' : 'Draft';
     console.log('Submitted:', { title, reviewMode, file, status });
@@ -38,9 +41,11 @@ export const Dashboard: React.FC = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4">Welcome, {user?.username}</Typography>
-        <Button variant="contained" color="primary" size="large" onClick={() => setModalOpen(true)}>
-          Create Submission
-        </Button>
+        {hasAuthorOrAdminRole && (
+          <Button variant="contained" color="primary" size="large" onClick={() => setModalOpen(true)}>
+            Create Submission
+          </Button>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
@@ -79,12 +84,14 @@ export const Dashboard: React.FC = () => {
         </Box>
       </Box>
 
-      <SubmissionModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmission}
-        authorName={user?.username ?? ''}
-      />
+      {hasAuthorOrAdminRole && (
+        <SubmissionModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleSubmission}
+          authorName={user?.username ?? ''}
+        />
+      )}
       
       <Snackbar
         open={snackbarOpen}

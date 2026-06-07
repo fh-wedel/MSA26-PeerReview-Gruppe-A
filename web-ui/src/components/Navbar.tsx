@@ -66,6 +66,7 @@ export const Navbar: React.FC = () => {
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAdminOrExamOfficerRole = userRoles.includes('admin') || userRoles.includes('examinationofficer');
+  const hasAdminOrReviewerRole = userRoles.includes('admin') || userRoles.includes('reviewer');
 
   return (
     <AppBar position="static" color="primary">
@@ -93,13 +94,15 @@ export const Navbar: React.FC = () => {
               >
                 Home
               </Button>
-              <Button 
-                color="inherit" 
-                onClick={() => navigate('/assignments')}
-                sx={{ opacity: location.pathname.startsWith('/assignments') ? 1 : 0.7, fontSize: '1.05rem' }}
-              >
-                Assignments
-              </Button>
+              {hasAdminOrReviewerRole && (
+                <Button 
+                  color="inherit" 
+                  onClick={() => navigate('/assignments')}
+                  sx={{ opacity: location.pathname.startsWith('/assignments') ? 1 : 0.7, fontSize: '1.05rem' }}
+                >
+                  Assignments
+                </Button>
+              )}
               {hasAdminOrExamOfficerRole && (
                 <Button 
                   color="inherit" 

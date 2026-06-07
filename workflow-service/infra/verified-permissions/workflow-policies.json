@@ -33,28 +33,28 @@
             "description": "Allow Admin to get submission rules"
         },
         {
-            "id": "StudentListPlugins",
-            "groupName": "Student",
+            "id": "AuthorListPlugins",
+            "groupName": "Author",
             "actionId": "get /api/workflow/plugins",
-            "description": "Allow Student to list workflow plugins"
+            "description": "Allow Author to list workflow plugins"
         },
         {
-            "id": "StudentGetPlugin",
-            "groupName": "Student",
+            "id": "AuthorGetPlugin",
+            "groupName": "Author",
             "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow Student to get workflow plugin details"
+            "description": "Allow Author to get workflow plugin details"
         },
         {
-            "id": "StudentGetPluginRules",
-            "groupName": "Student",
+            "id": "AuthorGetPluginRules",
+            "groupName": "Author",
             "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow Student to get workflow plugin rules"
+            "description": "Allow Author to get workflow plugin rules"
         },
         {
-            "id": "StudentGetSubmissionRules",
-            "groupName": "Student",
+            "id": "AuthorGetSubmissionRules",
+            "groupName": "Author",
             "actionId": "get /api/workflow/submissions/{submissionId}/rules",
-            "description": "Allow Student to get submission rules"
+            "description": "Allow Author to get submission rules"
         },
         {
             "id": "TeacherListPlugins",
@@ -81,28 +81,28 @@
             "description": "Allow Teacher to get submission rules"
         },
         {
-            "id": "GuestListPlugins",
-            "groupName": "Guest",
+            "id": "ReviewerListPlugins",
+            "groupName": "Reviewer",
             "actionId": "get /api/workflow/plugins",
-            "description": "Allow Guest to list workflow plugins"
+            "description": "Allow Reviewer to list workflow plugins"
         },
         {
-            "id": "GuestGetPlugin",
-            "groupName": "Guest",
+            "id": "ReviewerGetPlugin",
+            "groupName": "Reviewer",
             "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow Guest to get workflow plugin details"
+            "description": "Allow Reviewer to get workflow plugin details"
         },
         {
-            "id": "GuestGetPluginRules",
-            "groupName": "Guest",
+            "id": "ReviewerGetPluginRules",
+            "groupName": "Reviewer",
             "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow Guest to get workflow plugin rules"
+            "description": "Allow Reviewer to get workflow plugin rules"
         },
         {
-            "id": "GuestGetSubmissionRules",
-            "groupName": "Guest",
+            "id": "ReviewerGetSubmissionRules",
+            "groupName": "Reviewer",
             "actionId": "get /api/workflow/submissions/{submissionId}/rules",
-            "description": "Allow Guest to get submission rules"
+            "description": "Allow Reviewer to get submission rules"
         },
         {
             "id": "OfficerListPlugins",

@@ -3,10 +3,28 @@ import { Box, Typography, Paper, List, ListItem, ListItemButton, ListItemText, C
 import { useNavigate } from 'react-router-dom';
 import { formatDateTime } from '../utils/date';
 import { useAssignments } from '../hooks/useAssignments';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Assignments: React.FC = () => {
   const navigate = useNavigate();
   const { assignments, loading, error } = useAssignments();
+  const { user } = useAuth();
+
+  const roles = (user?.roles || []).map(r => r.toLowerCase());
+  const hasAccess = roles.includes('admin') || roles.includes('reviewer');
+
+  if (!hasAccess) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom>
+          My Assignments
+        </Typography>
+        <Alert severity="error">
+          You are not authorized to view this page. This area is restricted to Administrators and Reviewers.
+        </Alert>
+      </Box>
+    );
+  }
 
   if (loading) {
     return (
