@@ -102,6 +102,40 @@
           }
         }
       }
+    },
+    "/{submissionId}/rules": {
+      "get": {
+        "operationId": "getRulesForSubmission",
+        "summary": "Get the rules for a specific submission",
+        "description": "Returns the anonymity and communication rules for the workflow plugin associated with the given submission ID.",
+        "tags": ["Workflow Rules"],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the submission",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the rules for the submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowRulesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Submission or workflow plugin not found"
+          }
+        }
+      }
     }
   },
   "components": {
