@@ -98,32 +98,6 @@ export class ImportedRessources {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Service Connect Namespace (sc.internal)
-    // Used exclusively by ECS Service Connect to avoid collisions with the
-    // Lambda-facing AAAA-record entries in the external namespace above.
-    // -------------------------------------------------------------------------
-
-    public static getServiceConnectNamespaceId(): string {
-        return cdk.Fn.importValue('Baseline:ServiceConnectNamespaceId');
-    }
-
-    public static getServiceConnectNamespaceName(): string {
-        return cdk.Fn.importValue('Baseline:ServiceConnectNamespaceName');
-    }
-
-    public static getServiceConnectNamespaceArn(): string {
-        return cdk.Fn.importValue('Baseline:ServiceConnectNamespaceArn');
-    }
-
-    public static getServiceConnectNamespace(stack: cdk.Stack): servicediscovery.INamespace {
-        return servicediscovery.PrivateDnsNamespace.fromPrivateDnsNamespaceAttributes(stack, 'ServiceConnectNamespace', {
-            namespaceId: this.getServiceConnectNamespaceId(),
-            namespaceName: this.getServiceConnectNamespaceName(),
-            namespaceArn: this.getServiceConnectNamespaceArn(),
-        });
-    }
-
     /**
      * Returns the regional domain name (hostname only) of the API Gateway for the given API name.
      * This is the value exported by ApiStack as `<apiName>:ApiDomainName`.
@@ -141,4 +115,4 @@ export class ImportedRessources {
     public static getApiStageName(apiName: string): string {
         return cdk.Fn.importValue(`${apiName}:ApiStageName`);
     }
-}
+}

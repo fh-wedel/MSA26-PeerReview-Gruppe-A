@@ -116,7 +116,7 @@ export class ServiceStack extends cdk.Stack {
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
                 // Use the AAAA record in internal.services for ECS-to-ECS communication.
                 // ECS Service Connect (sc.internal) does NOT support IPv6-only subnets.
-                'WORKFLOW_SERVICE_URL': `http://workflow-service.${cloudMapNamespace.namespaceName}:8081`,
+                'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
         });

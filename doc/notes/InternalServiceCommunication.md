@@ -13,9 +13,6 @@ DNS records** and connecting over IPv6 — the same mechanism the API Gateway pr
 > **ECS Service Connect is NOT used for ECS-to-ECS calls.**  
 > ECS Service Connect's Envoy sidecar proxy supports IPv4 only. All ECS tasks in this
 > project run in an **IPv6-only private subnet** (`ipv6Native = true`), so Service Connect
-> cannot establish connections. The `sc.internal` CloudMap namespace exists only to satisfy
-> the CDK `enableServiceConnect()` API without colliding with the `internal.services` AAAA
-> records — it is NOT involved in actual traffic routing.
 
 ---
 
@@ -49,18 +46,11 @@ DNS records** and connecting over IPv6 — the same mechanism the API Gateway pr
 
 ---
 
-## Two CloudMap Namespaces — Why They Exist
+## One CloudMap Namespaces — Why They Exist
 
 | Namespace | Purpose | Used by |
 |-----------|---------|---------|
 | `internal.services` | `AAAA` records → actual IPv6 task addresses | Lambda proxies AND ECS-to-ECS calls |
-| `sc.internal` | Placeholder for `enableServiceConnect()` only | CDK only — no real traffic |
-
-The split exists to avoid a CloudFormation conflict: `enableServiceConnect()` automatically
-creates a CloudMap service entry with the service name. If that name is already registered
-as a manual `CfnService` AAAA record in `internal.services`, CloudFormation fails with
-**"The Service already exists"**. Pointing `enableServiceConnect()` to `sc.internal` avoids
-this collision while keeping AAAA record registration in `internal.services` intact.
 
 ---
 
@@ -72,15 +62,12 @@ this collision while keeping AAAA record registration in `internal.services` int
 // For AAAA records (Lambda→ECS AND ECS→ECS actual traffic)
 ImportedRessources.getCloudMapNamespace(stack)        // internal.services
 
-// For enableServiceConnect() only — no real traffic
-ImportedRessources.getServiceConnectNamespace(stack)  // sc.internal
 ```
 
 ### Service stack pattern — every `infra/lib/service-stack.ts`
 
 ```typescript
 const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);       // internal.services
-const scNamespace       = ImportedRessources.getServiceConnectNamespace(this); // sc.internal
 
 // ① AAAA record — used by BOTH Lambda proxies and other ECS tasks
 const sdService = EcsInfra.createServiceDiscoveryAAAARecord(
@@ -92,11 +79,6 @@ const ecsService = new ecs.FargateService(this, 'FargateService', { ... });
 const cfnService = ecsService.node.defaultChild as ecs.CfnService;
 cfnService.serviceRegistries = [{ registryArn: sdService.attrArn }];
 
-// ② enableServiceConnect — uses sc.internal to avoid collision with ① above.
-//    ECS Service Connect is NOT used for actual ECS-to-ECS traffic (IPv4 only).
-ecsService.enableServiceConnect({
-  namespace: scNamespace.namespaceName,  // ← sc.internal (CDK placeholder only)
-});
 ```
 
 ### Security group rule — callee must allow IPv6 ingress
@@ -132,14 +114,14 @@ environment: {
   // ECS-to-ECS uses the AAAA record in internal.services (same as Lambda→ECS).
   // Do NOT use scNamespace — that namespace is IPv4 Service Connect only.
   'WORKFLOW_SERVICE_URL':
-    `http://workflow-service.${cloudMapNamespace.namespaceName}:8081`,
+    `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
 },
 ```
 
 ### Step 2 — Read the URL in Spring Boot
 
 ```java
-@Value("${aws.workflow-service.url:http://workflow-service.internal.services:8081}")
+@Value("${aws.workflow-service.url:http://workflow.internal.services:8081}")
 private String workflowServiceUrl;
 ```
 
@@ -215,7 +197,7 @@ is enforced:
 
 | Service | AAAA DNS name (actual traffic) |
 |---------|-------------------------------|
-| `workflow-service` | `workflow-service.internal.services` |
+| `workflow-service` | `workflow.internal.services` |
 | `matching` | `matching.internal.services` |
 | `<your-service>` | `<your-service>.internal.services` |
 
@@ -233,7 +215,7 @@ All ECS tasks in this project run in an **IPv6-only subnet** (`ipv6Native = true
 no IPv4 addresses assigned). The Envoy sidecar cannot bind or redirect traffic without
 IPv4, so:
 
-- `workflow-service.sc.internal` will resolve to nothing → `UnresolvedAddressException`
+- `workflow.sc.internal` will resolve to nothing → `UnresolvedAddressException`
 - Even if DNS somehow resolved, the Envoy iptables rules would not fire → `ConnectException`
 
 The correct pattern — AAAA record + direct IPv6 TCP — is what both Lambda proxies and

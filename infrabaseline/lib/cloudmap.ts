@@ -5,7 +5,6 @@ import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 
 export interface CloudMapProps extends cdk.StackProps {
     namespaceName: string;
-    serviceConnectNamespaceName: string;
 }
 
 export class CloudMapStack extends cdk.Stack {
@@ -36,31 +35,6 @@ export class CloudMapStack extends cdk.Stack {
             value: namespace.namespaceArn,
             description: 'ARN of the Cloud Map namespace',
             exportName: 'Baseline:CloudMapNamespaceArn',
-        });
-
-        // Internal Service Connect namespace — used exclusively by ECS Service Connect
-        // to avoid name collisions with the AAAA-record entries above.
-        const scNamespace = new servicediscovery.PrivateDnsNamespace(this, 'ServiceConnectNamespace', {
-            name: props.serviceConnectNamespaceName,
-            vpc: vpc,
-        });
-
-        new cdk.CfnOutput(this, 'ServiceConnectNamespaceId', {
-            value: scNamespace.namespaceId,
-            description: 'Id of the ECS Service Connect Cloud Map namespace',
-            exportName: 'Baseline:ServiceConnectNamespaceId',
-        });
-
-        new cdk.CfnOutput(this, 'ServiceConnectNamespaceName', {
-            value: scNamespace.namespaceName,
-            description: 'Name of the ECS Service Connect Cloud Map namespace',
-            exportName: 'Baseline:ServiceConnectNamespaceName',
-        });
-
-        new cdk.CfnOutput(this, 'ServiceConnectNamespaceArn', {
-            value: scNamespace.namespaceArn,
-            description: 'ARN of the ECS Service Connect Cloud Map namespace',
-            exportName: 'Baseline:ServiceConnectNamespaceArn',
         });
     }
 }
