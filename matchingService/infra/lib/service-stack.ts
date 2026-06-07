@@ -47,6 +47,8 @@ export class ServiceStack extends cdk.Stack {
             subnet = EcsInfra.getIpV6Subnet(this);
         }
 
+        const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+
         const logGroup = LogsInfra.createLogGroup(this, {
             logGroupName: `/ecs/${props.serviceName}`,
         });
@@ -112,6 +114,7 @@ export class ServiceStack extends cdk.Stack {
                 'COGNITO_USER_POOL_ID': cognitoUserPoolId,
                 'COGNITO_REVIEWER_GROUP_NAME': reviewerGroupName,
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
+                'WORKFLOW_SERVICE_URL': `http://workflow-service.${cloudMapNamespace.namespaceName}:8080`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
         });
@@ -138,7 +141,6 @@ export class ServiceStack extends cdk.Stack {
         const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
         ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
 
-        const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
         const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
         const ecsService = new ecs.FargateService(this, 'FargateService', {
@@ -162,6 +164,10 @@ export class ServiceStack extends cdk.Stack {
                 registryArn: sdService.attrArn,
             },
         ];
+
+        ecsService.enableServiceConnect({
+            namespace: cloudMapNamespace.namespaceName,
+        });
 
         // =============================================
         // IAM Permissions

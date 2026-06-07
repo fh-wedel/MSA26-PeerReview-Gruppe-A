@@ -60,6 +60,7 @@ export class ServiceStack extends cdk.Stack {
       logging: LogsInfra.createEcsLogDriver(logGroup, props.serviceName),
       portMappings: [
         {
+          name: 'app-port',
           containerPort: containerPort,
           protocol: ecs.Protocol.TCP,
         },
@@ -114,6 +115,18 @@ export class ServiceStack extends cdk.Stack {
         registryArn: sdService.attrArn,
       },
     ];
+
+    ecsService.enableServiceConnect({
+      namespace: cloudMapNamespace.namespaceName,
+      services: [
+        {
+          portMappingName: 'app-port',
+          port: containerPort,
+          discoveryName: props.serviceName,
+          dnsName: `${props.serviceName}.${cloudMapNamespace.namespaceName}`,
+        }
+      ]
+    });
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 

@@ -35,6 +35,10 @@ import java.util.List;
  *       This is what DynamoDB and the JWT {@code auth.getName()} carry.</li>
  * </ul>
  */
+import com.fh_wedel.matching.model.api.WorkflowRulesDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
+
 @RestController
 @RequestMapping("/api/matching")
 @Slf4j
@@ -42,10 +46,17 @@ public class MatchingController {
 
     private final MatchingService matchingService;
     private final CognitoService cognitoService;
+    private final RestTemplate restTemplate;
+    private final String workflowServiceUrl;
 
-    public MatchingController(MatchingService matchingService, CognitoService cognitoService) {
+    public MatchingController(MatchingService matchingService, 
+                              CognitoService cognitoService,
+                              RestTemplate restTemplate,
+                              @Value("${aws.workflow-service.url:http://workflow-service.internal.services:8080}") String workflowServiceUrl) {
         this.matchingService = matchingService;
         this.cognitoService = cognitoService;
+        this.restTemplate = restTemplate;
+        this.workflowServiceUrl = workflowServiceUrl;
     }
 
     /**
@@ -82,10 +93,28 @@ public class MatchingController {
 
         List<MatchRecord> matches = matchingService.getMatchesBySubmission(submissionId);
 
+        boolean hideExaminer = false;
+        if (!isAdminOrOfficer(authentication)) {
+            try {
+                WorkflowRulesDto rules = restTemplate.getForObject(
+                        workflowServiceUrl + "/api/workflow/submissions/" + submissionId + "/rules",
+                        WorkflowRulesDto.class
+                );
+                if (rules != null && Boolean.TRUE.equals(rules.getReviewerAnonymous())) {
+                    hideExaminer = true;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch workflow rules for submission {}, defaulting to hiding examiner", submissionId, e);
+                hideExaminer = true;
+            }
+        }
+        
+        final boolean hide = hideExaminer;
+
         List<MatchEntry> matchEntries = matches.stream()
                 .map(m -> {
                     MatchEntry entry = new MatchEntry();
-                    entry.setExaminerId(m.getExaminerId());   // stored as sub UUID in DynamoDB
+                    entry.setExaminerId(hide ? null : m.getExaminerId());   // stored as sub UUID in DynamoDB
                     entry.setAssignedAt(m.getTimestamp().atOffset(ZoneOffset.UTC));
                     return entry;
                 })
