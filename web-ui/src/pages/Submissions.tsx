@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, List, ListItem, ListItemButton, ListItemText, Chip, FormControlLabel, Switch, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { mockSubmissions } from '../stubs/submissions';
 import { formatDateTime } from '../utils/date';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -26,15 +25,9 @@ export const Submissions: React.FC = () => {
     );
   }
 
-  const currentUserId = user?.id ?? 'current_user';
-  const mySubmissions = mockSubmissions.filter((s) => s.authorId === currentUserId);
-
-  const displayedSubmissions = mockSubmissions.filter((s) => {
-    if (unassignedOnly) {
-      return !s.reviewerId;
-    }
-    return true;
-  });
+  // TODO: Fetch submissions from the submission service when available
+  const mySubmissions: any[] = [];
+  const displayedSubmissions: any[] = [];
 
   return (
     <Box>

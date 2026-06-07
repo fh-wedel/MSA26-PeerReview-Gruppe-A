@@ -5,6 +5,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  username: string;
   roles: string[];
 }
 
@@ -60,6 +61,7 @@ function parseTokenToUser(token: string): User | null {
     id: decoded.sub || '',
     name: decoded.name || decoded.email || decoded['cognito:username'] || 'User',
     email: decoded.email || '',
+    username: decoded['cognito:username'] || decoded.email || 'User',
     roles: roles,
   };
 }
