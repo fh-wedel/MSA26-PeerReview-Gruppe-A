@@ -7,153 +7,145 @@
 
 ## Overview
 
-Services inside the ECS cluster communicate with each other over **plain HTTP** using
-**ECS Service Connect** for load-balanced, resilient calls.  
-An external-facing **CloudMap `AAAA` record** per service is used separately by the
-**API Gateway proxy Lambdas**, which need stable IPv6 DNS names.
+Services inside the ECS cluster communicate with each other by resolving **CloudMap `AAAA`
+DNS records** and connecting over IPv6 — the same mechanism the API Gateway proxy Lambdas use.
 
-These two mechanisms use **different CloudMap namespaces** to avoid a CloudFormation
-conflict where both would try to register the same service name in the same namespace.
-
-| Mechanism | CloudMap Namespace | Purpose |
-|-----------|-------------------|---------|
-| AAAA records | `internal.services` | Lambda → ECS (external, IPv6) |
-| ECS Service Connect | `sc.internal` | ECS → ECS (internal mesh) |
+> **ECS Service Connect is NOT used for ECS-to-ECS calls.**  
+> ECS Service Connect's Envoy sidecar proxy supports IPv4 only. All ECS tasks in this
+> project run in an **IPv6-only private subnet** (`ipv6Native = true`), so Service Connect
+> cannot establish connections. The `sc.internal` CloudMap namespace exists only to satisfy
+> the CDK `enableServiceConnect()` API without colliding with the `internal.services` AAAA
+> records — it is NOT involved in actual traffic routing.
 
 ---
 
-## Architecture: Two CloudMap Namespaces
-
-Both namespaces are `PrivateDnsNamespace` resources created by `BaselineCloudMapStack`
-(`infrabaseline/lib/cloudmap.ts`) and exported via CloudFormation.
+## How Calls Work
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  VPC                                                            │
-│                                                                 │
-│  CloudMap: internal.services          CloudMap: sc.internal     │
-│  ┌─────────────────────────┐          ┌───────────────────────┐ │
-│  │ workflow-service  [AAAA]│          │ workflow-service  [SC]│ │
-│  │ matching          [AAAA]│          │ matching          [SC]│ │
-│  └─────────────────────────┘          └───────────────────────┘ │
-│          ▲                                      ▲               │
-│   Lambda proxy                          ECS sidecar             │
-│   (IPv6 DNS lookup)                     (localhost proxy)       │
-│                                                                 │
-│  ┌──────────────────┐   HTTP (via SC sidecar)  ┌─────────────┐ │
-│  │  Matching Service│ ─────────────────────── ▶│  Workflow   │ │
-│  └──────────────────┘                          └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  VPC — IPv6-only private subnet                                │
+│                                                                │
+│  CloudMap: internal.services                                   │
+│  ┌─────────────────────────────────────────────────────────┐  │
+│  │  workflow-service  AAAA → [IPv6 task address]           │  │
+│  │  matching          AAAA → [IPv6 task address]           │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│          ▲                         ▲                           │
+│   Lambda proxy resolves       ECS task resolves                │
+│   (API Gateway → ECS)         (ECS → ECS, same mechanism)     │
+│                                                                │
+│  ┌──────────────────┐   HTTP over IPv6   ┌──────────────────┐ │
+│  │  Matching Service│ ─────────────────▶ │  Workflow Service│ │
+│  │  resolves AAAA   │                    │  SG allows :8081 │ │
+│  └──────────────────┘                    │  from anyIpv6    │ │
+│                                          └──────────────────┘ │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-### Why the namespace split is necessary
+**Resolution flow:**
+1. Caller resolves `workflow-service.internal.services` → gets the task's `AAAA` IPv6 address
+2. Caller opens a TCP connection to `[IPv6]:8081` over the IPv6-only subnet
+3. The callee's security group allows the traffic (`anyIpv6` on the container port)
 
-ECS Service Connect automatically creates a CloudMap **`SRV`-type service** entry using
-the same service name you supply in `discoveryName`. If a manual `CfnService` with a
-`AAAA` record for the same service name already exists in the same namespace,
-CloudFormation fails with **"The Service already exists"** during deployment.
+---
 
-By routing Service Connect to `sc.internal` the two registrations never collide.
+## Two CloudMap Namespaces — Why They Exist
+
+| Namespace | Purpose | Used by |
+|-----------|---------|---------|
+| `internal.services` | `AAAA` records → actual IPv6 task addresses | Lambda proxies AND ECS-to-ECS calls |
+| `sc.internal` | Placeholder for `enableServiceConnect()` only | CDK only — no real traffic |
+
+The split exists to avoid a CloudFormation conflict: `enableServiceConnect()` automatically
+creates a CloudMap service entry with the service name. If that name is already registered
+as a manual `CfnService` AAAA record in `internal.services`, CloudFormation fails with
+**"The Service already exists"**. Pointing `enableServiceConnect()` to `sc.internal` avoids
+this collision while keeping AAAA record registration in `internal.services` intact.
 
 ---
 
 ## Infrastructure: CDK Setup
 
-### 1. Exported namespace references (`infraLibrary/lib/importedRessources.ts`)
+### Namespace references (`infraLibrary/lib/importedRessources.ts`)
 
 ```typescript
-// External-facing (Lambda → ECS) — AAAA records
+// For AAAA records (Lambda→ECS AND ECS→ECS actual traffic)
 ImportedRessources.getCloudMapNamespace(stack)        // internal.services
 
-// Internal mesh (ECS → ECS) — Service Connect only
+// For enableServiceConnect() only — no real traffic
 ImportedRessources.getServiceConnectNamespace(stack)  // sc.internal
 ```
 
-### 2. Service stack pattern (every service's `infra/lib/service-stack.ts`)
-
-Both namespaces must be imported and used for their respective roles:
+### Service stack pattern — every `infra/lib/service-stack.ts`
 
 ```typescript
-// Import both namespaces
-const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);   // internal.services
+const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);       // internal.services
 const scNamespace       = ImportedRessources.getServiceConnectNamespace(this); // sc.internal
 
-// ① AAAA record — keeps the Lambda proxy working via IPv6 DNS
+// ① AAAA record — used by BOTH Lambda proxies and other ECS tasks
 const sdService = EcsInfra.createServiceDiscoveryAAAARecord(
-  this, props.serviceName, cloudMapNamespace
+  this, props.serviceName, cloudMapNamespace  // ← always internal.services
 );
 
 const ecsService = new ecs.FargateService(this, 'FargateService', { ... });
 
-// Attach the AAAA record to the ECS service
 const cfnService = ecsService.node.defaultChild as ecs.CfnService;
 cfnService.serviceRegistries = [{ registryArn: sdService.attrArn }];
 
-// ② Service Connect — uses the SEPARATE sc.internal namespace
+// ② enableServiceConnect — uses sc.internal to avoid collision with ① above.
+//    ECS Service Connect is NOT used for actual ECS-to-ECS traffic (IPv4 only).
 ecsService.enableServiceConnect({
-  namespace: scNamespace.namespaceName,   // ← sc.internal, NOT internal.services
+  namespace: scNamespace.namespaceName,  // ← sc.internal (CDK placeholder only)
 });
 ```
 
-> **If the service also needs to be reachable by other ECS services** (i.e., it acts as a
-> *server* in the mesh), add a `services` block to `enableServiceConnect` with a named
-> `portMappingName` (the container port mapping must also be given a `name`):
->
-> ```typescript
-> // Container port mapping must have a name
-> portMappings: [{ name: 'app-port', containerPort: 8081, protocol: ecs.Protocol.TCP }]
->
-> // Service Connect — expose this service inside the mesh
-> ecsService.enableServiceConnect({
->   namespace: scNamespace.namespaceName,
->   services: [{
->     portMappingName: 'app-port',
->     port: 8081,
->     discoveryName: props.serviceName,
->     dnsName: `${props.serviceName}.${scNamespace.namespaceName}`,
->   }],
-> });
-> ```
->
-> A service that only *calls* others (consumer-only) can omit the `services` array.
+### Security group rule — callee must allow IPv6 ingress
+
+Any service that receives calls from other ECS tasks must explicitly open its container
+port to IPv6 traffic. Add this **in the callee's service stack**:
+
+```typescript
+// Lambdas → ECS (existing, unchanged)
+ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Lambda proxy');
+
+// ECS → ECS via AAAA record resolution over IPv6.
+// Internet-inbound IPv6 is blocked at the network layer (only an Egress-Only IGW
+// exists on the private subnet — no inbound route from the internet).
+ecsSecurityGroup.addIngressRule(
+  ec2.Peer.anyIpv6(),
+  ec2.Port.tcp(containerPort),
+  'Inbound HTTP IPv6 from VPC services (ECS-to-ECS via AAAA record)'
+);
+```
 
 ---
 
 ## Calling Another Service from Java (Spring Boot)
 
-ECS Service Connect injects a **localhost sidecar proxy** on port 80 (or the declared
-`port`) per registered upstream service.  The DNS name is resolved automatically inside
-the task network.
+### Step 1 — Inject the URL via CDK environment variable
 
-### Step 1 — Inject the target URL via environment variable
-
-In the caller's CDK `service-stack.ts`, pass the URL as an environment variable:
+In the **caller's** `service-stack.ts`, pass the target URL using `cloudMapNamespace`
+(`internal.services`), not `scNamespace`:
 
 ```typescript
 environment: {
-  // Resolves to http://workflow-service.sc.internal:8081 at runtime
+  // ECS-to-ECS uses the AAAA record in internal.services (same as Lambda→ECS).
+  // Do NOT use scNamespace — that namespace is IPv4 Service Connect only.
   'WORKFLOW_SERVICE_URL':
-    `http://workflow-service.${scNamespace.namespaceName}:${workflowPort}`,
+    `http://workflow-service.${cloudMapNamespace.namespaceName}:8081`,
 },
 ```
-
-> **Use `scNamespace.namespaceName` (= `sc.internal`), not `cloudMapNamespace.namespaceName`**,
-> because Service Connect DNS resolution only works within the `sc.internal` namespace.
 
 ### Step 2 — Read the URL in Spring Boot
 
 ```java
-@Value("${aws.workflow-service.url:http://workflow-service.sc.internal:8081}")
+@Value("${aws.workflow-service.url:http://workflow-service.internal.services:8081}")
 private String workflowServiceUrl;
 ```
 
-The default value (`http://workflow-service.sc.internal:8081`) lets the service start
-locally without the env var being set, though the call will fail without the actual
-service running.
+### Step 3 — HTTP call with `RestTemplate`
 
-### Step 3 — Make the HTTP call using `RestTemplate`
-
-Register `RestTemplate` as a bean (already done in `AppConfig.java`):
+Register `RestTemplate` as a bean in `AppConfig` (already present in every service):
 
 ```java
 @Bean
@@ -162,12 +154,9 @@ public RestTemplate restTemplate(RestTemplateBuilder builder) {
 }
 ```
 
-Inject and use it:
+Inject and call with a safe fallback:
 
 ```java
-private final RestTemplate restTemplate;
-private final String workflowServiceUrl;
-
 public MyService(RestTemplate restTemplate,
                  @Value("${aws.workflow-service.url}") String workflowServiceUrl) {
     this.restTemplate = restTemplate;
@@ -176,74 +165,76 @@ public MyService(RestTemplate restTemplate,
 
 public WorkflowRulesDto fetchWorkflowRules(String submissionId) {
     String url = workflowServiceUrl + "/api/workflow/submissions/" + submissionId + "/rules";
-    return restTemplate.getForObject(url, WorkflowRulesDto.class);
-}
-```
-
-**Always wrap the call in a try-catch** — a network failure must not crash the caller:
-
-```java
-try {
-    WorkflowRulesDto rules = restTemplate.getForObject(url, WorkflowRulesDto.class);
-    // use rules
-} catch (Exception e) {
-    log.warn("Failed to call workflow service for submission {}", submissionId, e);
-    // apply a safe default
+    try {
+        return restTemplate.getForObject(url, WorkflowRulesDto.class);
+    } catch (Exception e) {
+        log.warn("Failed to call workflow service for submission {}", submissionId, e);
+        return null; // apply a safe default in the caller
+    }
 }
 ```
 
 ### Real-world example
 
-See how the **Matching Service** calls the **Workflow Service** to determine whether
-examiner identities should be hidden:
+The **Matching Service** calls the **Workflow Service** to check if examiner anonymity
+is enforced:
 
-- CDK env var: [`matchingService/infra/lib/service-stack.ts` L118](../../matchingService/infra/lib/service-stack.ts)
-- Spring constructor injection: [`MatchingController.java` L55](../../matchingService/src/main/java/com/fh_wedel/matching/controller/MatchingController.java)
+- CDK env var: [`matchingService/infra/lib/service-stack.ts`](../../matchingService/infra/lib/service-stack.ts) — `WORKFLOW_SERVICE_URL`
+- Spring `@Value` injection: [`MatchingController.java` L55](../../matchingService/src/main/java/com/fh_wedel/matching/controller/MatchingController.java)
 - HTTP call with fallback: [`MatchingController.java` L99–L109](../../matchingService/src/main/java/com/fh_wedel/matching/controller/MatchingController.java)
 
 ---
 
-## Checklist: Adding a New Internal Caller
+## Checklist: Adding a New Caller (Service A calls Service B)
 
-When service **A** needs to call service **B** (B must already be deployed and expose
-itself via Service Connect):
+### On service B (callee — the one being called)
 
-- [ ] **CDK (A's `service-stack.ts`)**
-  - Import `scNamespace` via `ImportedRessources.getServiceConnectNamespace(this)`
-  - Add `enableServiceConnect({ namespace: scNamespace.namespaceName })` to A's `FargateService`
-  - Inject B's URL as an env var: `'B_SERVICE_URL': \`http://${bServiceName}.${scNamespace.namespaceName}:${bPort}\``
-- [ ] **CDK (B's `service-stack.ts`)** — B must advertise itself in the mesh:
-  - Port mapping must have `name: 'app-port'`
-  - `enableServiceConnect` must include a `services` block with `portMappingName`, `port`, `discoveryName`, and `dnsName`
-- [ ] **Java (A's application)**
-  - Add `@Value("${b.service.url:http://<b-name>.sc.internal:<port>}")` field
-  - Declare `RestTemplate` as a bean in `AppConfig` (if not already present)
-  - Wrap the HTTP call in `try-catch` and apply a safe fallback
+- [ ] AAAA record already registered via `createServiceDiscoveryAAAARecord(..., cloudMapNamespace)` ✓ (all services have this)
+- [ ] **Add IPv6 ingress** to B's security group:
+  ```typescript
+  ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(containerPort),
+    'Inbound HTTP IPv6 from VPC services (ECS-to-ECS via AAAA record)');
+  ```
 
----
+### On service A (caller)
 
-## Quick Reference: Namespace DNS Names
-
-| Service name (CDK `serviceName`) | Service Connect DNS name |
-|----------------------------------|--------------------------|
-| `workflow-service` | `workflow-service.sc.internal` |
-| `matching` | `matching.sc.internal` |
-| `<your-service>` | `<your-service>.sc.internal` |
-
-Default port: whatever `containerPort` was declared in the CDK stack.
+- [ ] **CDK** — inject B's URL using `cloudMapNamespace` (NOT `scNamespace`):
+  ```typescript
+  'B_SERVICE_URL': `http://${bServiceName}.${cloudMapNamespace.namespaceName}:${bPort}`,
+  ```
+- [ ] **Java** — read the URL with a fallback default:
+  ```java
+  @Value("${b.service.url:http://<b-name>.internal.services:<port>}")
+  private String bServiceUrl;
+  ```
+- [ ] **Java** — inject `RestTemplate` (bean in `AppConfig`) and wrap calls in `try-catch`
 
 ---
 
-## Why NOT to use `internal.services` for Service Connect
+## Quick Reference: DNS Names
 
-The `internal.services` namespace holds `AAAA` (IPv6 address) records used by the
-**Lambda → ECS** communication path.  If you point `enableServiceConnect` at that same
-namespace, CloudFormation will try to create a second CloudMap `Service` entry with the
-same service name and fail:
+| Service | AAAA DNS name (actual traffic) |
+|---------|-------------------------------|
+| `workflow-service` | `workflow-service.internal.services` |
+| `matching` | `matching.internal.services` |
+| `<your-service>` | `<your-service>.internal.services` |
 
-```
-Resource handler returned message: "The Service already exists."
-```
+Port: whatever `containerPort` is declared in the service's CDK stack
+(e.g. `workflow-service` → `8081`, `matching` → `8081`).
 
-Always use `sc.internal` (= `ImportedRessources.getServiceConnectNamespace()`) for
-any `enableServiceConnect` calls.
+---
+
+## Why ECS Service Connect Cannot Be Used Here
+
+ECS Service Connect injects an **Envoy proxy sidecar** that intercepts traffic using
+**iptables rules on IPv4 loopback**. This requires the container to have an IPv4 address.
+
+All ECS tasks in this project run in an **IPv6-only subnet** (`ipv6Native = true`,
+no IPv4 addresses assigned). The Envoy sidecar cannot bind or redirect traffic without
+IPv4, so:
+
+- `workflow-service.sc.internal` will resolve to nothing → `UnresolvedAddressException`
+- Even if DNS somehow resolved, the Envoy iptables rules would not fire → `ConnectException`
+
+The correct pattern — AAAA record + direct IPv6 TCP — is what both Lambda proxies and
+ECS-to-ECS callers use.

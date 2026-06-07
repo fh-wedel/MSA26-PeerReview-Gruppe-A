@@ -48,7 +48,6 @@ export class ServiceStack extends cdk.Stack {
         }
 
         const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
-        const scNamespace = ImportedRessources.getServiceConnectNamespace(this);
 
         const logGroup = LogsInfra.createLogGroup(this, {
             logGroupName: `/ecs/${props.serviceName}`,
@@ -115,7 +114,9 @@ export class ServiceStack extends cdk.Stack {
                 'COGNITO_USER_POOL_ID': cognitoUserPoolId,
                 'COGNITO_REVIEWER_GROUP_NAME': reviewerGroupName,
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
-                'WORKFLOW_SERVICE_URL': `http://workflow-service.${scNamespace.namespaceName}:8081`,
+                // Use the AAAA record in internal.services for ECS-to-ECS communication.
+                // ECS Service Connect (sc.internal) does NOT support IPv6-only subnets.
+                'WORKFLOW_SERVICE_URL': `http://workflow-service.${cloudMapNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
         });
@@ -166,11 +167,6 @@ export class ServiceStack extends cdk.Stack {
             },
         ];
 
-        ecsService.enableServiceConnect({
-            // Use the dedicated sc.internal namespace so ECS Service Connect does NOT
-            // collide with the AAAA-record service already registered in internal.services.
-            namespace: scNamespace.namespaceName,
-        });
 
         // =============================================
         // IAM Permissions

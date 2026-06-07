@@ -90,9 +90,14 @@ export class ServiceStack extends cdk.Stack {
     const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
     const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
     ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
+    // Allow ECS-to-ECS calls over IPv6 via the internal.services AAAA records.
+    // Service Connect does not support IPv6-only subnets, so callers resolve the
+    // CloudMap AAAA record and connect directly over IPv6.
+    // Inbound IPv6 from the internet is blocked at the network level (no inbound
+    // route on the IPv6-only private subnet — only an Egress-Only IGW exists).
+    ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(containerPort), 'Inbound HTTP IPv6 from VPC services (ECS-to-ECS via AAAA record)');
 
     const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
-    const scNamespace = ImportedRessources.getServiceConnectNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
@@ -117,19 +122,6 @@ export class ServiceStack extends cdk.Stack {
       },
     ];
 
-    ecsService.enableServiceConnect({
-      // Use the dedicated sc.internal namespace so ECS Service Connect does NOT
-      // collide with the AAAA-record service already registered in internal.services.
-      namespace: scNamespace.namespaceName,
-      services: [
-        {
-          portMappingName: 'app-port',
-          port: containerPort,
-          discoveryName: props.serviceName,
-          dnsName: `${props.serviceName}.${scNamespace.namespaceName}`,
-        }
-      ]
-    });
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 

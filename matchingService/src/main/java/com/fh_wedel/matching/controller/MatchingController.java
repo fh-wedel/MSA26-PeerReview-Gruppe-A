@@ -52,7 +52,7 @@ public class MatchingController {
     public MatchingController(MatchingService matchingService, 
                               CognitoService cognitoService,
                               RestTemplate restTemplate,
-                              @Value("${aws.workflow-service.url:http://workflow-service.sc.internal:8081}") String workflowServiceUrl) {
+                              @Value("${aws.workflow-service.url:http://workflow-service.internal.services:8081}") String workflowServiceUrl) {
         this.matchingService = matchingService;
         this.cognitoService = cognitoService;
         this.restTemplate = restTemplate;
