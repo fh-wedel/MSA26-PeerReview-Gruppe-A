@@ -1,8 +1,8 @@
 package com.fh_wedel.workflow.service;
 
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
-import com.fh_wedel.workflow.model.WorkflowPluginDto;
-import com.fh_wedel.workflow.model.WorkflowRulesDto;
+import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
+import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
 import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,8 +48,8 @@ class WorkflowServiceTest {
         List<WorkflowPluginDto> result = service.listPlugins();
 
         assertEquals(2, result.size());
-        assertEquals("plugin-1", result.get(0).name());
-        assertEquals("plugin-2", result.get(1).name());
+        assertEquals("plugin-1", result.get(0).getName());
+        assertEquals("plugin-2", result.get(1).getName());
         verify(registry).getAll();
     }
 
@@ -61,10 +61,10 @@ class WorkflowServiceTest {
         WorkflowPluginDto result = service.getPlugin("plugin-1");
 
         assertNotNull(result);
-        assertEquals("plugin-1", result.name());
-        assertEquals("plugin-1 description", result.description());
-        assertTrue(result.rules().authorAnonymous());
-        assertFalse(result.rules().reviewerAnonymous());
+        assertEquals("plugin-1", result.getName());
+        assertEquals("plugin-1 description", result.getDescription());
+        assertTrue(result.getRules().getAuthorAnonymous());
+        assertFalse(result.getRules().getReviewerAnonymous());
         verify(registry).getByName("plugin-1");
     }
 
@@ -84,11 +84,11 @@ class WorkflowServiceTest {
         WorkflowRulesDto result = service.getPluginRules("plugin-1");
 
         assertNotNull(result);
-        assertTrue(result.authorAnonymous());
-        assertFalse(result.reviewerAnonymous());
-        assertTrue(result.reviewerToReviewerAnonymous());
-        assertFalse(result.authorReviewerChatAllowed());
-        assertTrue(result.reviewerToReviewerChatAllowed());
+        assertTrue(result.getAuthorAnonymous());
+        assertFalse(result.getReviewerAnonymous());
+        assertTrue(result.getReviewerToReviewerAnonymous());
+        assertFalse(result.getAuthorReviewerChatAllowed());
+        assertTrue(result.getReviewerToReviewerChatAllowed());
         verify(registry).getByName("plugin-1");
     }
 
@@ -108,8 +108,8 @@ class WorkflowServiceTest {
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
         assertNotNull(result);
-        assertTrue(result.authorAnonymous());
-        assertFalse(result.reviewerAnonymous());
+        assertTrue(result.getAuthorAnonymous());
+        assertFalse(result.getReviewerAnonymous());
         verify(registry).getByName(anyString());
     }
 }

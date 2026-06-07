@@ -1,8 +1,8 @@
 package com.fh_wedel.workflow.service;
 
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
-import com.fh_wedel.workflow.model.WorkflowPluginDto;
-import com.fh_wedel.workflow.model.WorkflowRulesDto;
+import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
+import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
 import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,21 +45,21 @@ public class WorkflowService {
     }
 
     private WorkflowPluginDto toDto(ReviewWorkflowPlugin plugin) {
-        return new WorkflowPluginDto(
-            plugin.getName(),
-            plugin.getTitle(),
-            plugin.getDescription(),
-            toRulesDto(plugin)
-        );
+        WorkflowPluginDto dto = new WorkflowPluginDto();
+        dto.setName(plugin.getName());
+        dto.setTitle(plugin.getTitle());
+        dto.setDescription(plugin.getDescription());
+        dto.setRules(toRulesDto(plugin));
+        return dto;
     }
 
     private WorkflowRulesDto toRulesDto(ReviewWorkflowPlugin plugin) {
-        return new WorkflowRulesDto(
-            plugin.isAuthorAnonymous(),
-            plugin.isReviewerAnonymous(),
-            plugin.isReviewerToReviewerAnonymous(),
-            plugin.isAuthorReviewerChatAllowed(),
-            plugin.isReviewerToReviewerChatAllowed()
-        );
+        WorkflowRulesDto dto = new WorkflowRulesDto();
+        dto.setAuthorAnonymous(plugin.isAuthorAnonymous());
+        dto.setReviewerAnonymous(plugin.isReviewerAnonymous());
+        dto.setReviewerToReviewerAnonymous(plugin.isReviewerToReviewerAnonymous());
+        dto.setAuthorReviewerChatAllowed(plugin.isAuthorReviewerChatAllowed());
+        dto.setReviewerToReviewerChatAllowed(plugin.isReviewerToReviewerChatAllowed());
+        return dto;
     }
 }
