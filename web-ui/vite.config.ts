@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/workflow': 'https://msa26-peer-review.fh-wedel.dev'
+      '/api/workflow': 'https://msa26-peer-review.fh-wedel.dev',
+      '/api/matching': 'https://msa26-peer-review.fh-wedel.dev'
     }
   }
 })
