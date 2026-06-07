@@ -27,6 +27,12 @@
             "description": "Allow Admin to get workflow plugin rules"
         },
         {
+            "id": "AdminGetSubmissionRules",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/{submissionId}/rules",
+            "description": "Allow Admin to get submission rules"
+        },
+        {
             "id": "StudentListPlugins",
             "groupName": "Student",
             "actionId": "get /api/workflow/plugins",
@@ -43,6 +49,12 @@
             "groupName": "Student",
             "actionId": "get /api/workflow/plugins/{pluginName}/rules",
             "description": "Allow Student to get workflow plugin rules"
+        },
+        {
+            "id": "StudentGetSubmissionRules",
+            "groupName": "Student",
+            "actionId": "get /api/workflow/{submissionId}/rules",
+            "description": "Allow Student to get submission rules"
         },
         {
             "id": "TeacherListPlugins",
@@ -63,6 +75,12 @@
             "description": "Allow Teacher to get workflow plugin rules"
         },
         {
+            "id": "TeacherGetSubmissionRules",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/{submissionId}/rules",
+            "description": "Allow Teacher to get submission rules"
+        },
+        {
             "id": "GuestListPlugins",
             "groupName": "Guest",
             "actionId": "get /api/workflow/plugins",
@@ -81,6 +99,12 @@
             "description": "Allow Guest to get workflow plugin rules"
         },
         {
+            "id": "GuestGetSubmissionRules",
+            "groupName": "Guest",
+            "actionId": "get /api/workflow/{submissionId}/rules",
+            "description": "Allow Guest to get submission rules"
+        },
+        {
             "id": "OfficerListPlugins",
             "groupName": "ExaminationOfficer",
             "actionId": "get /api/workflow/plugins",
@@ -97,6 +121,12 @@
             "groupName": "ExaminationOfficer",
             "actionId": "get /api/workflow/plugins/{pluginName}/rules",
             "description": "Allow ExaminationOfficer to get workflow plugin rules"
+        },
+        {
+            "id": "OfficerGetSubmissionRules",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/{submissionId}/rules",
+            "description": "Allow ExaminationOfficer to get submission rules"
         }
     ]
 }
