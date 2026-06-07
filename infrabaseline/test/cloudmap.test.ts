@@ -10,14 +10,16 @@ test('Cloud Map namespace is created with exports', () => {
 
     const template = Template.fromStack(stack);
 
+    // Both namespaces should be created
     template.resourceCountIs('AWS::ServiceDiscovery::PrivateDnsNamespace', 1);
+
     template.hasResourceProperties('AWS::ServiceDiscovery::PrivateDnsNamespace', {
         Name: 'internal.services',
         Vpc: {
             'Fn::ImportValue': 'Baseline:VpcId',
         },
     });
-
+    // External namespace outputs
     template.hasOutput('CloudMapNamespaceId', {
         Value: Match.anyValue(),
         Export: {

@@ -36,8 +36,16 @@ class MatchingControllerSecurityTest {
     @Mock
     private CognitoService cognitoService;
 
+    @Mock
+    private org.springframework.web.client.RestTemplate restTemplate;
+
     @InjectMocks
     private MatchingController controller;
+
+    @BeforeEach
+    void setUp() {
+        controller = new MatchingController(matchingService, cognitoService, restTemplate, "http://mock");
+    }
 
     /**
      * Creates a mock Authentication matching the {@code AuthHeaderFilter} behavior:

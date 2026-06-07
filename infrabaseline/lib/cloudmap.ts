@@ -13,6 +13,7 @@ export class CloudMapStack extends cdk.Stack {
 
         const vpc = ImportedRessources.getVpcByAttributes(this);
 
+        // External-facing namespace — used by Lambda proxies for AAAA-record resolution
         const namespace = new servicediscovery.PrivateDnsNamespace(this, 'CloudMapNamespace', {
             name: props.namespaceName,
             vpc: vpc,

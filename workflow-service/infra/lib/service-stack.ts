@@ -60,6 +60,7 @@ export class ServiceStack extends cdk.Stack {
       logging: LogsInfra.createEcsLogDriver(logGroup, props.serviceName),
       portMappings: [
         {
+          name: 'app-port',
           containerPort: containerPort,
           protocol: ecs.Protocol.TCP,
         },
@@ -84,11 +85,18 @@ export class ServiceStack extends cdk.Stack {
     } else {
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Outbound HTTPS IPv6');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
+      ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.allTcp(), 'Outbound all TCP IPv6 (ECS-to-ECS)');
     }
 
     const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
     const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
     ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
+    // Allow ECS-to-ECS calls over IPv6 via the internal.services AAAA records.
+    // Service Connect does not support IPv6-only subnets, so callers resolve the
+    // CloudMap AAAA record and connect directly over IPv6.
+    // Inbound IPv6 from the internet is blocked at the network level (no inbound
+    // route on the IPv6-only private subnet — only an Egress-Only IGW exists).
+    ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(containerPort), 'Inbound HTTP IPv6 from VPC services (ECS-to-ECS via AAAA record)');
 
     const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
@@ -114,6 +122,7 @@ export class ServiceStack extends cdk.Stack {
         registryArn: sdService.attrArn,
       },
     ];
+
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
