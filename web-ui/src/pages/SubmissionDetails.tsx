@@ -14,7 +14,7 @@ export const SubmissionDetails: React.FC = () => {
   return (
     <Box>
       <Button
-        variant="outlined"
+        variant="contained"
         color="primary"
         startIcon={<ArrowBack />}
         sx={{ mb: 2 }}
