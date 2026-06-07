@@ -29,8 +29,8 @@ class WorkflowControllerTest {
     @Test
     void listPluginsReturns200() throws Exception {
         WorkflowRulesDto rules = new WorkflowRulesDto(true, false, true, false, true);
-        WorkflowPluginDto plugin1 = new WorkflowPluginDto("plugin-1", "description 1", rules);
-        WorkflowPluginDto plugin2 = new WorkflowPluginDto("plugin-2", "description 2", rules);
+        WorkflowPluginDto plugin1 = new WorkflowPluginDto("plugin-1", "Plugin 1", "description 1", rules);
+        WorkflowPluginDto plugin2 = new WorkflowPluginDto("plugin-2", "Plugin 2", "description 2", rules);
         
         when(workflowService.listPlugins()).thenReturn(List.of(plugin1, plugin2));
 
@@ -47,7 +47,7 @@ class WorkflowControllerTest {
     @Test
     void getPluginReturns200() throws Exception {
         WorkflowRulesDto rules = new WorkflowRulesDto(true, false, true, false, true);
-        WorkflowPluginDto plugin = new WorkflowPluginDto("plugin-1", "description 1", rules);
+        WorkflowPluginDto plugin = new WorkflowPluginDto("plugin-1", "Plugin 1", "description 1", rules);
 
         when(workflowService.getPlugin("plugin-1")).thenReturn(plugin);
 

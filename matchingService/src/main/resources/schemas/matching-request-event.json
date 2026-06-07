@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MatchingRequestEvent",
+  "description": "SQS event payload sent by the Creation Service to request reviewer matching for a submission.",
+  "type": "object",
+  "properties": {
+    "submissionId": {
+      "type": "string",
+      "description": "Unique identifier of the submission to be matched with reviewers."
+    },
+    "submitterId": {
+      "type": "string",
+      "description": "Cognito sub (UUID) of the user who submitted the paper. Used to exclude self-review."
+    },
+    "numberOfExaminers": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of reviewers to assign to this submission."
+    }
+  },
+  "required": ["submissionId", "submitterId", "numberOfExaminers"],
+  "additionalProperties": false
+}

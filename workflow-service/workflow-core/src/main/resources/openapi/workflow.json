@@ -143,6 +143,10 @@
         "type": "object",
         "description": "A registered workflow plugin with its metadata and rules",
         "properties": {
+          "title": {
+            "type": "string",
+            "description": "Human-readable title of the workflow plugin"
+          },
           "name": {
             "type": "string",
             "description": "Unique name of the workflow plugin"
@@ -155,7 +159,7 @@
             "$ref": "#/components/schemas/WorkflowRulesDto"
           }
         },
-        "required": ["name", "description", "rules"]
+        "required": ["name", "title", "description", "rules"]
       }
     }
   }

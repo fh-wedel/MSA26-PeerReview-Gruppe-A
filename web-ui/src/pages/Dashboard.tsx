@@ -28,8 +28,9 @@ export const Dashboard: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const deadlineDates = mockDeadlines.map((d) => d.date);
 
-  const handleSubmission = (title: string, reviewMode: string) => {
-    console.log('Submitted:', { title, reviewMode });
+  const handleSubmission = (title: string, reviewMode: string, file: File | null) => {
+    const status = file ? 'Submitted' : 'Draft';
+    console.log('Submitted:', { title, reviewMode, file, status });
     setSnackbarOpen(true);
   };
 
@@ -38,7 +39,7 @@ export const Dashboard: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4">Welcome, {user?.name}</Typography>
         <Button variant="contained" color="primary" size="large" onClick={() => setModalOpen(true)}>
-          Submit Paper for Review
+          Create Submission
         </Button>
       </Box>
 
@@ -93,7 +94,7 @@ export const Dashboard: React.FC = () => {
         sx={{ mt: 8 }}
       >
         <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
-          Paper submitted successfully!
+          Submission created successfully!
         </Alert>
       </Snackbar>
     </Box>

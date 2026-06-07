@@ -31,6 +31,7 @@ class WorkflowPluginRegistryTest {
         
         ReviewWorkflowPlugin plugin = pluginOpt.get();
         assertEquals("test-plugin", plugin.getName());
+        assertEquals("Test Plugin", plugin.getTitle());
         assertEquals("A test plugin for unit testing", plugin.getDescription());
         assertTrue(plugin.isAuthorAnonymous());
         assertFalse(plugin.isReviewerAnonymous());

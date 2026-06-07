@@ -5,6 +5,11 @@ import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
 public class OpenReviewPlugin implements ReviewWorkflowPlugin {
 
     @Override
+    public String getTitle() {
+        return "Open Review";
+    }
+
+    @Override
     public String getName() {
         return "open-review";
     }

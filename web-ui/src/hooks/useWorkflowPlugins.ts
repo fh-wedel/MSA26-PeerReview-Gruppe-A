@@ -10,6 +10,7 @@ export interface WorkflowRules {
 
 export interface WorkflowPlugin {
   name: string;
+  title: string;
   description: string;
   rules: WorkflowRules;
 }

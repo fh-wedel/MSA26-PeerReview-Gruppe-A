@@ -29,6 +29,7 @@ const policyFilePath = path.resolve(__dirname, '..', 'verified-permissions', 'wo
 const authStack = new AuthStack(app, 'WorkflowAuthStack', {
   env,
   policyFilePath: policyFilePath,
+  serviceName: serviceNameContext,
 });
 
 const apiStack = new ApiStack(app, 'WorkflowApiStack', {

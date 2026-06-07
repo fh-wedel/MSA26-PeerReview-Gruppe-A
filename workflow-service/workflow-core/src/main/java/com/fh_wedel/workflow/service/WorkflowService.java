@@ -37,6 +37,7 @@ public class WorkflowService {
     private WorkflowPluginDto toDto(ReviewWorkflowPlugin plugin) {
         return new WorkflowPluginDto(
             plugin.getName(),
+            plugin.getTitle(),
             plugin.getDescription(),
             toRulesDto(plugin)
         );

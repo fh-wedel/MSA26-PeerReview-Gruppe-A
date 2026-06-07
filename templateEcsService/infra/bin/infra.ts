@@ -30,6 +30,7 @@ const policyFilePath = path.resolve(__dirname, '..', 'verified-permissions', 'te
 const authStack = new AuthStack(app, 'TemplateAuthStack', {
   env,
   policyFilePath: policyFilePath,
+  serviceName: serviceNameContext,
 });
 
 const apiStack = new ApiStack(app, 'TemplateApiStack', {
