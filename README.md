@@ -5,25 +5,40 @@
 
 ---
 
-## 1. Lokale Ausführung
+## 1. Initiales Setup & Deployment
 
 ### Voraussetzungen
-Für die lokale Entwicklung und das Deployment werden **Docker** sowie die **AWS CLI** benötigt. 
+* **AWS CLI** (konfiguriert via AWS SSO)
+* **Node.js & npm** (für AWS CDK)
+* **Docker** (für Container-Builds)
 
-1. **AWS CLI & SSO konfigurieren:** Aufgrund der kurzen Session-Laufzeiten wird die Konfiguration über AWS SSO dringend empfohlen:
-   ```bash
-   aws configure sso
-   ```
-2. **AWS SSO Login initiieren:**
+### Deployment-Schritte
+
+1. **AWS SSO Login initiieren:**
    ```bash
    aws sso login
    ```
-3. **AWS-Profil konfigurieren:** Standardmäßig wird das lokale SSO-Profil `fh-wedel-msa` verwendet. Bei abweichender Benennung muss die Umgebungsvariable `AWS_PROFILE` in der `docker-compose.yml` angepasst werden.
-4. **Anwendung starten:**
+
+2. **Baseline Infrastruktur deployen:**
+   Die Basis-Infrastruktur (VPC, Cluster, ECR) muss zwingend zuerst bereitgestellt werden:
    ```bash
-   docker compose up --build
+   cd infrabaseline
+   npm install
+   npx cdk deploy --all
+   cd ..
    ```
-5. **Web-UI aufrufen:** Das Frontend ist lokal unter [http://localhost:5173](http://localhost:5173) erreichbar.
+
+3. **Services deployen:**
+   Die einzelnen Microservices (z.B. `workflow-service`, `matchingService`, `web-ui`) werden primär über die GitHub Actions CI/CD Pipeline deployt. 
+   
+   Für ein manuelles Deployment eines Services:
+   1. Docker-Image bauen und in das ECR pushen.
+   2. CDK Stack deployen:
+      ```bash
+      cd <service-ordner>/infra
+      npm install
+      npx cdk deploy
+      ```
 
 ---
 

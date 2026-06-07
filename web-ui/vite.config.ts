@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/workflow': 'http://workflow-service:8080'
+      '/api/workflow': 'https://msa26-peer-review.fh-wedel.dev'
     }
   }
 })
