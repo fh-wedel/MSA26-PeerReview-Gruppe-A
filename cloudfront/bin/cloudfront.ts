@@ -50,7 +50,7 @@ new CloudFrontStack(app, 'PeerReviewCloudFrontStack', {
         // { apiName: 'SubmissionServiceAPI',      pathPattern: '/api/submission/*' },
         // { apiName: 'UserManagementServiceAPI',  pathPattern: '/api/user-management/*' },
         { apiName: 'WorkflowServiceAPI', pathPattern: '/api/workflow/*', enableCaching: true },
-        { apiName: 'MatchingServiceAPI', pathPattern: '/api/matching/*', enableCaching: true },
+        { apiName: 'MatchingServiceAPI', pathPattern: '/api/matching/*', enableCaching: false },
         // { apiName: 'ReviewServiceAPI',          pathPattern: '/api/review/*' },
         // { apiName: 'NotificationServiceAPI',    pathPattern: '/api/notification/*' },
         // { apiName: 'CommunicationServiceAPI',   pathPattern: '/api/communication/*' },

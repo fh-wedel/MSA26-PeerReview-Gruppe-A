@@ -195,9 +195,9 @@ export class CloudFrontStack extends cdk.Stack {
 
         // ── Per-service API behaviors ─────────────────────────────────────────────
         const shortCachePolicy = new cloudfront.CachePolicy(this, "ShortCachePolicy", {
-            defaultTtl: Duration.minutes(15),
+            defaultTtl: Duration.minutes(10),
             minTtl: Duration.minutes(5),
-            maxTtl: Duration.hours(1),
+            maxTtl: Duration.hours(45),
             // This ensures CloudFront caches per-user, preventing data leaks:
             headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Authorization')
         });
