@@ -99,4 +99,17 @@ class WorkflowServiceTest {
         assertThrows(NoSuchElementException.class, () -> service.getPluginRules("unknown"));
         verify(registry).getByName("unknown");
     }
+
+    @Test
+    void getRulesForSubmissionReturnsRandomPluginRules() {
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("mock-plugin");
+        when(registry.getByName(anyString())).thenReturn(Optional.of(mockPlugin));
+
+        WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
+
+        assertNotNull(result);
+        assertTrue(result.authorAnonymous());
+        assertFalse(result.reviewerAnonymous());
+        verify(registry).getByName(anyString());
+    }
 }

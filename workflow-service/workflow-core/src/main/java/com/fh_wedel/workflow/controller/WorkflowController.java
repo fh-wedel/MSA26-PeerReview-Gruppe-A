@@ -32,6 +32,11 @@ public class WorkflowController {
         return ResponseEntity.ok(workflowService.getPluginRules(pluginName));
     }
 
+    @GetMapping("/{submissionId}/rules")
+    public ResponseEntity<WorkflowRulesDto> getRulesForSubmission(@PathVariable String submissionId) {
+        return ResponseEntity.ok(workflowService.getRulesForSubmission(submissionId));
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<String> handleNotFound(NoSuchElementException ex) {
         return ResponseEntity.notFound().build();

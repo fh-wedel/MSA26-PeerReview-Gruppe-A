@@ -5,7 +5,7 @@ import com.fh_wedel.workflow.model.WorkflowRulesDto;
 import com.fh_wedel.workflow.service.WorkflowService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -94,5 +94,20 @@ class WorkflowControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(workflowService).getPluginRules("unknown");
+    }
+
+    @Test
+    void getRulesForSubmissionReturns200() throws Exception {
+        WorkflowRulesDto rules = new WorkflowRulesDto(true, false, true, false, true);
+
+        when(workflowService.getRulesForSubmission("sub-123")).thenReturn(rules);
+
+        mockMvc.perform(get("/api/workflow/sub-123/rules"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.authorAnonymous").value(true))
+                .andExpect(jsonPath("$.reviewerAnonymous").value(false));
+
+        verify(workflowService).getRulesForSubmission("sub-123");
     }
 }
