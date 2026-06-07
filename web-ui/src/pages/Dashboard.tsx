@@ -37,7 +37,7 @@ export const Dashboard: React.FC = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4">Welcome, {user?.name}</Typography>
+        <Typography variant="h4">Welcome, {user?.username}</Typography>
         <Button variant="contained" color="primary" size="large" onClick={() => setModalOpen(true)}>
           Create Submission
         </Button>
@@ -83,7 +83,7 @@ export const Dashboard: React.FC = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmission}
-        authorName={user?.name ?? ''}
+        authorName={user?.username ?? ''}
       />
       
       <Snackbar

@@ -271,7 +271,7 @@ export const Navbar: React.FC = () => {
                 onClose={() => setAnchorElProfile(null)}
               >
                 <MenuItem disabled>
-                  {user?.roles ? user.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()).join(', ') : 'User'}: {user?.name}
+                  {user?.roles ? user.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()).join(', ') : 'User'}: {user?.username}
                 </MenuItem>
                 <MenuItem onClick={() => { setAnchorElProfile(null); logout(); navigate('/'); }}>
                   Logout
