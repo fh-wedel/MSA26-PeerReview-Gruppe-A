@@ -103,7 +103,7 @@
         }
       }
     },
-    "/{submissionId}/rules": {
+    "/submissions/{submissionId}/rules": {
       "get": {
         "operationId": "getRulesForSubmission",
         "summary": "Get the rules for a specific submission",

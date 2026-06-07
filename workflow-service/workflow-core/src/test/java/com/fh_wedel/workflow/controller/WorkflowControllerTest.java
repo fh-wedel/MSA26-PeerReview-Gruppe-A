@@ -102,7 +102,7 @@ class WorkflowControllerTest {
 
         when(workflowService.getRulesForSubmission("sub-123")).thenReturn(rules);
 
-        mockMvc.perform(get("/api/workflow/sub-123/rules"))
+        mockMvc.perform(get("/api/workflow/submissions/sub-123/rules"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.authorAnonymous").value(true))

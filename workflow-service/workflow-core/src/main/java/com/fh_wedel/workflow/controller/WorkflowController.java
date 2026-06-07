@@ -32,7 +32,7 @@ public class WorkflowController {
         return ResponseEntity.ok(workflowService.getPluginRules(pluginName));
     }
 
-    @GetMapping("/{submissionId}/rules")
+    @GetMapping("/submissions/{submissionId}/rules")
     public ResponseEntity<WorkflowRulesDto> getRulesForSubmission(@PathVariable String submissionId) {
         return ResponseEntity.ok(workflowService.getRulesForSubmission(submissionId));
     }
