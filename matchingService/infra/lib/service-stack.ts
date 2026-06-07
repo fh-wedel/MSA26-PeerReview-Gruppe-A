@@ -115,7 +115,7 @@ export class ServiceStack extends cdk.Stack {
                 'COGNITO_USER_POOL_ID': cognitoUserPoolId,
                 'COGNITO_REVIEWER_GROUP_NAME': reviewerGroupName,
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
-                'WORKFLOW_SERVICE_URL': `http://workflow-service.${cloudMapNamespace.namespaceName}:8080`,
+                'WORKFLOW_SERVICE_URL': `http://workflow-service.${scNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
         });
