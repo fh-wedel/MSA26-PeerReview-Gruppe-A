@@ -51,6 +51,7 @@ const githubCIConfigStack = new GithubCIConfig(app, 'BaselineGithubCIConfigStack
 const cloudMapStack = new CloudMapStack(app, 'BaselineCloudMapStack', {
   env,
   namespaceName: 'internal.services',
+  serviceConnectNamespaceName: 'sc.internal',
 });
 
 const cognitoStack = new CognitoStack(app, 'BaselineCognitoStack', {

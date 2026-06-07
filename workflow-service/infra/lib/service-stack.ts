@@ -92,6 +92,7 @@ export class ServiceStack extends cdk.Stack {
     ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
 
     const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+    const scNamespace = ImportedRessources.getServiceConnectNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
@@ -117,13 +118,15 @@ export class ServiceStack extends cdk.Stack {
     ];
 
     ecsService.enableServiceConnect({
-      namespace: cloudMapNamespace.namespaceName,
+      // Use the dedicated sc.internal namespace so ECS Service Connect does NOT
+      // collide with the AAAA-record service already registered in internal.services.
+      namespace: scNamespace.namespaceName,
       services: [
         {
           portMappingName: 'app-port',
           port: containerPort,
           discoveryName: props.serviceName,
-          dnsName: `${props.serviceName}.${cloudMapNamespace.namespaceName}`,
+          dnsName: `${props.serviceName}.${scNamespace.namespaceName}`,
         }
       ]
     });

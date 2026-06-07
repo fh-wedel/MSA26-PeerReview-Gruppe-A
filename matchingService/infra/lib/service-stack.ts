@@ -1,15 +1,15 @@
 import * as cdk from 'aws-cdk-lib/core';
-import {Construct} from 'constructs';
+import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
-import {EcsInfra} from '../../../infraLibrary/lib/ecs';
-import {SqsInfra} from '../../../infraLibrary/lib/sqs';
-import {LogsInfra} from '../../../infraLibrary/lib/logs';
+import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
+import { EcsInfra } from '../../../infraLibrary/lib/ecs';
+import { SqsInfra } from '../../../infraLibrary/lib/sqs';
+import { LogsInfra } from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import {AWSConstants} from '../../../infrabaseline/lib/constants';
+import { AWSConstants } from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
@@ -48,6 +48,7 @@ export class ServiceStack extends cdk.Stack {
         }
 
         const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+        const scNamespace = ImportedRessources.getServiceConnectNamespace(this);
 
         const logGroup = LogsInfra.createLogGroup(this, {
             logGroupName: `/ecs/${props.serviceName}`,
@@ -59,16 +60,16 @@ export class ServiceStack extends cdk.Stack {
         const dynamoTableName = props.dynamoDbTableName ?? 'matching-service-matches';
         const matchesTable = new dynamodb.Table(this, 'MatchesTable', {
             tableName: dynamoTableName,
-            partitionKey: {name: 'pk', type: dynamodb.AttributeType.STRING},
-            sortKey: {name: 'sk', type: dynamodb.AttributeType.STRING},
+            partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         matchesTable.addGlobalSecondaryIndex({
             indexName: 'ExaminerIndex',
-            partitionKey: {name: 'examinerId', type: dynamodb.AttributeType.STRING},
-            sortKey: {name: 'submissionId', type: dynamodb.AttributeType.STRING},
+            partitionKey: { name: 'examinerId', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
             projectionType: dynamodb.ProjectionType.ALL,
         });
 
@@ -149,7 +150,7 @@ export class ServiceStack extends cdk.Stack {
             taskDefinition: taskDefinition,
             assignPublicIp: props.enablePublicIpV4,
             desiredCount: props.minTaskCount,
-            vpcSubnets: {subnets: [subnet]},
+            vpcSubnets: { subnets: [subnet] },
             circuitBreaker: {
                 rollback: true,
             },
@@ -166,7 +167,9 @@ export class ServiceStack extends cdk.Stack {
         ];
 
         ecsService.enableServiceConnect({
-            namespace: cloudMapNamespace.namespaceName,
+            // Use the dedicated sc.internal namespace so ECS Service Connect does NOT
+            // collide with the AAAA-record service already registered in internal.services.
+            namespace: scNamespace.namespaceName,
         });
 
         // =============================================

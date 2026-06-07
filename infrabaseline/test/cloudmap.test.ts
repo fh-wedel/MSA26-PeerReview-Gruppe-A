@@ -6,11 +6,14 @@ test('Cloud Map namespace is created with exports', () => {
     const app = new cdk.App();
     const stack = new CloudMapStack(app, 'TestCloudMapStack', {
         namespaceName: 'internal.services',
+        serviceConnectNamespaceName: 'sc.internal',
     });
 
     const template = Template.fromStack(stack);
 
-    template.resourceCountIs('AWS::ServiceDiscovery::PrivateDnsNamespace', 1);
+    // Both namespaces should be created
+    template.resourceCountIs('AWS::ServiceDiscovery::PrivateDnsNamespace', 2);
+
     template.hasResourceProperties('AWS::ServiceDiscovery::PrivateDnsNamespace', {
         Name: 'internal.services',
         Vpc: {
@@ -18,6 +21,14 @@ test('Cloud Map namespace is created with exports', () => {
         },
     });
 
+    template.hasResourceProperties('AWS::ServiceDiscovery::PrivateDnsNamespace', {
+        Name: 'sc.internal',
+        Vpc: {
+            'Fn::ImportValue': 'Baseline:VpcId',
+        },
+    });
+
+    // External namespace outputs
     template.hasOutput('CloudMapNamespaceId', {
         Value: Match.anyValue(),
         Export: {
@@ -36,6 +47,28 @@ test('Cloud Map namespace is created with exports', () => {
         Value: Match.anyValue(),
         Export: {
             Name: 'Baseline:CloudMapNamespaceArn',
+        },
+    });
+
+    // Service Connect namespace outputs
+    template.hasOutput('ServiceConnectNamespaceId', {
+        Value: Match.anyValue(),
+        Export: {
+            Name: 'Baseline:ServiceConnectNamespaceId',
+        },
+    });
+
+    template.hasOutput('ServiceConnectNamespaceName', {
+        Value: Match.anyValue(),
+        Export: {
+            Name: 'Baseline:ServiceConnectNamespaceName',
+        },
+    });
+
+    template.hasOutput('ServiceConnectNamespaceArn', {
+        Value: Match.anyValue(),
+        Export: {
+            Name: 'Baseline:ServiceConnectNamespaceArn',
         },
     });
 });
