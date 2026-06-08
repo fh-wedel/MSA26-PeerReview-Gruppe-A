@@ -97,13 +97,20 @@ public class CognitoService {
      * @param uuid the Cognito uuid (sub attribute)
      * @return user details
      */
-    public AdminGetUserResponse getUserByUUID(String uuid) {
+    public UserType getUserByUUID(String uuid) {
         log.info("Getting user details for UUID '{}'", uuid);
 
-        return cognitoClient.adminGetUser(AdminGetUserRequest.builder()
+        ListUsersResponse response = cognitoClient.listUsers(ListUsersRequest.builder()
             .userPoolId(userPoolId)
-            .username(uuid)
+            .filter("sub = \"" + uuid + "\"")
+            .limit(1)
             .build());
+
+        if (response.users().isEmpty()) {
+            throw UserNotFoundException.builder().message("User does not exist with sub: " + uuid).build();
+        }
+
+        return response.users().get(0);
     }
 
     /**

@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
 import java.util.Collections;
 import java.util.List;
@@ -65,7 +66,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         when(cognitoService.getUserByUUID("other-user"))
-                .thenReturn(AdminGetUserResponse.builder().username("other-username").build());
+                .thenReturn(UserType.builder().username("other-username").build());
         when(cognitoService.listReviewers()).thenReturn(Collections.emptyList());
 
         Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
@@ -99,7 +100,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         when(cognitoService.getUserByUUID("author-uuid"))
-                .thenReturn(AdminGetUserResponse.builder().username("author-user").build());
+                .thenReturn(UserType.builder().username("author-user").build());
         when(cognitoService.listReviewers()).thenReturn(Collections.emptyList());
 
         Authentication auth = createAuth("Author", "author-user", "author-uuid");
