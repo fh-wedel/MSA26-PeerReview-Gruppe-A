@@ -1,12 +1,12 @@
 package com.fh_wedel.matching.service;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +20,8 @@ public class CognitoService {
 
     private final CognitoIdentityProviderClient cognitoClient;
     private final String userPoolId;
+
+    @Getter
     private final String reviewerGroupName;
 
     public CognitoService(CognitoIdentityProviderClient cognitoClient,
@@ -60,13 +62,6 @@ public class CognitoService {
     }
 
     /**
-     * Gets the reviewer group name.
-     */
-    public String getReviewerGroupName() {
-        return reviewerGroupName;
-    }
-
-    /**
      * Gets the groups a specific user belongs to.
      *
      * @param username the Cognito username
@@ -87,13 +82,28 @@ public class CognitoService {
      * @param username the Cognito username
      * @return user details
      */
-    public AdminGetUserResponse getUser(String username) {
+    public AdminGetUserResponse getUserByUsername(String username) {
         log.info("Getting user details for '{}'", username);
 
         return cognitoClient.adminGetUser(AdminGetUserRequest.builder()
                 .userPoolId(userPoolId)
                 .username(username)
                 .build());
+    }
+
+    /**
+     * Gets a specific user by their Cognito username.
+     *
+     * @param uuid the Cognito uuid (sub attribute)
+     * @return user details
+     */
+    public AdminGetUserResponse getUserByUUID(String uuid) {
+        log.info("Getting user details for UUID '{}'", uuid);
+
+        return cognitoClient.adminGetUser(AdminGetUserRequest.builder()
+            .userPoolId(userPoolId)
+            .username(uuid)
+            .build());
     }
 
     /**
@@ -119,7 +129,7 @@ public class CognitoService {
         }
 
         log.info("Promoted user '{}' to group '{}'", username, reviewerGroupName);
-        return getUser(username);
+        return getUserByUsername(username);
     }
 
     /**

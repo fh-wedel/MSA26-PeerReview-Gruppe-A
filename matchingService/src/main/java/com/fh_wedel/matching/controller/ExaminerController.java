@@ -67,7 +67,7 @@ public class ExaminerController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ErrorResponse("Examiner not found or not a reviewer").code("NOT_FOUND").timestamp(OffsetDateTime.now()));
             }
-            AdminGetUserResponse user = cognitoService.getUser(examinerUsername);
+            AdminGetUserResponse user = cognitoService.getUserByUsername(examinerUsername);
             ExaminerResponse response = mapAdminGetUserToResponse(user, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
@@ -131,7 +131,7 @@ public class ExaminerController {
             }
 
             // Return the updated user
-            AdminGetUserResponse updatedUser = cognitoService.getUser(examinerUsername);
+            AdminGetUserResponse updatedUser = cognitoService.getUserByUsername(examinerUsername);
             ExaminerResponse response = mapAdminGetUserToResponse(updatedUser, groups);
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {

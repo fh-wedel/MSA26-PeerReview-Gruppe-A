@@ -1,6 +1,5 @@
 package com.fh_wedel.matching.controller;
 
-import com.fh_wedel.matching.model.MatchRecord;
 import com.fh_wedel.matching.model.MatchStatus;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
 import com.fh_wedel.matching.service.MatchingService;
@@ -124,7 +123,7 @@ class MatchingControllerSecurityTest {
         AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
                 .userAttributes(AttributeType.builder().name("sub").value(examinerSub).build())
                 .build();
-        when(cognitoService.getUser(examinerUsername)).thenReturn(mockResponse);
+        when(cognitoService.getUserByUsername(examinerUsername)).thenReturn(mockResponse);
         when(matchingService.getMatchesByExaminer(examinerSub)).thenReturn(Collections.emptyList());
 
         // The caller's details must contain the resolved sub UUID.
@@ -144,7 +143,7 @@ class MatchingControllerSecurityTest {
         AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
                 .userAttributes(AttributeType.builder().name("sub").value(otherExaminerSub).build())
                 .build();
-        when(cognitoService.getUser(otherExaminerUsername)).thenReturn(mockResponse);
+        when(cognitoService.getUserByUsername(otherExaminerUsername)).thenReturn(mockResponse);
 
         // The caller's sub is different from the resolved examiner sub.
         Authentication auth = createAuth("Reviewer", "reviewer-username", "reviewer-uuid");

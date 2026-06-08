@@ -16,14 +16,17 @@
       "get": {
         "operationId": "getMatchesBySubmission",
         "summary": "Returns all matched reviewers and matching status for a submission",
-        "tags": ["matches"],
+        "tags": [
+          "matches"
+        ],
         "parameters": [
           {
             "name": "submissionId",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "sub-123e4567-e89b-12d3-a456"
             },
             "description": "The unique identifier of the submission"
           }
@@ -40,11 +43,21 @@
             }
           },
           "404": {
-            "description": "No matching record found for this submission",
+            "description": "No matching record found for this submission or the requester does not have permission to view it.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
                 }
               }
             }
@@ -57,14 +70,17 @@
         "operationId": "getMatchesByExaminer",
         "summary": "Returns all submissions assigned to a specific examiner",
         "description": "The path parameter is the human-readable Cognito username (e.g. 'Marcel'). The service resolves it to the internal Cognito sub UUID for DynamoDB queries and access-control checks.",
-        "tags": ["matches"],
+        "tags": [
+          "matches"
+        ],
         "parameters": [
           {
             "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "Marcel"
             },
             "description": "The Cognito username of the examiner (e.g. 'Marcel'). Not the sub UUID."
           }
@@ -79,6 +95,26 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Examiner not found or no matching records for this examiner, or the requester does not have permission to view them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -87,7 +123,9 @@
       "get": {
         "operationId": "listExaminers",
         "summary": "Lists all available reviewers from the Cognito Reviewer group",
-        "tags": ["examiners"],
+        "tags": [
+          "examiners"
+        ],
         "responses": {
           "200": {
             "description": "List of all reviewers",
@@ -101,13 +139,25 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
           }
         }
       },
       "post": {
         "operationId": "createExaminer",
         "summary": "Creates a new reviewer in the Cognito Reviewer group",
-        "tags": ["examiners"],
+        "tags": [
+          "examiners"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -138,6 +188,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -146,14 +206,17 @@
       "get": {
         "operationId": "getExaminer",
         "summary": "Returns details of a specific reviewer from Cognito",
-        "tags": ["examiners"],
+        "tags": [
+          "examiners"
+        ],
         "parameters": [
           {
             "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "Marcel"
             },
             "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
           }
@@ -178,20 +241,33 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
           }
         }
       },
       "patch": {
         "operationId": "updateExaminer",
         "summary": "Updates the metadata/custom attributes of a reviewer in Cognito",
-        "tags": ["examiners"],
+        "tags": [
+          "examiners"
+        ],
         "parameters": [
           {
             "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "Marcel"
             },
             "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
           }
@@ -226,20 +302,43 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
           }
         }
       },
       "delete": {
         "operationId": "deleteExaminer",
         "summary": "Deletes a reviewer from the Cognito User Pool",
-        "tags": ["examiners"],
+        "tags": [
+          "examiners"
+        ],
         "parameters": [
           {
             "name": "examinerUsername",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "Marcel"
             },
             "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
           }
@@ -257,6 +356,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -268,23 +377,35 @@
         "type": "object",
         "properties": {
           "submissionId": {
-            "type": "string"
+            "type": "string",
+            "description": "The unique identifier of the submission",
+            "example": "sub-123e4567-e89b-12d3-a456"
           },
           "status": {
             "type": "string",
-            "enum": ["MATCHED", "FAILED"]
+            "enum": [
+              "MATCHED",
+              "FAILED"
+            ]
           },
           "reason": {
             "type": "string",
             "nullable": true,
-            "description": "Failure reason, only present when status is FAILED"
+            "description": "Failure reason, only present when status is FAILED",
+            "example": "No available reviewers"
           },
           "numberOfExaminers": {
             "type": "integer"
           },
           "submitterId": {
             "type": "string",
-            "description": "Cognito sub UUID of the submitter (as stored in DynamoDB)"
+            "description": "Cognito sub UUID of the submitter (as stored in DynamoDB)",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "submitterUsername": {
+            "type": "string",
+            "description": "Cognito username of the submitter, resolved from the submitterId",
+            "example": "Marcel"
           },
           "matchedAt": {
             "type": "string",
@@ -297,28 +418,50 @@
             }
           }
         },
-        "required": ["submissionId", "status", "matchedAt"]
+        "required": [
+          "submissionId",
+          "status",
+          "matchedAt",
+          "submitterId",
+          "submitterUsername"
+        ]
       },
       "MatchEntry": {
         "type": "object",
         "properties": {
           "examinerId": {
             "type": "string",
-            "description": "Cognito sub (UUID) of the assigned reviewer"
+            "description": "Cognito sub (UUID) of the assigned reviewer",
+            "example": "123e4567-e89"
+          },
+          "examinerUsername": {
+            "type": "string",
+            "description": "Cognito username of the assigned reviewer",
+            "example": "Marcel"
           },
           "assignedAt": {
             "type": "string",
             "format": "date-time"
           }
         },
-        "required": ["examinerId", "assignedAt"]
+        "required": [
+          "examinerId",
+          "examinerUsername",
+          "assignedAt"
+        ]
       },
       "ExaminerMatchResponse": {
         "type": "object",
         "properties": {
           "examinerId": {
             "type": "string",
-            "description": "Cognito sub UUID of the examiner (resolved from the username path parameter)"
+            "description": "Cognito sub UUID of the examiner (resolved from the username path parameter)",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "examinerUsername": {
+            "type": "string",
+            "description": "Cognito username of the examiner (from the path parameter)",
+            "example": "Marcel"
           },
           "assignments": {
             "type": "array",
@@ -327,40 +470,56 @@
             }
           }
         },
-        "required": ["examinerId", "assignments"]
+        "required": [
+          "examinerId",
+          "examinerUsername",
+          "assignments"
+        ]
       },
       "AssignmentEntry": {
         "type": "object",
         "properties": {
           "submissionId": {
-            "type": "string"
+            "type": "string",
+            "description": "The unique identifier of the assigned submission",
+            "example": "sub-123e4567-e89b-12d3-a456"
           },
           "assignedAt": {
             "type": "string",
             "format": "date-time"
           }
         },
-        "required": ["submissionId", "assignedAt"]
+        "required": [
+          "submissionId",
+          "assignedAt"
+        ]
       },
       "ExaminerResponse": {
         "type": "object",
         "properties": {
           "userId": {
             "type": "string",
-            "description": "Cognito sub (UUID)"
+            "description": "Cognito sub (UUID)",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
           },
           "username": {
-            "type": "string"
+            "type": "string",
+            "description": "Cognito username",
+            "example": "Marcel"
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "format": "email",
+            "description": "Email address of the reviewer"
           },
           "enabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the Cognito user is enabled or disabled"
           },
           "status": {
             "type": "string",
-            "description": "Cognito user status (e.g., CONFIRMED, FORCE_CHANGE_PASSWORD)"
+            "description": "Cognito user status (e.g., CONFIRMED, FORCE_CHANGE_PASSWORD)",
+            "example": "CONFIRMED"
           },
           "createdAt": {
             "type": "string",
@@ -376,19 +535,26 @@
           "groups": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "description": "Name of the Cognito group",
+              "example": "Reviewer"
             },
             "description": "The Cognito groups the user belongs to"
           }
         },
-        "required": ["userId", "username", "email"]
+        "required": [
+          "userId",
+          "username",
+          "email"
+        ]
       },
       "CreateExaminerRequest": {
         "type": "object",
         "properties": {
           "username": {
             "type": "string",
-            "description": "The Cognito username (e.g. 'Marcel') of an existing user to promote to reviewer. Not the sub UUID."
+            "description": "The Cognito username (e.g. 'Marcel') of an existing user to promote to reviewer. Not the sub UUID.",
+            "example": "Marcel"
           },
           "customAttributes": {
             "type": "object",
@@ -397,7 +563,9 @@
             }
           }
         },
-        "required": ["username"]
+        "required": [
+          "username"
+        ]
       },
       "UpdateExaminerRequest": {
         "type": "object",
@@ -425,7 +593,22 @@
             "format": "date-time"
           }
         },
-        "required": ["message"]
+        "required": [
+          "message"
+        ]
+      },
+      "CognitoErrorResponse": {
+        "type": "object",
+        "properties": {
+          "Message": {
+            "type": "string",
+            "description": "Amazon Verified Permissions error message returned by Cognito when access is denied due to insufficient permissions. This typically indicates that the Requester is not in the correct Cognito group.",
+            "example": "User is not authorized to access this resource with an explicit deny in an identity-based policy"
+          }
+        },
+        "required": [
+          "Message"
+        ]
       }
     }
   }
