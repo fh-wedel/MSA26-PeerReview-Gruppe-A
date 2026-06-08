@@ -83,7 +83,7 @@ class MatchingControllerSecurityTest {
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         when(cognitoService.getUserByUUID("other-user"))
-                .thenReturn(AdminGetUserResponse.builder().username("other-username").build());
+                .thenReturn(UserType.builder().username("other-username").build());
         when(cognitoService.listReviewers()).thenReturn(Collections.emptyList());
 
         Authentication auth = createAuth("ExaminationOfficer", "officer-user", "officer-uuid");
