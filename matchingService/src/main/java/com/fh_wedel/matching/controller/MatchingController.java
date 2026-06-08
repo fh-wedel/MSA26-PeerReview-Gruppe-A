@@ -215,7 +215,7 @@ public class MatchingController {
      * Returns {@code true} if the authenticated caller's Cognito sub UUID matches
      * the given {@code targetSub}.
      *
-     * <p>The {@link AuthHeaderFilter} populates the {@code Authentication} as follows:
+     * <p>The {@link com.fh_wedel.matching.security.AuthHeaderFilter} populates the {@code Authentication} as follows:
      * <ul>
      *   <li>{@code auth.getName()} → Cognito <b>username</b> (e.g. "Marcel")</li>
      *   <li>{@code auth.getDetails()} → the {@code x-auth-principal-id} header,
