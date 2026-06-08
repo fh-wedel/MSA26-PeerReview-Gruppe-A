@@ -190,6 +190,7 @@ export class ServiceStack extends cdk.Stack {
                     'cognito-idp:AdminAddUserToGroup',
                     'cognito-idp:AdminRemoveUserFromGroup',
                     'cognito-idp:AdminListGroupsForUser',
+                    'cognito-idp:ListUsers'
                 ],
                 resources: [
                     `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${cognitoUserPoolId}`,
