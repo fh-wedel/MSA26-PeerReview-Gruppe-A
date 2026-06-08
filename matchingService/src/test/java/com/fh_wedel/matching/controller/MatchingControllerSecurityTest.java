@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import com.fh_wedel.matching.service.CognitoService;
 
@@ -65,6 +64,9 @@ class MatchingControllerSecurityTest {
                 .thenReturn(new SubmissionStatusRecord("sub-1", "other-user", MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
+        when(cognitoService.getUserByUUID("other-user"))
+                .thenReturn(AdminGetUserResponse.builder().username("other-username").build());
+        when(cognitoService.listReviewers()).thenReturn(Collections.emptyList());
 
         Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
         ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
@@ -79,6 +81,9 @@ class MatchingControllerSecurityTest {
                 .thenReturn(new SubmissionStatusRecord("sub-1", "other-user", MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
+        when(cognitoService.getUserByUUID("other-user"))
+                .thenReturn(AdminGetUserResponse.builder().username("other-username").build());
+        when(cognitoService.listReviewers()).thenReturn(Collections.emptyList());
 
         Authentication auth = createAuth("ExaminationOfficer", "officer-user", "officer-uuid");
         ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
@@ -93,6 +98,9 @@ class MatchingControllerSecurityTest {
                 .thenReturn(new SubmissionStatusRecord("sub-1", "author-uuid", MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
+        when(cognitoService.getUserByUUID("author-uuid"))
+                .thenReturn(AdminGetUserResponse.builder().username("author-user").build());
+        when(cognitoService.listReviewers()).thenReturn(Collections.emptyList());
 
         Authentication auth = createAuth("Author", "author-user", "author-uuid");
         ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
@@ -108,9 +116,9 @@ class MatchingControllerSecurityTest {
 
         Authentication auth = createAuth("Author", "author-user", "author-uuid");
 
-        assertThatThrownBy(() -> controller.getMatchesBySubmission("sub-1", auth))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining("You are not the author");
+        ResponseEntity<?> response = controller.getMatchesBySubmission("sub-1", auth);
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
     }
 
     @Test
@@ -148,8 +156,8 @@ class MatchingControllerSecurityTest {
         // The caller's sub is different from the resolved examiner sub.
         Authentication auth = createAuth("Reviewer", "reviewer-username", "reviewer-uuid");
 
-        assertThatThrownBy(() -> controller.getMatchesByExaminer(otherExaminerUsername, auth))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining("You can only access your own matches");
+        ResponseEntity<?> response = controller.getMatchesByExaminer(otherExaminerUsername, auth);
+        assertThat(response.getStatusCode().is4xxClientError()).isTrue();
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
     }
 }
