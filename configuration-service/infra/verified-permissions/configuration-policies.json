@@ -1,0 +1,114 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminCreateConfiguration",
+            "groupName": "Admin",
+            "actionId": "post /api/configuration",
+            "description": "Allow Admin to create configurations"
+        },
+        {
+            "id": "AdminListConfigurations",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration",
+            "description": "Allow Admin to list all configurations"
+        },
+        {
+            "id": "AdminGetConfiguration",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/{submissionId}",
+            "description": "Allow Admin to get configuration details"
+        },
+        {
+            "id": "AdminGetConfigurationsByAuthor",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/author/{authorId}",
+            "description": "Allow Admin to list configurations by author"
+        },
+        {
+            "id": "ExamOfficerCreateConfiguration",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/configuration",
+            "description": "Allow Exam Officer to create configurations"
+        },
+        {
+            "id": "ExamOfficerListConfigurations",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration",
+            "description": "Allow Exam Officer to list all configurations"
+        },
+        {
+            "id": "ExamOfficerGetConfiguration",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/{submissionId}",
+            "description": "Allow Exam Officer to get configuration details"
+        },
+        {
+            "id": "ExamOfficerGetConfigurationsByAuthor",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/author/{authorId}",
+            "description": "Allow Exam Officer to list configurations by author"
+        },
+        {
+            "id": "TeacherCreateConfiguration",
+            "groupName": "Teacher",
+            "actionId": "post /api/configuration",
+            "description": "Allow Teacher to create configurations"
+        },
+        {
+            "id": "TeacherGetConfiguration",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/{submissionId}",
+            "description": "Allow Teacher to get configuration details"
+        },
+        {
+            "id": "TeacherGetConfigurationsByAuthor",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/author/{authorId}",
+            "description": "Allow Teacher to list configurations by author"
+        },
+        {
+            "id": "ReviewerCreateConfiguration",
+            "groupName": "Reviewer",
+            "actionId": "post /api/configuration",
+            "description": "Allow Reviewer to create configurations"
+        },
+        {
+            "id": "ReviewerGetConfiguration",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/{submissionId}",
+            "description": "Allow Reviewer to get configuration details"
+        },
+        {
+            "id": "ReviewerGetConfigurationsByAuthor",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/author/{authorId}",
+            "description": "Allow Reviewer to list configurations by author"
+        },
+        {
+            "id": "AuthorCreateConfiguration",
+            "groupName": "Author",
+            "actionId": "post /api/configuration",
+            "description": "Allow Author to create configurations"
+        },
+        {
+            "id": "AuthorGetConfiguration",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/{submissionId}",
+            "description": "Allow Author to get configuration details"
+        },
+        {
+            "id": "AuthorGetConfigurationsByAuthor",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/author/{authorId}",
+            "description": "Allow Author to list configurations by author"
+        }
+    ]
+}
