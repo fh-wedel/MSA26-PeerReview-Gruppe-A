@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, List, ListItem, ListItemText, ListItemAvatar, Avatar, CircularProgress } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, List, ListItem, ListItemText, ListItemAvatar, Avatar, CircularProgress, Chip } from '@mui/material';
 import { AccountCircle } from '@mui/icons-material';
 import { searchUsers } from '../../api/communication';
-import type { UserSummary } from '../../api/communication';
+import type { UserSummary, ChatSummary } from '../../api/communication';
 import { useNotification } from '../../contexts/NotificationContext';
 
 interface UserSearchDialogProps {
   open: boolean;
   onClose: () => void;
   onSelectUser: (user: UserSummary) => void;
+  excludeUserId?: string;
+  existingGeneralChats?: ChatSummary[];
 }
 
-export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClose, onSelectUser }) => {
+export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClose, onSelectUser, excludeUserId, existingGeneralChats = [] }) => {
   const [query, setQuery] = useState('');
   const [allUsers, setAllUsers] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,14 +24,20 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
       setQuery('');
       setLoading(true);
       searchUsers('')
-        .then(users => setAllUsers(users))
+        .then(users => {
+            if (excludeUserId) {
+                setAllUsers(users.filter(u => u.id !== excludeUserId));
+            } else {
+                setAllUsers(users);
+            }
+        })
         .catch(err => showError(err instanceof Error ? err.message : 'Failed to load users.', 'Communication Service'))
         .finally(() => setLoading(false));
     } else {
       setAllUsers([]);
       setQuery('');
     }
-  }, [open]);
+  }, [open, excludeUserId]);
 
   const displayedUsers = allUsers.filter(u => 
     u.username.toLowerCase().includes(query.toLowerCase()) || 
@@ -53,14 +61,23 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
         {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
         {!loading && displayedUsers.length > 0 && (
           <List sx={{ mt: 2 }}>
-            {displayedUsers.map((user) => (
-              <ListItem component="div" onClick={() => onSelectUser(user)} key={user.id} sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}>
-                <ListItemAvatar>
-                  <Avatar><AccountCircle /></Avatar>
-                </ListItemAvatar>
-                <ListItemText primary={user.username} secondary={user.email ?? user.id} />
-              </ListItem>
-            ))}
+            {displayedUsers.map((user) => {
+              const hasExistingChat = existingGeneralChats.some(c => c.otherParticipantId === user.id);
+              return (
+                <ListItem 
+                    component="div" 
+                    onClick={() => onSelectUser(user)} 
+                    key={user.id} 
+                    sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+                    secondaryAction={hasExistingChat && <Chip label="Chat exists" size="small" />}
+                >
+                  <ListItemAvatar>
+                    <Avatar><AccountCircle /></Avatar>
+                  </ListItemAvatar>
+                  <ListItemText primary={user.username} secondary={user.email ?? user.id} />
+                </ListItem>
+              );
+            })}
           </List>
         )}
         {!loading && query && displayedUsers.length === 0 && (
@@ -73,4 +90,3 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
     </Dialog>
   );
 };
-

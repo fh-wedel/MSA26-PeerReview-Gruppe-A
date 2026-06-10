@@ -43,6 +43,29 @@ export interface UserSummary {
   email?: string;   // not returned by the Communication Service /users endpoint
 }
 
+export interface MatchEntry {
+  examinerId: string;
+  examinerUsername: string;
+  assignedAt: string;
+}
+
+export interface SubmissionMatchResponse {
+  submissionId: string;
+  status: 'MATCHED' | 'FAILED';
+  submitterId: string;
+  submitterUsername: string;
+  matches: MatchEntry[];
+}
+
+export interface WorkflowRules {
+  authorAnonymous: boolean;
+  reviewerAnonymous: boolean;
+  reviewerToReviewerAnonymous: boolean;
+  authorReviewerChatAllowed: boolean;
+  reviewerToReviewerChatAllowed: boolean;
+}
+
+
 const getHeaders = () => {
   const token = sessionStorage.getItem('access_token');
   return {
@@ -122,3 +145,20 @@ export const searchUsers = async (query: string): Promise<UserSummary[]> => {
   const raw: Array<{ sub: string; username: string }> = Array.isArray(data) ? data : (data.users ?? []);
   return raw.map(u => ({ id: u.sub, username: u.username }));
 };
+
+export const fetchSubmissionMatch = async (submissionId: string): Promise<SubmissionMatchResponse> => {
+  const response = await fetch(`/api/matching/matches/submissions/${submissionId}`, {
+    headers: getHeaders(),
+  });
+  if (!response.ok) await handleResponseError(response, 'Failed to fetch submission match');
+  return response.json();
+};
+
+export const fetchWorkflowRulesForSubmission = async (submissionId: string): Promise<WorkflowRules> => {
+  const response = await fetch(`/api/workflow/submissions/${submissionId}/rules`, {
+    headers: getHeaders(),
+  });
+  if (!response.ok) await handleResponseError(response, 'Failed to fetch workflow rules');
+  return response.json();
+};
+

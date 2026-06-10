@@ -31,6 +31,7 @@ public class AppConfig {
     public ObjectMapper objectMapper() {
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule())
+                .registerModule(new org.openapitools.jackson.nullable.JsonNullableModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }

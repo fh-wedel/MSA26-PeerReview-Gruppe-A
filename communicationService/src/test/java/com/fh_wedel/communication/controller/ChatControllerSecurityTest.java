@@ -38,6 +38,7 @@ public class ChatControllerSecurityTest {
     @Test
     void testSendMessage() {
         when(request.getHeader("x-auth-principal-id")).thenReturn("user-a");
+        when(request.getHeader("Authorization")).thenReturn("Bearer token");
 
         SendMessageRequest req = new SendMessageRequest();
         req.setBody("Hello");
@@ -49,7 +50,7 @@ public class ChatControllerSecurityTest {
         ChatDetailResponse mockRes = new ChatDetailResponse();
         mockRes.setChatId("chat-1");
 
-        when(chatService.sendMessage(eq("user-a"), eq(req))).thenReturn(mockRes);
+        when(chatService.sendMessage(eq("user-a"), eq(req), eq("Bearer token"))).thenReturn(mockRes);
 
         ResponseEntity<ChatDetailResponse> response = chatController.sendMessage(req);
 

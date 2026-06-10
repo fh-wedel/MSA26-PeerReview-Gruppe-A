@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 interface ChatWidgetProps {
   chatId?: string;
   recipientId?: string;
+  displayName?: string;
   chatType?: 'GENERAL' | 'SUBMISSION';
   submissionId?: string;
   onChatCreated?: (newChatId: string) => void;

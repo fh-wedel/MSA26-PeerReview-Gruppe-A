@@ -35,10 +35,14 @@ public class ChatService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
     private final ChatRepository chatRepository;
+    private final MatchingServiceClient matchingServiceClient;
+    private final WorkflowServiceClient workflowServiceClient;
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> activeEmitters = new ConcurrentHashMap<>();
 
-    public ChatService(ChatRepository chatRepository) {
+    public ChatService(ChatRepository chatRepository, MatchingServiceClient matchingServiceClient, WorkflowServiceClient workflowServiceClient) {
         this.chatRepository = chatRepository;
+        this.matchingServiceClient = matchingServiceClient;
+        this.workflowServiceClient = workflowServiceClient;
     }
 
     /**
@@ -194,7 +198,7 @@ public class ChatService {
         return response;
     }
 
-    public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request) {
+    public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request, String authHeader) {
         String senderId = normalizeUserId(rawSenderId);
         String recipientId = normalizeUserId(request.getRecipientId());
         log.info("sendMessage: rawSender='{}' normalizedSender='{}' rawRecipient='{}' normalizedRecipient='{}'",
@@ -205,6 +209,23 @@ public class ChatService {
         if (ChatContext.TypeEnum.SUBMISSION.equals(context.getType())) {
             if (context.getSubmissionId() != null && context.getSubmissionId().isPresent()) {
                 contextStr = context.getSubmissionId().get();
+                
+                // Validate submission match and workflow rules for new or existing chats
+                MatchingServiceClient.SubmissionMatchDto match = matchingServiceClient.getSubmissionMatch(contextStr, authHeader);
+                WorkflowServiceClient.WorkflowRulesDto rules = workflowServiceClient.getWorkflowRules(contextStr, authHeader);
+                
+                if (!rules.authorReviewerChatAllowed) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
+                }
+                
+                boolean senderInMatch = senderId.equals(match.submitterId) || 
+                        match.matches.stream().anyMatch(m -> senderId.equals(m.examinerId));
+                boolean recipientInMatch = recipientId.equals(match.submitterId) || 
+                        match.matches.stream().anyMatch(m -> recipientId.equals(m.examinerId));
+                        
+                if (!senderInMatch || !recipientInMatch) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender or recipient is not a participant in this submission");
+                }
             }
         }
 

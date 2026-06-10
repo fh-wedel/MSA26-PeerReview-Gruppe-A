@@ -1,0 +1,44 @@
+package com.fh_wedel.communication.service;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+@Service
+public class WorkflowServiceClient {
+
+    private static final Logger log = LoggerFactory.getLogger(WorkflowServiceClient.class);
+    private final RestClient restClient;
+
+    public WorkflowServiceClient(@Value("${api.base-url}") String baseUrl) {
+        this.restClient = RestClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+    public static class WorkflowRulesDto {
+        public boolean authorAnonymous;
+        public boolean reviewerAnonymous;
+        public boolean reviewerToReviewerAnonymous;
+        public boolean authorReviewerChatAllowed;
+        public boolean reviewerToReviewerChatAllowed;
+    }
+
+    public WorkflowRulesDto getWorkflowRules(String submissionId, String authHeader) {
+        log.info("Calling Workflow Service to get rules for submission: {}", submissionId);
+        try {
+            return restClient.get()
+                    .uri("/api/workflow/submissions/{submissionId}/rules", submissionId)
+                    .header("Authorization", authHeader)
+                    .retrieve()
+                    .body(WorkflowRulesDto.class);
+        } catch (Exception e) {
+            log.error("Failed to fetch workflow rules for {}: {}", submissionId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to fetch workflow rules: " + e.getMessage());
+        }
+    }
+}

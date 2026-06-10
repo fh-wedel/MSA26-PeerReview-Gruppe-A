@@ -49,7 +49,8 @@ public class ChatController implements ChatsApi {
 
     @Override
     public ResponseEntity<ChatDetailResponse> sendMessage(SendMessageRequest sendMessageRequest) {
-        return ResponseEntity.ok(chatService.sendMessage(getUserId(), sendMessageRequest));
+        String authHeader = request.getHeader("Authorization");
+        return ResponseEntity.ok(chatService.sendMessage(getUserId(), sendMessageRequest, authHeader));
     }
 
     @GetMapping(value = "/chats/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
