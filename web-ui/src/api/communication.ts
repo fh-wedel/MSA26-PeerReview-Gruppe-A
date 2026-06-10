@@ -51,14 +51,34 @@ const getHeaders = () => {
   };
 };
 
-const handleResponseError = async (response: Response, defaultMsg: string) => {
-  let errMsg = defaultMsg;
+const httpStatusMessage = (status: number, defaultMsg: string): string => {
+  switch (status) {
+    case 400: return 'Bad request – please check your input and try again.';
+    case 401: return 'You are not authenticated. Please log in and try again.';
+    case 403: return 'Access denied – you do not have permission to perform this action.';
+    case 404: return 'The requested resource was not found.';
+    case 409: return 'A conflict occurred – the resource may already exist.';
+    case 422: return 'Unprocessable request – the server could not process your input.';
+    case 429: return 'Too many requests – please wait a moment and try again.';
+    case 500: return 'A server error occurred. Please try again later.';
+    case 502: return 'Service is temporarily unavailable (Bad Gateway). Please try again.';
+    case 503: return 'Service is currently unavailable. Please try again later.';
+    case 504: return 'The request timed out. Please try again.';
+    default: return defaultMsg;
+  }
+};
+
+const handleResponseError = async (response: Response, defaultMsg: string): Promise<never> => {
+  let errMsg = httpStatusMessage(response.status, defaultMsg);
   try {
     const errData = await response.json();
+    // Prefer the server's own descriptive message over the generic one
     if (errData.message) errMsg = errData.message;
     else if (errData.error) errMsg = errData.error;
     else if (typeof errData === 'string') errMsg = errData;
-  } catch (e) {}
+  } catch (_) {
+    // JSON parsing failed – stick with the status-based message
+  }
   throw new Error(errMsg);
 };
 

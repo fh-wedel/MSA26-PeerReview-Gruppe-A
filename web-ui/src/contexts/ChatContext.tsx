@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useAuth } from './AuthContext';
+import { useNotification } from './NotificationContext';
 import { fetchChats } from '../api/communication';
 import type { ChatSummary, Message } from '../api/communication';
 
@@ -24,6 +25,7 @@ export const useChat = () => useContext(ChatContext);
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const { showError } = useNotification();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [messagesStream, setMessagesStream] = useState<Message | null>(null);
@@ -65,9 +67,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       setUnreadCount(unread);
     } catch (e) {
-      console.error('Failed to fetch chats', e);
+      const msg = e instanceof Error ? e.message : 'Failed to load chats.';
+      showError(msg);
     }
-  }, [isAuthenticated, readTimestamps]);
+  }, [isAuthenticated, readTimestamps, showError]);
 
   const markChatAsRead = useCallback((chatId: string) => {
     const chat = chats.find(c => c.chatId === chatId);
@@ -132,8 +135,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
         onerror(err) {
           console.error('SSE Error', err);
-          // throw error to let fetchEventSource attempt to reconnect
-          throw err; 
+          // throw so fetchEventSource attempts to reconnect
+          throw err;
         }
       }).catch(err => {
          console.warn('SSE disconnected, will try again later', err);

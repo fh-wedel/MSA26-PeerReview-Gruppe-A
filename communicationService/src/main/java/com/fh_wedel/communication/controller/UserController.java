@@ -4,9 +4,11 @@ import com.fh_wedel.communication.api.UsersApi;
 import com.fh_wedel.communication.model.api.UserListResponse;
 import com.fh_wedel.communication.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/communication")
 public class UserController implements UsersApi {
 
     private final UserService userService;

@@ -13,13 +13,15 @@ import { Submissions } from './pages/Submissions';
 import { SubmissionDetails } from './pages/SubmissionDetails';
 import { ChatProvider } from './contexts/ChatContext';
 import { ChatPage } from './pages/ChatPage';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter basename="/">
       <CustomThemeProvider>
         <AuthProvider>
-          <ChatProvider>
+          <NotificationProvider>
+            <ChatProvider>
             <Routes>
               <Route element={<GuestLayout />}>
                 <Route path="/" element={<GuestHome />} />
@@ -37,6 +39,7 @@ export const App: React.FC = () => {
               </Route>
             </Routes>
           </ChatProvider>
+          </NotificationProvider>
         </AuthProvider>
       </CustomThemeProvider>
     </BrowserRouter>

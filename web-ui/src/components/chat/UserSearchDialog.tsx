@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, List, ListItem, ListItemText, ListItemAvatar, Avatar, CircularProgress, IconButton } from '@mui/material';
-import { AccountCircle, Search as SearchIcon } from '@mui/icons-material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, List, ListItem, ListItemText, ListItemAvatar, Avatar, CircularProgress } from '@mui/material';
+import { AccountCircle } from '@mui/icons-material';
 import { searchUsers } from '../../api/communication';
 import type { UserSummary } from '../../api/communication';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface UserSearchDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
   const [query, setQuery] = useState('');
   const [allUsers, setAllUsers] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(false);
+  const { showError } = useNotification();
 
   useEffect(() => {
     if (open) {
@@ -21,7 +23,7 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
       setLoading(true);
       searchUsers('')
         .then(users => setAllUsers(users))
-        .catch(err => console.error('Failed to load users', err))
+        .catch(err => showError(err instanceof Error ? err.message : 'Failed to load users.'))
         .finally(() => setLoading(false));
     } else {
       setAllUsers([]);
@@ -47,15 +49,6 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
           variant="outlined"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          slotProps={{
-            input: {
-              endAdornment: (
-                <IconButton>
-                  <SearchIcon />
-                </IconButton>
-              )
-            }
-          }}
         />
         {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
         {!loading && displayedUsers.length > 0 && (

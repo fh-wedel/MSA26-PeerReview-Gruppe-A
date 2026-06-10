@@ -5,6 +5,7 @@ import { fetchChatDetail, sendMessage } from '../../api/communication';
 import type { Message } from '../../api/communication';
 import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ChatWidgetProps {
@@ -18,6 +19,7 @@ interface ChatWidgetProps {
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, chatType = 'GENERAL', submissionId, onChatCreated }) => {
   const { user } = useAuth();
   const { messagesStream, markChatAsRead, refreshChats } = useChat();
+  const { showError } = useNotification();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
@@ -32,7 +34,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
           setMessages(detail.messages.reverse()); // Reverse to show oldest first at top
           markChatAsRead(chatId);
         } catch (err) {
-          console.error(err);
+          const msg = err instanceof Error ? err.message : 'Failed to load chat messages.';
+          showError(msg);
         } finally {
           setLoading(false);
         }
@@ -92,7 +95,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
         onChatCreated(response.chatId);
       }
     } catch (err) {
-      console.error('Failed to send message', err);
+      const msg = err instanceof Error ? err.message : 'Failed to send message.';
+      showError(msg);
     }
   };
 
