@@ -1,0 +1,333 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Communication Service API",
+    "version": "1.0.0",
+    "description": "Provides bidirectional messaging between authenticated users.\nAll authenticated users can initiate chats with any other user.\nChat visibility is strictly limited to the two participants.\n"
+  },
+  "servers": [
+    {
+      "url": "/api/communication",
+      "description": "Base path for the Communication API (routed via CloudFront → API Gateway)"
+    }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "Search for users by username",
+        "description": "Proxies a search to Cognito to allow the Web-UI to find recipients by\nusername when initiating a new chat. Returns matching users' sub UUIDs\nand usernames. This endpoint will be extracted to a dedicated User\nManagement Service in a future iteration.\n",
+        "operationId": "searchUsers",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Username prefix or substring to filter by"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/chats": {
+      "get": {
+        "summary": "List all chats for the authenticated user",
+        "description": "Returns all chat threads in which the authenticated user (identified by\nx-auth-principal-id header) is a participant. No pagination — the number\nof chats per user is expected to remain small.\n",
+        "operationId": "listChats",
+        "tags": ["Chats"],
+        "responses": {
+          "200": {
+            "description": "All chats for the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/chats/messages": {
+      "post": {
+        "summary": "Send a message (creates chat implicitly if it does not exist)",
+        "description": "Sends a message to a recipient within a given chat context (GENERAL or\nSUBMISSION-specific). The backend derives a deterministic chatId from the\nsorted participant pair and context string — the chat is created atomically\non the first message if it does not yet exist.\nThe senderId is always taken from the x-auth-principal-id header, never\nfrom the request body, preventing impersonation.\n",
+        "operationId": "sendMessage",
+        "tags": ["Chats"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent successfully; returns the chat detail with the new message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — missing or invalid fields"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/chats/{chatId}": {
+      "get": {
+        "summary": "Get a chat thread with paginated message history",
+        "description": "Returns the chat metadata and a page of messages, ordered newest-first.\nDefault page size is 100 messages. Use nextToken to load older messages\n(scroll-up pagination). Returns 403 if the caller is not a participant.\nWeb-UI note: load page 1 on chat open; fetch older pages using the\nreturned nextToken when the user scrolls to the top of the message list.\n",
+        "operationId": "getChat",
+        "tags": ["Chats"],
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nextToken",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Pagination cursor returned from a previous response (for loading older messages)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 200
+            },
+            "description": "Number of messages to return per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat detail with messages (newest first)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — the authenticated user is not a participant in this chat"
+          },
+          "404": {
+            "description": "Chat not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserDto": {
+        "type": "object",
+        "required": ["sub", "username"],
+        "properties": {
+          "sub": {
+            "type": "string",
+            "description": "Cognito sub UUID — use this as recipientId when sending a message"
+          },
+          "username": {
+            "type": "string",
+            "description": "Human-readable Cognito username"
+          }
+        }
+      },
+      "UserListResponse": {
+        "type": "object",
+        "required": ["users"],
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          }
+        }
+      },
+      "ChatContext": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["GENERAL", "SUBMISSION"],
+            "description": "GENERAL for an open thread; SUBMISSION for a submission-specific thread"
+          },
+          "submissionId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Required when type is SUBMISSION. Any string identifier (typically a UUID)."
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "required": ["recipientId", "chatContext", "body"],
+        "properties": {
+          "recipientId": {
+            "type": "string",
+            "description": "Cognito sub UUID of the recipient"
+          },
+          "chatContext": {
+            "$ref": "#/components/schemas/ChatContext"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "The message text"
+          }
+        }
+      },
+      "ChatSummary": {
+        "type": "object",
+        "properties": {
+          "chatId": {
+            "type": "string"
+          },
+          "otherParticipantId": {
+            "type": "string",
+            "description": "Cognito sub UUID of the other participant"
+          },
+          "chatType": {
+            "type": "string",
+            "enum": ["GENERAL", "SUBMISSION"]
+          },
+          "submissionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastMessageAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChatListResponse": {
+        "type": "object",
+        "required": ["chats"],
+        "properties": {
+          "chats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatSummary"
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "string",
+            "description": "Cognito sub UUID of the sender"
+          },
+          "body": {
+            "type": "string"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChatDetailResponse": {
+        "type": "object",
+        "properties": {
+          "chatId": {
+            "type": "string"
+          },
+          "participantA": {
+            "type": "string",
+            "description": "Cognito sub UUID of participant A (lower UUID alphabetically)"
+          },
+          "participantB": {
+            "type": "string",
+            "description": "Cognito sub UUID of participant B (higher UUID alphabetically)"
+          },
+          "chatType": {
+            "type": "string",
+            "enum": ["GENERAL", "SUBMISSION"]
+          },
+          "submissionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "messages": {
+            "type": "array",
+            "description": "Messages ordered newest-first",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "nextToken": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for loading the next (older) page of messages. Null when no more messages exist."
+          }
+        }
+      }
+    }
+  }
+}
