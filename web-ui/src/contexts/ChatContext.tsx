@@ -70,15 +70,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const markChatAsRead = useCallback((chatId: string) => {
     setReadTimestamps(prev => {
-      const chat = chats.find(c => c.chatId === chatId);
-      if (chat && chat.lastMessageAt && prev[chatId] !== chat.lastMessageAt) {
-        const newMap = { ...prev, [chatId]: chat.lastMessageAt };
-        localStorage.setItem('chat_read_timestamps', JSON.stringify(newMap));
-        return newMap;
-      }
-      return prev;
+      const now = new Date().toISOString();
+      const newMap = { ...prev, [chatId]: now };
+      localStorage.setItem('chat_read_timestamps', JSON.stringify(newMap));
+      return newMap;
     });
-  }, [chats]);
+  }, []);
 
   useEffect(() => {
     refreshChats();
@@ -123,9 +120,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // fetchEventSource automatically reconnects on clean close
         },
         onerror(err) {
-          console.error('SSE Error', err);
-          // throw so fetchEventSource attempts to reconnect
-          throw err;
+          console.warn('SSE Error. Connection will retry automatically.', err);
+          // Return nothing to let fetchEventSource retry on 504s and network drops
         }
       }).catch(err => {
          console.warn('SSE disconnected, will try again later', err);
