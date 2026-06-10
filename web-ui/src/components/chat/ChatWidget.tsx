@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Box, TextField, IconButton, Typography, CircularProgress, Paper, Avatar } from '@mui/material';
 import { Send as SendIcon, AccountCircle } from '@mui/icons-material';
-import { fetchChatDetail, sendMessage, Message } from '../../api/communication';
+import { fetchChatDetail, sendMessage } from '../../api/communication';
+import type { Message } from '../../api/communication';
 import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';

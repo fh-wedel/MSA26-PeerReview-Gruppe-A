@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Box, Typography, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider, Badge, Fab, Tabs, Tab } from '@mui/material';
+import { Box, Typography, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider, Fab, Tabs, Tab } from '@mui/material';
 import { AccountCircle, Add as AddIcon, Description } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { ChatWidget } from '../components/chat/ChatWidget';
 import { UserSearchDialog } from '../components/chat/UserSearchDialog';
 import { formatDistanceToNow } from 'date-fns';
-import { UserSummary } from '../api/communication';
+import type { UserSummary } from '../api/communication';
 
 export const ChatPage: React.FC = () => {
-  const { chats, unreadCount } = useChat();
+  const { chats } = useChat();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [chatTypeTab, setChatTypeTab] = useState<'GENERAL' | 'SUBMISSION'>('GENERAL');
@@ -42,7 +42,7 @@ export const ChatPage: React.FC = () => {
       {/* Sidebar List */}
       <Box sx={{ width: 320, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6" fontWeight="bold">Chats</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Chats</Typography>
         </Box>
         <Tabs value={chatTypeTab} onChange={(_, val) => setChatTypeTab(val)} variant="fullWidth">
           <Tab label="General" value="GENERAL" />
@@ -77,7 +77,7 @@ export const ChatPage: React.FC = () => {
           )}
         </List>
         <Box sx={{ p: 2 }}>
-          <Fab variant="extended" color="primary" fullWidth onClick={() => setSearchOpen(true)}>
+          <Fab variant="extended" color="primary" sx={{ width: '100%' }} onClick={() => setSearchOpen(true)}>
             <AddIcon sx={{ mr: 1 }} /> New Chat
           </Fab>
         </Box>

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useAuth } from './AuthContext';
-import { fetchChats, ChatSummary, Message } from '../api/communication';
+import { fetchChats } from '../api/communication';
+import type { ChatSummary, Message } from '../api/communication';
 
 interface ChatContextType {
   chats: ChatSummary[];

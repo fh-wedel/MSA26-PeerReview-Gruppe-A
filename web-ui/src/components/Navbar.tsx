@@ -50,7 +50,6 @@ export const Navbar: React.FC = () => {
 
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
-  const hasAdminOrExamOfficerRole = userRoles.includes('admin') || userRoles.includes('examinationofficer');
   const hasSubmissionsAccess = userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('author');
   const hasAdminOrReviewerRole = userRoles.includes('admin') || userRoles.includes('reviewer');
 

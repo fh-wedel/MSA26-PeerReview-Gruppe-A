@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, List, ListItem, ListItemText, ListItemAvatar, Avatar, CircularProgress, IconButton } from '@mui/material';
 import { AccountCircle, Search as SearchIcon } from '@mui/icons-material';
-import { searchUsers, UserSummary } from '../../api/communication';
+import { searchUsers } from '../../api/communication';
+import type { UserSummary } from '../../api/communication';
 
 interface UserSearchDialogProps {
   open: boolean;
@@ -45,12 +46,14 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
               handleSearch();
             }
           }}
-          InputProps={{
-            endAdornment: (
-              <IconButton onClick={handleSearch}>
-                <SearchIcon />
-              </IconButton>
-            )
+          slotProps={{
+            input: {
+              endAdornment: (
+                <IconButton onClick={handleSearch}>
+                  <SearchIcon />
+                </IconButton>
+              )
+            }
           }}
         />
         {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
