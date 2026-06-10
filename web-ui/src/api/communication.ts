@@ -38,9 +38,9 @@ export interface SendMessageRequest {
 }
 
 export interface UserSummary {
-  id: string;
+  id: string;       // Cognito sub UUID
   username: string;
-  email: string;
+  email?: string;   // not returned by the Communication Service /users endpoint
 }
 
 const getHeaders = () => {
@@ -117,5 +117,8 @@ export const searchUsers = async (query: string): Promise<UserSummary[]> => {
     headers: getHeaders(),
   });
   if (!response.ok) await handleResponseError(response, 'Failed to search users');
-  return response.json();
+  const data = await response.json();
+  // API returns { users: [ { sub, username } ] } — map to our UserSummary shape
+  const raw: Array<{ sub: string; username: string }> = Array.isArray(data) ? data : (data.users ?? []);
+  return raw.map(u => ({ id: u.sub, username: u.username }));
 };

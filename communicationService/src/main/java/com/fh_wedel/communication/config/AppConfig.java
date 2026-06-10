@@ -4,17 +4,27 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+/**
+ * Provides AWS SDK client beans for DynamoDB and Cognito.
+ * Dual-stack is enabled explicitly on every client so that they resolve to
+ * AAAA-addressable endpoints when the ECS task runs in an IPv6-only subnet.
+ * Without dualstackEnabled(true), the default IPv4-only endpoints are unreachable
+ * from the private IPv6-only subnet ("Network unreachable").
+ */
 @Configuration
 public class AppConfig {
+
+    @Value("${spring.cloud.aws.region.static:eu-north-1}")
+    private String awsRegion;
 
     @Bean
     @Primary
@@ -27,13 +37,9 @@ public class AppConfig {
 
     @Bean
     public DynamoDbClient dynamoDbClient() {
-        String region = System.getenv("AWS_REGION");
-        if (region == null || region.isEmpty()) {
-            region = "eu-central-1";
-        }
         return DynamoDbClient.builder()
-                .region(Region.of(region))
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .region(Region.of(awsRegion))
+                .dualstackEnabled(true)
                 .build();
     }
 
@@ -46,13 +52,9 @@ public class AppConfig {
 
     @Bean
     public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
-        String region = System.getenv("AWS_REGION");
-        if (region == null || region.isEmpty()) {
-            region = "eu-central-1";
-        }
         return CognitoIdentityProviderClient.builder()
-                .region(Region.of(region))
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .region(Region.of(awsRegion))
+                .dualstackEnabled(true)
                 .build();
     }
 }

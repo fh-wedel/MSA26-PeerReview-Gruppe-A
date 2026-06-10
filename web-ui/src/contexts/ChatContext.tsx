@@ -68,7 +68,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUnreadCount(unread);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load chats.';
-      showError(msg);
+      showError(msg, 'Communication Service');
     }
   }, [isAuthenticated, readTimestamps, showError]);
 

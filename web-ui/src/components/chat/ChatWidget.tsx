@@ -35,7 +35,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
           markChatAsRead(chatId);
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Failed to load chat messages.';
-          showError(msg);
+          showError(msg, 'Communication Service');
         } finally {
           setLoading(false);
         }
@@ -96,7 +96,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to send message.';
-      showError(msg);
+      showError(msg, 'Communication Service');
     }
   };
 

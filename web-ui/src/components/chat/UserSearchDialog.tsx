@@ -23,7 +23,7 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
       setLoading(true);
       searchUsers('')
         .then(users => setAllUsers(users))
-        .catch(err => showError(err instanceof Error ? err.message : 'Failed to load users.'))
+        .catch(err => showError(err instanceof Error ? err.message : 'Failed to load users.', 'Communication Service'))
         .finally(() => setLoading(false));
     } else {
       setAllUsers([]);
@@ -33,7 +33,7 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
 
   const displayedUsers = allUsers.filter(u => 
     u.username.toLowerCase().includes(query.toLowerCase()) || 
-    u.email.toLowerCase().includes(query.toLowerCase())
+    (u.email?.toLowerCase() ?? '').includes(query.toLowerCase())
   );
 
   return (
@@ -58,7 +58,7 @@ export const UserSearchDialog: React.FC<UserSearchDialogProps> = ({ open, onClos
                 <ListItemAvatar>
                   <Avatar><AccountCircle /></Avatar>
                 </ListItemAvatar>
-                <ListItemText primary={user.username} secondary={user.email} />
+                <ListItemText primary={user.username} secondary={user.email ?? user.id} />
               </ListItem>
             ))}
           </List>

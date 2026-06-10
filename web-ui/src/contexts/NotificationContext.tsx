@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Snackbar, Alert } from '@mui/material';
+import { Snackbar, Alert, Box, Typography } from '@mui/material';
 import type { AlertColor } from '@mui/material';
 
 interface Notification {
   message: string;
+  source?: string;
   severity: AlertColor;
 }
 
 interface NotificationContextType {
-  showError: (message: string) => void;
-  showSuccess: (message: string) => void;
-  showWarning: (message: string) => void;
+  showError: (message: string, source?: string) => void;
+  showSuccess: (message: string, source?: string) => void;
+  showWarning: (message: string, source?: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -25,14 +26,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [notification, setNotification] = useState<Notification | null>(null);
   const [open, setOpen] = useState(false);
 
-  const show = useCallback((message: string, severity: AlertColor) => {
-    setNotification({ message, severity });
+  const show = useCallback((message: string, severity: AlertColor, source?: string) => {
+    setNotification({ message, severity, source });
     setOpen(true);
   }, []);
 
-  const showError = useCallback((message: string) => show(message, 'error'), [show]);
-  const showSuccess = useCallback((message: string) => show(message, 'success'), [show]);
-  const showWarning = useCallback((message: string) => show(message, 'warning'), [show]);
+  const showError = useCallback(
+    (message: string, source?: string) => show(message, 'error', source),
+    [show],
+  );
+  const showSuccess = useCallback(
+    (message: string, source?: string) => show(message, 'success', source),
+    [show],
+  );
+  const showWarning = useCallback(
+    (message: string, source?: string) => show(message, 'warning', source),
+    [show],
+  );
 
   const handleClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') return;
@@ -52,8 +62,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           onClose={handleClose}
           severity={notification?.severity ?? 'error'}
           variant="filled"
-          sx={{ width: '100%', maxWidth: 500 }}
+          sx={{ width: '100%', maxWidth: 520 }}
         >
+          {notification?.source && (
+            <Box component="span" sx={{ display: 'block' }}>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  opacity: 0.85,
+                  mr: 0.5,
+                }}
+              >
+                [{notification.source}]
+              </Typography>
+            </Box>
+          )}
           {notification?.message}
         </Alert>
       </Snackbar>
