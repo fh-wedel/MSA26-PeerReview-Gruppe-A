@@ -67,7 +67,9 @@ public class ChatService {
     public SseEmitter subscribe(String rawUserId) {
         String userId = normalizeUserId(rawUserId);
         log.info("SSE subscribe: raw='{}' normalized='{}' activeEmitterKeys={}", rawUserId, userId, activeEmitters.keySet());
-        SseEmitter emitter = new SseEmitter(60000L);
+        // Timeout must be < API Gateway's 29s Lambda timeout so idle connections
+        // close cleanly and the Lambda proxy can return the (empty) response.
+        SseEmitter emitter = new SseEmitter(25000L);
         activeEmitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 
         Runnable onDetach = () -> {
@@ -103,6 +105,12 @@ public class ChatService {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event().name("message").data(payload));
+                // Complete the emitter immediately after sending so the Lambda proxy's
+                // `await response.text()` resolves and returns the event data to the
+                // browser before the 29s API Gateway timeout. The client reconnects
+                // automatically via fetchEventSource.
+                emitter.complete();
+                log.info("notifyUser: Sent and completed emitter for userId='{}'", userId);
             } catch (Exception e) {
                 log.warn("notifyUser: Failed to send to emitter for userId='{}': {}", userId, e.getMessage());
                 emitter.completeWithError(e);

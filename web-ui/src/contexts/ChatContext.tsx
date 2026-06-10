@@ -30,9 +30,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [unreadCount, setUnreadCount] = useState(0);
   const [messagesStream, setMessagesStream] = useState<Message | null>(null);
 
-  // For unread counts, we assume local state tracks if we've opened a chat.
-  // We'll keep a simple Map or Set of read chat timestamps if not supported by backend.
-  // Actually, the backend doesn't store unread count. We'll derive it by tracking locally seen messages.
   const [readTimestamps, setReadTimestamps] = useState<Record<string, string>>(() => {
     const saved = localStorage.getItem('chat_read_timestamps');
     return saved ? JSON.parse(saved) : {};
@@ -42,7 +39,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isAuthenticated) return;
     try {
       const data = await fetchChats();
-      // Sort by lastMessageAt descending
       const sorted = data.chats.sort((a, b) => {
         const da = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
         const db = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
@@ -55,6 +51,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isAuthenticated, showError]);
 
+  // Derive unread count from chats + local read timestamps
   useEffect(() => {
     let unread = 0;
     chats.forEach(c => {
@@ -77,61 +74,65 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
+  // Initial load
   useEffect(() => {
     refreshChats();
   }, [refreshChats]);
 
+  // SSE: Subscribe to real-time message events from the communication service.
+  // The backend SseEmitter completes immediately after sending an event so the
+  // Lambda proxy's `await response.text()` resolves and returns the event data
+  // to the browser before the 29s API Gateway timeout. The idle timeout is 25s
+  // so connections without events also close cleanly. fetchEventSource reconnects
+  // automatically in both cases.
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const token = sessionStorage.getItem('access_token');
     if (!token) return;
 
-    let abortController = new AbortController();
+    const abortController = new AbortController();
 
-    const connectSSE = () => {
-      fetchEventSource('/api/communication/chats/stream', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'text/event-stream',
-        },
-        signal: abortController.signal,
-        async onmessage(ev) {
-          if (ev.event === 'message') {
-            try {
-              const data = JSON.parse(ev.data); // { chatId: ..., message: ... }
-              const newMsg = data.message as Message;
-              const chatId = data.chatId;
-              const senderId: string = newMsg.senderId;
+    fetchEventSource('/api/communication/chats/stream', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'text/event-stream',
+      },
+      signal: abortController.signal,
+      async onmessage(ev) {
+        if (ev.event === 'message') {
+          try {
+            const data = JSON.parse(ev.data);
+            const newMsg = data.message as Message;
+            const chatId = data.chatId;
 
-              // Only propagate to the chat widget if this message is from the *other* user.
-              // Our own messages are already handled optimistically in ChatWidget.
-              if (senderId !== user?.id) {
-                setMessagesStream({ ...newMsg, messageId: newMsg.messageId + '-' + chatId });
-              }
-
-              // Refresh the chat list so lastMessageAt and unread count are updated.
-              // We use a short delay to let the backend finish persisting before we fetch.
-              setTimeout(refreshChats, 500);
-            } catch (err) {
-              console.error('Error parsing SSE message', err);
+            // Only propagate to the chat widget if this message is from the *other* user.
+            // Our own messages are already handled optimistically in ChatWidget.
+            if (newMsg.senderId !== user?.id) {
+              setMessagesStream({ ...newMsg, messageId: newMsg.messageId + '-' + chatId });
             }
-          }
-        },
-        onclose() {
-          // fetchEventSource automatically reconnects on clean close
-        },
-        onerror(err) {
-          console.warn('SSE Error. Connection will retry automatically.', err);
-          // Return nothing to let fetchEventSource retry on 504s and network drops
-        }
-      }).catch(err => {
-         console.warn('SSE disconnected, will try again later', err);
-      });
-    };
 
-    connectSSE();
+            // Refresh the chat list so lastMessageAt and unread count are updated.
+            setTimeout(refreshChats, 500);
+          } catch (err) {
+            console.error('Error parsing SSE message', err);
+          }
+        }
+      },
+      onclose() {
+        // The backend closes the emitter after each event (required for Lambda proxy compatibility).
+        // fetchEventSource treats a clean 200 close as "done" and stops retrying.
+        // Throwing here routes through onerror which returns without throwing → library reconnects.
+        throw new Error('SSE stream closed by server — reconnecting');
+      },
+      onerror(err) {
+        console.warn('SSE connection error, will reconnect automatically.', err);
+        // Return nothing — fetchEventSource retries on its own
+      },
+    }).catch(() => {
+      // Aborted or permanently failed — ignore
+    });
 
     return () => {
       abortController.abort();

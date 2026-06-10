@@ -106,6 +106,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
         return [...withoutTemp, ...newMsgs.reverse()];
       });
       refreshChats();
+      const activeChatId = chatId || response.chatId;
+      if (activeChatId) {
+        markChatAsRead(activeChatId);
+      }
       if (!chatId && onChatCreated) {
         onChatCreated(response.chatId);
       }
