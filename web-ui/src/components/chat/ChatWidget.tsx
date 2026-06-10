@@ -99,8 +99,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
         }
       });
 
-      // Update local messages (replaces optimistic message with actual)
-      setMessages(response.messages.reverse());
+      // Update local messages (remove temp, append new from response)
+      setMessages(prev => {
+        const withoutTemp = prev.filter(m => !m.messageId.startsWith('temp-'));
+        const newMsgs = response.messages.filter(nm => !withoutTemp.some(m => m.messageId === nm.messageId));
+        return [...withoutTemp, ...newMsgs.reverse()];
+      });
       refreshChats();
       if (!chatId && onChatCreated) {
         onChatCreated(response.chatId);

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
 import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description, DoneAll } from '@mui/icons-material';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../contexts/ChatContext';
 import { mockNotifications } from '../stubs/notifications';
+import { searchUsers } from '../api/communication';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
@@ -22,6 +23,17 @@ export const Navbar: React.FC = () => {
 
   // Local state for notifications and messages
   const [notifications, setNotifications] = useState(mockNotifications);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    searchUsers('')
+      .then(users => {
+        const map: Record<string, string> = {};
+        users.forEach(u => map[u.id] = u.username);
+        setUserMap(map);
+      })
+      .catch(err => console.error('Failed to load user map in navbar', err));
+  }, []);
   
   const { chats, unreadCount } = useChat();
 
@@ -151,11 +163,11 @@ export const Navbar: React.FC = () => {
                             <ListItemAvatar>
                               <Avatar><AccountCircle /></Avatar>
                             </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Typography variant="subtitle2">{msg.otherParticipantId}</Typography>
-                                  <Typography variant="caption" color={'text.secondary'}>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="subtitle2">{userMap[msg.otherParticipantId] || msg.otherParticipantId}</Typography>
+                                    <Typography variant="caption" color={'text.secondary'}>
                                     {msg.lastMessageAt ? formatDistanceToNow(new Date(msg.lastMessageAt), { addSuffix: true }) : ''}
                                   </Typography>
                                 </Box>
