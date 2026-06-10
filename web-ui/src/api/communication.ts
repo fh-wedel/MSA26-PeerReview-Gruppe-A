@@ -44,18 +44,29 @@ export interface UserSummary {
 }
 
 const getHeaders = () => {
-  const token = sessionStorage.getItem('id_token') || sessionStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token');
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
   };
 };
 
+const handleResponseError = async (response: Response, defaultMsg: string) => {
+  let errMsg = defaultMsg;
+  try {
+    const errData = await response.json();
+    if (errData.message) errMsg = errData.message;
+    else if (errData.error) errMsg = errData.error;
+    else if (typeof errData === 'string') errMsg = errData;
+  } catch (e) {}
+  throw new Error(errMsg);
+};
+
 export const fetchChats = async (): Promise<ChatListResponse> => {
   const response = await fetch('/api/communication/chats', {
     headers: getHeaders(),
   });
-  if (!response.ok) throw new Error('Failed to fetch chats');
+  if (!response.ok) await handleResponseError(response, 'Failed to fetch chats');
   return response.json();
 };
 
@@ -67,7 +78,7 @@ export const fetchChatDetail = async (chatId: string, limit = 50, nextToken?: st
   const response = await fetch(url, {
     headers: getHeaders(),
   });
-  if (!response.ok) throw new Error('Failed to fetch chat detail');
+  if (!response.ok) await handleResponseError(response, 'Failed to fetch chat detail');
   return response.json();
 };
 
@@ -77,7 +88,7 @@ export const sendMessage = async (request: SendMessageRequest): Promise<ChatDeta
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
-  if (!response.ok) throw new Error('Failed to send message');
+  if (!response.ok) await handleResponseError(response, 'Failed to send message');
   return response.json();
 };
 
@@ -85,6 +96,6 @@ export const searchUsers = async (query: string): Promise<UserSummary[]> => {
   const response = await fetch(`/api/communication/users?search=${encodeURIComponent(query)}`, {
     headers: getHeaders(),
   });
-  if (!response.ok) throw new Error('Failed to search users');
+  if (!response.ok) await handleResponseError(response, 'Failed to search users');
   return response.json();
 };

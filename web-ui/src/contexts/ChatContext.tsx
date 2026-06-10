@@ -95,7 +95,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const token = sessionStorage.getItem('id_token') || sessionStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     if (!token) return;
 
     let abortController = new AbortController();

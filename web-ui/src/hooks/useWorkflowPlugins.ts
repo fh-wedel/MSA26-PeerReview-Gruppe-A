@@ -33,7 +33,14 @@ export const useWorkflowPlugins = () => {
           headers
         });
         if (!response.ok) {
-          throw new Error(`Failed to fetch plugins: ${response.statusText}`);
+          let errMsg = `Failed to fetch plugins: ${response.statusText}`;
+          try {
+            const errData = await response.json();
+            if (errData.message) errMsg = errData.message;
+            else if (errData.error) errMsg = errData.error;
+            else if (typeof errData === 'string') errMsg = errData;
+          } catch (e) {}
+          throw new Error(errMsg);
         }
         const data = await response.json();
         setPlugins(data);
