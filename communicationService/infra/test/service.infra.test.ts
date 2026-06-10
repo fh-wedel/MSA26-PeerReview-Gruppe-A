@@ -33,29 +33,29 @@ const collectSecurityGroupRules = (
     return rules;
 };
 
-test('Service stack uses IPv6 defaults and creates queues', () => {
+test('Service stack uses IPv6 defaults and creates dynamodb table', () => {
     const app = new cdk.App();
     const stack = new ServiceStack(app, 'TestServiceStack', {
-        serviceName: 'orders',
+        serviceName: 'communication',
         imageVersion: 'v1',
         enablePublicIpV4: false,
-        requestQueueName: 'orders-request',
-        responseQueueName: 'orders-response',
         containerPort: 8081,
+        memory: 512,
+        cpu: 256,
+        minTaskCount: 1,
+        maxTaskCount: 2,
     });
 
     const template = Template.fromStack(stack);
 
-    template.resourceCountIs('AWS::SQS::Queue', 2);
-    template.hasResourceProperties('AWS::SQS::Queue', {
-        QueueName: 'orders-request',
-    });
-    template.hasResourceProperties('AWS::SQS::Queue', {
-        QueueName: 'orders-response',
+    template.resourceCountIs('AWS::SQS::Queue', 0);
+    template.resourceCountIs('AWS::DynamoDB::Table', 1);
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+        TableName: 'communication-service',
     });
 
     template.hasResourceProperties('AWS::Logs::LogGroup', {
-        LogGroupName: '/ecs/orders',
+        LogGroupName: '/ecs/communication',
     });
 
     template.hasResourceProperties('AWS::ECS::Service', {
@@ -78,8 +78,8 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([
             Match.objectLike({
-                Name: 'orders',
-                Image: EcsInfra.getDefaultImageNameIpv6('orders', 'v1'),
+                Name: 'communication',
+                Image: EcsInfra.getDefaultImageNameIpv6('communication', 'v1'),
                 PortMappings: Match.arrayWith([
                     Match.objectLike({
                         ContainerPort: 8081,
@@ -87,10 +87,10 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                     }),
                 ]),
                 Environment: Match.arrayWith([
-                    { Name: 'SQS_REQUEST_QUEUE', Value: 'orders-request' },
-                    { Name: 'SQS_RESPONSE_QUEUE', Value: 'orders-response' },
                     { Name: 'SERVER_PORT', Value: '8081' },
                     { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
+                    { Name: 'DYNAMODB_TABLE_NAME', Value: Match.anyValue() },
+                    { Name: 'COGNITO_USER_POOL_ID', Value: Match.anyValue() },
                 ]),
                 HealthCheck: Match.objectLike({
                     Command: [
@@ -111,7 +111,7 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
         ToPort: 8081,
         IpProtocol: 'tcp',
         SourceSecurityGroupId: {
-            'Fn::ImportValue': 'orders:ProxyLambdaSecurityGroupId',
+            'Fn::ImportValue': 'communication:ProxyLambdaSecurityGroupId',
         },
     });
 
@@ -137,15 +137,20 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
 test('Service stack with public IPv4 enables public IP and ingress rules', () => {
     const app = new cdk.App();
     const stack = new ServiceStack(app, 'TestServiceStack', {
-        serviceName: 'orders',
+        serviceName: 'communication',
         imageVersion: 'v2',
         enablePublicIpV4: true,
         containerPort: 8081,
+        memory: 512,
+        cpu: 256,
+        minTaskCount: 1,
+        maxTaskCount: 2,
     });
 
     const template = Template.fromStack(stack);
 
     template.resourceCountIs('AWS::SQS::Queue', 0);
+    template.resourceCountIs('AWS::DynamoDB::Table', 1);
 
     template.hasResourceProperties('AWS::ECS::Service', {
         NetworkConfiguration: {
@@ -167,7 +172,7 @@ test('Service stack with public IPv4 enables public IP and ingress rules', () =>
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([
             Match.objectLike({
-                Image: EcsInfra.getDefaultImageNameIpv4('orders', 'v2'),
+                Image: EcsInfra.getDefaultImageNameIpv4('communication', 'v2'),
                 Environment: Match.arrayWith([
                     { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
                 ]),
@@ -180,7 +185,7 @@ test('Service stack with public IPv4 enables public IP and ingress rules', () =>
         ToPort: 8081,
         IpProtocol: 'tcp',
         SourceSecurityGroupId: {
-            'Fn::ImportValue': 'orders:ProxyLambdaSecurityGroupId',
+            'Fn::ImportValue': 'communication:ProxyLambdaSecurityGroupId',
         },
     });
 
