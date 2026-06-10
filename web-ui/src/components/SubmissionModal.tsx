@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, FormControl, InputLabel, Select, MenuItem, Snackbar, Alert } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useWorkflowPlugins } from '../hooks/useWorkflowPlugins';
+import { useNotification } from '../contexts/NotificationContext';
 
 type ReviewMode = string;
 
@@ -16,13 +17,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
   const [reviewMode, setReviewMode] = useState<ReviewMode>('double-blind');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const { plugins, loading, error } = useWorkflowPlugins();
-  const [errorOpen, setErrorOpen] = useState(false);
+  const { showError } = useNotification();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
-      setErrorOpen(true);
+      showError(error.message, 'Workflow Service');
     }
-  }, [error]);
+  }, [error, showError]);
 
   const handleSubmit = () => {
     onSubmit(title, reviewMode, pdfFile);
@@ -40,8 +41,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
   };
 
   return (
-    <>
-      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Create Submission</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -88,17 +88,5 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({ open, onClose,
         </Button>
       </DialogActions>
     </Dialog>
-      <Snackbar
-        open={errorOpen}
-        autoHideDuration={6000}
-        onClose={() => setErrorOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ mt: 8 }}
-      >
-        <Alert onClose={() => setErrorOpen(false)} severity="error" sx={{ width: '100%' }}>
-          Failed to load workflow plugins.
-        </Alert>
-      </Snackbar>
-    </>
   );
 };
