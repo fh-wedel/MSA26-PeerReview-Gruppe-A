@@ -44,7 +44,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
       }
     };
     loadMessages();
-  }, [chatId, markChatAsRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId]);
 
   // Listen to SSE updates
   useEffect(() => {
@@ -74,6 +75,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
 
     const body = input.trim();
     setInput('');
+    
+    // Optimistic UI update
+    const tempMsg: Message = {
+      messageId: `temp-${Date.now()}`,
+      senderId: user?.id || '',
+      body,
+      sentAt: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, tempMsg]);
+
     try {
       // If we only have recipientId, the backend creates the chat
       const response = await sendMessage({
@@ -88,7 +99,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
         }
       });
 
-      // Update local messages
+      // Update local messages (replaces optimistic message with actual)
       setMessages(response.messages.reverse());
       refreshChats();
       if (!chatId && onChatCreated) {

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider, Fab, Tabs, Tab } from '@mui/material';
 import { AccountCircle, Add as AddIcon, Description } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { ChatWidget } from '../components/chat/ChatWidget';
 import { UserSearchDialog } from '../components/chat/UserSearchDialog';
 import { formatDistanceToNow } from 'date-fns';
+import { searchUsers } from '../api/communication';
 import type { UserSummary } from '../api/communication';
 
 export const ChatPage: React.FC = () => {
@@ -14,6 +15,18 @@ export const ChatPage: React.FC = () => {
   const [chatTypeTab, setChatTypeTab] = useState<'GENERAL' | 'SUBMISSION'>('GENERAL');
   
   const [searchOpen, setSearchOpen] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Fetch users once to resolve usernames
+    searchUsers('')
+      .then(users => {
+        const map: Record<string, string> = {};
+        users.forEach(u => map[u.id] = u.username);
+        setUserMap(map);
+      })
+      .catch(err => console.error('Failed to load user map', err));
+  }, []);
 
   const filteredChats = chats.filter(c => c.chatType === chatTypeTab);
 
@@ -38,7 +51,7 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 120px)', bgcolor: 'background.paper', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
+    <Box sx={{ display: 'flex', height: 'calc(100vh - 180px)', bgcolor: 'background.paper', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
       {/* Sidebar List */}
       <Box sx={{ width: 320, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -62,7 +75,7 @@ export const ChatPage: React.FC = () => {
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText 
-                    primary={chat.otherParticipantId} // TODO: Map participant ID to username via UserService cache if possible, for now showing ID or we can rely on backend username injection in future
+                    primary={userMap[chat.otherParticipantId] || chat.otherParticipantId}
                     secondary={chat.lastMessageAt ? formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true }) : 'No messages'}
                   />
                 </ListItemButton>
@@ -88,7 +101,7 @@ export const ChatPage: React.FC = () => {
         {(selectedChatId || selectedRecipientId) ? (
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
             <Typography variant="h6">
-              Chat with {selectedRecipientId} {chatTypeTab === 'SUBMISSION' && '(Submission)'}
+              Chat with {userMap[selectedRecipientId || ''] || selectedRecipientId} {chatTypeTab === 'SUBMISSION' && '(Submission)'}
             </Typography>
           </Box>
         ) : null}

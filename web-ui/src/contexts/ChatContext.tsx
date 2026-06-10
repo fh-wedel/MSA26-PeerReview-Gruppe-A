@@ -38,11 +38,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved ? JSON.parse(saved) : {};
   });
 
-  const updateReadTimestamps = (newMap: Record<string, string>) => {
-    setReadTimestamps(newMap);
-    localStorage.setItem('chat_read_timestamps', JSON.stringify(newMap));
-  };
-
   const refreshChats = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
@@ -54,42 +49,36 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return db - da;
       });
       setChats(sorted);
-
-      // Calculate unread
-      let unread = 0;
-      sorted.forEach(c => {
-        if (c.lastMessageAt) {
-          const lastRead = readTimestamps[c.chatId];
-          if (!lastRead || new Date(c.lastMessageAt) > new Date(lastRead)) {
-            unread++;
-          }
-        }
-      });
-      setUnreadCount(unread);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load chats.';
       showError(msg, 'Communication Service');
     }
-  }, [isAuthenticated, readTimestamps, showError]);
+  }, [isAuthenticated, showError]);
+
+  useEffect(() => {
+    let unread = 0;
+    chats.forEach(c => {
+      if (c.lastMessageAt) {
+        const lastRead = readTimestamps[c.chatId];
+        if (!lastRead || new Date(c.lastMessageAt) > new Date(lastRead)) {
+          unread++;
+        }
+      }
+    });
+    setUnreadCount(unread);
+  }, [chats, readTimestamps]);
 
   const markChatAsRead = useCallback((chatId: string) => {
-    const chat = chats.find(c => c.chatId === chatId);
-    if (chat && chat.lastMessageAt) {
-      const newMap = { ...readTimestamps, [chatId]: chat.lastMessageAt };
-      updateReadTimestamps(newMap);
-      // Re-eval unread count
-      let unread = 0;
-      chats.forEach(c => {
-        if (c.lastMessageAt) {
-          const lastRead = newMap[c.chatId];
-          if (!lastRead || new Date(c.lastMessageAt) > new Date(lastRead)) {
-            unread++;
-          }
-        }
-      });
-      setUnreadCount(unread);
-    }
-  }, [chats, readTimestamps]);
+    setReadTimestamps(prev => {
+      const chat = chats.find(c => c.chatId === chatId);
+      if (chat && chat.lastMessageAt && prev[chatId] !== chat.lastMessageAt) {
+        const newMap = { ...prev, [chatId]: chat.lastMessageAt };
+        localStorage.setItem('chat_read_timestamps', JSON.stringify(newMap));
+        return newMap;
+      }
+      return prev;
+    });
+  }, [chats]);
 
   useEffect(() => {
     refreshChats();
