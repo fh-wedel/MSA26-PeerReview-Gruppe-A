@@ -27,10 +27,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ChatService {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
     private final ChatRepository chatRepository;
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> activeEmitters = new ConcurrentHashMap<>();
 
@@ -38,7 +41,32 @@ public class ChatService {
         this.chatRepository = chatRepository;
     }
 
-    public SseEmitter subscribe(String userId) {
+    /**
+     * Strips Cedar entity type prefix and Cognito pool prefix from a raw principal ID.
+     * Handles formats:
+     *   - Bare sub UUID:             "abc-123"
+     *   - Pool|sub:                  "eu-central-1_abc|abc-123"
+     *   - Cedar entity string:       PeerReview::User::"eu-central-1_abc|abc-123"
+     */
+    static String normalizeUserId(String raw) {
+        if (raw == null) return null;
+        // Strip Cedar quotes: PeerReview::User::"pool|sub" → pool|sub
+        int firstQuote = raw.indexOf('"');
+        int lastQuote = raw.lastIndexOf('"');
+        String inner = (firstQuote >= 0 && lastQuote > firstQuote)
+                ? raw.substring(firstQuote + 1, lastQuote)
+                : raw;
+        // Strip pool prefix: pool|sub → sub
+        int pipeIndex = inner.lastIndexOf('|');
+        if (pipeIndex >= 0 && pipeIndex < inner.length() - 1) {
+            return inner.substring(pipeIndex + 1);
+        }
+        return inner;
+    }
+
+    public SseEmitter subscribe(String rawUserId) {
+        String userId = normalizeUserId(rawUserId);
+        log.info("SSE subscribe: raw='{}' normalized='{}' activeEmitterKeys={}", rawUserId, userId, activeEmitters.keySet());
         SseEmitter emitter = new SseEmitter(60000L);
         activeEmitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 
@@ -50,6 +78,7 @@ public class ChatService {
                     activeEmitters.remove(userId);
                 }
             }
+            log.info("SSE detach: userId='{}' remainingEmitterKeys={}", userId, activeEmitters.keySet());
         };
 
         emitter.onCompletion(onDetach);
@@ -60,18 +89,23 @@ public class ChatService {
     }
 
     private void notifyUser(String userId, String chatId, Message message) {
+        log.info("notifyUser: userId='{}' chatId='{}' activeEmitterKeys={}", userId, chatId, activeEmitters.keySet());
         CopyOnWriteArrayList<SseEmitter> emitters = activeEmitters.get(userId);
-        if (emitters != null) {
-            var payload = new java.util.HashMap<String, Object>();
-            payload.put("chatId", chatId);
-            payload.put("message", message);
-            
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event().name("message").data(payload));
-                } catch (Exception e) {
-                    emitter.completeWithError(e);
-                }
+        if (emitters == null || emitters.isEmpty()) {
+            log.warn("notifyUser: No active SSE emitters for userId='{}' — recipient may be offline or ID mismatch", userId);
+            return;
+        }
+        log.info("notifyUser: Sending SSE event to {} emitter(s) for userId='{}'", emitters.size(), userId);
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("chatId", chatId);
+        payload.put("message", message);
+
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name("message").data(payload));
+            } catch (Exception e) {
+                log.warn("notifyUser: Failed to send to emitter for userId='{}': {}", userId, e.getMessage());
+                emitter.completeWithError(e);
             }
         }
     }
@@ -152,8 +186,11 @@ public class ChatService {
         return response;
     }
 
-    public ChatDetailResponse sendMessage(String senderId, SendMessageRequest request) {
-        String recipientId = request.getRecipientId();
+    public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request) {
+        String senderId = normalizeUserId(rawSenderId);
+        String recipientId = normalizeUserId(request.getRecipientId());
+        log.info("sendMessage: rawSender='{}' normalizedSender='{}' rawRecipient='{}' normalizedRecipient='{}'",
+                rawSenderId, senderId, request.getRecipientId(), recipientId);
         ChatContext context = request.getChatContext();
         
         String contextStr = "GENERAL";
@@ -246,8 +283,8 @@ public class ChatService {
         m.setBody(request.getBody());
         m.setSentAt(OffsetDateTime.parse(now));
         
+        // Only notify the recipient — the sender already has an optimistic UI update
         notifyUser(recipientId, chatId, m);
-        notifyUser(senderId, chatId, m);
 
         return getChat(senderId, chatId, null, 1);
     }

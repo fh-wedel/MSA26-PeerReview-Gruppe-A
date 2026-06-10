@@ -24,7 +24,7 @@ const ChatContext = createContext<ChatContextType>({
 export const useChat = () => useContext(ChatContext);
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { showError } = useNotification();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -103,13 +103,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const data = JSON.parse(ev.data); // { chatId: ..., message: ... }
               const newMsg = data.message as Message;
               const chatId = data.chatId;
+              const senderId: string = newMsg.senderId;
 
-              // Propagate to current view
-              setMessagesStream({ ...newMsg, messageId: newMsg.messageId + '-' + chatId }); 
-              
-              // We need to refresh chats to update the sidebar and unread counts
-              // We can just call refreshChats() which fetches the latest list
-              // But to avoid a race condition with local state, we do it in a small timeout
+              // Only propagate to the chat widget if this message is from the *other* user.
+              // Our own messages are already handled optimistically in ChatWidget.
+              if (senderId !== user?.id) {
+                setMessagesStream({ ...newMsg, messageId: newMsg.messageId + '-' + chatId });
+              }
+
+              // Refresh the chat list so lastMessageAt and unread count are updated.
+              // We use a short delay to let the backend finish persisting before we fetch.
               setTimeout(refreshChats, 500);
             } catch (err) {
               console.error('Error parsing SSE message', err);
@@ -133,7 +136,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       abortController.abort();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user, refreshChats]);
 
   return (
     <ChatContext.Provider value={{ chats, unreadCount, refreshChats, markChatAsRead, messagesStream }}>
