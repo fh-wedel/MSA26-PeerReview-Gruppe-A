@@ -20,7 +20,9 @@ ENV HOME=/home/spring
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-COPY --from=builder /app/target/*.jar app.jar
+# Here you save the file as 'configuration-service.jar'
+COPY --from=builder /app/target/configuration-service.jar configuration-service.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-Djava.net.preferIPv6Addresses=true", "-Djava.net.preferIPv4Stack=false", "-jar", "app.jar"]
+# Match the jar name here in the entrypoint execution
+ENTRYPOINT ["java", "-Djava.net.preferIPv6Addresses=true", "-Djava.net.preferIPv4Stack=false", "-jar", "configuration-service.jar"]
