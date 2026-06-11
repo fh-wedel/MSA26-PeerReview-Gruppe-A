@@ -48,13 +48,14 @@ export const Dashboard: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const deadlineDates = mockDeadlines.map((d) => d.date);
 
-  const roles = (user?.roles || []).map(r => r.toLowerCase());
-  const hasAuthorOrAdminRole = roles.includes('admin') || roles.includes('author');
+  const roles = (user?.roles || []).map((r) => r.toLowerCase());
+  const hasAuthorOrAdminRole =
+    roles.includes("admin") || roles.includes("author");
 
   const handleSubmission = async (
     title: string,
     reviewMode: string,
-    file: File | null,
+    //file: File | null,
   ) => {
     try {
       const token = sessionStorage.getItem("access_token");
