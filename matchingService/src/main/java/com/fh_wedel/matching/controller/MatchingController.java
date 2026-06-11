@@ -10,7 +10,6 @@ import com.fh_wedel.matching.service.CognitoService;
 import com.fh_wedel.matching.service.MatchingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +20,9 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST controller for querying match information.
@@ -35,6 +36,11 @@ import java.util.List;
  *       This is what DynamoDB and the JWT {@code auth.getName()} carry.</li>
  * </ul>
  */
+import com.fh_wedel.matching.model.api.WorkflowRulesDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
+
 @RestController
 @RequestMapping("/api/matching")
 @Slf4j
@@ -42,10 +48,17 @@ public class MatchingController {
 
     private final MatchingService matchingService;
     private final CognitoService cognitoService;
+    private final RestTemplate restTemplate;
+    private final String workflowServiceUrl;
 
-    public MatchingController(MatchingService matchingService, CognitoService cognitoService) {
+    public MatchingController(MatchingService matchingService, 
+                              CognitoService cognitoService,
+                              RestTemplate restTemplate,
+                              @Value("${aws.workflow-service.url:http://workflow.internal.services:8081}") String workflowServiceUrl) {
         this.matchingService = matchingService;
         this.cognitoService = cognitoService;
+        this.restTemplate = restTemplate;
+        this.workflowServiceUrl = workflowServiceUrl;
     }
 
     /**
@@ -69,23 +82,48 @@ public class MatchingController {
             return ResponseEntity.notFound().build();
         }
 
-        // DynamoDB stores the submitter's Cognito sub UUID — compare directly against the
-        // JWT sub UUID from auth.getName(). No Cognito AdminGetUser call needed here
-        // because AdminGetUser accepts usernames, not sub UUIDs.
         String submitterSub = status.getSubmitterId();
 
         if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, submitterSub)) {
             log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter sub '{}' for submission {}",
                     authentication.getName(), authentication.getDetails(), submitterSub, submissionId);
-            throw new AccessDeniedException("Access Denied: You are not the author of this submission.");
+            return ResponseEntity.notFound().build();
         }
 
         List<MatchRecord> matches = matchingService.getMatchesBySubmission(submissionId);
 
+        boolean hideExaminer = false;
+        if (!isAdminOrOfficer(authentication)) {
+            try {
+                WorkflowRulesDto rules = restTemplate.getForObject(
+                        workflowServiceUrl + "/api/workflow/submissions/" + submissionId + "/rules",
+                        WorkflowRulesDto.class
+                );
+                if (rules != null && Boolean.TRUE.equals(rules.getReviewerAnonymous())) {
+                    hideExaminer = true;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch workflow rules for submission {}, defaulting to hiding examiner", submissionId, e);
+                hideExaminer = true;
+            }
+        }
+        
+        final boolean hide = hideExaminer;
+
+        Map<String, String> examinerIdToUserNameMap = new HashMap<>();
+        List<UserType> allReviewers = cognitoService.listReviewers();
+        if (allReviewers != null) {
+            allReviewers.forEach(user -> {
+                String userID = CognitoService.extractSub(user);
+                examinerIdToUserNameMap.put(userID, user.username());
+            });
+        }
+
         List<MatchEntry> matchEntries = matches.stream()
                 .map(m -> {
                     MatchEntry entry = new MatchEntry();
-                    entry.setExaminerId(m.getExaminerId());   // stored as sub UUID in DynamoDB
+                    entry.setExaminerId(hide ? null : m.getExaminerId());
+                    entry.setExaminerUsername(hide ? null : examinerIdToUserNameMap.get(m.getExaminerId()));
                     entry.setAssignedAt(m.getTimestamp().atOffset(ZoneOffset.UTC));
                     return entry;
                 })
@@ -97,7 +135,8 @@ public class MatchingController {
         response.setMatchedAt(status.getTimestamp().atOffset(ZoneOffset.UTC));
         response.setReason(status.getReason());
         response.setNumberOfExaminers(status.getNumberOfExaminers());
-        response.setSubmitterId(status.getSubmitterId());     // sub UUID
+        response.setSubmitterId(status.getSubmitterId());
+        response.setSubmitterUsername(cognitoService.getUserByUUID(status.getSubmitterId()).username());
         response.setMatches(matchEntries);
 
         return ResponseEntity.ok(response);
@@ -123,7 +162,7 @@ public class MatchingController {
         // and access-control comparison.
         String examinerSub;
         try {
-            AdminGetUserResponse examinerUser = cognitoService.getUser(examinerUsername);
+            AdminGetUserResponse examinerUser = cognitoService.getUserByUsername(examinerUsername);
             examinerSub = CognitoService.extractAttribute(examinerUser, "sub");
             if (examinerSub == null) {
                 log.warn("Cognito user '{}' (username) has no 'sub' attribute", examinerUsername);
@@ -140,7 +179,7 @@ public class MatchingController {
         if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, examinerSub)) {
             log.warn("Access Denied: caller '{}' (details: '{}') does not match examiner sub '{}' (username: '{}')",
                     authentication.getName(), authentication.getDetails(), examinerSub, examinerUsername);
-            throw new AccessDeniedException("Access Denied: You can only access your own matches.");
+            return ResponseEntity.notFound().build();
         }
 
         List<MatchRecord> matches = matchingService.getMatchesByExaminer(examinerSub);
@@ -156,6 +195,7 @@ public class MatchingController {
 
         ExaminerMatchResponse response = new ExaminerMatchResponse();
         response.setExaminerId(examinerSub);   // return the sub UUID in the response body
+        response.setExaminerUsername(examinerUsername);
         response.setAssignments(assignments);
 
         return ResponseEntity.ok(response);
@@ -175,7 +215,7 @@ public class MatchingController {
      * Returns {@code true} if the authenticated caller's Cognito sub UUID matches
      * the given {@code targetSub}.
      *
-     * <p>The {@link AuthHeaderFilter} populates the {@code Authentication} as follows:
+     * <p>The {@link com.fh_wedel.matching.security.AuthHeaderFilter} populates the {@code Authentication} as follows:
      * <ul>
      *   <li>{@code auth.getName()} → Cognito <b>username</b> (e.g. "Marcel")</li>
      *   <li>{@code auth.getDetails()} → the {@code x-auth-principal-id} header,

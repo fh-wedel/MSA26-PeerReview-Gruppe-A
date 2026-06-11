@@ -1,6 +1,6 @@
 export interface ChatUser {
   id: string;
-  name: string;
+  username: string;
 }
 
 export interface ChatMessage {
@@ -23,10 +23,10 @@ export interface ChatThread {
 }
 
 export const mockUsers: ChatUser[] = [
-  { id: 'u1', name: 'Alice Smith' },
-  { id: 'u2', name: 'Bob Johnson' },
-  { id: 'u3', name: 'Prof. Schmidt' },
-  { id: 'u4', name: 'System Admin' },
+  { id: 'u1', username: 'Alice Smith' },
+  { id: 'u2', username: 'Bob Johnson' },
+  { id: 'u3', username: 'Prof. Schmidt' },
+  { id: 'u4', username: 'System Admin' },
 ];
 
 export const mockChatThreads: ChatThread[] = [
@@ -34,8 +34,8 @@ export const mockChatThreads: ChatThread[] = [
     id: 't1',
     submissionId: '7f4d5b51-4fb7-4033-9f52-2f9df08f02f1',
     participants: [
-      { id: 'current_user', name: 'Me' },
-      { id: 'u3', name: 'Prof. Schmidt' },
+      { id: 'current_user', username: 'Me' },
+      { id: 'u3', username: 'Prof. Schmidt' },
     ],
     messages: [
       {
@@ -50,8 +50,8 @@ export const mockChatThreads: ChatThread[] = [
     id: 't2',
     submissionId: '1f0a6d1c-77ab-4a28-b7d7-0b1b8f8f9059',
     participants: [
-      { id: 'current_user', name: 'Me' },
-      { id: 'u4', name: 'System Admin' },
+      { id: 'current_user', username: 'Me' },
+      { id: 'u4', username: 'System Admin' },
     ],
     messages: [
       {

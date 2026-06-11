@@ -49,7 +49,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const getThreadDisplayName = (thread: ChatThread) => {
     return thread.participants
       .filter(p => p.id !== currentUserId)
-      .map(p => p.name)
+      .map(p => p.username)
       .join(', ') || 'Chat';
   };
 

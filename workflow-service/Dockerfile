@@ -7,19 +7,19 @@ WORKDIR /app
 # Copy all POMs for dependency caching
 COPY pom.xml .
 COPY workflow-api/pom.xml workflow-api/
-COPY workflow-core/pom.xml workflow-core/
 COPY workflow-plugin-double-blind/pom.xml workflow-plugin-double-blind/
 COPY workflow-plugin-single-blind/pom.xml workflow-plugin-single-blind/
 COPY workflow-plugin-open-review/pom.xml workflow-plugin-open-review/
+COPY workflow-core/pom.xml workflow-core/
 
 RUN mvn dependency:go-offline -B
 
 # Copy all source code and build
 COPY workflow-api/src workflow-api/src
-COPY workflow-core/src workflow-core/src
 COPY workflow-plugin-double-blind/src workflow-plugin-double-blind/src
 COPY workflow-plugin-single-blind/src workflow-plugin-single-blind/src
 COPY workflow-plugin-open-review/src workflow-plugin-open-review/src
+COPY workflow-core/src workflow-core/src
 
 RUN mvn clean package -DskipTests
 

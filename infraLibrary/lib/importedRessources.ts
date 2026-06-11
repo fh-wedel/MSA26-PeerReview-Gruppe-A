@@ -115,4 +115,4 @@ export class ImportedRessources {
     public static getApiStageName(apiName: string): string {
         return cdk.Fn.importValue(`${apiName}:ApiStageName`);
     }
-}
+}

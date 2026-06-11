@@ -66,6 +66,8 @@ export const Navbar: React.FC = () => {
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAdminOrExamOfficerRole = userRoles.includes('admin') || userRoles.includes('examinationofficer');
+  const hasSubmissionsAccess = userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('author');
+  const hasAdminOrReviewerRole = userRoles.includes('admin') || userRoles.includes('reviewer');
 
   return (
     <AppBar position="static" color="primary">
@@ -93,14 +95,16 @@ export const Navbar: React.FC = () => {
               >
                 Home
               </Button>
-              <Button 
-                color="inherit" 
-                onClick={() => navigate('/assignments')}
-                sx={{ opacity: location.pathname.startsWith('/assignments') ? 1 : 0.7, fontSize: '1.05rem' }}
-              >
-                Assignments
-              </Button>
-              {hasAdminOrExamOfficerRole && (
+              {hasAdminOrReviewerRole && (
+                <Button 
+                  color="inherit" 
+                  onClick={() => navigate('/assignments')}
+                  sx={{ opacity: location.pathname.startsWith('/assignments') ? 1 : 0.7, fontSize: '1.05rem' }}
+                >
+                  Assignments
+                </Button>
+              )}
+              {hasSubmissionsAccess && (
                 <Button 
                   color="inherit" 
                   onClick={() => navigate('/submissions')}
@@ -271,7 +275,7 @@ export const Navbar: React.FC = () => {
                 onClose={() => setAnchorElProfile(null)}
               >
                 <MenuItem disabled>
-                  {user?.roles ? user.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()).join(', ') : 'User'}: {user?.name}
+                  {user?.roles ? user.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()).join(', ') : 'User'}: {user?.username}
                 </MenuItem>
                 <MenuItem onClick={() => { setAnchorElProfile(null); logout(); navigate('/'); }}>
                   Logout

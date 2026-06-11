@@ -1,7 +1,7 @@
 package com.fh_wedel.workflow.controller;
 
-import com.fh_wedel.workflow.model.WorkflowPluginDto;
-import com.fh_wedel.workflow.model.WorkflowRulesDto;
+import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
+import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
 import com.fh_wedel.workflow.service.WorkflowService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +26,30 @@ class WorkflowControllerTest {
     @MockitoBean
     private WorkflowService workflowService;
 
+    private WorkflowRulesDto createRules() {
+        WorkflowRulesDto rules = new WorkflowRulesDto();
+        rules.setAuthorAnonymous(true);
+        rules.setReviewerAnonymous(false);
+        rules.setReviewerToReviewerAnonymous(true);
+        rules.setAuthorReviewerChatAllowed(false);
+        rules.setReviewerToReviewerChatAllowed(true);
+        return rules;
+    }
+
+    private WorkflowPluginDto createPlugin(String name, String title, String description, WorkflowRulesDto rules) {
+        WorkflowPluginDto plugin = new WorkflowPluginDto();
+        plugin.setName(name);
+        plugin.setTitle(title);
+        plugin.setDescription(description);
+        plugin.setRules(rules);
+        return plugin;
+    }
+
     @Test
     void listPluginsReturns200() throws Exception {
-        WorkflowRulesDto rules = new WorkflowRulesDto(true, false, true, false, true);
-        WorkflowPluginDto plugin1 = new WorkflowPluginDto("plugin-1", "Plugin 1", "description 1", rules);
-        WorkflowPluginDto plugin2 = new WorkflowPluginDto("plugin-2", "Plugin 2", "description 2", rules);
+        WorkflowRulesDto rules = createRules();
+        WorkflowPluginDto plugin1 = createPlugin("plugin-1", "Plugin 1", "description 1", rules);
+        WorkflowPluginDto plugin2 = createPlugin("plugin-2", "Plugin 2", "description 2", rules);
         
         when(workflowService.listPlugins()).thenReturn(List.of(plugin1, plugin2));
 
@@ -46,8 +65,8 @@ class WorkflowControllerTest {
 
     @Test
     void getPluginReturns200() throws Exception {
-        WorkflowRulesDto rules = new WorkflowRulesDto(true, false, true, false, true);
-        WorkflowPluginDto plugin = new WorkflowPluginDto("plugin-1", "Plugin 1", "description 1", rules);
+        WorkflowRulesDto rules = createRules();
+        WorkflowPluginDto plugin = createPlugin("plugin-1", "Plugin 1", "description 1", rules);
 
         when(workflowService.getPlugin("plugin-1")).thenReturn(plugin);
 
@@ -73,7 +92,7 @@ class WorkflowControllerTest {
 
     @Test
     void getPluginRulesReturns200() throws Exception {
-        WorkflowRulesDto rules = new WorkflowRulesDto(true, false, true, false, true);
+        WorkflowRulesDto rules = createRules();
 
         when(workflowService.getPluginRules("plugin-1")).thenReturn(rules);
 
@@ -94,5 +113,20 @@ class WorkflowControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(workflowService).getPluginRules("unknown");
+    }
+
+    @Test
+    void getRulesForSubmissionReturns200() throws Exception {
+        WorkflowRulesDto rules = createRules();
+
+        when(workflowService.getRulesForSubmission("sub-123")).thenReturn(rules);
+
+        mockMvc.perform(get("/api/workflow/submissions/sub-123/rules"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.authorAnonymous").value(true))
+                .andExpect(jsonPath("$.reviewerAnonymous").value(false));
+
+        verify(workflowService).getRulesForSubmission("sub-123");
     }
 }

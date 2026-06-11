@@ -1,15 +1,15 @@
 import * as cdk from 'aws-cdk-lib/core';
-import {Construct} from 'constructs';
+import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
-import {EcsInfra} from '../../../infraLibrary/lib/ecs';
-import {SqsInfra} from '../../../infraLibrary/lib/sqs';
-import {LogsInfra} from '../../../infraLibrary/lib/logs';
+import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
+import { EcsInfra } from '../../../infraLibrary/lib/ecs';
+import { SqsInfra } from '../../../infraLibrary/lib/sqs';
+import { LogsInfra } from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import {AWSConstants} from '../../../infrabaseline/lib/constants';
+import { AWSConstants } from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
@@ -47,6 +47,8 @@ export class ServiceStack extends cdk.Stack {
             subnet = EcsInfra.getIpV6Subnet(this);
         }
 
+        const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+
         const logGroup = LogsInfra.createLogGroup(this, {
             logGroupName: `/ecs/${props.serviceName}`,
         });
@@ -57,16 +59,16 @@ export class ServiceStack extends cdk.Stack {
         const dynamoTableName = props.dynamoDbTableName ?? 'matching-service-matches';
         const matchesTable = new dynamodb.Table(this, 'MatchesTable', {
             tableName: dynamoTableName,
-            partitionKey: {name: 'pk', type: dynamodb.AttributeType.STRING},
-            sortKey: {name: 'sk', type: dynamodb.AttributeType.STRING},
+            partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         matchesTable.addGlobalSecondaryIndex({
             indexName: 'ExaminerIndex',
-            partitionKey: {name: 'examinerId', type: dynamodb.AttributeType.STRING},
-            sortKey: {name: 'submissionId', type: dynamodb.AttributeType.STRING},
+            partitionKey: { name: 'examinerId', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
             projectionType: dynamodb.ProjectionType.ALL,
         });
 
@@ -112,6 +114,9 @@ export class ServiceStack extends cdk.Stack {
                 'COGNITO_USER_POOL_ID': cognitoUserPoolId,
                 'COGNITO_REVIEWER_GROUP_NAME': reviewerGroupName,
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
+                // Use the AAAA record in internal.services for ECS-to-ECS communication.
+                // ECS Service Connect (sc.internal) does NOT support IPv6-only subnets.
+                'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
         });
@@ -132,13 +137,13 @@ export class ServiceStack extends cdk.Stack {
         } else {
             ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Outbound HTTPS IPv6');
             ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
+            ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.allTcp(), 'Outbound all TCP IPv6 (ECS-to-ECS)');
         }
 
         const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
         const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
         ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
 
-        const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
         const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
         const ecsService = new ecs.FargateService(this, 'FargateService', {
@@ -147,7 +152,7 @@ export class ServiceStack extends cdk.Stack {
             taskDefinition: taskDefinition,
             assignPublicIp: props.enablePublicIpV4,
             desiredCount: props.minTaskCount,
-            vpcSubnets: {subnets: [subnet]},
+            vpcSubnets: { subnets: [subnet] },
             circuitBreaker: {
                 rollback: true,
             },
@@ -162,6 +167,7 @@ export class ServiceStack extends cdk.Stack {
                 registryArn: sdService.attrArn,
             },
         ];
+
 
         // =============================================
         // IAM Permissions
@@ -184,6 +190,7 @@ export class ServiceStack extends cdk.Stack {
                     'cognito-idp:AdminAddUserToGroup',
                     'cognito-idp:AdminRemoveUserFromGroup',
                     'cognito-idp:AdminListGroupsForUser',
+                    'cognito-idp:ListUsers'
                 ],
                 resources: [
                     `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${cognitoUserPoolId}`,
