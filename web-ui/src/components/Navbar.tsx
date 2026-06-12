@@ -4,7 +4,13 @@ import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, Acco
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../contexts/ChatContext';
-import { mockNotifications } from '../stubs/notifications';
+import {
+  fetchNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  streamNotifications,
+  type Notification,
+} from '../api/notification';
 import { searchUsers } from '../api/communication';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -22,7 +28,7 @@ export const Navbar: React.FC = () => {
   const [anchorElProfile, setAnchorElProfile] = useState<null | HTMLElement>(null);
 
   // Local state for notifications and messages
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -34,6 +40,22 @@ export const Navbar: React.FC = () => {
       })
       .catch(err => console.error('Failed to load user map in navbar', err));
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    fetchNotifications()
+      .then(setNotifications)
+      .catch(err => console.error('Failed to load notifications', err));
+
+    const controller = streamNotifications((n) => {
+      setNotifications(prev =>
+        prev.some(existing => existing.id === n.id) ? prev : [n, ...prev]
+      );
+    });
+
+    return () => controller.abort();
+  }, [isAuthenticated]);
   
   const { chats, unreadCount } = useChat();
 
@@ -47,11 +69,13 @@ export const Navbar: React.FC = () => {
 
   const handleMarkAllNotificationsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
+    markAllNotificationsRead().catch(err => console.error('Failed to mark all read', err));
   };
 
   const handleNotificationClick = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
     setAnchorElNotifications(null);
+    markNotificationRead(id).catch(err => console.error('Failed to mark read', err));
   };
 
   const handleMessageClick = () => {
