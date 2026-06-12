@@ -64,6 +64,10 @@
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.6</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -99,7 +103,9 @@
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <version>${openapi-generator.version}</version>
                 <executions>
+                    <!-- Server Stub Generation -->
                     <execution>
+                        <id>generate-server</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -116,6 +122,28 @@
                                 <skipDefaultInterface>true</skipDefaultInterface>
                                 <openApiNullable>false</openApiNullable>
                                 <documentationProvider>none</documentationProvider>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Client Generation -->
+                    <execution>
+                        <id>generate-configuration-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../../configuration-service/src/main/resources/openapi/configuration.json
+                            </inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
                             </configOptions>
                         </configuration>
                     </execution>

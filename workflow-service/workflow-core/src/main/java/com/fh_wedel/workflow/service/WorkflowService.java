@@ -1,5 +1,6 @@
 package com.fh_wedel.workflow.service;
 
+import com.fh_wedel.configuration.client.api.DefaultApi;
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
 import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
@@ -9,14 +10,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
 public class WorkflowService {
 
     private final WorkflowPluginRegistry registry;
-    private final Random random = new Random();
+    private final DefaultApi configurationApi;
 
     public List<WorkflowPluginDto> listPlugins() {
         return registry.getAll().stream()
@@ -37,11 +37,13 @@ public class WorkflowService {
     }
 
     public WorkflowRulesDto getRulesForSubmission(String submissionId) {
-        // TODO: Call configuration service via REST to get the workflow type for this submission.
-        // Since the configuration service does not exist yet, we return a random workflow type.
-        String[] workflows = {"open-review", "single-blind", "double-blind"};
-        String randomWorkflow = workflows[random.nextInt(workflows.length)];
-        return getPluginRules(randomWorkflow);
+        try {
+            com.fh_wedel.configuration.client.model.ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+            String workflowName = config.getReviewProcessType();
+            return getPluginRules(workflowName);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to fetch configuration for submission: " + submissionId, e);
+        }
     }
 
     private WorkflowPluginDto toDto(ReviewWorkflowPlugin plugin) {

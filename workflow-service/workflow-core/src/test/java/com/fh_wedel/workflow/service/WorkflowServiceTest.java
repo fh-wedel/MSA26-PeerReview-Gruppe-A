@@ -1,5 +1,7 @@
 package com.fh_wedel.workflow.service;
 
+import com.fh_wedel.configuration.client.api.DefaultApi;
+import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
 import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
@@ -22,6 +24,9 @@ class WorkflowServiceTest {
 
     @Mock
     private WorkflowPluginRegistry registry;
+
+    @Mock
+    private DefaultApi configurationApi;
 
     @InjectMocks
     private WorkflowService service;
@@ -101,15 +106,28 @@ class WorkflowServiceTest {
     }
 
     @Test
-    void getRulesForSubmissionReturnsRandomPluginRules() {
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("mock-plugin");
-        when(registry.getByName(anyString())).thenReturn(Optional.of(mockPlugin));
+    void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
+        ModelConfiguration mockConfig = new ModelConfiguration();
+        mockConfig.setReviewProcessType("DOUBLE_BLIND");
+        when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
+
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("double-blind");
+        when(registry.getByName("double-blind")).thenReturn(Optional.of(mockPlugin));
 
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
         assertNotNull(result);
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
-        verify(registry).getByName(anyString());
+        verify(configurationApi).submissionIdGet("sub-123");
+        verify(registry).getByName("double-blind");
+    }
+
+    @Test
+    void getRulesForSubmissionThrowsWhenConfigurationFails() throws Exception {
+        when(configurationApi.submissionIdGet("sub-123")).thenThrow(new RuntimeException("API down"));
+
+        assertThrows(IllegalStateException.class, () -> service.getRulesForSubmission("sub-123"));
+        verify(configurationApi).submissionIdGet("sub-123");
     }
 }

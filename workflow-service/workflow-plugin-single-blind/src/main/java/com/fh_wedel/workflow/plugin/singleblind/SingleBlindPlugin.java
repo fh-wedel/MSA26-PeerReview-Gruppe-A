@@ -11,7 +11,7 @@ public class SingleBlindPlugin implements ReviewWorkflowPlugin {
 
     @Override
     public String getName() {
-        return "single-blind";
+        return "SINGLE_BLIND";
     }
 
     @Override
