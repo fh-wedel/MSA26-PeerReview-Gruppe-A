@@ -4,6 +4,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
 import { LogsInfra } from '../../../infraLibrary/lib/logs';
@@ -87,7 +88,6 @@ export class ServiceStack extends cdk.Stack {
     // SQS Queues
     // =============================================
     const requestQueues = SqsInfra.createQueue(this, { queueName: 'submission-request-queue' });
-    const responseQueues = SqsInfra.createQueue(this, { queueName: 'submission-response-queue' });
 
     // =============================================
     // ECS Task Definition
@@ -119,7 +119,7 @@ export class ServiceStack extends cdk.Stack {
         'DYNAMODB_TABLE_NAME': dynamoTableName,
         'S3_BUCKET_NAME': submissionsBucket.bucketName,
         'SQS_REQUEST_QUEUE': requestQueues.queue.queueName,
-        'SQS_RESPONSE_QUEUE': responseQueues.queue.queueName,
+        'SQS_WORKFLOW_QUEUE': 'workflow-request-queue',
         'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
@@ -179,7 +179,17 @@ export class ServiceStack extends cdk.Stack {
     submissionsTable.grantReadWriteData(taskDefinition.taskRole);
     submissionsBucket.grantReadWrite(taskDefinition.taskRole);
     SqsInfra.grantReadPermissions(requestQueues, taskDefinition.taskRole);
-    SqsInfra.grantWritePermissions(responseQueues, taskDefinition.taskRole);
+
+    // Grant write to workflow service's queue (owned by workflow-service stack)
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
+        resources: [
+          `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:workflow-request-queue`
+        ]
+      })
+    );
 
     // =============================================
     // Auto Scaling

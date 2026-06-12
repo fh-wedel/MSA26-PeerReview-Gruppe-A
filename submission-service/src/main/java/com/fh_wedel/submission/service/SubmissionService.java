@@ -21,18 +21,18 @@ public class SubmissionService {
     private final S3Service s3Service;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
-    private final String responseQueueName;
+    private final String workflowQueueName;
 
     public SubmissionService(SubmissionRepository repository,
                              S3Service s3Service,
                              SqsTemplate sqsTemplate,
                              ObjectMapper objectMapper,
-                             @Value("${aws.sqs.response.queue-name}") String responseQueueName) {
+                             @Value("${aws.sqs.workflow.queue-name}") String workflowQueueName) {
         this.repository = repository;
         this.s3Service = s3Service;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
-        this.responseQueueName = responseQueueName;
+        this.workflowQueueName = workflowQueueName;
     }
 
     public Submission createSubmission(String configurationId, String authorId, String title) {
@@ -139,8 +139,8 @@ public class SubmissionService {
     }
 
     private void sendSubmissionReadyEvent(Submission submission) {
-        if (responseQueueName == null || responseQueueName.isBlank()) {
-            log.warn("No response queue name defined. Skipping sending event for submission {}", submission.getSubmissionId());
+        if (workflowQueueName == null || workflowQueueName.isBlank()) {
+            log.warn("No workflow queue name defined. Skipping sending event for submission {}", submission.getSubmissionId());
             return;
         }
 
@@ -152,8 +152,8 @@ public class SubmissionService {
 
         try {
             String messageBody = objectMapper.writeValueAsString(event);
-            sqsTemplate.send(responseQueueName, messageBody);
-            log.info("Sent SubmissionReadyEvent to queue '{}' for submission {}", responseQueueName, submission.getSubmissionId());
+            sqsTemplate.send(workflowQueueName, messageBody);
+            log.info("Sent SubmissionReadyEvent to queue '{}' for submission {}", workflowQueueName, submission.getSubmissionId());
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize SubmissionReadyEvent for submission {}", submission.getSubmissionId(), e);
         }
