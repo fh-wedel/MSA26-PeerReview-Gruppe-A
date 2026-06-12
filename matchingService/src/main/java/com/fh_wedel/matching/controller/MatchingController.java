@@ -70,7 +70,7 @@ public class MatchingController {
      * No Cognito lookup is required because both sides already use the UUID.
      */
     @GetMapping("/matches/submissions/{submissionId}")
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Author')")
+    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Author', 'Reviewer')")
     public ResponseEntity<SubmissionMatchResponse> getMatchesBySubmission(
             @PathVariable String submissionId,
             Authentication authentication) {
@@ -83,14 +83,16 @@ public class MatchingController {
         }
 
         String submitterSub = status.getSubmitterId();
+        List<MatchRecord> matches = matchingService.getMatchesBySubmission(submissionId);
 
-        if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, submitterSub)) {
-            log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter sub '{}' for submission {}",
+        boolean isExaminer = matches.stream()
+                .anyMatch(m -> m.getExaminerId().equals(extractSubFromDetails(authentication)));
+
+        if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, submitterSub) && !isExaminer) {
+            log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter sub '{}' and is not an examiner for submission {}",
                     authentication.getName(), authentication.getDetails(), submitterSub, submissionId);
             return ResponseEntity.notFound().build();
         }
-
-        List<MatchRecord> matches = matchingService.getMatchesBySubmission(submissionId);
 
         boolean hideExaminer = false;
         if (!isAdminOrOfficer(authentication)) {

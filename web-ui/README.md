@@ -1,4 +1,22 @@
-# React + TypeScript + Vite
+# PeerReview Web UI (React + TypeScript + Vite)
+
+This is the frontend interface for the PeerReview system. 
+
+## Architectural Concepts
+
+### Chat & Server-Sent Events (SSE)
+The Web UI integrates with the `communicationService` to provide real-time messaging using Server-Sent Events. 
+
+**Important Constraints:**
+- The AWS API Gateway enforces a hard **29-second connection timeout** for REST APIs.
+- Because of this, the native `EventSource` browser API is insufficient.
+- We utilize the `@microsoft/fetch-event-source` library which transparently handles custom headers (e.g., passing the Cognito `Authorization` header to the Lambda Authorizer) and silently auto-reconnects when the connection is forcibly dropped by AWS.
+
+The chat state is globally managed via the `ChatContext`, which automatically listens to incoming SSE payloads and updates the UI instantly. The `ChatWidget` is designed to be reusable so it can be rendered either on the dedicated `/chats` page or as a floating contextual sidebar inside the `/submissions/:id` view.
+
+---
+
+## Default Template Information
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

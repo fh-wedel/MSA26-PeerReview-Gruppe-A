@@ -57,6 +57,12 @@
             "description": "Allow Reviewer to view their own assigned submissions"
         },
         {
+            "id": "ReviewerViewMatchesBySubmission",
+            "groupName": "Reviewer",
+            "actionId": "get /api/matching/matches/submissions/{submissionId}",
+            "description": "Allow Reviewer to view matches for submissions they are assigned to"
+        },
+        {
             "id": "AuthorViewOwnSubmissionMatches",
             "groupName": "Author",
             "actionId": "get /api/matching/matches/submissions/{submissionId}",

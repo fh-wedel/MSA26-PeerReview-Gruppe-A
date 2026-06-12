@@ -33,6 +33,9 @@ jobs:
       matching_service_code: ${{ steps.filter.outputs.matching_service_code }}
       matching_service_infra: ${{ steps.filter.outputs.matching_service_infra }}
       matching_service_any: ${{ steps.filter.outputs.matching_service_any }}
+      communication_service_code: ${{ steps.filter.outputs.communication_service_code }}
+      communication_service_infra: ${{ steps.filter.outputs.communication_service_infra }}
+      communication_service_any: ${{ steps.filter.outputs.communication_service_any }}
       configuration_service_code: ${{ steps.filter.outputs.configuration_service_code }}
       configuration_service_infra: ${{ steps.filter.outputs.configuration_service_infra }}
       configuration_service_any: ${{ steps.filter.outputs.configuration_service_any }}
@@ -89,6 +92,14 @@ jobs:
             matching_service_any:
               - 'matchingService/**'
               - 'infraLibrary/**'
+            communication_service_code:
+              - 'communicationService/src/**'
+              - 'communicationService/pom.xml'
+              - 'communicationService/Dockerfile'
+            communication_service_infra:
+              - 'communicationService/infra/**'
+            communication_service_any:
+              - 'communicationService/**'
             configuration_service_code:
               - 'configuration-service/src/**'
               - 'configuration-service/pom.xml'
@@ -270,6 +281,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  communication-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() && 
+      (needs.changes.outputs.communication_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: communication
+      service_path: communicationService
+      infra_path: communicationService/infra
+      docker_context: communicationService
+      ecr_repository: fh-wedel/communication
+      run_maven: ${{ needs.changes.outputs.communication_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.communication_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.communication_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   configuration-service:
     needs: [changes, infra-library-tests]
     if: |
@@ -297,7 +328,7 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service, workflow-service, matching-service, configuration-service]
+    needs: [changes, web-ui, template-service, workflow-service, matching-service, communication-service, configuration-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
@@ -306,6 +337,7 @@ jobs:
       (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') &&
       (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped') &&
       (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') &&
+      (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') &&
       (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
