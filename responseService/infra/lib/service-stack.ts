@@ -4,6 +4,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
 import { SqsInfra } from '../../../infraLibrary/lib/sqs';
@@ -76,6 +77,7 @@ export class ResponseServiceStack extends cdk.Stack {
       portMappings: [{ containerPort, protocol: ecs.Protocol.TCP }],
       environment: {
         'SQS_REQUEST_QUEUE': props.requestQueueName,
+        'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'S3_BUCKET_NAME': props.s3BucketName,
@@ -136,5 +138,15 @@ export class ResponseServiceStack extends cdk.Stack {
 
     // Grant S3 read access
     documentBucket.grantRead(ecsService.taskDefinition.taskRole);
+
+    // Grant SQS SendMessage permissions to the notification request queue
+    ecsService.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
+        resources: [
+          `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:notification-request-queue`,
+        ],
+      }),
+    );
   }
 }
