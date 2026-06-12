@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
 import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description, DoneAll } from '@mui/icons-material';
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useChat } from '../contexts/ChatContext';
 import { mockNotifications } from '../stubs/notifications';
-import { mockMessages } from '../stubs/messages';
-import { mockChatThreads } from '../stubs/chats';
+import { searchUsers } from '../api/communication';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
@@ -23,15 +23,23 @@ export const Navbar: React.FC = () => {
 
   // Local state for notifications and messages
   const [notifications, setNotifications] = useState(mockNotifications);
-  const [messages, setMessages] = useState(mockMessages);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    searchUsers('')
+      .then(users => {
+        const map: Record<string, string> = {};
+        users.forEach(u => map[u.id] = u.username);
+        setUserMap(map);
+      })
+      .catch(err => console.error('Failed to load user map in navbar', err));
+  }, []);
+  
+  const { chats, unreadCount } = useChat();
 
   const unreadNotifications = notifications.filter((n) => !n.read).length;
-  const unreadMessages = messages.filter((m) => m.unread).length;
 
-  const displayMessages = [...messages]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 5);
+  const displayMessages = [...chats].slice(0, 5);
 
   const displayNotifications = [...notifications]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -41,31 +49,19 @@ export const Navbar: React.FC = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  const handleMarkAllMessagesRead = () => {
-    setMessages(messages.map(m => ({ ...m, unread: false })));
-  };
-
   const handleNotificationClick = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
     setAnchorElNotifications(null);
   };
 
-  const handleMessageClick = (msg: typeof messages[0]) => {
-    setMessages(messages.map(m => m.id === msg.id ? { ...m, unread: false } : m));
+  const handleMessageClick = () => {
     setAnchorElMessages(null);
-    if (msg.threadId) {
-      const thread = mockChatThreads.find(t => t.id === msg.threadId);
-      if (thread && thread.submissionId) {
-        const basePath = hasAdminOrExamOfficerRole ? '/submissions' : '/assignments';
-        navigate(`${basePath}/${thread.submissionId}?chat=true`);
-      }
-    }
+    navigate('/chats');
   };
 
 
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
-  const hasAdminOrExamOfficerRole = userRoles.includes('admin') || userRoles.includes('examinationofficer');
   const hasSubmissionsAccess = userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('author');
   const hasAdminOrReviewerRole = userRoles.includes('admin') || userRoles.includes('reviewer');
 
@@ -141,7 +137,7 @@ export const Navbar: React.FC = () => {
           {isAuthenticated ? (
             <>
               <IconButton color="inherit" onClick={(e) => setAnchorElMessages(e.currentTarget)}>
-                <Badge badgeContent={unreadMessages} color="secondary">
+                <Badge badgeContent={unreadCount} color="secondary">
                   <Mail />
                 </Badge>
               </IconButton>
@@ -153,15 +149,6 @@ export const Navbar: React.FC = () => {
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Messages</Typography>
-                  <Button 
-                    size="small" 
-                    onClick={handleMarkAllMessagesRead} 
-                    disabled={unreadMessages === 0}
-                    startIcon={<DoneAll fontSize="small" />}
-                    sx={{ color: mode === 'dark' ? 'primary.light' : 'primary.main', fontWeight: 'bold' }}
-                  >
-                    Mark all read
-                  </Button>
                 </Box>
                 <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
                   {displayMessages.length === 0 ? (
@@ -170,26 +157,24 @@ export const Navbar: React.FC = () => {
                     </ListItem>
                   ) : (
                     displayMessages.map((msg, index) => (
-                      <React.Fragment key={msg.id}>
+                      <React.Fragment key={msg.chatId}>
                         <ListItem disablePadding>
-                          <ListItemButton alignItems="flex-start" onClick={() => handleMessageClick(msg)} sx={{ bgcolor: msg.unread ? 'action.hover' : 'transparent' }}>
+                          <ListItemButton alignItems="flex-start" onClick={handleMessageClick} sx={{ bgcolor: 'transparent' }}>
                             <ListItemAvatar>
-                              <Badge color="secondary" variant="dot" invisible={!msg.unread}>
-                                <Avatar><AccountCircle /></Avatar>
-                              </Badge>
+                              <Avatar><AccountCircle /></Avatar>
                             </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Typography variant="subtitle2" sx={{ fontWeight: msg.unread ? 'bold' : 'normal' }}>{msg.sender}</Typography>
-                                  <Typography variant="caption" color={msg.unread ? 'text.primary' : 'text.secondary'} sx={{ fontWeight: msg.unread ? 'bold' : 'normal' }}>
-                                    {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="subtitle2">{userMap[msg.otherParticipantId] || msg.otherParticipantId}</Typography>
+                                    <Typography variant="caption" color={'text.secondary'}>
+                                    {msg.lastMessageAt ? formatDistanceToNow(new Date(msg.lastMessageAt), { addSuffix: true }) : ''}
                                   </Typography>
                                 </Box>
                               }
                               secondary={
-                                <Typography variant="body2" color={msg.unread ? 'text.primary' : 'text.secondary'} noWrap sx={{ fontWeight: msg.unread ? 500 : 400 }}>
-                                  {msg.preview}
+                                <Typography variant="body2" color={'text.secondary'} noWrap>
+                                  {msg.chatType === 'SUBMISSION' ? 'Submission Chat' : 'General Chat'}
                                 </Typography>
                               }
                             />
@@ -200,6 +185,11 @@ export const Navbar: React.FC = () => {
                     ))
                   )}
                 </List>
+                <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
+                  <Button fullWidth onClick={handleMessageClick} sx={{ textTransform: 'none', fontWeight: 'bold' }}>
+                    View All Messages
+                  </Button>
+                </Box>
               </Menu>
 
               <IconButton color="inherit" onClick={(e) => setAnchorElNotifications(e.currentTarget)}>

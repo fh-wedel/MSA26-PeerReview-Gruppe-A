@@ -12,6 +12,10 @@ export class ImportedRessources {
         return cdk.Fn.importValue('Baseline:AvailabilityZone');
     }
 
+    public static getCognitoUserPoolId(stack: cdk.Stack): string {
+        return cdk.Fn.importValue('PeerReviewUserPool-UserPoolId');
+    }
+
     public static getPublicIPV4SubnetId(): string {
         return cdk.Fn.importValue('Baseline:PublicIPV4SubnetId');
     }

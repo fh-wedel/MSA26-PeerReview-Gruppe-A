@@ -1,0 +1,35 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        { "id": "AdminListUsers", "groupName": "Admin", "actionId": "get /api/communication/users", "description": "Allow Admin" },
+        { "id": "AdminListChats", "groupName": "Admin", "actionId": "get /api/communication/chats", "description": "Allow Admin" },
+        { "id": "AdminGetChat", "groupName": "Admin", "actionId": "get /api/communication/chats/{chatId}", "description": "Allow Admin" },
+        { "id": "AdminGetStream", "groupName": "Admin", "actionId": "get /api/communication/chats/stream", "description": "Allow Admin" },
+        { "id": "AdminSendMessage", "groupName": "Admin", "actionId": "post /api/communication/chats/messages", "description": "Allow Admin" },
+
+        { "id": "AuthorListUsers", "groupName": "Author", "actionId": "get /api/communication/users", "description": "Allow Author" },
+        { "id": "AuthorListChats", "groupName": "Author", "actionId": "get /api/communication/chats", "description": "Allow Author" },
+        { "id": "AuthorGetChat", "groupName": "Author", "actionId": "get /api/communication/chats/{chatId}", "description": "Allow Author" },
+        { "id": "AuthorGetStream", "groupName": "Author", "actionId": "get /api/communication/chats/stream", "description": "Allow Author" },
+        { "id": "AuthorSendMessage", "groupName": "Author", "actionId": "post /api/communication/chats/messages", "description": "Allow Author" },
+
+        { "id": "ReviewerListUsers", "groupName": "Reviewer", "actionId": "get /api/communication/users", "description": "Allow Reviewer" },
+        { "id": "ReviewerListChats", "groupName": "Reviewer", "actionId": "get /api/communication/chats", "description": "Allow Reviewer" },
+        { "id": "ReviewerGetChat", "groupName": "Reviewer", "actionId": "get /api/communication/chats/{chatId}", "description": "Allow Reviewer" },
+        { "id": "ReviewerGetStream", "groupName": "Reviewer", "actionId": "get /api/communication/chats/stream", "description": "Allow Reviewer" },
+        { "id": "ReviewerSendMessage", "groupName": "Reviewer", "actionId": "post /api/communication/chats/messages", "description": "Allow Reviewer" },
+
+        { "id": "ExamOfficerListUsers", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/users", "description": "Allow ExamOfficer" },
+        { "id": "ExamOfficerListChats", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/chats", "description": "Allow ExamOfficer" },
+        { "id": "ExamOfficerGetChat", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/chats/{chatId}", "description": "Allow ExamOfficer" },
+        { "id": "ExamOfficerGetStream", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/chats/stream", "description": "Allow ExamOfficer" },
+        { "id": "ExamOfficerSendMessage", "groupName": "ExaminationOfficer", "actionId": "post /api/communication/chats/messages", "description": "Allow ExamOfficer" }
+    ]
+}

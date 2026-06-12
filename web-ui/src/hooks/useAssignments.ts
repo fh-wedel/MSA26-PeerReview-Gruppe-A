@@ -14,7 +14,10 @@ export const useAssignments = () => {
 
   useEffect(() => {
     const fetchAssignments = async () => {
-      if (!user?.username) {
+      const roles = (user?.roles || []).map(r => r.toLowerCase());
+      const isReviewer = roles.includes('reviewer') || roles.includes('admin');
+
+      if (!user?.username || !isReviewer) {
         setLoading(false);
         return;
       }

@@ -215,7 +215,7 @@ export class CloudFrontStack extends cdk.Stack {
             
             const serviceCachePolicy = service.enableCaching ? shortCachePolicy : cachePolicy;
 
-            additionalBehaviors[service.pathPattern] = {
+            const behaviorOptions: cloudfront.BehaviorOptions = {
                 origin: svcOrigin,
                 cachePolicy: serviceCachePolicy,
                 originRequestPolicy,
@@ -229,6 +229,14 @@ export class CloudFrontStack extends cdk.Stack {
                     eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
                 }],
             };
+
+            additionalBehaviors[service.pathPattern] = behaviorOptions;
+
+            // Automatically register the root path (without trailing slash) if the pattern ends with /*
+            if (service.pathPattern.endsWith('/*')) {
+                const rootPath = service.pathPattern.slice(0, -2);
+                additionalBehaviors[rootPath] = behaviorOptions;
+            }
         }
 
         // ── CloudFront Distribution ───────────────────────────────────────────────
