@@ -84,8 +84,8 @@ export class ResponseServiceStack extends cdk.Stack {
         'DB_NAME': 'response',
       },
       secrets: {
-        'DB_USERNAME': ecs.Secret.fromSecretsManager(dbCredentials.secret!, 'username'),
-        'DB_PASSWORD': ecs.Secret.fromSecretsManager(dbCredentials.secret!, 'password'),
+        'DB_USERNAME': ecs.Secret.fromSecretsManager(dbInstance.secret!, 'username'),
+        'DB_PASSWORD': ecs.Secret.fromSecretsManager(dbInstance.secret!, 'password'),
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
