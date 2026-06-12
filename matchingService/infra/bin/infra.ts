@@ -57,7 +57,7 @@ const serviceStack = new ServiceStack(app, 'MatchingServiceStack', {
     enablePublicIpV4: false,
     containerPort: containerPort,
     requestQueueName: 'matching-request-queue',
-    // requestQueueNameNextService: 'TODO Once we have a next service, we can add the queue name here',
+    requestQueueNameNextService: 'submission-request-queue',
     minTaskCount: 1,
     maxTaskCount: 2,
     memory: 512,
