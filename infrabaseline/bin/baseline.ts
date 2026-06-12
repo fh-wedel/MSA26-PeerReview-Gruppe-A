@@ -20,7 +20,7 @@ const env = {
 
 const networkStack = new NetworkStack(app, 'BaselineNetworkStack', { env });
 
-const ecrRepositoryNames = ['template', 'web-ui', 'workflow', 'matching', 'configuration'];
+const ecrRepositoryNames = ['template', 'web-ui', 'workflow', 'matching', 'configuration', 'notification', 'response'];
 const ecrRepositoryStack = new ECRRepositoryStack(app, 'BaselineECRRepositoryStack', {
   env,
   ecrRepositoryNames: ecrRepositoryNames,
