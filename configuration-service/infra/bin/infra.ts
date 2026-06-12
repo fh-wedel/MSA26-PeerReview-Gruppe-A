@@ -8,7 +8,6 @@ import {
   AuthStack,
 } from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
 
-
 const app = new cdk.App();
 
 const env = {
@@ -24,22 +23,22 @@ if (!serviceNameContext) {
   throw new Error('Service name context is required. Please provide it using -c serviceName=your-service-name');
 }
 
-const containerPort = 8081
+const containerPort = 8080
 
-const policyFilePath = path.resolve(__dirname, '..', 'verified-permissions', 'template-policies.json');
-const authStack = new AuthStack(app, 'TemplateAuthStack', {
+const policyFilePath = path.resolve(__dirname, '..', 'verified-permissions', 'configuration-policies.json');
+const authStack = new AuthStack(app, 'ConfigurationAuthStack', {
   env,
   policyFilePath: policyFilePath,
   serviceName: serviceNameContext,
 });
 
-const apiStack = new ApiStack(app, 'TemplateApiStack', {
+const apiStack = new ApiStack(app, 'ConfigurationApiStack', {
   env,
-  apiName: 'TemplateServiceAPI',
-  description: 'API Gateway for Template service',
+  apiName: 'ConfigurationServiceAPI',
+  description: 'API Gateway for Configuration service',
   targetServiceName: serviceNameContext,
   targetPort: containerPort,
-  openApiSpecPath: '../src/main/resources/openapi/template.json',
+  openApiSpecPath: '../src/main/resources/openapi/configuration.json',
   authorizerConfig: {
     policyStoreId: authStack.policyStore.policyStore.policyStoreId,
     namespace: authStack.policyConfig.namespace,
@@ -49,17 +48,15 @@ const apiStack = new ApiStack(app, 'TemplateApiStack', {
 
 apiStack.addDependency(authStack);
 
-const serviceStack = new ServiceStack(app, 'TemplateServiceStack', {
+const serviceStack = new ServiceStack(app, 'ConfigurationServiceStack', {
   env,
   serviceName: serviceNameContext,
   imageVersion: imageTag,
-  description: ' This stack is an example service for a microservice architecture.',
+  description: 'The stack for the Configuration service in the PeerReview system.',
   enablePublicIpV4: false,
   containerPort: containerPort,
-  requestQueueName: 'template-request-queue',
-  responseQueueName: 'template-response-queue',
-  minTaskCount: 0,
-  maxTaskCount: 0,
+  minTaskCount: 1,
+  maxTaskCount: 2,
   memory: 512,
   cpu: 256,
 });

@@ -36,6 +36,9 @@ jobs:
       communication_service_code: ${{ steps.filter.outputs.communication_service_code }}
       communication_service_infra: ${{ steps.filter.outputs.communication_service_infra }}
       communication_service_any: ${{ steps.filter.outputs.communication_service_any }}
+      configuration_service_code: ${{ steps.filter.outputs.configuration_service_code }}
+      configuration_service_infra: ${{ steps.filter.outputs.configuration_service_infra }}
+      configuration_service_any: ${{ steps.filter.outputs.configuration_service_any }}
       cloudfront: ${{ steps.filter.outputs.cloudfront }}
     steps:
       - uses: actions/checkout@v6
@@ -97,6 +100,14 @@ jobs:
               - 'communicationService/infra/**'
             communication_service_any:
               - 'communicationService/**'
+            configuration_service_code:
+              - 'configuration-service/src/**'
+              - 'configuration-service/pom.xml'
+              - 'configuration-service/Dockerfile'
+            configuration_service_infra:
+              - 'configuration-service/infra/**'
+            configuration_service_any:
+              - 'configuration-service/**'
               - 'infraLibrary/**'
             cloudfront:
               - 'cloudfront/**'
@@ -290,6 +301,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  configuration-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() && 
+      (needs.changes.outputs.configuration_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: configuration
+      service_path: configuration-service
+      infra_path: configuration-service/infra
+      docker_context: configuration-service
+      ecr_repository: fh-wedel/configuration
+      run_maven: ${{ needs.changes.outputs.configuration_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.configuration_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.configuration_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   # ── CloudFront distribution ─────────────────────────────────────────────────
   # Pure CDK deploy — no Docker image, no Maven. Runs after web-ui because it
   # imports the Web UI API Gateway domain name from CloudFormation exports.
@@ -297,7 +328,7 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service, workflow-service, matching-service, communication-service]
+    needs: [changes, web-ui, template-service, workflow-service, matching-service, communication-service, configuration-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
@@ -306,7 +337,8 @@ jobs:
       (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') &&
       (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped') &&
       (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') &&
-      (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped')
+      (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') &&
+      (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}

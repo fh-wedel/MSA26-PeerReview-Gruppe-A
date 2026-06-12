@@ -1,14 +1,13 @@
-package com.fh_wedel.communication.config;
+package com.fh_wedel.configuration.config;
 
+import com.fh_wedel.configuration.security.AuthHeaderFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import com.fh_wedel.communication.security.AuthHeaderFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -25,15 +24,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Health check endpoints are public
-                .requestMatchers("/actuator/**").permitAll()
-                // All other endpoints require authentication (populated by AuthHeaderFilter)
-                .anyRequest().authenticated().anyRequest().permitAll()
-            )
-            .addFilterBefore(authHeaderFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/**", "/api/configuration/status", "/api/configuration/time").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(authHeaderFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
