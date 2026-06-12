@@ -108,6 +108,14 @@ schreibt wie gehabt einen Audit-`NotificationLog` (bewusste, harmlose Doppelspei
 (1:1 aus Communication Service übernehmen) zum `sub` normalisieren. Fehlt der Header → 401. Kein
 volles Spring Security nötig.
 
+**Routing & Authorisierung (beim Planen entdeckt):** Das API Gateway wird strikt aus
+`notification.json` gebaut (`enableGreedyProxy=false`) — die vier neuen Pfade müssen daher in die
+OpenAPI-Spec eingetragen werden, sonst routet das Gateway sie nicht (403). Zusätzlich macht der
+AVP/Cedar-Authorizer exact-match auf `actionId = "${method} ${event.resource}"`; jeder Endpoint
+braucht passende Policies in `notification-policies.json` (z. B. `get /api/notification/me`,
+`patch /api/notification/{id}/read`) für die relevanten Gruppen (Admin, Author, Reviewer,
+ExaminationOfficer) — siehe AGENTS.md zu Cedar-Exact-Matching.
+
 ### 4. Producer-Trigger (Quellen der Notifications)
 
 Gemeinsamer JSON-Vertrag (= bestehende
