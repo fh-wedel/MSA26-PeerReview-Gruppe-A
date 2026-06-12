@@ -29,10 +29,15 @@ public class ChatController implements ChatsApi {
 
     private String getUserId() {
         String raw = request.getHeader("x-auth-principal-id");
-        if (raw == null || raw.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing x-auth-principal-id header");
+        if (raw == null) return null;
+        int firstQuote = raw.indexOf('"');
+        int lastQuote = raw.lastIndexOf('"');
+        String inner = (firstQuote >= 0 && lastQuote > firstQuote) ? raw.substring(firstQuote + 1, lastQuote) : raw;
+        int pipeIndex = inner.lastIndexOf('|');
+        if (pipeIndex >= 0 && pipeIndex < inner.length() - 1) {
+            return inner.substring(pipeIndex + 1);
         }
-        return PrincipalNormalizer.normalize(raw);
+        return inner;
     }
 
     @Override

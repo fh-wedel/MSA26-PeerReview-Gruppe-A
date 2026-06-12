@@ -24,13 +24,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import com.fh_wedel.communication.security.PrincipalNormalizer;
 import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -47,11 +45,31 @@ public class ChatService {
         this.matchingServiceClient = matchingServiceClient;
         this.workflowServiceClient = workflowServiceClient;
     }
-
-
+    /**
+     * Strips Cedar entity type prefix and Cognito pool prefix from a raw principal ID.
+     * Handles formats:
+     *   - Bare sub UUID:             "abc-123"
+     *   - Pool|sub:                  "eu-central-1_abc|abc-123"
+     *   - Cedar entity string:       PeerReview::User::"eu-central-1_abc|abc-123"
+     */
+    static String normalizeUserId(String raw) {
+        if (raw == null) return null;
+        // Strip Cedar quotes: PeerReview::User::"pool|sub" → pool|sub
+        int firstQuote = raw.indexOf('"');
+        int lastQuote = raw.lastIndexOf('"');
+        String inner = (firstQuote >= 0 && lastQuote > firstQuote)
+                ? raw.substring(firstQuote + 1, lastQuote)
+                : raw;
+        // Strip pool prefix: pool|sub → sub
+        int pipeIndex = inner.lastIndexOf('|');
+        if (pipeIndex >= 0 && pipeIndex < inner.length() - 1) {
+            return inner.substring(pipeIndex + 1);
+        }
+        return inner;
+    }
 
     public SseEmitter subscribe(String rawUserId) {
-        String userId = PrincipalNormalizer.normalize(rawUserId);
+        String userId = normalizeUserId(rawUserId);
         if (userId == null || userId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing user ID");
         }
@@ -184,15 +202,8 @@ public class ChatService {
     }
 
     public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request, String authHeader) {
-        String senderId = PrincipalNormalizer.normalize(rawSenderId);
-        String recipientId = PrincipalNormalizer.normalize(request.getRecipientId());
-        
-        if (senderId == null || senderId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing sender ID");
-        }
-        if (recipientId == null || recipientId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or missing recipient ID");
-        }
+        String senderId = normalizeUserId(rawSenderId);
+        String recipientId = normalizeUserId(request.getRecipientId());
         
         log.info("sendMessage: rawSender='{}' normalizedSender='{}' rawRecipient='{}' normalizedRecipient='{}'",
                 rawSenderId, senderId, request.getRecipientId(), recipientId);
