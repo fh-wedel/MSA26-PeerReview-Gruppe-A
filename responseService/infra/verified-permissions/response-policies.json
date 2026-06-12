@@ -1,0 +1,48 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AuthorGetResults",
+            "groupName": "Author",
+            "actionId": "get /api/response/results",
+            "description": "Allow Author to view their review results"
+        },
+        {
+            "id": "AuthorGetResultBySubmission",
+            "groupName": "Author",
+            "actionId": "get /api/response/results/{submissionId}",
+            "description": "Allow Author to view a specific result"
+        },
+        {
+            "id": "AuthorGetDocument",
+            "groupName": "Author",
+            "actionId": "get /api/response/results/{submissionId}/document",
+            "description": "Allow Author to download review document"
+        },
+        {
+            "id": "AdminGetResults",
+            "groupName": "Admin",
+            "actionId": "get /api/response/results",
+            "description": "Allow Admin to view all results"
+        },
+        {
+            "id": "AdminGetResultBySubmission",
+            "groupName": "Admin",
+            "actionId": "get /api/response/results/{submissionId}",
+            "description": "Allow Admin to view a specific result"
+        },
+        {
+            "id": "AdminGetDocument",
+            "groupName": "Admin",
+            "actionId": "get /api/response/results/{submissionId}/document",
+            "description": "Allow Admin to download review document"
+        }
+    ]
+}

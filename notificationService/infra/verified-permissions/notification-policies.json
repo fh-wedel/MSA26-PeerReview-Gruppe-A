@@ -1,0 +1,24 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminNotificationSend",
+            "groupName": "Admin",
+            "actionId": "post /api/notification/send",
+            "description": "Allow Admin to send notifications"
+        },
+        {
+            "id": "AuthorNotificationSend",
+            "groupName": "Author",
+            "actionId": "post /api/notification/send",
+            "description": "Allow Author to send notifications"
+        }
+    ]
+}
