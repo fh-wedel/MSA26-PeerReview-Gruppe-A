@@ -1,0 +1,110 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Response API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/response",
+      "description": "Basepath for the Response API"
+    }
+  ],
+  "paths": {
+    "/results": {
+      "get": {
+        "summary": "Get all review results for an author",
+        "parameters": [
+          {
+            "name": "authorId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of review results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ReviewResult" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/results/{submissionId}": {
+      "get": {
+        "summary": "Get result for a specific submission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/results/{submissionId}/document": {
+      "get": {
+        "summary": "Get pre-signed download URL for the review document",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "downloadUrl": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReviewResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "submissionId": { "type": "string" },
+          "reviewerId": { "type": "string" },
+          "authorId": { "type": "string" },
+          "finalGrade": { "type": "string" },
+          "reviewComments": { "type": "string" },
+          "hasDocument": { "type": "boolean" },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
