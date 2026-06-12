@@ -49,7 +49,7 @@ class MatchingServiceTest {
 
     @BeforeEach
     void setUp() {
-        matchingService = new MatchingService(cognitoService, matchRepository, sqsTemplate, objectMapper, "test-response-queue");
+        matchingService = new MatchingService(cognitoService, matchRepository, sqsTemplate, objectMapper, "test-response-queue", "notification-request-queue");
     }
 
     @Test
@@ -99,8 +99,8 @@ class MatchingServiceTest {
         assertThat(statusCaptor.getValue().getStatus()).isEqualTo(MatchStatus.FAILED.name());
         assertThat(statusCaptor.getValue().getReason()).contains("Not enough eligible reviewers");
 
-        // No SQS event should be sent
-        verify(sqsTemplate, never()).send(anyString(), anyString());
+        // No SQS response event should be sent to the response queue
+        verify(sqsTemplate, never()).send(eq("test-response-queue"), anyString());
     }
 
     @Test
@@ -158,6 +158,49 @@ class MatchingServiceTest {
         assertThat(selected).hasSize(3);
         // All selected must be from the pool
         selected.forEach(user -> assertThat(pool).contains(user));
+    }
+
+    @Test
+    @DisplayName("Should send in-app notifications to assigned reviewers on success")
+    void sendsInAppNotificationsToAssignedReviewers() throws Exception {
+        // Arrange: enough reviewers for a successful match
+        MatchingRequestEvent event = createEvent("sub-1", "submitter-1", 2);
+
+        List<UserType> reviewers = List.of(
+                createUser("reviewer-a"),
+                createUser("reviewer-b"),
+                createUser("reviewer-c")
+        );
+        when(cognitoService.listReviewers()).thenReturn(reviewers);
+
+        // Act
+        matchingService.processMatchingRequest(event);
+
+        // Assert: one notification per assigned reviewer to the notification queue
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(sqsTemplate, atLeastOnce()).send(eq("notification-request-queue"), body.capture());
+        assertThat(body.getAllValues()).anyMatch(b -> b.contains("Review Assigned") && b.contains("IN_APP"));
+    }
+
+    @Test
+    @DisplayName("Should send in-app notification to author on matching failure")
+    void sendsInAppNotificationOnMatchingFailure() throws Exception {
+        // Arrange: too few eligible reviewers → FAILED branch
+        MatchingRequestEvent event = createEvent("sub-2", "submitter-2", 5);
+
+        List<UserType> reviewers = List.of(
+                createUser("reviewer-a"),
+                createUser("reviewer-b")
+        );
+        when(cognitoService.listReviewers()).thenReturn(reviewers);
+
+        // Act
+        matchingService.processMatchingRequest(event);
+
+        // Assert: exactly one send to the notification queue with "Matching Failed"
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(sqsTemplate, atLeastOnce()).send(eq("notification-request-queue"), body.capture());
+        assertThat(body.getAllValues()).anyMatch(b -> b.contains("Matching Failed") && b.contains("IN_APP") && b.contains("submitter-2"));
     }
 
     // ========================
