@@ -5,14 +5,11 @@ import com.fh_wedel.communication.model.api.ChatDetailResponse;
 import com.fh_wedel.communication.model.api.ChatListResponse;
 import com.fh_wedel.communication.model.api.SendMessageRequest;
 import com.fh_wedel.communication.service.ChatService;
-import com.fh_wedel.communication.security.PrincipalNormalizer;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
