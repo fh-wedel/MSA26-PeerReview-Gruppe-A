@@ -39,6 +39,9 @@ jobs:
       configuration_service_code: ${{ steps.filter.outputs.configuration_service_code }}
       configuration_service_infra: ${{ steps.filter.outputs.configuration_service_infra }}
       configuration_service_any: ${{ steps.filter.outputs.configuration_service_any }}
+      submission_service_code: ${{ steps.filter.outputs.submission_service_code }}
+      submission_service_infra: ${{ steps.filter.outputs.submission_service_infra }}
+      submission_service_any: ${{ steps.filter.outputs.submission_service_any }}
       cloudfront: ${{ steps.filter.outputs.cloudfront }}
     steps:
       - uses: actions/checkout@v6
@@ -108,6 +111,15 @@ jobs:
               - 'configuration-service/infra/**'
             configuration_service_any:
               - 'configuration-service/**'
+              - 'infraLibrary/**'
+            submission_service_code:
+              - 'submission-service/src/**'
+              - 'submission-service/pom.xml'
+              - 'submission-service/Dockerfile'
+            submission_service_infra:
+              - 'submission-service/infra/**'
+            submission_service_any:
+              - 'submission-service/**'
               - 'infraLibrary/**'
             cloudfront:
               - 'cloudfront/**'
@@ -321,6 +333,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  submission-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() &&
+      (needs.changes.outputs.submission_service_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: submission
+      service_path: submission-service
+      infra_path: submission-service/infra
+      docker_context: submission-service
+      ecr_repository: fh-wedel/submission
+      run_maven: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.submission_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   # ── CloudFront distribution ─────────────────────────────────────────────────
   # Pure CDK deploy — no Docker image, no Maven. Runs after web-ui because it
   # imports the Web UI API Gateway domain name from CloudFormation exports.
@@ -328,7 +360,7 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service, workflow-service, matching-service, communication-service, configuration-service]
+    needs: [changes, web-ui, template-service, workflow-service, matching-service, communication-service, configuration-service, submission-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
@@ -338,7 +370,8 @@ jobs:
       (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped') &&
       (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') &&
       (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') &&
-      (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped')
+      (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped') &&
+      (needs['submission-service'].result == 'success' || needs['submission-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}

@@ -1,0 +1,84 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminStatusAccess",
+            "groupName": "Admin",
+            "actionId": "get /api/submission/status",
+            "description": "Allow Admin to access submission status"
+        },
+        {
+            "id": "GuestTimeAccess",
+            "groupName": "Guest",
+            "actionId": "get /api/submission/time",
+            "description": "Allow Guest to access submission time"
+        },
+        {
+            "id": "ReviewerCreateConfig",
+            "groupName": "Reviewer",
+            "actionId": "post /api/submission/configurations",
+            "description": "Allow Reviewer to create submission configurations"
+        },
+        {
+            "id": "ExamOfficeCreateConfig",
+            "groupName": "ExamOffice",
+            "actionId": "post /api/submission/configurations",
+            "description": "Allow ExamOffice to create submission configurations"
+        },
+        {
+            "id": "AuthorCreateConfig",
+            "groupName": "Author",
+            "actionId": "post /api/submission/configurations",
+            "description": "Allow Author to create submission configurations"
+        },
+        {
+            "id": "AuthorCreateSubmission",
+            "groupName": "Author",
+            "actionId": "post /api/submission/submissions",
+            "description": "Allow Author to initiate submissions"
+        },
+        {
+            "id": "AuthorUploadUrl",
+            "groupName": "Author",
+            "actionId": "post /api/submission/submissions/*/presigned-url",
+            "description": "Allow Author to request presigned S3 upload URLs"
+        },
+        {
+            "id": "AuthorUpdateSubmission",
+            "groupName": "Author",
+            "actionId": "put /api/submission/submissions/*",
+            "description": "Allow Author to update submission details"
+        },
+        {
+            "id": "AuthorSubmitWork",
+            "groupName": "Author",
+            "actionId": "post /api/submission/submissions/*/submit",
+            "description": "Allow Author to finalize work"
+        },
+        {
+            "id": "AuthorViewRubric",
+            "groupName": "Author",
+            "actionId": "get /api/submission/configurations/*/grading-form",
+            "description": "Allow Author to fetch grading criteria"
+        },
+        {
+            "id": "ReviewerViewRubric",
+            "groupName": "Reviewer",
+            "actionId": "get /api/submission/configurations/*/grading-form",
+            "description": "Allow Reviewer to fetch grading criteria"
+        },
+        {
+            "id": "ExamOfficeViewRubric",
+            "groupName": "ExamOffice",
+            "actionId": "get /api/submission/configurations/*/grading-form",
+            "description": "Allow ExamOffice to fetch grading criteria"
+        }
+    ]
+}
