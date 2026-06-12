@@ -55,7 +55,7 @@ public class ConfigurationController {
      * Accessible by Admin, ExaminationOfficer, Teacher, Reviewer, and Author.
      * Authors can only create configurations for themselves.
      */
-    @PostMapping
+    @PostMapping({"", "/"})
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
     public ResponseEntity<SubmissionConfiguration> createConfiguration(
             @Valid @RequestBody CreateConfigurationRequest request,
@@ -170,7 +170,7 @@ public class ConfigurationController {
      * Lists all submission configurations.
      * Restricted to Admins and Examination Officers.
      */
-    @GetMapping
+    @GetMapping({"", "/"})
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
     public ResponseEntity<List<SubmissionConfiguration>> listAllConfigurations() {
         log.info("Request received: GET / (list all)");

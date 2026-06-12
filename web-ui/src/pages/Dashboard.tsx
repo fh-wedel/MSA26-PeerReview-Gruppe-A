@@ -69,7 +69,7 @@ export const Dashboard: React.FC = () => {
       // Map "double-blind" -> "DOUBLE_BLIND", etc.
       const mappedReviewType = reviewMode.toUpperCase().replace("-", "_");
 
-      const response = await fetch("/api/configuration", {
+      const response = await fetch("/api/configuration/", {
         method: "POST",
         headers,
         body: JSON.stringify({
