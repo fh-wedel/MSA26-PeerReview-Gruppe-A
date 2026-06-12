@@ -177,6 +177,18 @@ export class ServiceStack extends cdk.Stack {
         // DynamoDB permissions
         matchesTable.grantReadWriteData(taskDefinition.taskRole);
 
+        if (props.requestQueueNameNextService) {
+            taskDefinition.taskRole.addToPrincipalPolicy(
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
+                    resources: [
+                        `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:${props.requestQueueNameNextService}`
+                    ]
+                })
+            );
+        }
+
         // Cognito admin permissions for the User Proxy API and reviewer lookup
         taskDefinition.taskRole.addToPrincipalPolicy(
             new iam.PolicyStatement({
