@@ -1,7 +1,7 @@
 package com.fh_wedel.response.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fh_wedel.response.config.JacksonConfig;
 import com.fh_wedel.response.model.ReviewResult;
 import com.fh_wedel.response.service.ResultService;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ class SqsResultListenerTest {
     private ResultService resultService;
 
     @Spy
-    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private ObjectMapper objectMapper = new JacksonConfig().objectMapper();
 
     @InjectMocks
     private SqsResultListener listener;

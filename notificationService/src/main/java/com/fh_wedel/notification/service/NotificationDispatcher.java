@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,13 +26,33 @@ public class NotificationDispatcher {
         this.logRepository = logRepository;
     }
 
-    public List<UUID> dispatch(NotificationRequest request) {
-        List<UUID> ids = new ArrayList<>();
+    /**
+     * Sends the notification over every requested channel/recipient combination
+     * and persists a {@link NotificationLog} for each attempt — including
+     * disabled/unknown channels (recorded as {@code FAILED}). Returns the
+     * persisted logs so callers can derive an aggregate status.
+     */
+    public List<NotificationLog> dispatch(NotificationRequest request) {
+        List<NotificationLog> logs = new ArrayList<>();
 
         for (ChannelType channelType : request.channels()) {
             NotificationChannel channel = channelMap.get(channelType);
             if (channel == null || !channel.isEnabled()) {
                 log.warn("Channel {} is not available or disabled", channelType);
+                // Record a FAILED log entry per recipient so the history stays
+                // complete and the ids surface in the REST response.
+                for (String recipient : request.recipients()) {
+                    var skipped = NotificationLog.builder()
+                            .channel(channelType)
+                            .recipient(recipient)
+                            .subject(request.subject())
+                            .body(request.body())
+                            .status(NotificationStatus.FAILED)
+                            .errorMessage("channel disabled or unknown")
+                            .build();
+                    logRepository.save(skipped);
+                    logs.add(skipped);
+                }
                 continue;
             }
 
@@ -57,10 +76,10 @@ public class NotificationDispatcher {
                 }
 
                 logRepository.save(logEntry);
-                ids.add(logEntry.getId());
+                logs.add(logEntry);
             }
         }
 
-        return ids;
+        return logs;
     }
 }

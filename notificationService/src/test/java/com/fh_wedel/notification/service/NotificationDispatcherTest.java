@@ -31,8 +31,7 @@ class NotificationDispatcherTest {
     @BeforeEach
     void setUp() {
         when(discordChannel.getChannelType()).thenReturn(ChannelType.DISCORD);
-        when(discordChannel.isEnabled()).thenReturn(true);
-        when(logRepository.save(any())).thenAnswer(invocation -> {
+        lenient().when(logRepository.save(any())).thenAnswer(invocation -> {
             NotificationLog log = invocation.getArgument(0);
             log.setId(UUID.randomUUID());
             return log;
@@ -42,6 +41,7 @@ class NotificationDispatcherTest {
 
     @Test
     void shouldDispatchToEnabledChannel() {
+        when(discordChannel.isEnabled()).thenReturn(true);
         var request = new NotificationRequest(
                 List.of(ChannelType.DISCORD),
                 List.of("user@test.com"),
@@ -49,9 +49,9 @@ class NotificationDispatcherTest {
                 "Test Body"
         );
 
-        List<UUID> ids = dispatcher.dispatch(request);
+        List<NotificationLog> logs = dispatcher.dispatch(request);
 
-        assertThat(ids).hasSize(1);
+        assertThat(logs).hasSize(1);
         verify(discordChannel).send("user@test.com", "Test Subject", "Test Body");
 
         ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
@@ -72,12 +72,33 @@ class NotificationDispatcherTest {
                 "Body"
         );
 
-        List<UUID> ids = dispatcher.dispatch(request);
+        List<NotificationLog> logs = dispatcher.dispatch(request);
 
-        assertThat(ids).hasSize(1);
+        assertThat(logs).hasSize(1);
         ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
         verify(logRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(NotificationStatus.FAILED);
         assertThat(captor.getValue().getErrorMessage()).isEqualTo("Webhook failed");
+    }
+
+    @Test
+    void shouldLogFailedWhenChannelDisabled() {
+        when(discordChannel.isEnabled()).thenReturn(false);
+
+        var request = new NotificationRequest(
+                List.of(ChannelType.DISCORD),
+                List.of("user@test.com"),
+                "Subject",
+                "Body"
+        );
+
+        List<NotificationLog> logs = dispatcher.dispatch(request);
+
+        assertThat(logs).hasSize(1);
+        verify(discordChannel, never()).send(any(), any(), any());
+        ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
+        verify(logRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(NotificationStatus.FAILED);
+        assertThat(captor.getValue().getErrorMessage()).isEqualTo("channel disabled or unknown");
     }
 }
