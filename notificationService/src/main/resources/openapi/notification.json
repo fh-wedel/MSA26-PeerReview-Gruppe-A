@@ -54,6 +54,45 @@
           }
         }
       }
+    },
+    "/me": {
+      "get": {
+        "summary": "List the caller's in-app notifications",
+        "responses": {
+          "200": {
+            "description": "List of notifications",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/stream": {
+      "get": {
+        "summary": "SSE stream of new in-app notifications for the caller",
+        "responses": { "200": { "description": "text/event-stream" } }
+      }
+    },
+    "/me/read-all": {
+      "post": {
+        "summary": "Mark all of the caller's notifications as read",
+        "responses": { "204": { "description": "Marked all read" } }
+      }
+    },
+    "/{id}/read": {
+      "patch": {
+        "summary": "Mark a single notification as read",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Marked read" },
+          "404": { "description": "Not found or not owned" }
+        }
+      }
     }
   }
 }

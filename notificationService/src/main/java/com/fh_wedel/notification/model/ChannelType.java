@@ -3,5 +3,6 @@ package com.fh_wedel.notification.model;
 public enum ChannelType {
     DISCORD,
     EMAIL,
-    SLACK
+    SLACK,
+    IN_APP
 }
