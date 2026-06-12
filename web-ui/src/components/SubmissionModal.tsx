@@ -24,7 +24,6 @@ interface SubmissionModalProps {
   onSubmit: (
     title: string,
     reviewMode: string,
-    file: File | null,
   ) => Promise<void>;
   authorName: string;
 }
@@ -37,7 +36,6 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
 }) => {
   const [title, setTitle] = useState("");
   const [reviewMode, setReviewMode] = useState<ReviewMode>("double-blind");
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const { plugins, loading, error } = useWorkflowPlugins();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -51,23 +49,15 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await onSubmit(title, reviewMode, pdfFile);
+      await onSubmit(title, reviewMode);
       setTitle("");
       setReviewMode("double-blind");
-      setPdfFile(null);
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
       setErrorOpen(true);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setPdfFile(file);
     }
   };
 
@@ -116,20 +106,6 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                 )}
               </Select>
             </FormControl>
-            <Button
-              variant="contained"
-              component="label"
-              color={pdfFile ? "primary" : "inherit"}
-              disabled={submitting}
-            >
-              {pdfFile ? pdfFile.name : "Upload PDF Document (Optional)"}
-              <input
-                type="file"
-                hidden
-                accept="application/pdf"
-                onChange={handleFileChange}
-              />
-            </Button>
           </Box>
         </DialogContent>
         <DialogActions>

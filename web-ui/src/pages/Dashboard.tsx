@@ -55,7 +55,6 @@ export const Dashboard: React.FC = () => {
   const handleSubmission = async (
     title: string,
     reviewMode: string,
-    //file: File | null,
   ) => {
     try {
       const token = sessionStorage.getItem("access_token");
