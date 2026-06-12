@@ -86,8 +86,8 @@ export class ServiceStack extends cdk.Stack {
     // =============================================
     // SQS Queues
     // =============================================
-    const requestQueue = SqsInfra.createQueue(this, 'submission-request-queue');
-    const responseQueue = SqsInfra.createQueue(this, 'submission-response-queue');
+    const requestQueues = SqsInfra.createQueue(this, { queueName: 'submission-request-queue' });
+    const responseQueues = SqsInfra.createQueue(this, { queueName: 'submission-response-queue' });
 
     // =============================================
     // ECS Task Definition
@@ -118,8 +118,8 @@ export class ServiceStack extends cdk.Stack {
         'AWS_REGION': AWSConstants.AWS_REGION,
         'DYNAMODB_TABLE_NAME': dynamoTableName,
         'S3_BUCKET_NAME': submissionsBucket.bucketName,
-        'SQS_REQUEST_QUEUE': requestQueue.queueName,
-        'SQS_RESPONSE_QUEUE': responseQueue.queueName,
+        'SQS_REQUEST_QUEUE': requestQueues.queue.queueName,
+        'SQS_RESPONSE_QUEUE': responseQueues.queue.queueName,
         'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
@@ -178,8 +178,8 @@ export class ServiceStack extends cdk.Stack {
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
     submissionsTable.grantReadWriteData(taskDefinition.taskRole);
     submissionsBucket.grantReadWrite(taskDefinition.taskRole);
-    SqsInfra.grantReadPermissions([requestQueue], taskDefinition.taskRole);
-    SqsInfra.grantWritePermissions([responseQueue], taskDefinition.taskRole);
+    SqsInfra.grantReadPermissions(requestQueues, taskDefinition.taskRole);
+    SqsInfra.grantWritePermissions(responseQueues, taskDefinition.taskRole);
 
     // =============================================
     // Auto Scaling
