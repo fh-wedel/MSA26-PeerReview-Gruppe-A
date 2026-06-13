@@ -1,12 +1,12 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Construct } from 'constructs';
+import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/lib/ecs';
-import { LogsInfra } from '../../../infraLibrary/lib/logs';
+import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
+import {EcsInfra} from '../../../infraLibrary/lib/ecs';
+import {LogsInfra} from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -54,6 +54,8 @@ export class ServiceStack extends cdk.Stack {
 
     const containerPort = props.containerPort;
 
+    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+
     taskDefinition.addContainer('AppContainer', {
       containerName: props.serviceName,
       image: ecs.ContainerImage.fromRegistry(imageName),
@@ -68,6 +70,7 @@ export class ServiceStack extends cdk.Stack {
       environment: {
         'SERVER_PORT': containerPort.toString(),
         "AWS_REGION": AWSConstants.AWS_REGION,
+        'CONFIGURATION_SERVICE_URL': `http://configuration-service.${cloudMapNamespace.namespaceName}:8080`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -98,7 +101,6 @@ export class ServiceStack extends cdk.Stack {
     // route on the IPv6-only private subnet — only an Egress-Only IGW exists).
     ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(containerPort), 'Inbound HTTP IPv6 from VPC services (ECS-to-ECS via AAAA record)');
 
-    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
