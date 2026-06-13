@@ -70,7 +70,7 @@ export class ServiceStack extends cdk.Stack {
       environment: {
         'SERVER_PORT': containerPort.toString(),
         "AWS_REGION": AWSConstants.AWS_REGION,
-        'CONFIGURATION_SERVICE_URL': `http://configuration-service.${cloudMapNamespace.namespaceName}:8080`,
+        'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });

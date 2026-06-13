@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ConfigurationClientConfig {
 
-    @Value("${configuration.service.url:http://configuration-service.internal.services:8080}")
+    @Value("${configuration.service.url:http://configuration.internal.services:8080}")
     private String configurationServiceUrl;
 
     @Bean
