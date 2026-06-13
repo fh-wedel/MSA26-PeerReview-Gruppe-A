@@ -1,26 +1,42 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
-  Box, Typography, Button, IconButton, Paper, Chip, Stack,
-  Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, Tooltip, Skeleton
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography
 } from '@mui/material';
-import { ArrowBack, Chat as ChatIcon, Close as CloseIcon, PictureAsPdf } from '@mui/icons-material';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { useTheme } from '@mui/material/styles';
+import {ArrowBack, Chat as ChatIcon, Close as CloseIcon, PictureAsPdf} from '@mui/icons-material';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
+import {useTheme} from '@mui/material/styles';
 
-import { ChatWidget } from '../components/chat/ChatWidget';
-import { useAuth } from '../contexts/AuthContext';
-import { fetchSubmissionMatch, fetchWorkflowRulesForSubmission } from '../api/communication';
-import type { UserSummary } from '../api/communication';
-import { useChat } from '../contexts/ChatContext';
-import { configApiClient } from '../api/clients';
-import { getMockSubmissionById } from '../stubs/submissions';
-import { formatDateTime } from '../utils/date';
+import {ChatWidget} from '../components/chat/ChatWidget';
+import {useAuth} from '../contexts/AuthContext';
+import type {UserSummary} from '../api/communication';
+import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
+import {useChat} from '../contexts/ChatContext';
+import {configApiClient} from '../api/clients';
+import {getMockSubmissionById} from '../stubs/submissions';
+import {formatDateTime} from '../utils/date';
+import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
 export const SubmissionDetails: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { submissionId } = useParams();
+  const {plugins} = useWorkflowPlugins();
 
   const isAssignmentsPage = location.pathname.startsWith('/assignments');
   const backTarget = isAssignmentsPage ? '/assignments' : '/submissions';
@@ -237,7 +253,7 @@ export const SubmissionDetails: React.FC = () => {
                     Review Mode
                   </Typography>
                   <Typography sx={{ textTransform: 'capitalize' }}>
-                    {reviewMode.replace('_', ' ')}
+                    {plugins.find(p => p.name === reviewMode)?.title || reviewMode}
                   </Typography>
                 </Box>
 

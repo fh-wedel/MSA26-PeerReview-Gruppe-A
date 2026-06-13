@@ -108,11 +108,11 @@ class WorkflowServiceTest {
     @Test
     void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
         ModelConfiguration mockConfig = new ModelConfiguration();
-        mockConfig.setReviewProcessType("double-blind");
+        mockConfig.setReviewProcessType("DOUBLE_BLIND");
         when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("double-blind");
-        when(registry.getByName("double-blind")).thenReturn(Optional.of(mockPlugin));
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("DOUBLE_BLIND");
+        when(registry.getByName("DOUBLE_BLIND")).thenReturn(Optional.of(mockPlugin));
 
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
@@ -120,7 +120,7 @@ class WorkflowServiceTest {
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
         verify(configurationApi).submissionIdGet("sub-123");
-        verify(registry).getByName("double-blind");
+        verify(registry).getByName("DOUBLE_BLIND");
     }
 
     @Test

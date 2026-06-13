@@ -1,16 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, Chip, Alert, Skeleton } from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Chip,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Skeleton,
+  Typography
+} from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { configApiClient, matchingApiClient } from '../api/clients';
-import { StatusFilter, filterByStatus, sortByStatus } from '../components/StatusFilter';
+import {useNavigate} from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
+import {configApiClient, matchingApiClient} from '../api/clients';
+import {filterByStatus, sortByStatus, StatusFilter} from '../components/StatusFilter';
+import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
 export const Submissions: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [mySelectedStatuses, setMySelectedStatuses] = useState<string[]>([]);
   const [allSelectedStatuses, setAllSelectedStatuses] = useState<string[]>([]);
+  const {plugins} = useWorkflowPlugins();
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAccess = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('author');
@@ -105,7 +120,8 @@ export const Submissions: React.FC = () => {
   const finalAllSubmissions = sortByStatus(filterByStatus(allSubmissions, allSelectedStatuses));
 
   const formatSubheading = (submission: any) => {
-    const type = submission.reviewProcessType ? submission.reviewProcessType.replace('_', ' ') : 'Unknown';
+    const plugin = plugins.find(p => p.name === submission.reviewProcessType);
+    const type = plugin ? plugin.title : (submission.reviewProcessType || 'Unknown');
     const examiners = submission.numberOfExaminers || 0;
     return (
       <Box component="span">
