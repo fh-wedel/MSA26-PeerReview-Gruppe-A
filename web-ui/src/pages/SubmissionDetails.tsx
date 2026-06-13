@@ -136,7 +136,11 @@ export const SubmissionDetails: React.FC = () => {
       status = 'Matched';
   }
   const reviewMode = submissionConfig?.reviewProcessType || mockSubmission?.reviewMode || 'unknown';
-  const createdAt = submissionConfig?.createdAt || mockSubmission?.createdAt || new Date().toISOString();
+
+  if (!submissionConfig?.createdAt) {
+    throw new Error('Missing real creation date from backend.');
+  }
+  const createdAt = submissionConfig.createdAt;
 
   const redactedColor = theme.palette.mode === 'dark' ? '#424242' : '#9e9e9e';
 
@@ -183,6 +187,33 @@ export const SubmissionDetails: React.FC = () => {
         }
         return <Typography key={m.examinerId}>{m.examinerUsername}</Typography>;
       });
+
+  // Dynamically build history based on API data
+  const dynamicHistory: { id: string, label: string, changedAt: string, description?: string }[] = [];
+
+  if (submissionConfig?.createdAt) {
+    dynamicHistory.push({
+      id: 'event-created',
+      label: 'Submission Created',
+      changedAt: submissionConfig.createdAt,
+      description: 'The submission was created.'
+    });
+  }
+
+  if (submissionMatch && submissionMatch.status === 'MATCHED' && submissionMatch.matchedAt) {
+    const reviewerCount = submissionMatch.matches?.length || submissionMatch.numberOfExaminers || 0;
+    dynamicHistory.push({
+      id: 'event-matched',
+      label: 'Reviewers Assigned',
+      changedAt: submissionMatch.matchedAt,
+      description: `${reviewerCount} reviewer${reviewerCount === 1 ? '' : 's'} assigned to the submission.`
+    });
+  }
+
+  const historyToDisplay = dynamicHistory.length > 0 ? dynamicHistory : (mockSubmission?.history ? [...mockSubmission.history] : []);
+
+  // Sort descending (latest first)
+  historyToDisplay.sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
 
   return (
     <Box sx={{ display: 'flex', height: '100%', width: '100%' }}>
@@ -304,12 +335,12 @@ export const SubmissionDetails: React.FC = () => {
             Status History
           </Typography>
 
-          {!mockSubmission || mockSubmission.history.length === 0 ? (
+          {historyToDisplay.length === 0 ? (
             <Typography color="text.secondary">No status updates yet.</Typography>
           ) : (
             <List>
-              {mockSubmission.history.map((entry, index) => (
-                <ListItem key={entry.id} divider={index < mockSubmission.history.length - 1}>
+              {historyToDisplay.map((entry, index) => (
+                  <ListItem key={entry.id} divider={index < historyToDisplay.length - 1}>
                   <ListItemText
                     primary={entry.label}
                     secondary={`${formatDateTime(entry.changedAt)}${entry.description ? ` — ${entry.description}` : ''}`}
