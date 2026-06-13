@@ -2,13 +2,23 @@ import React from 'react';
 import { Box, Typography, Paper, List, ListItem, ListItemButton, ListItemText, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { formatDateTime } from '../utils/date';
-import { useAssignments } from '../hooks/useAssignments';
 import { useAuth } from '../contexts/AuthContext';
+import { useAssignments } from '../hooks/useAssignments';
+import { StatusFilter, filterByStatus, sortByStatus } from '../components/StatusFilter';
 
 export const Assignments: React.FC = () => {
   const navigate = useNavigate();
   const { assignments, loading, error } = useAssignments();
   const { user } = useAuth();
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
+  const initialized = React.useRef(false);
+
+  React.useEffect(() => {
+    if (assignments.length > 0 && !initialized.current) {
+      setSelectedStatuses(['Assigned']);
+      initialized.current = true;
+    }
+  }, [assignments]);
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAccess = roles.includes('admin') || roles.includes('reviewer');
@@ -42,20 +52,31 @@ export const Assignments: React.FC = () => {
     );
   }
 
+  const enrichedAssignments = assignments.map(a => ({ ...a, status: 'Assigned' }));
+  const availableStatuses = Array.from(new Set(enrichedAssignments.map(a => a.status))).sort();
+  const finalAssignments = sortByStatus(filterByStatus(enrichedAssignments, selectedStatuses));
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
         My Assignments
       </Typography>
-      <Paper sx={{ mt: 3 }}>
-        {assignments.length === 0 ? (
+      <StatusFilter 
+        availableStatuses={availableStatuses}
+        selectedStatuses={selectedStatuses}
+        onChange={setSelectedStatuses}
+      />
+      <Paper>
+        {finalAssignments.length === 0 ? (
           <Box sx={{ p: 3 }}>
-            <Typography color="text.secondary">You have no assignments at the moment.</Typography>
+            <Typography color="text.secondary">
+              {assignments.length === 0 ? "You have no assignments at the moment." : "No assignments found matching the criteria."}
+            </Typography>
           </Box>
         ) : (
           <List>
-            {assignments.map((assignment, index) => (
-              <ListItem key={assignment.submissionId} disablePadding divider={index < assignments.length - 1}>
+            {finalAssignments.map((assignment, index) => (
+              <ListItem key={assignment.submissionId} disablePadding divider={index < finalAssignments.length - 1}>
                 <ListItemButton onClick={() => navigate(`/assignments/${assignment.submissionId}`)}>
                   <Box
                     sx={{

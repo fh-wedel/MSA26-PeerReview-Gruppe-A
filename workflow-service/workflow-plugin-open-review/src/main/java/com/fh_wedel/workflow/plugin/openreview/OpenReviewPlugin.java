@@ -11,7 +11,7 @@ public class OpenReviewPlugin implements ReviewWorkflowPlugin {
 
     @Override
     public String getName() {
-        return "open-review";
+        return "OPEN_REVIEW";
     }
 
     @Override

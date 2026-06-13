@@ -11,7 +11,7 @@ public class DoubleBlindPlugin implements ReviewWorkflowPlugin {
 
     @Override
     public String getName() {
-        return "double-blind";
+        return "DOUBLE_BLIND";
     }
 
     @Override

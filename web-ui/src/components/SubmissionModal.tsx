@@ -1,20 +1,20 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
+  Alert,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
   Snackbar,
-  Alert,
+  TextField,
 } from "@mui/material";
-import { useWorkflowPlugins } from "../hooks/useWorkflowPlugins";
+import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
 type ReviewMode = string;
 
@@ -35,7 +35,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   authorName,
 }) => {
   const [title, setTitle] = useState("");
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("double-blind");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("DOUBLE_BLIND");
   const { plugins, loading, error } = useWorkflowPlugins();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -51,7 +51,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     try {
       await onSubmit(title, reviewMode);
       setTitle("");
-      setReviewMode("double-blind");
+      setReviewMode("DOUBLE_BLIND");
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -99,9 +99,9 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   ))
                 ) : (
                   <>
-                    <MenuItem value="double-blind">Double Blind</MenuItem>
-                    <MenuItem value="single-blind">Single Blind</MenuItem>
-                    <MenuItem value="open-review">Open Review</MenuItem>
+                    <MenuItem value="DOUBLE_BLIND">Double Blind</MenuItem>
+                    <MenuItem value="SINGLE_BLIND">Single Blind</MenuItem>
+                    <MenuItem value="OPEN_REVIEW">Open Review</MenuItem>
                   </>
                 )}
               </Select>

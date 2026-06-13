@@ -8,13 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/configuration")
@@ -56,7 +56,6 @@ public class ConfigurationController {
      * Authors can only create configurations for themselves.
      */
     @PostMapping({"", "/"})
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
     public ResponseEntity<SubmissionConfiguration> createConfiguration(
             @Valid @RequestBody CreateConfigurationRequest request,
             Authentication authentication) {
@@ -97,7 +96,6 @@ public class ConfigurationController {
      * Evaluation criteria are masked if not visible to authors.
      */
     @GetMapping("/{submissionId}")
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
     public ResponseEntity<SubmissionConfiguration> getConfiguration(
             @PathVariable String submissionId,
             Authentication authentication) {
@@ -134,7 +132,6 @@ public class ConfigurationController {
      * Authors can only query their own author ID.
      */
     @GetMapping("/author/{authorId}")
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
     public ResponseEntity<List<SubmissionConfiguration>> getConfigurationsByAuthor(
             @PathVariable String authorId,
             Authentication authentication) {
@@ -171,7 +168,6 @@ public class ConfigurationController {
      * Restricted to Admins and Examination Officers.
      */
     @GetMapping({"", "/"})
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
     public ResponseEntity<List<SubmissionConfiguration>> listAllConfigurations() {
         log.info("Request received: GET / (list all)");
         List<SubmissionConfiguration> configs = configurationService.getAllConfigurations();
@@ -183,7 +179,11 @@ public class ConfigurationController {
     // ========================
 
     private boolean isOnlyAuthor(Authentication auth) {
-        if (auth == null || auth.getAuthorities() == null) return false;
+        if (auth == null) {
+            return false;
+        } else {
+            auth.getAuthorities();
+        }
         boolean hasAuthor = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_Author"));
         boolean hasHigherRole = auth.getAuthorities().stream()
@@ -195,9 +195,13 @@ public class ConfigurationController {
     }
 
     private String getPrimaryRole(Authentication auth) {
-        if (auth == null || auth.getAuthorities() == null) return "Guest";
+        if (auth == null) {
+            return "Guest";
+        } else {
+            auth.getAuthorities();
+        }
         List<String> roles = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
+                .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
                 .map(r -> r.startsWith("ROLE_") ? r.substring(5) : r)
                 .toList();
 
@@ -206,7 +210,7 @@ public class ConfigurationController {
         if (roles.contains("Teacher")) return "Teacher";
         if (roles.contains("Reviewer")) return "Reviewer";
         if (roles.contains("Author")) return "Author";
-        return roles.isEmpty() ? "Guest" : roles.get(0);
+        return roles.isEmpty() ? "Guest" : roles.getFirst();
     }
 
     private String extractSubFromDetails(Authentication auth) {
