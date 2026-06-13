@@ -10,6 +10,22 @@
  * ---------------------------------------------------------------
  */
 
+export interface Configuration {
+  title: string;
+  reviewProcessType: string;
+  authorIds: string[];
+  /** @min 1 */
+  numberOfExaminers: number;
+  /** @format date-time */
+  submissionDeadline?: string;
+  /** @format date-time */
+  reviewDeadline?: string;
+  evaluationCriteria?: string[];
+  criteriaVisibleToAuthor?: boolean;
+  /** @format date-time */
+  createdAt?: string;
+}
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
@@ -280,22 +296,7 @@ export class Api<
    * @summary Create a new submission configuration
    * @request POST:/
    */
-  postRoot = (
-    data: {
-      title: string;
-      reviewProcessType: "DOUBLE_BLIND" | "SINGLE_BLIND" | "OPEN_REVIEW";
-      authorIds: string[];
-      /** @min 1 */
-      numberOfExaminers: number;
-      /** @format date-time */
-      submissionDeadline?: string;
-      /** @format date-time */
-      reviewDeadline?: string;
-      evaluationCriteria?: string[];
-      criteriaVisibleToAuthor?: boolean;
-    },
-    params: RequestParams = {},
-  ) =>
+  postRoot = (data: Configuration, params: RequestParams = {}) =>
     this.request<void, void>({
       path: `/`,
       method: "POST",
@@ -312,9 +313,10 @@ export class Api<
    * @request GET:/
    */
   getRoot = (params: RequestParams = {}) =>
-    this.request<void, any>({
+      this.request<Configuration[], any>({
       path: `/`,
       method: "GET",
+        format: "json",
       ...params,
     });
 
@@ -357,9 +359,10 @@ export class Api<
      * @request GET:/{submissionId}
      */
     getSubmissionId: (submissionId: string, params: RequestParams = {}) =>
-      this.request<void, void>({
+        this.request<Configuration, void>({
         path: `/${submissionId}`,
         method: "GET",
+          format: "json",
         ...params,
       }),
   };
@@ -372,9 +375,10 @@ export class Api<
      * @request GET:/author/{authorId}
      */
     authorDetail: (authorId: string, params: RequestParams = {}) =>
-      this.request<void, any>({
+        this.request<Configuration[], any>({
         path: `/author/${authorId}`,
         method: "GET",
+          format: "json",
         ...params,
       }),
   };

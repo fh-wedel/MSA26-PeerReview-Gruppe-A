@@ -190,6 +190,10 @@
           },
           "criteriaVisibleToAuthor": {
             "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

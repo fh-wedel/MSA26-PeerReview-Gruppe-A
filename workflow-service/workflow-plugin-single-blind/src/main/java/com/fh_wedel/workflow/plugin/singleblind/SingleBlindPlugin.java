@@ -21,12 +21,12 @@ public class SingleBlindPlugin implements ReviewWorkflowPlugin {
 
     @Override
     public boolean isAuthorAnonymous() {
-        return true;
+        return false;
     }
 
     @Override
     public boolean isReviewerAnonymous() {
-        return false;
+        return true;
     }
 
     @Override

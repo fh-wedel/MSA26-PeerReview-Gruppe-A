@@ -83,10 +83,14 @@ export const Submissions: React.FC = () => {
             // Not matched yet or 404
           }
 
+            if (!config.createdAt) {
+                throw new Error(`Submission ${id} is missing a creation date from the backend.`);
+            }
+
           return {
             id,
             title: config.title || 'Untitled',
-            createdAt: config.createdAt || config.submissionDeadline || new Date().toISOString(),
+              createdAt: config.createdAt,
             status,
             reviewerId,
             reviewProcessType: config.reviewProcessType,
