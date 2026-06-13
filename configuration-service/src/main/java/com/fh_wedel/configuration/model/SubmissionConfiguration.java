@@ -42,6 +42,8 @@ public class SubmissionConfiguration {
     private boolean criteriaVisibleToAuthor;
     @Getter
     private String status; // e.g. CREATED, MATCHED
+    @Getter
+    private Instant createdAt;
 
     public SubmissionConfiguration() {
     }
@@ -64,6 +66,7 @@ public class SubmissionConfiguration {
         this.evaluationCriteria = evaluationCriteria;
         this.criteriaVisibleToAuthor = criteriaVisibleToAuthor;
         this.status = "CREATED";
+        this.createdAt = Instant.now();
     }
 
     @DynamoDbPartitionKey
