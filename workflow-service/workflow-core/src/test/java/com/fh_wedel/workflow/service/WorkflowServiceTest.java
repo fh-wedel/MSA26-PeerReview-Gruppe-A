@@ -108,7 +108,7 @@ class WorkflowServiceTest {
     @Test
     void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
         ModelConfiguration mockConfig = new ModelConfiguration();
-        mockConfig.setReviewProcessType("DOUBLE_BLIND");
+        mockConfig.setReviewProcessType("double-blind");
         when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
 
         ReviewWorkflowPlugin mockPlugin = createMockPlugin("double-blind");
