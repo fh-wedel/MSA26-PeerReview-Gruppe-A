@@ -1,19 +1,20 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { CustomThemeProvider } from './contexts/ThemeContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { GuestLayout } from './layouts/GuestLayout';
-import { AuthLayout } from './layouts/AuthLayout';
-import { GuestHome } from './pages/GuestHome';
-import { SignIn } from './pages/SignIn';
-import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
-import { Assignments } from './pages/Assignments';
-import { Submissions } from './pages/Submissions';
-import { SubmissionDetails } from './pages/SubmissionDetails';
-import { ChatProvider } from './contexts/ChatContext';
-import { ChatPage } from './pages/ChatPage';
-import { NotificationProvider } from './contexts/NotificationContext';
+import {BrowserRouter, Route, Routes} from 'react-router-dom';
+import {CustomThemeProvider} from './contexts/ThemeContext';
+import {AuthProvider} from './contexts/AuthContext';
+import {GuestLayout} from './layouts/GuestLayout';
+import {AuthLayout} from './layouts/AuthLayout';
+import {GuestHome} from './pages/GuestHome';
+import {SignIn} from './pages/SignIn';
+import {Register} from './pages/Register';
+import {Dashboard} from './pages/Dashboard';
+import {Assignments} from './pages/Assignments';
+import {Submissions} from './pages/Submissions';
+import {SubmissionDetails} from './pages/SubmissionDetails';
+import {ChatProvider} from './contexts/ChatContext';
+import {ChatPage} from './pages/ChatPage';
+import {Admin} from './pages/Admin';
+import {NotificationProvider} from './contexts/NotificationContext';
 
 export const App: React.FC = () => {
   return (
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
                 <Route path="/submissions" element={<Submissions />} />
                 <Route path="/submissions/:submissionId" element={<SubmissionDetails />} />
                 <Route path="/chats" element={<ChatPage />} />
+                  <Route path="/admin" element={<Admin/>}/>
               </Route>
             </Routes>
           </ChatProvider>

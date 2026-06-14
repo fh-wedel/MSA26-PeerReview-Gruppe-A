@@ -1,13 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
-import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description, DoneAll } from '@mui/icons-material';
-import { useThemeContext } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useChat } from '../contexts/ChatContext';
-import { mockNotifications } from '../stubs/notifications';
-import { searchUsers } from '../api/communication';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
+import React, {useEffect, useState} from 'react';
+import {
+  AppBar,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Toolbar,
+  Typography
+} from '@mui/material';
+import {
+  AccountCircle,
+  Assignment,
+  Brightness4,
+  Brightness7,
+  Description,
+  DoneAll,
+  Mail,
+  Notifications,
+  SettingsBrightness
+} from '@mui/icons-material';
+import {useThemeContext} from '../contexts/ThemeContext';
+import {useAuth} from '../contexts/AuthContext';
+import {useChat} from '../contexts/ChatContext';
+import {mockNotifications} from '../stubs/notifications';
+import {searchUsers} from '../api/communication';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {formatDistanceToNow} from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
 
 export const Navbar: React.FC = () => {
@@ -108,6 +135,19 @@ export const Navbar: React.FC = () => {
                 >
                   Submissions
                 </Button>
+              )}
+              {userRoles.includes('admin') && (
+                  <Button
+                      color="inherit"
+                      onClick={() => navigate('/admin')}
+                      sx={{
+                        opacity: location.pathname.startsWith('/admin') ? 1 : 0.7,
+                        fontSize: '1.15rem',
+                        fontWeight: location.pathname.startsWith('/admin') ? 600 : 400
+                      }}
+                  >
+                    Admin
+                  </Button>
               )}
             </>
           )}

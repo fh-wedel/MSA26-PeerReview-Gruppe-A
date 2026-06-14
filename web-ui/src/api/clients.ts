@@ -1,5 +1,8 @@
-import { Api as ConfigApi } from './generated/configuration';
-import { Api as MatchingApi } from './generated/matching';
+import {Api as ConfigApi} from './generated/configuration';
+import {Api as MatchingApi} from './generated/matching';
+import {Api as SubmissionApi} from './generated/submission';
+import {Api as CommunicationApi} from './generated/communication';
+import {Api as WorkflowApi} from './generated/workflow';
 
 const getBaseParams = () => ({
   headers: {
@@ -15,5 +18,17 @@ export const configApiClient = new ConfigApi({
 });
 
 export const matchingApiClient = new MatchingApi({
+  baseApiParams: getBaseParams(),
+});
+
+export const submissionApiClient = new SubmissionApi({
+  baseApiParams: getBaseParams(),
+});
+
+export const communicationApiClient = new CommunicationApi({
+  baseApiParams: getBaseParams(),
+});
+
+export const workflowApiClient = new WorkflowApi({
   baseApiParams: getBaseParams(),
 });

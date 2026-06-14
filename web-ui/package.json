@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "generate:api:config": "swagger-typescript-api generate -p ../configuration-service/src/main/resources/openapi/configuration.json -o src/api/generated -n configuration.ts",
     "generate:api:matching": "swagger-typescript-api generate -p ../matchingService/src/main/resources/openapi/matching.json -o src/api/generated -n matching.ts",
-    "generate:api": "npm run generate:api:config && npm run generate:api:matching"
+    "generate:api:submission": "swagger-typescript-api generate -p ../submission-service/src/main/resources/openapi/submission.json -o src/api/generated -n submission.ts",
+    "generate:api:communication": "swagger-typescript-api generate -p ../communicationService/src/main/resources/openapi/communication.json -o src/api/generated -n communication.ts",
+    "generate:api:workflow": "swagger-typescript-api generate -p ../workflow-service/workflow-core/src/main/resources/openapi/workflow.json -o src/api/generated -n workflow.ts",
+    "generate:api": "npm run generate:api:config && npm run generate:api:matching && npm run generate:api:submission && npm run generate:api:communication && npm run generate:api:workflow"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
