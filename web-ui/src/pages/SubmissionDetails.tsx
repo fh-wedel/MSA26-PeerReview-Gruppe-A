@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -250,6 +251,13 @@ export const SubmissionDetails: React.FC = () => {
                 sx={{ mb: 3 }}
               />
 
+              {isPrivileged && (workflowRules?.authorAnonymous || workflowRules?.reviewerAnonymous) && (
+                  <Alert severity="info" sx={{mb: 3}}>
+                    As an Admin or Examination Officer, author and reviewer identities are visible to you, even if the
+                    review mode normally hides them.
+                  </Alert>
+              )}
+
               <Box sx={{display: 'grid', gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'}, gap: 3}}>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
@@ -307,7 +315,8 @@ export const SubmissionDetails: React.FC = () => {
                 View Review
               </Button>
 
-              <Tooltip title={!chatAllowed ? "Chat is disabled by the workflow rules" : ""}>
+              <Tooltip
+                  title={!chatAllowed ? (workflowRules?.authorReviewerChatAllowed ? "Only authors and reviewers can access this chat" : "Chat is disabled by the workflow rules") : ""}>
                   <span style={{width: '100%'}}>
                     <Button
                         variant="contained"
