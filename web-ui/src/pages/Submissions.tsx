@@ -19,6 +19,7 @@ import {useAuth} from '../contexts/AuthContext';
 import {configApiClient, matchingApiClient} from '../api/clients';
 import {filterByStatus, sortByStatus, StatusFilter} from '../components/StatusFilter';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
+import {formatDateTime} from '../utils/date';
 
 export const Submissions: React.FC = () => {
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ export const Submissions: React.FC = () => {
           const id = config.id || config.submissionId;
           let status = 'Created';
           let reviewerId: string | undefined = undefined;
+          let matchedAt: string | undefined = undefined;
 
           try {
             const matchRes = await matchingApiClient.matches.getMatchesBySubmission(id);
@@ -78,6 +80,7 @@ export const Submissions: React.FC = () => {
             if (matchData && matchData.status === 'MATCHED') {
               status = 'Matched';
               reviewerId = matchData.matches?.[0]?.examinerId;
+              matchedAt = matchData.matchedAt;
             }
           } catch (e) {
             // Not matched yet or 404
@@ -87,10 +90,20 @@ export const Submissions: React.FC = () => {
                 throw new Error(`Submission ${id} is missing a creation date from the backend.`);
             }
 
+          let updateTime = config.createdAt;
+          if (matchedAt) {
+            const matchDate = new Date(matchedAt);
+            const updateDate = new Date(updateTime);
+            if (matchDate > updateDate) {
+              updateTime = matchedAt;
+            }
+          }
+
           return {
             id,
             title: config.title || 'Untitled',
-              createdAt: config.createdAt,
+            createdAt: config.createdAt,
+            updateTime,
             status,
             reviewerId,
             reviewProcessType: config.reviewProcessType,
@@ -126,10 +139,12 @@ export const Submissions: React.FC = () => {
   const formatSubheading = (submission: any) => {
     const plugin = plugins.find(p => p.name === submission.reviewProcessType);
     const type = plugin ? plugin.title : (submission.reviewProcessType || 'Unknown');
-    const examiners = submission.numberOfExaminers || 0;
+    const datetime = submission.updateTime ? formatDateTime(submission.updateTime, 'PPPp') : 'Unknown';
     return (
       <Box component="span">
-        <Box component="span" sx={{ fontWeight: 600 }}>Review Type:</Box> {type} | <Box component="span" sx={{ fontWeight: 600 }}>Examiners:</Box> {examiners}
+        <Box component="span" sx={{fontWeight: 600}}>Last Update:</Box> {datetime} | <Box component="span"
+                                                                                          sx={{fontWeight: 600}}>Review
+        Type:</Box> {type}
       </Box>
     );
   };
@@ -195,7 +210,7 @@ export const Submissions: React.FC = () => {
                           </Typography>
                         }
                         secondary={
-                          <Typography variant="body1" color="text.secondary" sx={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                          <Typography variant="body1" color="text.secondary" sx={{fontWeight: 500}}>
                             {formatSubheading(submission)}
                           </Typography>
                         }
@@ -260,7 +275,7 @@ export const Submissions: React.FC = () => {
                             </Typography>
                           }
                           secondary={
-                            <Typography variant="body1" color="text.secondary" sx={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                            <Typography variant="body1" color="text.secondary" sx={{fontWeight: 500}}>
                               {formatSubheading(submission)}
                             </Typography>
                           }

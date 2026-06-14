@@ -133,7 +133,7 @@ export const SubmissionDetails: React.FC = () => {
   // Resolve status based on matching
   let status = 'Created';
   if (submissionMatch && submissionMatch.status === 'MATCHED') {
-      status = 'Matched';
+    status = isAssignmentsPage ? 'Assigned' : 'Matched';
   }
   const reviewMode = submissionConfig?.reviewProcessType || mockSubmission?.reviewMode || 'unknown';
 
@@ -204,9 +204,11 @@ export const SubmissionDetails: React.FC = () => {
     const reviewerCount = submissionMatch.matches?.length || submissionMatch.numberOfExaminers || 0;
     dynamicHistory.push({
       id: 'event-matched',
-      label: 'Reviewers Assigned',
+      label: isAssignmentsPage ? 'Assignment Received' : 'Reviewers Assigned',
       changedAt: submissionMatch.matchedAt,
-      description: `${reviewerCount} reviewer${reviewerCount === 1 ? '' : 's'} assigned to the submission.`
+      description: isAssignmentsPage
+          ? `You were assigned to review this submission.`
+          : `${reviewerCount} reviewer${reviewerCount === 1 ? '' : 's'} assigned to the submission.`
     });
   }
 
@@ -244,7 +246,7 @@ export const SubmissionDetails: React.FC = () => {
               </Typography>
               <Chip
                 label={status}
-                color={status === 'Published' ? 'success' : status === 'Matched' ? 'info' : 'default'}
+                color={status === 'Published' ? 'success' : (status === 'Matched' || status === 'Assigned') ? 'info' : 'default'}
                 sx={{ mb: 3 }}
               />
 
@@ -316,7 +318,7 @@ export const SubmissionDetails: React.FC = () => {
                         disabled={!chatAllowed}
                         onClick={() => navigate('/chats?tab=submissions')}
                     >
-                      Submission Chat
+                      {isAssignmentsPage ? 'Assignment Chat' : 'Submission Chat'}
                     </Button>
                   </span>
               </Tooltip>
