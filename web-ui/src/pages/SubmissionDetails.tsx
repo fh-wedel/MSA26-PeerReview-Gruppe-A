@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -133,7 +134,7 @@ export const SubmissionDetails: React.FC = () => {
   // Resolve status based on matching
   let status = 'Created';
   if (submissionMatch && submissionMatch.status === 'MATCHED') {
-      status = 'Matched';
+    status = isAssignmentsPage ? 'Assigned' : 'Matched';
   }
   const reviewMode = submissionConfig?.reviewProcessType || mockSubmission?.reviewMode || 'unknown';
 
@@ -204,9 +205,11 @@ export const SubmissionDetails: React.FC = () => {
     const reviewerCount = submissionMatch.matches?.length || submissionMatch.numberOfExaminers || 0;
     dynamicHistory.push({
       id: 'event-matched',
-      label: 'Reviewers Assigned',
+      label: isAssignmentsPage ? 'Assignment Received' : 'Reviewers Assigned',
       changedAt: submissionMatch.matchedAt,
-      description: `${reviewerCount} reviewer${reviewerCount === 1 ? '' : 's'} assigned to the submission.`
+      description: isAssignmentsPage
+          ? `You were assigned to review this submission.`
+          : `${reviewerCount} reviewer${reviewerCount === 1 ? '' : 's'} assigned to the submission.`
     });
   }
 
@@ -244,9 +247,16 @@ export const SubmissionDetails: React.FC = () => {
               </Typography>
               <Chip
                 label={status}
-                color={status === 'Published' ? 'success' : status === 'Matched' ? 'info' : 'default'}
+                color={status === 'Published' ? 'success' : (status === 'Matched' || status === 'Assigned') ? 'info' : 'default'}
                 sx={{ mb: 3 }}
               />
+
+              {isPrivileged && (workflowRules?.authorAnonymous || workflowRules?.reviewerAnonymous) && (
+                  <Alert severity="info" sx={{mb: 3}}>
+                    As an Admin or Examination Officer, author and reviewer identities are visible to you, even if the
+                    review mode normally hides them.
+                  </Alert>
+              )}
 
               <Box sx={{display: 'grid', gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'}, gap: 3}}>
                 <Box>
@@ -305,7 +315,8 @@ export const SubmissionDetails: React.FC = () => {
                 View Review
               </Button>
 
-              <Tooltip title={!chatAllowed ? "Chat is disabled by the workflow rules" : ""}>
+              <Tooltip
+                  title={!chatAllowed ? (workflowRules?.authorReviewerChatAllowed ? "Only authors and reviewers can access this chat" : "Chat is disabled by the workflow rules") : ""}>
                   <span style={{width: '100%'}}>
                     <Button
                         variant="contained"
@@ -316,7 +327,7 @@ export const SubmissionDetails: React.FC = () => {
                         disabled={!chatAllowed}
                         onClick={() => navigate('/chats?tab=submissions')}
                     >
-                      Submission Chat
+                      {isAssignmentsPage ? 'Assignment Chat' : 'Submission Chat'}
                     </Button>
                   </span>
               </Tooltip>

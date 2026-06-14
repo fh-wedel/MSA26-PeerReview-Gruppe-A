@@ -1,10 +1,26 @@
 import React from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemButton, ListItemText, CircularProgress, Alert } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { formatDateTime } from '../utils/date';
-import { useAuth } from '../contexts/AuthContext';
-import { useAssignments } from '../hooks/useAssignments';
-import { StatusFilter, filterByStatus, sortByStatus } from '../components/StatusFilter';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Chip,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Skeleton,
+  Typography
+} from '@mui/material';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import {useNavigate} from 'react-router-dom';
+import {formatDateTime} from '../utils/date';
+import {useAuth} from '../contexts/AuthContext';
+import {useAssignments} from '../hooks/useAssignments';
+import {filterByStatus, sortByStatus, StatusFilter} from '../components/StatusFilter';
+import {configApiClient} from '../api/clients';
+import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
 export const Assignments: React.FC = () => {
   const navigate = useNavigate();
@@ -36,14 +52,6 @@ export const Assignments: React.FC = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box sx={{ p: 2 }}>
@@ -52,53 +60,159 @@ export const Assignments: React.FC = () => {
     );
   }
 
-  const enrichedAssignments = assignments.map(a => ({ ...a, status: 'Assigned' }));
+  const {plugins} = useWorkflowPlugins();
+  const [enrichedAssignments, setEnrichedAssignments] = React.useState<any[]>([]);
+  const [enriching, setEnriching] = React.useState(true);
+
+  React.useEffect(() => {
+    if (loading) {
+      setEnriching(true);
+      return;
+    }
+    if (assignments.length === 0) {
+      setEnrichedAssignments([]);
+      setEnriching(false);
+      return;
+    }
+    const fetchDetails = async () => {
+      setEnriching(true);
+      try {
+        const enriched = await Promise.all(assignments.map(async (assignment) => {
+          let title = `Submission ID: ${assignment.submissionId}`;
+          let reviewProcessType = 'Unknown';
+          let updateTime = assignment.assignedAt;
+          try {
+            const res = await configApiClient.submissionId.getSubmissionId(assignment.submissionId, {format: 'json'});
+            if (res && (res as any).data) {
+              const data = (res as any).data;
+              title = data.title || title;
+              reviewProcessType = data.reviewProcessType || reviewProcessType;
+              if (data.createdAt) {
+                const configDate = new Date(data.createdAt);
+                const updateDate = new Date(updateTime);
+                if (configDate > updateDate) {
+                  updateTime = data.createdAt;
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Failed to fetch config for', assignment.submissionId);
+          }
+          return {
+            ...assignment,
+            title,
+            reviewProcessType,
+            updateTime,
+            status: 'Assigned'
+          };
+        }));
+        setEnrichedAssignments(enriched);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setEnriching(false);
+      }
+    };
+    fetchDetails();
+  }, [assignments, loading]);
+
   const availableStatuses = Array.from(new Set(enrichedAssignments.map(a => a.status))).sort();
   const finalAssignments = sortByStatus(filterByStatus(enrichedAssignments, selectedStatuses));
 
+  const formatSubheading = (assignment: any) => {
+    const plugin = plugins.find(p => p.name === assignment.reviewProcessType);
+    const type = plugin ? plugin.title : (assignment.reviewProcessType || 'Unknown');
+    const datetime = formatDateTime(assignment.updateTime, 'PPPp');
+    return (
+        <Box component="span">
+          <Box component="span" sx={{fontWeight: 600}}>Last Update:</Box> {datetime} | <Box component="span"
+                                                                                            sx={{fontWeight: 600}}>Review
+          Type:</Box> {type}
+        </Box>
+    );
+  };
+
+  const renderSkeleton = () => (
+      <List>
+        {[1, 2, 3].map((item) => (
+            <ListItem key={item} disablePadding divider>
+              <Box sx={{p: 2, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <Box sx={{flex: 1, mr: 2}}>
+                  <Skeleton variant="text" width="40%" height={28}/>
+                  <Skeleton variant="text" width="60%" height={20}/>
+                </Box>
+                <Skeleton variant="rectangular" width={80} height={24} sx={{borderRadius: 1}}/>
+              </Box>
+            </ListItem>
+        ))}
+      </List>
+  );
+
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        My Assignments
-      </Typography>
-      <StatusFilter 
-        availableStatuses={availableStatuses}
-        selectedStatuses={selectedStatuses}
-        onChange={setSelectedStatuses}
-      />
-      <Paper>
-        {finalAssignments.length === 0 ? (
-          <Box sx={{ p: 3 }}>
-            <Typography color="text.secondary">
-              {assignments.length === 0 ? "You have no assignments at the moment." : "No assignments found matching the criteria."}
-            </Typography>
-          </Box>
-        ) : (
-          <List>
-            {finalAssignments.map((assignment, index) => (
-              <ListItem key={assignment.submissionId} disablePadding divider={index < finalAssignments.length - 1}>
-                <ListItemButton onClick={() => navigate(`/assignments/${assignment.submissionId}`)}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: { xs: 'flex-start', sm: 'center' },
-                      flexDirection: { xs: 'column', sm: 'row' },
-                      gap: 2,
-                      width: '100%',
-                    }}
-                  >
-                    <ListItemText
-                      primary={`Submission ID: ${assignment.submissionId}`}
-                      secondary={`Assigned on: ${formatDateTime(assignment.assignedAt, 'PPP')}`}
-                    />
-                  </Box>
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </Paper>
+      <Box sx={{mb: 4}}>
+        <Typography variant="h4" gutterBottom>
+          My Assignments
+        </Typography>
+        <StatusFilter
+            availableStatuses={availableStatuses}
+            selectedStatuses={selectedStatuses}
+            onChange={setSelectedStatuses}
+        />
+        <Paper>
+          {(loading || enriching) ? renderSkeleton() : finalAssignments.length === 0 ? (
+              <Box sx={{p: 3}}>
+                <Typography color="text.secondary">
+                  {assignments.length === 0 ? "You have no assignments at the moment." : "No assignments found matching the criteria."}
+                </Typography>
+              </Box>
+          ) : (
+              <List>
+                {finalAssignments.map((assignment, index) => (
+                    <ListItem key={assignment.submissionId} disablePadding
+                              divider={index < finalAssignments.length - 1}>
+                      <ListItemButton onClick={() => navigate(`/assignments/${assignment.submissionId}`)}>
+                        <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: {xs: 'flex-start', sm: 'center'},
+                              flexDirection: {xs: 'column', sm: 'row'},
+                              gap: 2,
+                              width: '100%',
+                            }}
+                        >
+                          <ListItemAvatar sx={{display: {xs: 'none', sm: 'block'}}}>
+                            <Avatar sx={{bgcolor: 'primary.main', color: 'primary.contrastText', mr: 2}}>
+                              <AssignmentOutlinedIcon/>
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                              primary={
+                                <Typography variant="subtitle1" color="text.primary"
+                                            sx={{fontWeight: 500, mb: 1, lineHeight: 1.2}}>
+                                  {assignment.title}
+                                </Typography>
+                              }
+                              secondary={
+                                <Typography variant="body1" color="text.secondary" sx={{fontWeight: 500}}>
+                                  {formatSubheading(assignment)}
+                                </Typography>
+                              }
+                          />
+                          <Chip
+                              label={assignment.status}
+                              color={assignment.status === 'Assigned' ? 'info' : 'default'}
+                              size="small"
+                          />
+                        </Box>
+                      </ListItemButton>
+                    </ListItem>
+                ))}
+              </List>
+          )}
+        </Paper>
+      </Box>
     </Box>
   );
 };

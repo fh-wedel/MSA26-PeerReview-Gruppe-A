@@ -1,3 +1,5 @@
 # templateEcsService Learnings
 
-- **Docker Build Target:** The `Dockerfile` dynamically targets this module using `ARG MODULE_DIR=templateEcsService` with Maven's `-pl` flag. When copying this template for a new service, this argument must be updated to the new directory name so Maven builds the correct child module from the root context.
+- **Cognito User Proxy:** The `/api/communication/users?search=` endpoint acts as a proxy to AWS Cognito. It is
+  currently the only backend workaround to retrieve a list of users (used for frontend caching) since a dedicated User
+  Management Service does not yet exist.

@@ -14,9 +14,5 @@ public class TestPlugin implements ReviewWorkflowPlugin {
     @Override
     public boolean isReviewerAnonymous() { return false; }
     @Override
-    public boolean isReviewerToReviewerAnonymous() { return true; }
-    @Override
     public boolean isAuthorReviewerChatAllowed() { return false; }
-    @Override
-    public boolean isReviewerToReviewerChatAllowed() { return true; }
 }

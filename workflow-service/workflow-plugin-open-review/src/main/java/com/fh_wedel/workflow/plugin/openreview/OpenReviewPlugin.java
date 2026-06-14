@@ -30,17 +30,7 @@ public class OpenReviewPlugin implements ReviewWorkflowPlugin {
     }
 
     @Override
-    public boolean isReviewerToReviewerAnonymous() {
-        return false;
-    }
-
-    @Override
     public boolean isAuthorReviewerChatAllowed() {
-        return true;
-    }
-
-    @Override
-    public boolean isReviewerToReviewerChatAllowed() {
         return true;
     }
 }

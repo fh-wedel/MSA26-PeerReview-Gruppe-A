@@ -1,13 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
-import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description, DoneAll } from '@mui/icons-material';
-import { useThemeContext } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useChat } from '../contexts/ChatContext';
-import { mockNotifications } from '../stubs/notifications';
-import { searchUsers } from '../api/communication';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
+import React, {useEffect, useState} from 'react';
+import {
+  AppBar,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Toolbar,
+  Typography,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import {
+  AccountCircle,
+  Assignment,
+  Brightness4,
+  Brightness7,
+  Close,
+  Description,
+  DoneAll,
+  Mail,
+  Menu as MenuIcon,
+  Notifications,
+  SettingsBrightness
+} from '@mui/icons-material';
+import {useThemeContext} from '../contexts/ThemeContext';
+import {useAuth} from '../contexts/AuthContext';
+import {useChat} from '../contexts/ChatContext';
+import {mockNotifications} from '../stubs/notifications';
+import {searchUsers} from '../api/communication';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {formatDistanceToNow} from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
 
 export const Navbar: React.FC = () => {
@@ -15,11 +47,14 @@ export const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [anchorElTheme, setAnchorElTheme] = useState<null | HTMLElement>(null);
   const [anchorElNotifications, setAnchorElNotifications] = useState<null | HTMLElement>(null);
   const [anchorElMessages, setAnchorElMessages] = useState<null | HTMLElement>(null);
   const [anchorElProfile, setAnchorElProfile] = useState<null | HTMLElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Local state for notifications and messages
   const [notifications, setNotifications] = useState(mockNotifications);
@@ -59,19 +94,51 @@ export const Navbar: React.FC = () => {
     navigate('/chats');
   };
 
-
+  const handleDrawerNav = (path: string) => {
+    navigate(path);
+    setDrawerOpen(false);
+  };
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
   const hasSubmissionsAccess = userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('author');
   const hasAdminOrReviewerRole = userRoles.includes('admin') || userRoles.includes('reviewer');
 
+  // Build navigation items for reuse in both desktop and drawer
+  const navItems: { label: string; path: string; show: boolean }[] = [
+    {label: 'Home', path: '/dashboard', show: true},
+    {label: 'Assignments', path: '/assignments', show: hasAdminOrReviewerRole},
+    {label: 'Submissions', path: '/submissions', show: hasSubmissionsAccess},
+    {label: 'Admin', path: '/admin', show: userRoles.includes('admin')},
+  ];
+
+  const isActivePath = (path: string) =>
+      path === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(path);
+
   return (
     <AppBar position="static" color="primary">
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        {/* Left Section: Logo */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+      <Toolbar sx={{display: 'flex', justifyContent: 'space-between', px: {xs: 1, sm: 2}}}>
+        {/* Left Section: Hamburger (mobile) + Logo */}
+        <Box sx={{display: 'flex', alignItems: 'center', flexShrink: 0}}>
+          {/* Hamburger menu for mobile */}
+          {isMobile && isAuthenticated && (
+              <IconButton
+                  color="inherit"
+                  edge="start"
+                  onClick={() => setDrawerOpen(true)}
+                  sx={{mr: 1}}
+                  aria-label="open navigation menu"
+              >
+                <MenuIcon/>
+              </IconButton>
+          )}
           <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate(isAuthenticated ? '/dashboard' : '/')}>
-            <Box sx={{ bgcolor: mode === 'dark' ? 'transparent' : 'white', p: 0.5, borderRadius: 1, display: 'flex', mr: 2 }}>
+            <Box sx={{
+              bgcolor: mode === 'dark' ? 'transparent' : 'white',
+              p: 0.5,
+              borderRadius: 1,
+              display: 'flex',
+              mr: {xs: 0, sm: 2}
+            }}>
               <img src={Logo} alt="FH Wedel Logo" style={{ height: '32px', filter: mode === 'dark' ? 'brightness(0) invert(1)' : 'none' }} />
             </Box>
             <Typography variant="h6" component="div" sx={{ display: { xs: 'none', sm: 'block' } }}>
@@ -80,42 +147,27 @@ export const Navbar: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Center Section: Navigation Links */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 2 }}>
-          {isAuthenticated && (
-            <>
-              <Button 
-                color="inherit" 
-                onClick={() => navigate('/dashboard')}
-                sx={{ opacity: location.pathname === '/dashboard' ? 1 : 0.7, fontSize: '1.15rem', fontWeight: location.pathname === '/dashboard' ? 600 : 400 }}
+        {/* Center Section: Navigation Links (desktop only) */}
+        <Box sx={{display: {xs: 'none', md: 'flex'}, justifyContent: 'center', gap: 2}}>
+          {isAuthenticated && navItems.filter(item => item.show).map(item => (
+              <Button
+                  key={item.path}
+                  color="inherit"
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    opacity: isActivePath(item.path) ? 1 : 0.7,
+                    fontSize: '1.15rem',
+                    fontWeight: isActivePath(item.path) ? 600 : 400
+                  }}
               >
-                Home
+                {item.label}
               </Button>
-              {hasAdminOrReviewerRole && (
-                <Button 
-                  color="inherit" 
-                  onClick={() => navigate('/assignments')}
-                  sx={{ opacity: location.pathname.startsWith('/assignments') ? 1 : 0.7, fontSize: '1.15rem', fontWeight: location.pathname.startsWith('/assignments') ? 600 : 400 }}
-                >
-                  Assignments
-                </Button>
-              )}
-              {hasSubmissionsAccess && (
-                <Button 
-                  color="inherit" 
-                  onClick={() => navigate('/submissions')}
-                  sx={{ opacity: location.pathname.startsWith('/submissions') ? 1 : 0.7, fontSize: '1.15rem', fontWeight: location.pathname.startsWith('/submissions') ? 600 : 400 }}
-                >
-                  Submissions
-                </Button>
-              )}
-            </>
-          )}
+          ))}
         </Box>
 
         {/* Right Section: Icons */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <IconButton sx={{ ml: 1 }} onClick={(e) => setAnchorElTheme(e.currentTarget)} color="inherit">
+        <Box sx={{display: 'flex', alignItems: 'center', flexShrink: 0}}>
+          <IconButton sx={{ml: {xs: 0.5, sm: 1}}} onClick={(e) => setAnchorElTheme(e.currentTarget)} color="inherit">
             {themeMode === 'system' ? <SettingsBrightness /> : themeMode === 'dark' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
           <Menu
@@ -145,7 +197,16 @@ export const Navbar: React.FC = () => {
                 anchorEl={anchorElMessages}
                 open={Boolean(anchorElMessages)}
                 onClose={() => setAnchorElMessages(null)}
-                slotProps={{ paper: { sx: { width: 320, maxHeight: 400, display: 'flex', flexDirection: 'column' } } }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      width: {xs: 280, sm: 320},
+                      maxHeight: 400,
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }
+                  }
+                }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Messages</Typography>
@@ -186,7 +247,11 @@ export const Navbar: React.FC = () => {
                   )}
                 </List>
                 <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
-                  <Button fullWidth onClick={handleMessageClick} sx={{ textTransform: 'none', fontWeight: 'bold' }}>
+                  <Button fullWidth onClick={handleMessageClick} sx={{
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    color: mode === 'dark' ? 'primary.light' : 'primary.main'
+                  }}>
                     View All Messages
                   </Button>
                 </Box>
@@ -201,7 +266,16 @@ export const Navbar: React.FC = () => {
                 anchorEl={anchorElNotifications}
                 open={Boolean(anchorElNotifications)}
                 onClose={() => setAnchorElNotifications(null)}
-                slotProps={{ paper: { sx: { width: 320, maxHeight: 400, display: 'flex', flexDirection: 'column' } } }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      width: {xs: 280, sm: 320},
+                      maxHeight: 400,
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }
+                  }
+                }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Notifications</Typography>
@@ -278,6 +352,37 @@ export const Navbar: React.FC = () => {
         </Box>
       </Toolbar>
 
+      {/* Mobile Navigation Drawer */}
+      <Drawer
+          anchor="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          slotProps={{
+            paper: {
+              sx: {width: 260}
+            }
+          }}
+      >
+        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.5}}>
+          <Typography variant="h6" sx={{fontWeight: 600}}>Navigation</Typography>
+          <IconButton onClick={() => setDrawerOpen(false)} aria-label="close navigation menu">
+            <Close/>
+          </IconButton>
+        </Box>
+        <Divider/>
+        <List>
+          {navItems.filter(item => item.show).map(item => (
+              <ListItem key={item.path} disablePadding>
+                <ListItemButton
+                    selected={isActivePath(item.path)}
+                    onClick={() => handleDrawerNav(item.path)}
+                >
+                  <ListItemText primary={item.label}/>
+                </ListItemButton>
+              </ListItem>
+          ))}
+        </List>
+      </Drawer>
     </AppBar>
   );
 };

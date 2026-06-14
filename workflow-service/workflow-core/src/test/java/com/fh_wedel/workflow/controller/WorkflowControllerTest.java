@@ -13,7 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -30,9 +31,7 @@ class WorkflowControllerTest {
         WorkflowRulesDto rules = new WorkflowRulesDto();
         rules.setAuthorAnonymous(true);
         rules.setReviewerAnonymous(false);
-        rules.setReviewerToReviewerAnonymous(true);
         rules.setAuthorReviewerChatAllowed(false);
-        rules.setReviewerToReviewerChatAllowed(true);
         return rules;
     }
 

@@ -30,17 +30,7 @@ public class DoubleBlindPlugin implements ReviewWorkflowPlugin {
     }
 
     @Override
-    public boolean isReviewerToReviewerAnonymous() {
-        return true;
-    }
-
-    @Override
     public boolean isAuthorReviewerChatAllowed() {
-        return false;
-    }
-
-    @Override
-    public boolean isReviewerToReviewerChatAllowed() {
         return false;
     }
 }

@@ -6,7 +6,5 @@ public interface ReviewWorkflowPlugin {
     String getTitle();
     boolean isAuthorAnonymous();
     boolean isReviewerAnonymous();
-    boolean isReviewerToReviewerAnonymous();
     boolean isAuthorReviewerChatAllowed();
-    boolean isReviewerToReviewerChatAllowed();
 }
