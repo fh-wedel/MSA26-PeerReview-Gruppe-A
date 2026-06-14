@@ -13,6 +13,8 @@ import {
   Select,
   Snackbar,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
@@ -34,6 +36,8 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   onSubmit,
   authorName,
 }) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
   const [reviewMode, setReviewMode] = useState<ReviewMode>("DOUBLE_BLIND");
   const { plugins, loading, error } = useWorkflowPlugins();
@@ -63,7 +67,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
         <DialogTitle>Create Submission</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
