@@ -247,7 +247,11 @@ export const Navbar: React.FC = () => {
                   )}
                 </List>
                 <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
-                  <Button fullWidth onClick={handleMessageClick} sx={{ textTransform: 'none', fontWeight: 'bold' }}>
+                  <Button fullWidth onClick={handleMessageClick} sx={{
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    color: mode === 'dark' ? 'primary.light' : 'primary.main'
+                  }}>
                     View All Messages
                   </Button>
                 </Box>
