@@ -60,9 +60,7 @@ export interface SubmissionMatchResponse {
 export interface WorkflowRules {
   authorAnonymous: boolean;
   reviewerAnonymous: boolean;
-  reviewerToReviewerAnonymous: boolean;
   authorReviewerChatAllowed: boolean;
-  reviewerToReviewerChatAllowed: boolean;
 }
 
 

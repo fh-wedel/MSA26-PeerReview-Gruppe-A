@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
+import {useEffect, useState} from 'react';
 
 export interface WorkflowRules {
   authorAnonymous: boolean;
   reviewerAnonymous: boolean;
-  reviewerToReviewerAnonymous: boolean;
   authorReviewerChatAllowed: boolean;
-  reviewerToReviewerChatAllowed: boolean;
 }
 
 export interface WorkflowPlugin {

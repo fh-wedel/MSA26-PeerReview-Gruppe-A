@@ -16,7 +16,7 @@ public class SingleBlindPlugin implements ReviewWorkflowPlugin {
 
     @Override
     public String getDescription() {
-        return "Single-Blind Review: Authors remain anonymous to reviewers, but reviewers are visible to authors. Reviewers can communicate with each other.";
+        return "Single-Blind Review: Reviewers remain anonymous to authors, but authors are visible to reviewers.";
     }
 
     @Override
@@ -30,17 +30,7 @@ public class SingleBlindPlugin implements ReviewWorkflowPlugin {
     }
 
     @Override
-    public boolean isReviewerToReviewerAnonymous() {
-        return false;
-    }
-
-    @Override
     public boolean isAuthorReviewerChatAllowed() {
         return false;
-    }
-
-    @Override
-    public boolean isReviewerToReviewerChatAllowed() {
-        return true;
     }
 }

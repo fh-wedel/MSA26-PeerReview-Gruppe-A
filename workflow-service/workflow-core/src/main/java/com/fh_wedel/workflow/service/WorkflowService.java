@@ -59,9 +59,7 @@ public class WorkflowService {
         WorkflowRulesDto dto = new WorkflowRulesDto();
         dto.setAuthorAnonymous(plugin.isAuthorAnonymous());
         dto.setReviewerAnonymous(plugin.isReviewerAnonymous());
-        dto.setReviewerToReviewerAnonymous(plugin.isReviewerToReviewerAnonymous());
         dto.setAuthorReviewerChatAllowed(plugin.isAuthorReviewerChatAllowed());
-        dto.setReviewerToReviewerChatAllowed(plugin.isReviewerToReviewerChatAllowed());
         return dto;
     }
 }

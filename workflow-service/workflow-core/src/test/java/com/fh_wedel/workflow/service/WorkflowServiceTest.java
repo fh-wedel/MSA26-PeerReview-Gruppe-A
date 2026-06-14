@@ -38,9 +38,7 @@ class WorkflowServiceTest {
         lenient().when(plugin.getTitle()).thenReturn(name + " title");
         lenient().when(plugin.isAuthorAnonymous()).thenReturn(true);
         lenient().when(plugin.isReviewerAnonymous()).thenReturn(false);
-        lenient().when(plugin.isReviewerToReviewerAnonymous()).thenReturn(true);
         lenient().when(plugin.isAuthorReviewerChatAllowed()).thenReturn(false);
-        lenient().when(plugin.isReviewerToReviewerChatAllowed()).thenReturn(true);
         return plugin;
     }
 
@@ -91,9 +89,7 @@ class WorkflowServiceTest {
         assertNotNull(result);
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
-        assertTrue(result.getReviewerToReviewerAnonymous());
         assertFalse(result.getAuthorReviewerChatAllowed());
-        assertTrue(result.getReviewerToReviewerChatAllowed());
         verify(registry).getByName("plugin-1");
     }
 

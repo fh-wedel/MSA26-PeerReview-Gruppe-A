@@ -152,25 +152,15 @@
             "type": "boolean",
             "description": "Whether the reviewer's identity is hidden from the author"
           },
-          "reviewerToReviewerAnonymous": {
-            "type": "boolean",
-            "description": "Whether reviewers are anonymous to each other"
-          },
           "authorReviewerChatAllowed": {
             "type": "boolean",
             "description": "Whether direct chat between author and reviewer is allowed"
-          },
-          "reviewerToReviewerChatAllowed": {
-            "type": "boolean",
-            "description": "Whether direct chat between reviewers is allowed"
           }
         },
         "required": [
           "authorAnonymous",
           "reviewerAnonymous",
-          "reviewerToReviewerAnonymous",
-          "authorReviewerChatAllowed",
-          "reviewerToReviewerChatAllowed"
+          "authorReviewerChatAllowed"
         ]
       },
       "WorkflowPluginDto": {
