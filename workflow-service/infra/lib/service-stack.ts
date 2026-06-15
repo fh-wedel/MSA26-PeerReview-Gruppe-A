@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib/core';
 import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
 import {EcsInfra} from '../../../infraLibrary/lib/ecs';
 import {LogsInfra} from '../../../infraLibrary/lib/logs';
@@ -57,10 +58,10 @@ export class ServiceStack extends cdk.Stack {
 
     const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
 
-      const reviewTable = new cdk.aws_dynamodb.Table(this, 'ReviewTable', {
-          partitionKey: {name: 'pk', type: cdk.aws_dynamodb.AttributeType.STRING},
-          sortKey: {name: 'sk', type: cdk.aws_dynamodb.AttributeType.STRING},
-          billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+    const reviewTable = new dynamodb.Table(this, 'ReviewTable', {
+      partitionKey: {name: 'pk', type: dynamodb.AttributeType.STRING},
+      sortKey: {name: 'sk', type: dynamodb.AttributeType.STRING},
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
           removalPolicy: cdk.RemovalPolicy.DESTROY,
       });
 
