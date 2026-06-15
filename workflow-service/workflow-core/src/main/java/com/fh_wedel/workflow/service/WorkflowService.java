@@ -2,6 +2,8 @@ package com.fh_wedel.workflow.service;
 
 import com.fh_wedel.configuration.client.api.DefaultApi;
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
+import com.fh_wedel.workflow.exception.DownstreamServiceException;
+import com.fh_wedel.workflow.exception.ReviewAlreadySubmittedException;
 import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
 import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
@@ -17,6 +19,8 @@ public class WorkflowService {
 
     private final WorkflowPluginRegistry registry;
     private final DefaultApi configurationApi;
+    private final com.fh_wedel.workflow.repository.ReviewRepository reviewRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public List<WorkflowPluginDto> listPlugins() {
         return registry.getAll().stream()
@@ -41,8 +45,82 @@ public class WorkflowService {
             com.fh_wedel.configuration.client.model.ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
             String workflowName = config.getReviewProcessType();
             return getPluginRules(workflowName);
+        } catch (com.fh_wedel.configuration.client.ApiException e) {
+            if (e.getCode() == 404) {
+                throw new NoSuchElementException("Submission not found: " + submissionId, e);
+            }
+            throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to fetch configuration for submission: " + submissionId, e);
+            throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
+        }
+    }
+
+    public void initializeReviewSession(String submissionId, String pluginName, List<String> expectedReviewerIds) {
+        com.fh_wedel.workflow.model.ReviewSession session = new com.fh_wedel.workflow.model.ReviewSession(
+                submissionId, pluginName, expectedReviewerIds
+        );
+        reviewRepository.saveSession(session);
+    }
+
+    public com.fh_wedel.workflow.api.model.ReviewGrade submitReview(String submissionId, String reviewerId, List<com.fh_wedel.workflow.api.model.ReviewResponse> responses) {
+        com.fh_wedel.workflow.model.ReviewSession session = reviewRepository.getSession(submissionId);
+        if (session == null) {
+            throw new IllegalArgumentException("No review session found for submission: " + submissionId);
+        }
+
+        // Check if the reviewer has already submitted a review
+        if (reviewRepository.getReview(submissionId, reviewerId) != null) {
+            throw new ReviewAlreadySubmittedException("Reviewer " + reviewerId + " has already submitted a review for submission " + submissionId);
+        }
+
+        ReviewWorkflowPlugin plugin = registry.getByName(session.getPluginName())
+                .orElseThrow(() -> new IllegalStateException("Plugin not found: " + session.getPluginName()));
+
+        com.fh_wedel.workflow.api.model.ReviewGrade grade = plugin.calculateGrade(responses);
+
+        try {
+            String responsesJson = objectMapper.writeValueAsString(responses);
+            com.fh_wedel.workflow.model.SubmittedReview review = new com.fh_wedel.workflow.model.SubmittedReview(
+                    submissionId, reviewerId, responsesJson, grade.totalPoints(), grade.maxPossiblePoints(),
+                    grade.percentage(), grade.summary()
+            );
+            reviewRepository.saveReview(review);
+
+            // Atomically increment the received review count to prevent race conditions
+            int newCount = reviewRepository.incrementReceivedReviewCount(submissionId);
+            boolean isComplete = newCount >= session.getTotalExpected();
+            if (isComplete) {
+                reviewRepository.markSessionComplete(submissionId);
+            }
+
+            return grade;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize responses", e);
+        }
+    }
+
+    public com.fh_wedel.workflow.model.ReviewSession getReviewStatus(String submissionId) {
+        return reviewRepository.getSession(submissionId);
+    }
+
+    public List<com.fh_wedel.workflow.model.SubmittedReview> getReviewsForSubmission(String submissionId) {
+        return reviewRepository.getReviewsForSubmission(submissionId);
+    }
+
+    public List<com.fh_wedel.workflow.api.model.ReviewQuestion> getFeedbackFormForSubmission(String submissionId) {
+        try {
+            com.fh_wedel.configuration.client.model.ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+            String workflowName = config.getReviewProcessType();
+            return registry.getByName(workflowName)
+                    .map(ReviewWorkflowPlugin::getFeedbackFormTemplate)
+                    .orElseThrow(() -> new NoSuchElementException("Plugin not found: " + workflowName));
+        } catch (com.fh_wedel.configuration.client.ApiException e) {
+            if (e.getCode() == 404) {
+                throw new NoSuchElementException("Submission not found: " + submissionId, e);
+            }
+            throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
+        } catch (Exception e) {
+            throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
         }
     }
 

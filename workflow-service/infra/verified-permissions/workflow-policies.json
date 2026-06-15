@@ -127,6 +127,114 @@
             "groupName": "ExaminationOfficer",
             "actionId": "get /api/workflow/submissions/{submissionId}/rules",
             "description": "Allow ExaminationOfficer to get submission rules"
+        },
+        {
+            "id": "AdminFeedbackForm",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/submissions/{submissionId}/feedback-form",
+            "description": "Allow Admin to get feedback form"
+        },
+        {
+            "id": "AuthorFeedbackForm",
+            "groupName": "Author",
+            "actionId": "get /api/workflow/submissions/{submissionId}/feedback-form",
+            "description": "Allow Author to get feedback form"
+        },
+        {
+            "id": "TeacherFeedbackForm",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/submissions/{submissionId}/feedback-form",
+            "description": "Allow Teacher to get feedback form"
+        },
+        {
+            "id": "ReviewerFeedbackForm",
+            "groupName": "Reviewer",
+            "actionId": "get /api/workflow/submissions/{submissionId}/feedback-form",
+            "description": "Allow Reviewer to get feedback form"
+        },
+        {
+            "id": "OfficerFeedbackForm",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/submissions/{submissionId}/feedback-form",
+            "description": "Allow ExaminationOfficer to get feedback form"
+        },
+        {
+            "id": "AdminSubmitReview",
+            "groupName": "Admin",
+            "actionId": "post /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Admin to submit review"
+        },
+        {
+            "id": "TeacherSubmitReview",
+            "groupName": "Teacher",
+            "actionId": "post /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Teacher to submit review"
+        },
+        {
+            "id": "ReviewerSubmitReview",
+            "groupName": "Reviewer",
+            "actionId": "post /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Reviewer to submit review"
+        },
+        {
+            "id": "AdminReviewStatus",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews/status",
+            "description": "Allow Admin to get review status"
+        },
+        {
+            "id": "AuthorReviewStatus",
+            "groupName": "Author",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews/status",
+            "description": "Allow Author to get review status"
+        },
+        {
+            "id": "TeacherReviewStatus",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews/status",
+            "description": "Allow Teacher to get review status"
+        },
+        {
+            "id": "ReviewerReviewStatus",
+            "groupName": "Reviewer",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews/status",
+            "description": "Allow Reviewer to get review status"
+        },
+        {
+            "id": "OfficerReviewStatus",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews/status",
+            "description": "Allow ExaminationOfficer to get review status"
+        },
+        {
+            "id": "AdminGetReviews",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Admin to get all reviews"
+        },
+        {
+            "id": "AuthorGetReviews",
+            "groupName": "Author",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Author to get all reviews"
+        },
+        {
+            "id": "TeacherGetReviews",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Teacher to get all reviews"
+        },
+        {
+            "id": "ReviewerGetReviews",
+            "groupName": "Reviewer",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow Reviewer to get all reviews"
+        },
+        {
+            "id": "OfficerGetReviews",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/submissions/{submissionId}/reviews",
+            "description": "Allow ExaminationOfficer to get all reviews"
         }
     ]
 }

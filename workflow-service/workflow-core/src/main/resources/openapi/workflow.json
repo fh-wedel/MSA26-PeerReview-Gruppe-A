@@ -17,7 +17,9 @@
         "operationId": "listPlugins",
         "summary": "List all available workflow plugins",
         "description": "Returns an array of all registered workflow plugins with their metadata and rules.",
-        "tags": ["Workflow Plugins"],
+        "tags": [
+          "Workflow Plugins"
+        ],
         "responses": {
           "200": {
             "description": "Successfully retrieved the list of workflow plugins",
@@ -40,7 +42,9 @@
         "operationId": "getPlugin",
         "summary": "Get details of a specific workflow plugin",
         "description": "Returns the metadata and rules for the workflow plugin identified by its name.",
-        "tags": ["Workflow Plugins"],
+        "tags": [
+          "Workflow Plugins"
+        ],
         "parameters": [
           {
             "name": "pluginName",
@@ -74,7 +78,9 @@
         "operationId": "getPluginRules",
         "summary": "Get the rules of a specific workflow plugin",
         "description": "Returns the anonymity and communication rules for the workflow plugin identified by its name.",
-        "tags": ["Workflow Plugins"],
+        "tags": [
+          "Workflow Plugins"
+        ],
         "parameters": [
           {
             "name": "pluginName",
@@ -108,7 +114,9 @@
         "operationId": "getRulesForSubmission",
         "summary": "Get the rules for a specific submission",
         "description": "Returns the anonymity and communication rules for the workflow plugin associated with the given submission ID.",
-        "tags": ["Workflow Rules"],
+        "tags": [
+          "Workflow Rules"
+        ],
         "parameters": [
           {
             "name": "submissionId",
@@ -136,6 +144,144 @@
           }
         }
       }
+    },
+    "/submissions/{submissionId}/feedback-form": {
+      "get": {
+        "operationId": "getFeedbackFormForSubmission",
+        "summary": "Get the feedback form for a submission",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved feedback form",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewQuestionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}/reviews": {
+      "post": {
+        "operationId": "submitReview",
+        "summary": "Submit a review",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully submitted review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitReviewResponseDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getReviewsForSubmission",
+        "summary": "Get all reviews for a submission",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubmittedReviewDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}/reviews/status": {
+      "get": {
+        "operationId": "getReviewStatus",
+        "summary": "Get review status for a submission",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -155,12 +301,20 @@
           "authorReviewerChatAllowed": {
             "type": "boolean",
             "description": "Whether direct chat between author and reviewer is allowed"
+          },
+          "defaultNumberOfReviewers": {
+            "type": "integer"
+          },
+          "defaultNumberOfAuthors": {
+            "type": "integer"
           }
         },
         "required": [
           "authorAnonymous",
           "reviewerAnonymous",
-          "authorReviewerChatAllowed"
+          "authorReviewerChatAllowed",
+          "defaultNumberOfReviewers",
+          "defaultNumberOfAuthors"
         ]
       },
       "WorkflowPluginDto": {
@@ -181,9 +335,191 @@
           },
           "rules": {
             "$ref": "#/components/schemas/WorkflowRulesDto"
+          },
+          "defaultNumberOfReviewers": {
+            "type": "integer"
+          },
+          "defaultNumberOfAuthors": {
+            "type": "integer"
+          },
+          "feedbackFormTemplate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewQuestionDto"
+            }
           }
         },
-        "required": ["name", "title", "description", "rules"]
+        "required": [
+          "name",
+          "title",
+          "description",
+          "rules",
+          "defaultNumberOfReviewers",
+          "defaultNumberOfAuthors",
+          "feedbackFormTemplate"
+        ]
+      },
+      "ReviewQuestionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "RATING",
+              "MULTIPLE_CHOICE",
+              "SCALE"
+            ]
+          },
+          "maxPoints": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "type",
+          "maxPoints",
+          "required"
+        ]
+      },
+      "ReviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "textValue": {
+            "type": "string"
+          },
+          "numericValue": {
+            "type": "integer"
+          },
+          "selectedOption": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "SubmitReviewRequest": {
+        "type": "object",
+        "properties": {
+          "responses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewResponseDto"
+            }
+          }
+        },
+        "required": [
+          "responses"
+        ]
+      },
+      "SubmitReviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalPoints": {
+            "type": "integer"
+          },
+          "maxPossiblePoints": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "totalPoints",
+          "maxPossiblePoints",
+          "percentage",
+          "summary"
+        ]
+      },
+      "ReviewStatusDto": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "totalExpected": {
+            "type": "integer"
+          },
+          "receivedCount": {
+            "type": "integer"
+          },
+          "complete": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "submissionId",
+          "totalExpected",
+          "receivedCount",
+          "complete"
+        ]
+      },
+      "SubmittedReviewDto": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "responses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewResponseDto"
+            }
+          },
+          "totalPoints": {
+            "type": "integer"
+          },
+          "maxPossiblePoints": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "gradeSummary": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "submissionId",
+          "reviewerId",
+          "responses",
+          "totalPoints",
+          "maxPossiblePoints",
+          "percentage",
+          "gradeSummary",
+          "submittedAt"
+        ]
       }
     }
   }

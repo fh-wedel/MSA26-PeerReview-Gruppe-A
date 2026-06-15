@@ -27,7 +27,4 @@ public class CreateConfigurationRequest {
     
     private Instant reviewDeadline;
 
-    private List<String> evaluationCriteria;
-
-    private boolean criteriaVisibleToAuthor;
 }

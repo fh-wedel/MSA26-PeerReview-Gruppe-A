@@ -40,8 +40,7 @@ public class ConfigurationService {
      */
     public SubmissionConfiguration createConfiguration(String title, String reviewProcessType,
                                                        List<String> authorIds, String creatorId, String creatorRole,
-                                                        int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline,
-                                                        List<String> evaluationCriteria, boolean criteriaVisibleToAuthor) {
+                                                       int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
@@ -53,7 +52,7 @@ public class ConfigurationService {
         // 1. Instantiate metadata record
         SubmissionConfiguration config = new SubmissionConfiguration(
                 submissionId, title, reviewProcessType, authorIds, creatorId, creatorRole,
-                numberOfExaminers, submissionDeadline, reviewDeadline, evaluationCriteria, criteriaVisibleToAuthor
+                numberOfExaminers, submissionDeadline, reviewDeadline
         );
 
         // 2. Instantiate author mappings (one for each author ID for indexed query lookup)
