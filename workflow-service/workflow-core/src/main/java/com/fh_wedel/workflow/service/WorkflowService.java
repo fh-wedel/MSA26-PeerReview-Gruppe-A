@@ -130,6 +130,23 @@ public class WorkflowService {
         dto.setTitle(plugin.getTitle());
         dto.setDescription(plugin.getDescription());
         dto.setRules(toRulesDto(plugin));
+        dto.setDefaultNumberOfReviewers(plugin.getDefaultNumberOfReviewers());
+        dto.setDefaultNumberOfAuthors(plugin.getDefaultNumberOfAuthors());
+
+        List<com.fh_wedel.workflow.model.api.ReviewQuestionDto> feedbackDtos = plugin.getFeedbackFormTemplate().stream()
+                .map(q -> {
+                    com.fh_wedel.workflow.model.api.ReviewQuestionDto qDto = new com.fh_wedel.workflow.model.api.ReviewQuestionDto();
+                    qDto.setId(q.id());
+                    qDto.setText(q.text());
+                    qDto.setType(com.fh_wedel.workflow.model.api.ReviewQuestionDto.TypeEnum.fromValue(q.type().name()));
+                    qDto.setMaxPoints(q.maxPoints());
+                    qDto.setRequired(q.required());
+                    qDto.setOptions(q.options());
+                    return qDto;
+                })
+                .toList();
+        dto.setFeedbackFormTemplate(feedbackDtos);
+        
         return dto;
     }
 
@@ -138,6 +155,8 @@ public class WorkflowService {
         dto.setAuthorAnonymous(plugin.isAuthorAnonymous());
         dto.setReviewerAnonymous(plugin.isReviewerAnonymous());
         dto.setAuthorReviewerChatAllowed(plugin.isAuthorReviewerChatAllowed());
+        dto.setDefaultNumberOfReviewers(plugin.getDefaultNumberOfReviewers());
+        dto.setDefaultNumberOfAuthors(plugin.getDefaultNumberOfAuthors());
         return dto;
     }
 }
