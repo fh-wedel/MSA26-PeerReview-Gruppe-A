@@ -37,9 +37,9 @@
     <modules>
         <module>workflow-api</module>
         <module>workflow-core</module>
-        <module>workflow-plugin-double-blind</module>
-        <module>workflow-plugin-single-blind</module>
-        <module>workflow-plugin-open-review</module>
+        <module>workflow-plugin-individual-work</module>
+        <module>workflow-plugin-bachelor-thesis</module>
+        <module>workflow-plugin-group-work</module>
     </modules>
 
     <properties>

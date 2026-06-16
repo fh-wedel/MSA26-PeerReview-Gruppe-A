@@ -39,7 +39,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("DOUBLE_BLIND");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("INDIVIDUAL_WORK");
   const { plugins, loading, error } = useWorkflowPlugins();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -55,7 +55,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     try {
       await onSubmit(title, reviewMode);
       setTitle("");
-      setReviewMode("DOUBLE_BLIND");
+      setReviewMode("INDIVIDUAL_WORK");
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -103,9 +103,9 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   ))
                 ) : (
                   <>
-                    <MenuItem value="DOUBLE_BLIND">Double Blind</MenuItem>
-                    <MenuItem value="SINGLE_BLIND">Single Blind</MenuItem>
-                    <MenuItem value="OPEN_REVIEW">Open Review</MenuItem>
+                    <MenuItem value="INDIVIDUAL_WORK">Individual Work</MenuItem>
+                    <MenuItem value="GROUP_WORK">Group Work</MenuItem>
+                    <MenuItem value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>
                   </>
                 )}
               </Select>

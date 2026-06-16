@@ -116,11 +116,11 @@ class WorkflowServiceTest {
     @Test
     void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
         ModelConfiguration mockConfig = new ModelConfiguration();
-        mockConfig.setReviewProcessType("DOUBLE_BLIND");
+        mockConfig.setReviewProcessType("INDIVIDUAL_WORK");
         when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("DOUBLE_BLIND");
-        when(registry.getByName("DOUBLE_BLIND")).thenReturn(Optional.of(mockPlugin));
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
+        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
 
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
@@ -128,7 +128,7 @@ class WorkflowServiceTest {
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
         verify(configurationApi).submissionIdGet("sub-123");
-        verify(registry).getByName("DOUBLE_BLIND");
+        verify(registry).getByName("INDIVIDUAL_WORK");
     }
 
     @Test
@@ -151,7 +151,7 @@ class WorkflowServiceTest {
 
     @Test
     void initializeReviewSessionSavesSession() {
-        service.initializeReviewSession("sub-123", "DOUBLE_BLIND", List.of("rev-1"));
+        service.initializeReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
         verify(reviewRepository).saveSession(any(ReviewSession.class));
     }
 
@@ -163,7 +163,7 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewThrowsIfAlreadySubmitted() {
-        ReviewSession session = new ReviewSession("sub-123", "DOUBLE_BLIND", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(new SubmittedReview());
 
@@ -172,14 +172,14 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewSavesReviewAndUpdatesCount() throws Exception {
-        ReviewSession session = new ReviewSession("sub-123", "DOUBLE_BLIND", List.of("rev-1", "rev-2"));
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1", "rev-2"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("DOUBLE_BLIND");
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
         com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
         when(mockPlugin.calculateGrade(any())).thenReturn(grade);
-        when(registry.getByName("DOUBLE_BLIND")).thenReturn(Optional.of(mockPlugin));
+        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
 
@@ -193,14 +193,14 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewSavesReviewAndMarksComplete() throws Exception {
-        ReviewSession session = new ReviewSession("sub-123", "DOUBLE_BLIND", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("DOUBLE_BLIND");
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
         com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
         when(mockPlugin.calculateGrade(any())).thenReturn(grade);
-        when(registry.getByName("DOUBLE_BLIND")).thenReturn(Optional.of(mockPlugin));
+        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
 

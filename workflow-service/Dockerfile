@@ -7,18 +7,18 @@ WORKDIR /app
 # Copy all POMs for dependency caching
 COPY pom.xml .
 COPY workflow-api/pom.xml workflow-api/
-COPY workflow-plugin-double-blind/pom.xml workflow-plugin-double-blind/
-COPY workflow-plugin-single-blind/pom.xml workflow-plugin-single-blind/
-COPY workflow-plugin-open-review/pom.xml workflow-plugin-open-review/
+COPY workflow-plugin-individual-work/pom.xml workflow-plugin-individual-work/
+COPY workflow-plugin-bachelor-thesis/pom.xml workflow-plugin-bachelor-thesis/
+COPY workflow-plugin-group-work/pom.xml workflow-plugin-group-work/
 COPY workflow-core/pom.xml workflow-core/
 
 RUN mvn dependency:go-offline -B
 
 # Copy all source code and build
 COPY workflow-api/src workflow-api/src
-COPY workflow-plugin-double-blind/src workflow-plugin-double-blind/src
-COPY workflow-plugin-single-blind/src workflow-plugin-single-blind/src
-COPY workflow-plugin-open-review/src workflow-plugin-open-review/src
+COPY workflow-plugin-individual-work/src workflow-plugin-individual-work/src
+COPY workflow-plugin-bachelor-thesis/src workflow-plugin-bachelor-thesis/src
+COPY workflow-plugin-group-work/src workflow-plugin-group-work/src
 COPY workflow-core/src workflow-core/src
 
 RUN mvn clean package -DskipTests
@@ -37,9 +37,9 @@ COPY --from=builder /app/workflow-core/target/*.jar app.jar
 
 # Copy plugin JARs to a separate directory for loader.path
 RUN mkdir plugins
-COPY --from=builder /app/workflow-plugin-double-blind/target/workflow-plugin-double-blind-*.jar plugins/
-COPY --from=builder /app/workflow-plugin-single-blind/target/workflow-plugin-single-blind-*.jar plugins/
-COPY --from=builder /app/workflow-plugin-open-review/target/workflow-plugin-open-review-*.jar plugins/
+COPY --from=builder /app/workflow-plugin-individual-work/target/workflow-plugin-individual-work-*.jar plugins/
+COPY --from=builder /app/workflow-plugin-bachelor-thesis/target/workflow-plugin-bachelor-thesis-*.jar plugins/
+COPY --from=builder /app/workflow-plugin-group-work/target/workflow-plugin-group-work-*.jar plugins/
 
 USER spring:spring
 

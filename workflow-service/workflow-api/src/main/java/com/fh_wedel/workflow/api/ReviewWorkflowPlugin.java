@@ -19,7 +19,7 @@ public interface ReviewWorkflowPlugin {
     // ── Metadata ──────────────────────────────────────────────────────
 
     /**
-     * Unique machine-readable identifier (e.g. {@code "DOUBLE_BLIND"}).
+     * Unique machine-readable identifier (e.g. {@code "INDIVIDUAL_WORK"}).
      */
     String getName();
 

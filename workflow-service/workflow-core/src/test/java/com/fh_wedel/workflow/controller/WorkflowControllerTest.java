@@ -183,7 +183,7 @@ class WorkflowControllerTest {
 
     @Test
     void getReviewStatusReturns200() {
-        ReviewSession session = new ReviewSession("sub-123", "DOUBLE_BLIND", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
         session.setReceivedReviewCount(1);
         session.setComplete(true);
         when(workflowService.getReviewStatus("sub-123")).thenReturn(session);
