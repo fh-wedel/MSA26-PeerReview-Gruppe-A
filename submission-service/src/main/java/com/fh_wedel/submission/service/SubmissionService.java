@@ -145,9 +145,7 @@ public class SubmissionService {
         }
 
         SubmissionReadyEvent event = new SubmissionReadyEvent(
-                submission.getSubmissionId(),
-                submission.getAuthorId(),
-                submission.getConfigurationId()
+                submission.getSubmissionId()
         );
 
         try {

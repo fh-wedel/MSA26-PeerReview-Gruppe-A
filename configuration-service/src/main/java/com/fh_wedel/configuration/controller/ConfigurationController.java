@@ -82,9 +82,7 @@ public class ConfigurationController {
                 callerRole,
                 request.getNumberOfExaminers(),
                 request.getSubmissionDeadline(),
-                request.getReviewDeadline(),
-                request.getEvaluationCriteria(),
-                request.isCriteriaVisibleToAuthor()
+                request.getReviewDeadline()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(config);
@@ -119,11 +117,6 @@ public class ConfigurationController {
             }
         }
 
-        // Mask evaluation criteria if not visible to authors
-        if (callerIsAuthor && !config.isCriteriaVisibleToAuthor()) {
-            config.setEvaluationCriteria(null);
-        }
-
         return ResponseEntity.ok(config);
     }
 
@@ -150,15 +143,6 @@ public class ConfigurationController {
         }
 
         List<SubmissionConfiguration> configs = configurationService.getConfigurationsByAuthor(authorId);
-
-        // Mask evaluation criteria for authors if not visible
-        if (callerIsAuthor) {
-            configs.forEach(config -> {
-                if (!config.isCriteriaVisibleToAuthor()) {
-                    config.setEvaluationCriteria(null);
-                }
-            });
-        }
 
         return ResponseEntity.ok(configs);
     }

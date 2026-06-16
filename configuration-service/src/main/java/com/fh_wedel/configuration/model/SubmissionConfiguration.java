@@ -37,10 +37,6 @@ public class SubmissionConfiguration {
     @Getter
     private Instant reviewDeadline;
     @Getter
-    private List<String> evaluationCriteria;
-    @Getter
-    private boolean criteriaVisibleToAuthor;
-    @Getter
     private String status; // e.g. CREATED, MATCHED
     @Getter
     private Instant createdAt;
@@ -50,8 +46,7 @@ public class SubmissionConfiguration {
 
     public SubmissionConfiguration(String submissionId, String title, String reviewProcessType,
                                    List<String> authorIds, String creatorId, String creatorRole,
-                                   int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline,
-                                   List<String> evaluationCriteria, boolean criteriaVisibleToAuthor) {
+                                   int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
         this.pk = PK_PREFIX + submissionId;
         this.sk = SK_VALUE;
         this.submissionId = submissionId;
@@ -63,8 +58,6 @@ public class SubmissionConfiguration {
         this.numberOfExaminers = numberOfExaminers;
         this.submissionDeadline = submissionDeadline;
         this.reviewDeadline = reviewDeadline;
-        this.evaluationCriteria = evaluationCriteria;
-        this.criteriaVisibleToAuthor = criteriaVisibleToAuthor;
         this.status = "CREATED";
         this.createdAt = Instant.now();
     }
