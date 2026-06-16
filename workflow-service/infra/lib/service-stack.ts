@@ -89,6 +89,7 @@ export class ServiceStack extends cdk.Stack {
           'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8080`,
           'DYNAMODB_TABLE_NAME': reviewTable.tableName,
           'AWS_SQS_WORKFLOW_REQUEST_QUEUE_NAME': workflowQueue.queue.queueName,
+        'AWS_USE_DUALSTACK_ENDPOINT': 'true',
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
