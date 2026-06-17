@@ -24,7 +24,7 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
     if (user?.id && open) {
       configApiClient.author.authorDetail(user.id, { format: 'json' })
         .then(res => {
-          const configs = (res.data as Array<Record<string, unknown>>) || [];
+          const configs = (res.data as unknown as Array<Record<string, unknown>>) || [];
           setAuthorSubmissions(configs.map(c => (c.id || c.submissionId) as string));
         })
         .catch(console.error);
