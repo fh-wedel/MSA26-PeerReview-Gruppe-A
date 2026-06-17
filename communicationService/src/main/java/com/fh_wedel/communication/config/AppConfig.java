@@ -1,9 +1,6 @@
 package com.fh_wedel.communication.config;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,11 +24,8 @@ public class AppConfig {
     private String awsRegion;
 
     @Bean
-    public org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
-        return builder -> builder
-                .modulesToInstall(new JavaTimeModule(), new org.openapitools.jackson.nullable.JsonNullableModule())
-                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    public com.fasterxml.jackson.databind.Module jsonNullableModule() {
+        return new org.openapitools.jackson.nullable.JsonNullableModule();
     }
 
     @Bean
