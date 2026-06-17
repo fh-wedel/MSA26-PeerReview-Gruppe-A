@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, CircularProgress, Alert, Autocomplete } from '@mui/material';
 import { fetchSubmissionMatch, fetchWorkflowRulesForSubmission } from '../../api/communication';
 import type { UserSummary } from '../../api/communication';
+import { configApiClient } from '../../api/clients';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAssignments } from '../../hooks/useAssignments';
 
@@ -15,8 +16,20 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
   const [submissionId, setSubmissionId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authorSubmissions, setAuthorSubmissions] = useState<string[]>([]);
   const { user } = useAuth();
   const { assignments } = useAssignments();
+
+  useEffect(() => {
+    if (user?.id && open) {
+      configApiClient.author.authorDetail(user.id, { format: 'json' })
+        .then(res => {
+          const configs = (res.data as Array<Record<string, unknown>>) || [];
+          setAuthorSubmissions(configs.map(c => (c.id || c.submissionId) as string));
+        })
+        .catch(console.error);
+    }
+  }, [user?.id, open]);
 
   const handleCreate = async () => {
     if (!submissionId.trim()) {
@@ -89,13 +102,9 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
       <DialogTitle>New Submission Chat</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {/* TODO: In the future, replace this manual input fallback for Authors with a comprehensive dropdown list.
-            Currently, the UI cannot fetch all submissions for Authors from a single source.
-            Once the configuration/submission service provides an endpoint to list all relevant submission IDs for the current user, 
-            fetch them here and pass them into the 'options' prop so Authors also have a populated list. */}
         <Autocomplete
           freeSolo
-          options={assignments.map(a => a.submissionId)}
+          options={Array.from(new Set([...assignments.map(a => a.submissionId), ...authorSubmissions]))}
           value={submissionId}
           onInputChange={(_, newValue) => setSubmissionId(newValue)}
           disabled={loading}
