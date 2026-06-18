@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as rds from 'aws-cdk-lib/aws-rds';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
@@ -20,6 +20,7 @@ export interface NotificationServiceStackProps extends cdk.StackProps {
   maxTaskCount: number;
   requestQueueName: string;
   secretsName: string;
+  dynamoDbTableName: string;
 }
 
 export class NotificationServiceStack extends cdk.Stack {
@@ -34,22 +35,31 @@ export class NotificationServiceStack extends cdk.Stack {
       logGroupName: `/ecs/${props.serviceName}`,
     });
 
-    // RDS PostgreSQL
-    const dbCredentials = rds.Credentials.fromGeneratedSecret('notification_admin', {
-      secretName: `${props.serviceName}/db-credentials`,
+    // =============================================
+    // DynamoDB Table (single-table design)
+    //   - InAppNotification: PK NOTIFICATION#{id}, SK META; GSI UserIndex(userSub, createdAt)
+    //   - NotificationLog:   PK LOG#{id},          SK META; GSI StatusIndex(status, createdAt)
+    // =============================================
+    const notificationsTable = new dynamodb.Table(this, 'NotificationsTable', {
+      tableName: props.dynamoDbTableName,
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const dbInstance = new rds.DatabaseInstance(this, 'NotificationDb', {
-      engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_16,
-      }),
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      vpc,
-      vpcSubnets: { subnets: [subnet] },
-      databaseName: 'notification',
-      credentials: dbCredentials,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      deletionProtection: false,
+    notificationsTable.addGlobalSecondaryIndex({
+      indexName: 'UserIndex',
+      partitionKey: { name: 'userSub', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    notificationsTable.addGlobalSecondaryIndex({
+      indexName: 'StatusIndex',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     // Import existing notification secrets
@@ -75,13 +85,7 @@ export class NotificationServiceStack extends cdk.Stack {
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'SECRETS_NAME': props.secretsName,
-        'DB_HOST': dbInstance.dbInstanceEndpointAddress,
-        'DB_PORT': dbInstance.dbInstanceEndpointPort,
-        'DB_NAME': 'notification',
-      },
-      secrets: {
-        'DB_USERNAME': ecs.Secret.fromSecretsManager(dbInstance.secret!, 'username'),
-        'DB_PASSWORD': ecs.Secret.fromSecretsManager(dbInstance.secret!, 'password'),
+        'DYNAMODB_TABLE_NAME': props.dynamoDbTableName,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -98,9 +102,6 @@ export class NotificationServiceStack extends cdk.Stack {
     const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
     const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
     ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming from API Gateway Lambda');
-
-    // Allow ECS to connect to RDS
-    dbInstance.connections.allowFrom(ecsSecurityGroup, ec2.Port.tcp(5432), 'ECS to RDS');
 
     const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
@@ -122,6 +123,9 @@ export class NotificationServiceStack extends cdk.Stack {
     cfnService.serviceRegistries = [{ registryArn: sdService.attrArn }];
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
+
+    // DynamoDB permissions
+    notificationsTable.grantReadWriteData(ecsService.taskDefinition.taskRole);
 
     // SQS Queue
     const requestQueues = SqsInfra.createQueue(this, {

@@ -4,7 +4,6 @@ import com.fh_wedel.notification.model.InAppNotification;
 import com.fh_wedel.notification.model.NotificationDto;
 import com.fh_wedel.notification.repository.InAppNotificationRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +23,6 @@ public class InAppNotificationService {
                 .toList();
     }
 
-    @Transactional
     public boolean markRead(String userSub, UUID id) {
         return repository.findById(id)
                 .filter(n -> n.getUserSub().equals(userSub))
@@ -36,7 +34,6 @@ public class InAppNotificationService {
                 .orElse(false);
     }
 
-    @Transactional
     public void markAllRead(String userSub) {
         List<InAppNotification> list = repository.findByUserSubOrderByCreatedAtDesc(userSub);
         list.forEach(n -> n.setRead(true));

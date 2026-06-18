@@ -54,6 +54,7 @@ const serviceStack = new NotificationServiceStack(app, 'NotificationServiceStack
   containerPort,
   requestQueueName: 'notification-request-queue',
   secretsName: 'msa26/notification/credentials',
+  dynamoDbTableName: 'notification-service-notifications',
   minTaskCount: 1,
   maxTaskCount: 1,
   memory: 512,

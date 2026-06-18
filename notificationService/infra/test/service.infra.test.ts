@@ -11,6 +11,7 @@ const synth = () => {
         containerPort: 8081,
         requestQueueName: 'notification-request-queue',
         secretsName: 'msa26/notification/credentials',
+        dynamoDbTableName: 'notification-service-notifications',
         minTaskCount: 1,
         maxTaskCount: 1,
         memory: 512,
@@ -19,12 +20,16 @@ const synth = () => {
     return Template.fromStack(stack);
 };
 
-test('Notification stack creates its own RDS database and log group', () => {
+test('Notification stack creates its own DynamoDB table and log group', () => {
     const template = synth();
 
-    template.resourceCountIs('AWS::RDS::DBInstance', 1);
-    template.hasResourceProperties('AWS::RDS::DBInstance', {
-        DBName: 'notification',
+    template.resourceCountIs('AWS::DynamoDB::Table', 1);
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+        TableName: 'notification-service-notifications',
+        GlobalSecondaryIndexes: Match.arrayWith([
+            Match.objectLike({ IndexName: 'UserIndex' }),
+            Match.objectLike({ IndexName: 'StatusIndex' }),
+        ]),
     });
     template.hasResourceProperties('AWS::Logs::LogGroup', {
         LogGroupName: '/ecs/notification',

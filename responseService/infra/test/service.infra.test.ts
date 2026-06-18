@@ -11,6 +11,7 @@ const synth = () => {
         containerPort: 8081,
         requestQueueName: 'response-request-queue',
         s3BucketName: 'msa26-peer-review-response-documents',
+        dynamoDbTableName: 'response-service-results',
         minTaskCount: 1,
         maxTaskCount: 1,
         memory: 512,
@@ -19,12 +20,15 @@ const synth = () => {
     return Template.fromStack(stack);
 };
 
-test('Response stack creates its own RDS database and log group', () => {
+test('Response stack creates its own DynamoDB table and log group', () => {
     const template = synth();
 
-    template.resourceCountIs('AWS::RDS::DBInstance', 1);
-    template.hasResourceProperties('AWS::RDS::DBInstance', {
-        DBName: 'response',
+    template.resourceCountIs('AWS::DynamoDB::Table', 1);
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+        TableName: 'response-service-results',
+        GlobalSecondaryIndexes: Match.arrayWith([
+            Match.objectLike({ IndexName: 'AuthorIndex' }),
+        ]),
     });
     template.hasResourceProperties('AWS::Logs::LogGroup', {
         LogGroupName: '/ecs/response',
