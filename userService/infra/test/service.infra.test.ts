@@ -33,7 +33,7 @@ const collectSecurityGroupRules = (
     return rules;
 };
 
-test('Service stack uses IPv6 defaults and creates queues', () => {
+test('Service stack uses IPv6 defaults', () => {
     const app = new cdk.App();
     const stack = new ServiceStack(app, 'TestServiceStack', {
         serviceName: 'orders',
@@ -46,13 +46,7 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
 
     const template = Template.fromStack(stack);
 
-    template.resourceCountIs('AWS::SQS::Queue', 2);
-    template.hasResourceProperties('AWS::SQS::Queue', {
-        QueueName: 'orders-request',
-    });
-    template.hasResourceProperties('AWS::SQS::Queue', {
-        QueueName: 'orders-response',
-    });
+    template.resourceCountIs('AWS::SQS::Queue', 0);
 
     template.hasResourceProperties('AWS::Logs::LogGroup', {
         LogGroupName: '/ecs/orders',
@@ -87,10 +81,9 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                     }),
                 ]),
                 Environment: Match.arrayWith([
-                    { Name: 'SQS_REQUEST_QUEUE', Value: 'orders-request' },
-                    { Name: 'SQS_RESPONSE_QUEUE', Value: 'orders-response' },
                     { Name: 'SERVER_PORT', Value: '8081' },
                     { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
+                    { Name: 'COGNITO_USER_POOL_ID', Value: Match.anyValue() },
                 ]),
                 HealthCheck: Match.objectLike({
                     Command: [
