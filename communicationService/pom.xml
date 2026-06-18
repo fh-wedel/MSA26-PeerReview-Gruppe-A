@@ -183,7 +183,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/../matchingService/src/main/resources/openapi/matching.json</inputSpec>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/matching.json</inputSpec>
                             <output>${project.build.directory}/generated-sources/openapi-matching</output>
                             <generatorName>java</generatorName>
                             <library>native</library>
@@ -203,7 +203,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/../workflow-service/workflow-core/src/main/resources/openapi/workflow.json</inputSpec>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/workflow.json</inputSpec>
                             <output>${project.build.directory}/generated-sources/openapi-workflow</output>
                             <generatorName>java</generatorName>
                             <library>native</library>
