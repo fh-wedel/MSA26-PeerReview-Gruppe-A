@@ -40,12 +40,12 @@ public class IndividualWorkPlugin implements ReviewWorkflowPlugin {
     }
 
     @Override
-    public int getDefaultNumberOfReviewers() {
+    public int getNumberOfReviewers() {
         return 2;
     }
 
     @Override
-    public int getDefaultNumberOfAuthors() {
+    public int getNumberOfAuthors() {
         return 1;
     }
 
@@ -96,5 +96,20 @@ public class IndividualWorkPlugin implements ReviewWorkflowPlugin {
         }
 
         return ReviewGrade.of(totalPoints, maxPoints, "Calculated grade based on Double-Blind rubric");
+    }
+
+    @Override
+    public java.time.Duration getSubmissionDeadlineDuration() {
+        return java.time.Duration.ofDays(7);
+    }
+
+    @Override
+    public java.time.Duration getReviewDeadlineDuration() {
+        return java.time.Duration.ofDays(7);
+    }
+
+    @Override
+    public boolean isEvaluationCriteriaVisibleToAuthors() {
+        return true;
     }
 }

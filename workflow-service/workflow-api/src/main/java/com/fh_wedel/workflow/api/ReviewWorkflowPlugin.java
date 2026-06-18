@@ -40,19 +40,36 @@ public interface ReviewWorkflowPlugin {
     /** Whether direct chat between author and reviewer is allowed. */
     boolean isAuthorReviewerChatAllowed();
 
+    /**
+     * Whether the evaluation criteria is visible to authors.
+     */
+    boolean isEvaluationCriteriaVisibleToAuthors();
+
+    // ── Timelines ─────────────────────────────────────────────────────
+
+    /**
+     * Duration allowed for submitting work after creation.
+     */
+    java.time.Duration getSubmissionDeadlineDuration();
+
+    /**
+     * Duration allowed for reviewing after the submission deadline.
+     */
+    java.time.Duration getReviewDeadlineDuration();
+
     // ── Participant structure ─────────────────────────────────────────
 
     /**
      * Default number of reviewers required for submissions using this workflow.
      * Can be overridden per-submission in the Configuration Service.
      */
-    int getDefaultNumberOfReviewers();
+    int getNumberOfReviewers();
 
     /**
      * Default number of authors expected for submissions using this workflow.
      * {@code 1} for individual work, {@code > 1} for group work.
      */
-    int getDefaultNumberOfAuthors();
+    int getNumberOfAuthors();
 
     // ── Feedback form ─────────────────────────────────────────────────
 

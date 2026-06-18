@@ -136,7 +136,7 @@ export const SubmissionDetails: React.FC = () => {
   if (submissionMatch && submissionMatch.status === 'MATCHED') {
     status = isAssignmentsPage ? 'Assigned' : 'Matched';
   }
-  const reviewMode = submissionConfig?.reviewProcessType || mockSubmission?.reviewMode || 'unknown';
+    const reviewType = submissionConfig?.reviewProcessType || mockSubmission?.reviewType || 'unknown';
 
   if (!submissionConfig?.createdAt) {
     throw new Error('Missing real creation date from backend.');
@@ -271,7 +271,7 @@ export const SubmissionDetails: React.FC = () => {
                     Review Mode
                   </Typography>
                   <Typography sx={{ textTransform: 'capitalize' }}>
-                    {plugins.find(p => p.name === reviewMode)?.title || reviewMode}
+                      {plugins.find(p => p.name === reviewType)?.title || reviewType}
                   </Typography>
                 </Box>
 

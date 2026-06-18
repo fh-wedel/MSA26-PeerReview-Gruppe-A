@@ -79,10 +79,7 @@ public class ConfigurationController {
                 request.getReviewProcessType(),
                 request.getAuthorIds(),
                 callerSub,
-                callerRole,
-                request.getNumberOfExaminers(),
-                request.getSubmissionDeadline(),
-                request.getReviewDeadline()
+                callerRole
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(config);

@@ -40,12 +40,12 @@ public class BachelorThesisPlugin implements ReviewWorkflowPlugin {
     }
 
     @Override
-    public int getDefaultNumberOfReviewers() {
+    public int getNumberOfReviewers() {
         return 1;
     }
 
     @Override
-    public int getDefaultNumberOfAuthors() {
+    public int getNumberOfAuthors() {
         return 1;
     }
 
@@ -84,5 +84,20 @@ public class BachelorThesisPlugin implements ReviewWorkflowPlugin {
         }
 
         return ReviewGrade.of(totalPoints, maxPoints, "Bachelor Thesis Evaluation");
+    }
+
+    @Override
+    public java.time.Duration getSubmissionDeadlineDuration() {
+        return java.time.Duration.ofDays(30);
+    }
+
+    @Override
+    public java.time.Duration getReviewDeadlineDuration() {
+        return java.time.Duration.ofDays(21);
+    }
+
+    @Override
+    public boolean isEvaluationCriteriaVisibleToAuthors() {
+        return true;
     }
 }

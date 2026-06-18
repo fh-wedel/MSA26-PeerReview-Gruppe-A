@@ -182,15 +182,6 @@
             "type": "string",
             "format": "date-time"
           },
-          "evaluationCriteria": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "criteriaVisibleToAuthor": {
-            "type": "boolean"
-          },
           "createdAt": {
             "type": "string",
             "format": "date-time"

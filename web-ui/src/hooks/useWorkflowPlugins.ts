@@ -11,6 +11,11 @@ export interface WorkflowPlugin {
   title: string;
   description: string;
   rules: WorkflowRules;
+  submissionDeadlineDuration: string;
+  reviewDeadlineDuration: string;
+  evaluationCriteriaVisibleToAuthors: boolean;
+  numberOfReviewers: number;
+  numberOfAuthors: number;
 }
 
 export const useWorkflowPlugins = () => {

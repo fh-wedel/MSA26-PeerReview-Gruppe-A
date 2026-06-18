@@ -328,11 +328,25 @@
           "rules": {
             "$ref": "#/components/schemas/WorkflowRulesDto"
           },
-          "defaultNumberOfReviewers": {
-            "type": "integer"
+          "submissionDeadlineDuration": {
+            "type": "string",
+            "description": "ISO-8601 duration for the submission deadline (e.g., P14D)"
           },
-          "defaultNumberOfAuthors": {
-            "type": "integer"
+          "reviewDeadlineDuration": {
+            "type": "string",
+            "description": "ISO-8601 duration for the review deadline (e.g., P14D)"
+          },
+          "evaluationCriteriaVisibleToAuthors": {
+            "type": "boolean",
+            "description": "Whether the evaluation criteria is visible to authors"
+          },
+          "numberOfReviewers": {
+            "type": "integer",
+            "description": "Number of reviewers"
+          },
+          "numberOfAuthors": {
+            "type": "integer",
+            "description": "Number of authors"
           },
           "feedbackFormTemplate": {
             "type": "array",
@@ -346,8 +360,11 @@
           "title",
           "description",
           "rules",
-          "defaultNumberOfReviewers",
-          "defaultNumberOfAuthors",
+          "submissionDeadlineDuration",
+          "reviewDeadlineDuration",
+          "evaluationCriteriaVisibleToAuthors",
+          "numberOfReviewers",
+          "numberOfAuthors",
           "feedbackFormTemplate"
         ]
       },

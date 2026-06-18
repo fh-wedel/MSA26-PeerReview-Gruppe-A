@@ -23,12 +23,12 @@ public class TestPlugin implements ReviewWorkflowPlugin {
     public boolean isAuthorReviewerChatAllowed() { return false; }
 
     @Override
-    public int getDefaultNumberOfReviewers() {
+    public int getNumberOfReviewers() {
         return 2;
     }
 
     @Override
-    public int getDefaultNumberOfAuthors() {
+    public int getNumberOfAuthors() {
         return 1;
     }
 
@@ -40,5 +40,20 @@ public class TestPlugin implements ReviewWorkflowPlugin {
     @Override
     public ReviewGrade calculateGrade(List<ReviewResponse> responses) {
         return new ReviewGrade(0, 0, 0.0, "Test Grade");
+    }
+
+    @Override
+    public java.time.Duration getSubmissionDeadlineDuration() {
+        return java.time.Duration.ofDays(14);
+    }
+
+    @Override
+    public java.time.Duration getReviewDeadlineDuration() {
+        return java.time.Duration.ofDays(14);
+    }
+
+    @Override
+    public boolean isEvaluationCriteriaVisibleToAuthors() {
+        return true;
     }
 }

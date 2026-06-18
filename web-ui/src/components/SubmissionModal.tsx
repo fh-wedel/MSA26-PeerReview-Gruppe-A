@@ -18,16 +18,19 @@ import {
 } from "@mui/material";
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
-type ReviewMode = string;
+type ReviewType = string;
 
 interface SubmissionModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (
     title: string,
-    reviewMode: string,
+    reviewType: string,
+    authorIds: string[],
   ) => Promise<void>;
   authorName: string;
+    currentUserId: string;
+    isAdminOrOfficer: boolean;
 }
 
 export const SubmissionModal: React.FC<SubmissionModalProps> = ({
@@ -35,14 +38,18 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   onClose,
   onSubmit,
   authorName,
+                                                                    currentUserId,
+                                                                    isAdminOrOfficer,
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("INDIVIDUAL_WORK");
+    const [reviewType, setReviewType] = useState<ReviewType>("INDIVIDUAL_WORK");
+    const [authorIdsInput, setAuthorIdsInput] = useState(currentUserId);
   const { plugins, loading, error } = useWorkflowPlugins();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+    const [validationError, setValidationError] = useState("");
 
   React.useEffect(() => {
     if (error) {
@@ -52,10 +59,24 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
 
   const handleSubmit = async () => {
     setSubmitting(true);
+      setValidationError("");
     try {
-      await onSubmit(title, reviewMode);
+        const selectedPlugin = plugins.find(p => p.name === reviewType);
+        const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
+        const authorIds = isAuthorsEnabled
+            ? authorIdsInput.split(',').map(id => id.trim()).filter(id => id)
+            : [currentUserId];
+
+        if (selectedPlugin && authorIds.length !== selectedPlugin.numberOfAuthors) {
+            setValidationError(`Please enter exactly ${selectedPlugin.numberOfAuthors} author ID(s)`);
+            setSubmitting(false);
+            return;
+        }
+
+        await onSubmit(title, reviewType, authorIds);
       setTitle("");
-      setReviewMode("INDIVIDUAL_WORK");
+        setReviewType("INDIVIDUAL_WORK");
+        setAuthorIdsInput(currentUserId);
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -79,20 +100,32 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               disabled={submitting}
             />
-            <TextField
-              label="Authors"
-              variant="outlined"
-              fullWidth
-              value={authorName}
-              disabled
-            />
+              {(() => {
+                  const selectedPlugin = plugins.find(p => p.name === reviewType);
+                  const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
+                  return (
+                      <TextField
+                          label={isAuthorsEnabled ? "Authors (Comma-separated IDs)" : "Authors"}
+                          variant="outlined"
+                          fullWidth
+                          value={isAuthorsEnabled ? authorIdsInput : authorName}
+                          onChange={(e) => {
+                              setAuthorIdsInput(e.target.value);
+                              setValidationError("");
+                          }}
+                          disabled={!isAuthorsEnabled || submitting}
+                          error={!!validationError}
+                          helperText={validationError || (isAuthorsEnabled ? `Expected number of authors: ${selectedPlugin?.numberOfAuthors || 1}` : "")}
+                      />
+                  );
+              })()}
             <FormControl fullWidth>
-              <InputLabel id="review-mode-label">Review Mode</InputLabel>
+                <InputLabel id="review-type-label">Review Type</InputLabel>
               <Select
-                labelId="review-mode-label"
-                value={reviewMode}
-                label="Review Mode"
-                onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
+                  labelId="review-type-label"
+                  value={reviewType}
+                  label="Review Type"
+                  onChange={(e) => setReviewType(e.target.value as ReviewType)}
                 disabled={loading || submitting}
               >
                 {plugins.length > 0 ? (
@@ -110,6 +143,41 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                 )}
               </Select>
             </FormControl>
+
+              {plugins.length > 0 && (
+                  <Box sx={{mt: 1, p: 2, bgcolor: "background.default", borderRadius: 1}}>
+                      {(() => {
+                          const selectedPlugin = plugins.find(p => p.name === reviewType);
+                          if (!selectedPlugin) return null;
+
+                          const parseDur = (dur: string) => {
+                              if (!dur) return 0;
+                              const h = dur.match(/PT(\d+)H/);
+                              if (h) return parseInt(h[1]) / 24;
+                              const d = dur.match(/P(\d+)D/);
+                              if (d) return parseInt(d[1]);
+                              return 0;
+                          };
+                          const subDays = parseDur(selectedPlugin.submissionDeadlineDuration);
+                          const revDays = parseDur(selectedPlugin.reviewDeadlineDuration);
+
+                          return (
+                              <Box sx={{
+                                  typography: "body2",
+                                  color: "text.secondary",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 0.5
+                              }}>
+                                  <div><strong>Expected Authors:</strong> {selectedPlugin.numberOfAuthors}</div>
+                                  <div><strong>Expected Reviewers:</strong> {selectedPlugin.numberOfReviewers}</div>
+                                  <div><strong>Submission Deadline:</strong> in {subDays} days</div>
+                                  <div><strong>Review Deadline:</strong> in {subDays + revDays} days</div>
+                              </Box>
+                          );
+                      })()}
+                  </Box>
+              )}
           </Box>
         </DialogContent>
         <DialogActions>

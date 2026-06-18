@@ -43,7 +43,8 @@ export const Dashboard: React.FC = () => {
 
   const handleSubmission = async (
     title: string,
-    reviewMode: string,
+    reviewType: string,
+    authorIds: string[],
   ) => {
     try {
       const token = sessionStorage.getItem("access_token");
@@ -59,11 +60,8 @@ export const Dashboard: React.FC = () => {
         headers,
         body: JSON.stringify({
           title,
-          reviewProcessType: reviewMode,
-          authorIds: [user?.id],
-          numberOfExaminers: 1,
-          evaluationCriteria: [],
-          criteriaVisibleToAuthor: true,
+            reviewProcessType: reviewType,
+            authorIds: authorIds.length > 0 ? authorIds : [user?.id],
         }),
       });
 
@@ -158,7 +156,9 @@ export const Dashboard: React.FC = () => {
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           onSubmit={handleSubmission}
-          authorName={user?.username ?? ""}
+          authorName={user?.username || ""}
+          currentUserId={user?.id || ""}
+          isAdminOrOfficer={roles.includes("admin") || roles.includes("examinationofficer")}
         />
       )}
 
