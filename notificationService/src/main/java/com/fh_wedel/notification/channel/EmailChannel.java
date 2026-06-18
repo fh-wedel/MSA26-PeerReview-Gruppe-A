@@ -3,11 +3,13 @@ package com.fh_wedel.notification.channel;
 import com.fh_wedel.notification.config.SecretsConfig;
 import com.fh_wedel.notification.model.ChannelType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnBean(JavaMailSender.class)
 @Slf4j
 public class EmailChannel implements NotificationChannel {
 
