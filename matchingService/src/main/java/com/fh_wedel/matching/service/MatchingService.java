@@ -12,8 +12,8 @@ import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
-
+import com.fh_wedel.matching.client.UserProfile;
+import com.fh_wedel.matching.client.UserServiceClient;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,18 +36,18 @@ import java.util.List;
 @Slf4j
 public class MatchingService {
 
-    private final CognitoService cognitoService;
+    private final UserServiceClient userServiceClient;
     private final MatchRepository matchRepository;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String responseQueueName;
 
-    public MatchingService(CognitoService cognitoService,
+    public MatchingService(UserServiceClient userServiceClient,
                            MatchRepository matchRepository,
                            SqsTemplate sqsTemplate,
                            ObjectMapper objectMapper,
                            @Value("${aws.sqs.next.request.queue-name}") String responseQueueName) {
-        this.cognitoService = cognitoService;
+        this.userServiceClient = userServiceClient;
         this.matchRepository = matchRepository;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
@@ -67,13 +67,13 @@ public class MatchingService {
         log.info("Processing matching request: submissionId={}, submitterId={}, numberOfExaminers={}",
                 submissionId, submitterId, numberOfExaminers);
 
-        // 1. Fetch all reviewers from Cognito
-        List<UserType> allReviewers = cognitoService.listReviewers();
+        // 1. Fetch all reviewers from User Service
+        List<UserProfile> allReviewers = userServiceClient.listReviewers();
 
         // 2. Filter out the submitter (self-review prevention)
-        List<UserType> eligibleReviewers = allReviewers.stream()
+        List<UserProfile> eligibleReviewers = allReviewers.stream()
                 .filter(user -> {
-                    String sub = CognitoService.extractSub(user);
+                    String sub = user.getSub();
                     return sub != null && !sub.equals(submitterId);
                 })
                 .toList();
@@ -97,14 +97,14 @@ public class MatchingService {
         }
 
         // 4. Randomly select the required number of reviewers
-        List<UserType> selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
+        List<UserProfile> selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
 
         // 5. Create match records
         List<MatchRecord> matchRecords = new ArrayList<>();
-        for (UserType reviewer : selectedReviewers) {
-            String examinerId = CognitoService.extractSub(reviewer);
+        for (UserProfile reviewer : selectedReviewers) {
+            String examinerId = reviewer.getSub();
             matchRecords.add(new MatchRecord(submissionId, examinerId));
-            log.info("Selected reviewer: sub={}, username={}", examinerId, reviewer.username());
+            log.info("Selected reviewer: sub={}, username={}", examinerId, reviewer.getUsername());
         }
 
         // 6. Persist match records + status in DynamoDB (batch write)
@@ -149,8 +149,8 @@ public class MatchingService {
     /**
      * Selects a random subset of reviewers from the eligible pool.
      */
-    List<UserType> selectRandomReviewers(List<UserType> eligible, int count) {
-        List<UserType> shuffled = new ArrayList<>(eligible);
+    List<UserProfile> selectRandomReviewers(List<UserProfile> eligible, int count) {
+        List<UserProfile> shuffled = new ArrayList<>(eligible);
         Collections.shuffle(shuffled);
         return shuffled.subList(0, count);
     }

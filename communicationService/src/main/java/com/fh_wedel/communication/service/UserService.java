@@ -2,60 +2,43 @@ package com.fh_wedel.communication.service;
 
 import com.fh_wedel.communication.model.api.UserDto;
 import com.fh_wedel.communication.model.api.UserListResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class UserService {
 
-    private final CognitoIdentityProviderClient cognitoClient;
-    private final String userPoolId;
+    private final RestTemplate restTemplate;
+    private final String userServiceUrl;
 
-    public UserService(CognitoIdentityProviderClient cognitoClient,
-                       @Value("${aws.cognito.user-pool-id}") String userPoolId) {
-        this.cognitoClient = cognitoClient;
-        this.userPoolId = userPoolId;
+    public UserService(RestTemplate restTemplate,
+                       @Value("${aws.user-service.url}") String userServiceUrl) {
+        this.restTemplate = restTemplate;
+        this.userServiceUrl = userServiceUrl;
     }
 
     public UserListResponse searchUsers(String query) {
-        if (userPoolId == null || userPoolId.isEmpty()) {
-            UserListResponse empty = new UserListResponse();
-            empty.setUsers(List.of());
-            return empty;
+        try {
+            String url = userServiceUrl + "/api/users/search";
+            if (query != null && !query.isEmpty()) {
+                url += "?q=" + query;
+            }
+            ResponseEntity<UserListResponse> response = restTemplate.getForEntity(url, UserListResponse.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (Exception e) {
+            log.error("Failed to search users via UserService", e);
         }
-
-        ListUsersRequest.Builder requestBuilder = ListUsersRequest.builder()
-                .userPoolId(userPoolId)
-                .limit(20);
-
-        if (query != null && !query.isEmpty()) {
-            requestBuilder.filter("username ^= \"" + query + "\"");
-        }
-
-        ListUsersResponse response = cognitoClient.listUsers(requestBuilder.build());
-
-        List<UserDto> users = response.users().stream()
-                .map(u -> {
-                    String sub = u.attributes().stream()
-                            .filter(a -> "sub".equals(a.name()))
-                            .findFirst()
-                            .map(a -> a.value())
-                            .orElse(u.username());
-                    UserDto dto = new UserDto();
-                    dto.setSub(sub);
-                    dto.setUsername(u.username());
-                    return dto;
-                })
-                .collect(Collectors.toList());
-
-        UserListResponse userListResponse = new UserListResponse();
-        userListResponse.setUsers(users);
-        return userListResponse;
+        
+        UserListResponse empty = new UserListResponse();
+        empty.setUsers(List.of());
+        return empty;
     }
 }

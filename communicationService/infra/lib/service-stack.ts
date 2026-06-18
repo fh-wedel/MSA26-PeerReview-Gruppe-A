@@ -80,7 +80,7 @@ export class ServiceStack extends cdk.Stack {
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'DYNAMODB_TABLE_NAME': dynamoTable.tableName,
-        'COGNITO_USER_POOL_ID': ImportedRessources.getCognitoUserPoolId(this),
+        'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
         'AWS_WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
         'AWS_MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
       },
@@ -134,13 +134,6 @@ export class ServiceStack extends cdk.Stack {
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
     dynamoTable.grantReadWriteData(taskDefinition.taskRole);
-
-    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-      actions: ['cognito-idp:ListUsers'],
-      resources: [
-        `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${ImportedRessources.getCognitoUserPoolId(this)}`
-      ],
-    }));
 
     if (props.minTaskCount !== props.maxTaskCount) {
       logger.info(`Setting up auto-scaling for service ${props.serviceName} with min ${props.minTaskCount} and max ${props.maxTaskCount} tasks.`);

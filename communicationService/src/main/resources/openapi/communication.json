@@ -15,7 +15,7 @@
     "/users": {
       "get": {
         "summary": "Search for users by username",
-        "description": "Proxies a search to Cognito to allow the Web-UI to find recipients by\nusername when initiating a new chat. Returns matching users' sub UUIDs\nand usernames. This endpoint will be extracted to a dedicated User\nManagement Service in a future iteration.\n",
+        "description": "Proxies a search to the User Service to allow the Web-UI to find recipients by\nusername when initiating a new chat. Returns matching users' sub UUIDs\nand usernames.\n",
         "operationId": "searchUsers",
         "tags": ["Users"],
         "parameters": [
@@ -174,11 +174,11 @@
         "properties": {
           "sub": {
             "type": "string",
-            "description": "Cognito sub UUID — use this as recipientId when sending a message"
+            "description": "User sub UUID — use this as recipientId when sending a message"
           },
           "username": {
             "type": "string",
-            "description": "Human-readable Cognito username"
+            "description": "Human-readable username"
           }
         }
       },
@@ -215,7 +215,7 @@
         "properties": {
           "recipientId": {
             "type": "string",
-            "description": "Cognito sub UUID of the recipient. Required for GENERAL chats; ignored for SUBMISSION chats."
+            "description": "User sub UUID of the recipient. Required for GENERAL chats; ignored for SUBMISSION chats."
           },
           "chatContext": {
             "$ref": "#/components/schemas/ChatContext"
@@ -236,7 +236,7 @@
           },
           "otherParticipantId": {
             "type": "string",
-            "description": "Cognito sub UUID of the other participant (GENERAL chats only)"
+            "description": "User sub UUID of the other participant (GENERAL chats only)"
           },
           "participants": {
             "type": "array",
@@ -282,7 +282,7 @@
           },
           "senderId": {
             "type": "string",
-            "description": "Cognito sub UUID of the sender"
+            "description": "User sub UUID of the sender"
           },
           "body": {
             "type": "string"
@@ -301,11 +301,11 @@
           },
           "participantA": {
             "type": "string",
-            "description": "Cognito sub UUID of participant A (GENERAL chats, lower UUID alphabetically)"
+            "description": "User sub UUID of participant A (GENERAL chats, lower UUID alphabetically)"
           },
           "participantB": {
             "type": "string",
-            "description": "Cognito sub UUID of participant B (GENERAL chats, higher UUID alphabetically)"
+            "description": "User sub UUID of participant B (GENERAL chats, higher UUID alphabetically)"
           },
           "participants": {
             "type": "array",

@@ -199,6 +199,7 @@ is enforced:
 |---------|-------------------------------|
 | `workflow-service` | `workflow.internal.services` |
 | `matching` | `matching.internal.services` |
+| `user` | `user.internal.services` |
 | `<your-service>` | `<your-service>.internal.services` |
 
 Port: whatever `containerPort` is declared in the service's CDK stack

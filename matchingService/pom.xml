@@ -108,11 +108,7 @@
             <artifactId>dynamodb-enhanced</artifactId>
         </dependency>
 
-        <!-- AWS SDK v2: Cognito Identity Provider -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>cognitoidentityprovider</artifactId>
-        </dependency>
+
 
         <!-- Jackson for JSON serialization -->
         <dependency>

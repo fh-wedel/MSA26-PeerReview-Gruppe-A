@@ -1,0 +1,10 @@
+[
+  {
+    "description": "Allow all authenticated users to read and search general user identities.",
+    "policy": "permit(principal, action in [Action::\"get /api/users/search\", Action::\"get /api/users/{sub}\", Action::\"post /api/users/bulk\"], resource) when { principal.groups.contains(\"Student\") || principal.groups.contains(\"Reviewer\") || principal.groups.contains(\"ExaminationOfficer\") || principal.groups.contains(\"Admin\") };"
+  },
+  {
+    "description": "Allow Admin and ExaminationOfficer to manage groups and user attributes.",
+    "policy": "permit(principal, action in [Action::\"get /api/users/groups/{groupName}/members\", Action::\"post /api/users/groups/{groupName}/members\", Action::\"delete /api/users/groups/{groupName}/members/{username}\", Action::\"get /api/users/{username}/details\", Action::\"patch /api/users/groups/{groupName}/members/{username}/attributes\"], resource) when { principal.groups.contains(\"Admin\") || principal.groups.contains(\"ExaminationOfficer\") };"
+  }
+]

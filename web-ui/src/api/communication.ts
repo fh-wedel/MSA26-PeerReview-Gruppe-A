@@ -73,7 +73,7 @@ export interface WorkflowPlugin {
 }
 
 
-import {communicationApiClient, matchingApiClient, workflowApiClient} from './clients';
+import {communicationApiClient, matchingApiClient, workflowApiClient, usersApiClient} from './clients';
 
 export const fetchChats = async (): Promise<ChatListResponse> => {
   const response = await communicationApiClient.chats.listChats();
@@ -91,9 +91,9 @@ export const sendMessage = async (request: SendMessageRequest): Promise<ChatDeta
 };
 
 export const searchUsers = async (query: string): Promise<UserSummary[]> => {
-  const response = await communicationApiClient.users.searchUsers({search: query});
+  const response = await usersApiClient.users.searchUsers({q: query});
   const raw = response.data.users || [];
-  return raw.map(u => ({ id: u.sub, username: u.username }));
+  return raw.map((u: any) => ({ id: u.sub, username: u.username }));
 };
 
 export const fetchSubmissionMatch = async (submissionId: string): Promise<SubmissionMatchResponse> => {
