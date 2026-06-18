@@ -202,6 +202,7 @@
                 <version>${openapi-generator.version}</version>
                 <executions>
                     <execution>
+                        <id>generate-server</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -219,6 +220,66 @@
                                 <openApiNullable>false</openApiNullable>
                                 <documentationProvider>none</documentationProvider>
                             </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-user-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/user.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-user</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.user.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.user.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-workflow-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/workflow.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-workflow</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.workflow.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.workflow.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/openapi-user/src/main/java</source>
+                                <source>${project.build.directory}/generated-sources/openapi-workflow/src/main/java</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>

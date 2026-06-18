@@ -12,40 +12,7 @@
     }
   ],
   "paths": {
-    "/users": {
-      "get": {
-        "summary": "Search for users by username",
-        "description": "Proxies a search to the User Service to allow the Web-UI to find recipients by\nusername when initiating a new chat. Returns matching users' sub UUIDs\nand usernames.\n",
-        "operationId": "searchUsers",
-        "tags": ["Users"],
-        "parameters": [
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Username prefix or substring to filter by"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of matching users",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserListResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      }
-    },
+
     "/chats": {
       "get": {
         "summary": "List all chats for the authenticated user",
@@ -168,32 +135,7 @@
   },
   "components": {
     "schemas": {
-      "UserDto": {
-        "type": "object",
-        "required": ["sub", "username"],
-        "properties": {
-          "sub": {
-            "type": "string",
-            "description": "User sub UUID — use this as recipientId when sending a message"
-          },
-          "username": {
-            "type": "string",
-            "description": "Human-readable username"
-          }
-        }
-      },
-      "UserListResponse": {
-        "type": "object",
-        "required": ["users"],
-        "properties": {
-          "users": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserDto"
-            }
-          }
-        }
-      },
+
       "ChatContext": {
         "type": "object",
         "required": ["type"],

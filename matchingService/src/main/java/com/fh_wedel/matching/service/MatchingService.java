@@ -12,8 +12,8 @@ import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import com.fh_wedel.matching.client.UserProfile;
-import com.fh_wedel.matching.client.UserServiceClient;
+import com.fh_wedel.user.client.model.UserProfile;
+import com.fh_wedel.user.client.api.GroupsApi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,18 +36,18 @@ import java.util.List;
 @Slf4j
 public class MatchingService {
 
-    private final UserServiceClient userServiceClient;
+    private final GroupsApi groupsApi;
     private final MatchRepository matchRepository;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String responseQueueName;
 
-    public MatchingService(UserServiceClient userServiceClient,
+    public MatchingService(GroupsApi groupsApi,
                            MatchRepository matchRepository,
                            SqsTemplate sqsTemplate,
                            ObjectMapper objectMapper,
                            @Value("${aws.sqs.next.request.queue-name}") String responseQueueName) {
-        this.userServiceClient = userServiceClient;
+        this.groupsApi = groupsApi;
         this.matchRepository = matchRepository;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
@@ -68,7 +68,15 @@ public class MatchingService {
                 submissionId, submitterId, numberOfExaminers);
 
         // 1. Fetch all reviewers from User Service
-        List<UserProfile> allReviewers = userServiceClient.listReviewers();
+        List<UserProfile> allReviewers = java.util.Collections.emptyList();
+        try {
+            var response = groupsApi.listGroupMembers("Reviewer");
+            if (response != null && response.getUsers() != null) {
+                allReviewers = response.getUsers();
+            }
+        } catch (Exception e) {
+            log.error("Failed to list reviewers via GroupsApi", e);
+        }
 
         // 2. Filter out the submitter (self-review prevention)
         List<UserProfile> eligibleReviewers = allReviewers.stream()

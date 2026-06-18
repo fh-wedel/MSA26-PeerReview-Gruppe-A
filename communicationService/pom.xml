@@ -214,6 +214,26 @@
                             </configOptions>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>generate-user-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/user.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-user</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.user.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.user.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -231,6 +251,7 @@
                             <sources>
                                 <source>${project.build.directory}/generated-sources/openapi-matching/src/main/java</source>
                                 <source>${project.build.directory}/generated-sources/openapi-workflow/src/main/java</source>
+                                <source>${project.build.directory}/generated-sources/openapi-user/src/main/java</source>
                             </sources>
                         </configuration>
                     </execution>

@@ -6,8 +6,9 @@ import com.fh_wedel.matching.model.MatchStatus;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
 import com.fh_wedel.matching.model.events.MatchingRequestEvent;
 import com.fh_wedel.matching.repository.MatchRepository;
-import com.fh_wedel.matching.client.UserServiceClient;
-import com.fh_wedel.matching.client.UserProfile;
+import com.fh_wedel.user.client.api.GroupsApi;
+import com.fh_wedel.user.client.model.UserProfile;
+import com.fh_wedel.user.client.model.UserProfileListResponse;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +29,7 @@ import static org.mockito.Mockito.*;
 class MatchingServiceTest {
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private GroupsApi groupsApi;
 
     @Mock
     private MatchRepository matchRepository;
@@ -48,7 +49,7 @@ class MatchingServiceTest {
 
     @BeforeEach
     void setUp() {
-        matchingService = new MatchingService(userServiceClient, matchRepository, sqsTemplate, objectMapper, "test-response-queue");
+        matchingService = new MatchingService(groupsApi, matchRepository, sqsTemplate, objectMapper, "test-response-queue");
     }
 
     @Test
@@ -61,7 +62,11 @@ class MatchingServiceTest {
                 createUser("reviewer-b"),
                 createUser("reviewer-c")
         );
-        when(userServiceClient.listReviewers()).thenReturn(reviewers);
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch(Exception e) {}
 
         matchingService.processMatchingRequest(event);
 
@@ -82,7 +87,11 @@ class MatchingServiceTest {
                 createUser("reviewer-a"),
                 createUser("reviewer-b")
         );
-        when(userServiceClient.listReviewers()).thenReturn(reviewers);
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch(Exception e) {}
 
         matchingService.processMatchingRequest(event);
 
@@ -103,7 +112,11 @@ class MatchingServiceTest {
                 createUser("submitter-user"),
                 createUser("reviewer-x")
         );
-        when(userServiceClient.listReviewers()).thenReturn(reviewers);
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch(Exception e) {}
 
         matchingService.processMatchingRequest(event);
 
@@ -121,7 +134,11 @@ class MatchingServiceTest {
         List<UserProfile> reviewers = List.of(
                 createUser("only-user")
         );
-        when(userServiceClient.listReviewers()).thenReturn(reviewers);
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch(Exception e) {}
 
         matchingService.processMatchingRequest(event);
 

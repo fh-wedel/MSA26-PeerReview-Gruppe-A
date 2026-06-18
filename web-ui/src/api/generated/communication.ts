@@ -10,17 +10,6 @@
  * ---------------------------------------------------------------
  */
 
-export interface UserDto {
-  /** User sub UUID — use this as recipientId when sending a message */
-  sub: string;
-  /** Human-readable username */
-  username: string;
-}
-
-export interface UserListResponse {
-  users: UserDto[];
-}
-
 export interface ChatContext {
   /** GENERAL for an open thread; SUBMISSION for a submission-specific group thread */
   type: "GENERAL" | "SUBMISSION";
@@ -352,30 +341,6 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
-  users = {
-    /**
-     * @description Proxies a search to the User Service to allow the Web-UI to find recipients by username when initiating a new chat. Returns matching users' sub UUIDs and usernames.
-     *
-     * @tags Users
-     * @name SearchUsers
-     * @summary Search for users by username
-     * @request GET:/users
-     */
-    searchUsers: (
-      query?: {
-        /** Username prefix or substring to filter by */
-        search?: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<UserListResponse, void>({
-        path: `/users`,
-        method: "GET",
-        query: query,
-        format: "json",
-        ...params,
-      }),
-  };
   chats = {
     /**
      * @description Returns all chat threads in which the authenticated user (identified by x-auth-principal-id header) is a participant. No pagination — the number of chats per user is expected to remain small.

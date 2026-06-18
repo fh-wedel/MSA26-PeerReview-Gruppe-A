@@ -1,0 +1,407 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "User Service API",
+    "version": "1.0.0",
+    "description": "Centralized proxy for all Cognito user-management interactions.\nProvides read-only user resolution (used by all services internally)\nand admin-only user/group management (Admin and ExaminationOfficer only).\n"
+  },
+  "servers": [
+    {
+      "url": "/api/users",
+      "description": "Base path for the User Service API (routed via CloudFront → API Gateway)"
+    }
+  ],
+  "paths": {
+    "/search": {
+      "get": {
+        "summary": "Search for users by username prefix",
+        "description": "Returns users whose username starts with or contains the given query string.\nReplaces the /api/communication/users endpoint previously in the Communication Service.\nAll authenticated users may call this endpoint.\n",
+        "operationId": "searchUsers",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Username prefix or substring to filter by. Returns all users if omitted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching users",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSearchResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/{sub}": {
+      "get": {
+        "summary": "Get a user by Cognito sub UUID",
+        "description": "Resolves a Cognito sub UUID to a full UserProfile.\nUsed by all services internally for username resolution.\nAll authenticated users may call this endpoint.\n",
+        "operationId": "getUserBySub",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "sub",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Cognito sub UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSummary" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/bulk": {
+      "post": {
+        "summary": "Bulk resolve sub UUIDs to usernames",
+        "description": "Accepts a list of Cognito sub UUIDs and returns a map of sub → username.\nUsed by services to resolve multiple user identities in a single call.\nAll authenticated users may call this endpoint.\n",
+        "operationId": "bulkResolveUsers",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BulkResolveRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Map of sub UUID to username",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BulkResolveResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/groups/{groupName}/members": {
+      "get": {
+        "summary": "List all members of a Cognito group",
+        "description": "Returns a list of users who are members of the specified Cognito group.\nReplaces GET /api/matching/examiners for the Reviewer group.\nRestricted to Admin and ExaminationOfficer.\n",
+        "operationId": "listGroupMembers",
+        "tags": ["Groups"],
+        "parameters": [
+          {
+            "name": "groupName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Cognito group name (e.g. Reviewer, Admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of group members",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfileListResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden — caller is not Admin or ExaminationOfficer" }
+        }
+      },
+      "post": {
+        "summary": "Add an existing user to a Cognito group",
+        "description": "Promotes an existing Cognito user into the specified group.\nReplaces POST /api/matching/examiners for the Reviewer group.\nRestricted to Admin and ExaminationOfficer.\n",
+        "operationId": "addGroupMember",
+        "tags": ["Groups"],
+        "parameters": [
+          {
+            "name": "groupName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Cognito group name"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddGroupMemberRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User added to group; returns their profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfile" }
+              }
+            }
+          },
+          "400": { "description": "Bad request — missing or invalid fields" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found in Cognito" }
+        }
+      }
+    },
+    "/groups/{groupName}/members/{username}": {
+      "delete": {
+        "summary": "Remove a user from a Cognito group",
+        "description": "Removes the specified user from the Cognito group.\nReplaces DELETE /api/matching/examiners/{examinerUsername}.\nRestricted to Admin and ExaminationOfficer.\n",
+        "operationId": "removeGroupMember",
+        "tags": ["Groups"],
+        "parameters": [
+          {
+            "name": "groupName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Cognito username (not sub UUID)"
+          }
+        ],
+        "responses": {
+          "204": { "description": "User removed from group" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found or not in group" }
+        }
+      }
+    },
+    "/{username}/details": {
+      "get": {
+        "summary": "Get full user details by username",
+        "description": "Returns the full UserProfile (including custom attributes and group memberships)\nfor a user identified by their Cognito username.\nReplaces GET /api/matching/examiners/{examinerUsername}.\nRestricted to Admin and ExaminationOfficer.\n",
+        "operationId": "getUserDetails",
+        "tags": ["Groups"],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Cognito username (human-readable, not sub UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full user profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfile" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/groups/{groupName}/members/{username}/attributes": {
+      "patch": {
+        "summary": "Update custom attributes of a group member",
+        "description": "Updates the custom Cognito attributes (e.g. specialty, availability) for a user.\nThe user must be a member of the specified group.\nReplaces PATCH /api/matching/examiners/{examinerUsername}.\nRestricted to Admin and ExaminationOfficer.\n",
+        "operationId": "updateUserAttributes",
+        "tags": ["Groups"],
+        "parameters": [
+          {
+            "name": "groupName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Cognito username"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateAttributesRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfile" }
+              }
+            }
+          },
+          "400": { "description": "Bad request — invalid attribute" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserSummary": {
+        "type": "object",
+        "required": ["sub", "username"],
+        "properties": {
+          "sub": {
+            "type": "string",
+            "description": "Cognito sub UUID"
+          },
+          "username": {
+            "type": "string",
+            "description": "Human-readable Cognito username"
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "required": ["sub", "username"],
+        "properties": {
+          "sub": {
+            "type": "string",
+            "description": "Cognito sub UUID"
+          },
+          "username": {
+            "type": "string",
+            "description": "Cognito username"
+          },
+          "email": {
+            "type": "string",
+            "description": "User email address"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the user account is enabled"
+          },
+          "status": {
+            "type": "string",
+            "description": "Cognito user status (CONFIRMED, FORCE_CHANGE_PASSWORD, etc.)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Account creation timestamp"
+          },
+          "groups": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Cognito groups the user belongs to"
+          },
+          "customAttributes": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Custom Cognito attributes (keys without the custom: prefix)"
+          }
+        }
+      },
+      "UserSearchResponse": {
+        "type": "object",
+        "required": ["users"],
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserSummary" }
+          }
+        }
+      },
+      "UserProfileListResponse": {
+        "type": "object",
+        "required": ["users"],
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserProfile" }
+          }
+        }
+      },
+      "BulkResolveRequest": {
+        "type": "object",
+        "required": ["subs"],
+        "properties": {
+          "subs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 50,
+            "description": "List of Cognito sub UUIDs to resolve"
+          }
+        }
+      },
+      "BulkResolveResponse": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Map of sub UUID → username"
+          }
+        }
+      },
+      "AddGroupMemberRequest": {
+        "type": "object",
+        "required": ["username"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Cognito username (not sub UUID) of the existing user to add to the group"
+          },
+          "customAttributes": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Optional custom attributes to set on the user (keys without custom: prefix)"
+          }
+        }
+      },
+      "UpdateAttributesRequest": {
+        "type": "object",
+        "properties": {
+          "customAttributes": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Custom attributes to update (keys without custom: prefix)"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "code": { "type": "string" },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

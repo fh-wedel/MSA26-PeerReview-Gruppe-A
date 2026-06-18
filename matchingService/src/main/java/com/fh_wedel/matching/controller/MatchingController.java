@@ -6,8 +6,10 @@ import com.fh_wedel.matching.model.api.AssignmentEntry;
 import com.fh_wedel.matching.model.api.ExaminerMatchResponse;
 import com.fh_wedel.matching.model.api.MatchEntry;
 import com.fh_wedel.matching.model.api.SubmissionMatchResponse;
-import com.fh_wedel.matching.client.UserServiceClient;
-import com.fh_wedel.matching.client.UserProfile;
+import com.fh_wedel.user.client.model.UserProfile;
+import com.fh_wedel.user.client.api.GroupsApi;
+import com.fh_wedel.user.client.api.UsersApi;
+import com.fh_wedel.workflow.client.api.WorkflowRulesApi;
 import com.fh_wedel.matching.service.MatchingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fh_wedel.matching.model.api.WorkflowRulesDto;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.client.RestTemplate;
+
 
 /**
  * REST controller for querying match information.
@@ -37,18 +38,18 @@ import org.springframework.web.client.RestTemplate;
 public class MatchingController {
 
     private final MatchingService matchingService;
-    private final UserServiceClient userServiceClient;
-    private final RestTemplate restTemplate;
-    private final String workflowServiceUrl;
+    private final GroupsApi groupsApi;
+    private final UsersApi usersApi;
+    private final WorkflowRulesApi workflowRulesApi;
 
     public MatchingController(MatchingService matchingService, 
-                              UserServiceClient userServiceClient,
-                              RestTemplate restTemplate,
-                              @Value("${aws.workflow-service.url:http://workflow.internal.services:8081}") String workflowServiceUrl) {
+                              GroupsApi groupsApi,
+                              UsersApi usersApi,
+                              WorkflowRulesApi workflowRulesApi) {
         this.matchingService = matchingService;
-        this.userServiceClient = userServiceClient;
-        this.restTemplate = restTemplate;
-        this.workflowServiceUrl = workflowServiceUrl;
+        this.groupsApi = groupsApi;
+        this.usersApi = usersApi;
+        this.workflowRulesApi = workflowRulesApi;
     }
 
     @GetMapping("/matches/submissions/{submissionId}")
@@ -79,10 +80,7 @@ public class MatchingController {
         boolean hideExaminer = false;
         if (!isAdminOrOfficer(authentication)) {
             try {
-                WorkflowRulesDto rules = restTemplate.getForObject(
-                        workflowServiceUrl + "/api/workflow/submissions/" + submissionId + "/rules",
-                        WorkflowRulesDto.class
-                );
+                com.fh_wedel.workflow.client.model.WorkflowRulesDto rules = workflowRulesApi.getRulesForSubmission(submissionId);
                 if (rules != null && Boolean.TRUE.equals(rules.getReviewerAnonymous())) {
                     hideExaminer = true;
                 }
@@ -95,11 +93,15 @@ public class MatchingController {
         final boolean hide = hideExaminer;
 
         Map<String, String> examinerIdToUserNameMap = new HashMap<>();
-        List<UserProfile> allReviewers = userServiceClient.listReviewers();
-        if (allReviewers != null) {
-            allReviewers.forEach(user -> {
-                examinerIdToUserNameMap.put(user.getSub(), user.getUsername());
-            });
+        try {
+            var response = groupsApi.listGroupMembers("Reviewer");
+            if (response != null && response.getUsers() != null) {
+                response.getUsers().forEach(user -> {
+                    examinerIdToUserNameMap.put(user.getSub(), user.getUsername());
+                });
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch reviewers", e);
         }
 
         List<MatchEntry> matchEntries = matches.stream()
@@ -121,7 +123,7 @@ public class MatchingController {
         response.setSubmitterId(status.getSubmitterId());
         
         try {
-            response.setSubmitterUsername(userServiceClient.getUserBySub(status.getSubmitterId()).getUsername());
+            response.setSubmitterUsername(usersApi.getUserBySub(status.getSubmitterId()).getUsername());
         } catch (Exception e) {
             response.setSubmitterUsername("Unknown");
         }
@@ -141,7 +143,7 @@ public class MatchingController {
 
         String examinerSub;
         try {
-            UserProfile examinerUser = userServiceClient.getUserDetails(examinerUsername);
+            UserProfile examinerUser = groupsApi.getUserDetails(examinerUsername);
             examinerSub = examinerUser.getSub();
             if (examinerSub == null) {
                 log.warn("Cognito user '{}' (username) has no 'sub' attribute", examinerUsername);

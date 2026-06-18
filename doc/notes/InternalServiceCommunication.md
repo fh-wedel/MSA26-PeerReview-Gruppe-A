@@ -125,33 +125,41 @@ environment: {
 private String workflowServiceUrl;
 ```
 
-### Step 3 — HTTP call with `RestTemplate`
+### Step 3 — HTTP call with Generated OpenAPI Client
 
-Register `RestTemplate` as a bean in `AppConfig` (already present in every service):
+Register the generated API client as a bean in a `ServiceClientsConfig` class:
 
 ```java
-@Bean
-public RestTemplate restTemplate(RestTemplateBuilder builder) {
-    return builder.build();
+@Configuration
+public class ServiceClientsConfig {
+    @Bean
+    public ApiClient workflowApiClient(@Value("${aws.workflow-service.url}") String workflowServiceUrl) {
+        ApiClient client = new ApiClient();
+        client.updateBaseUri(workflowServiceUrl);
+        // Add authentication interceptor here
+        return client;
+    }
+
+    @Bean
+    public WorkflowRulesApi workflowRulesApi(ApiClient workflowApiClient) {
+        return new WorkflowRulesApi(workflowApiClient);
+    }
 }
 ```
 
-Inject and call with a safe fallback:
+Inject and call the strongly-typed method:
 
 ```java
-public MyService(RestTemplate restTemplate,
-                 @Value("${aws.workflow-service.url}") String workflowServiceUrl) {
-    this.restTemplate = restTemplate;
-    this.workflowServiceUrl = workflowServiceUrl;
+public MyService(WorkflowRulesApi workflowRulesApi) {
+    this.workflowRulesApi = workflowRulesApi;
 }
 
 public WorkflowRulesDto fetchWorkflowRules(String submissionId) {
-    String url = workflowServiceUrl + "/api/workflow/submissions/" + submissionId + "/rules";
     try {
-        return restTemplate.getForObject(url, WorkflowRulesDto.class);
+        return workflowRulesApi.getRulesForSubmission(submissionId);
     } catch (Exception e) {
         log.warn("Failed to call workflow service for submission {}", submissionId, e);
-        return null; // apply a safe default in the caller
+        return null;
     }
 }
 ```

@@ -23,8 +23,5 @@ public class AppConfig {
         return mapper;
     }
 
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
-    }
+
 }

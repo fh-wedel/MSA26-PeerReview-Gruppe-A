@@ -1,7 +1,8 @@
-package com.fh_wedel.communication.config;
+package com.fh_wedel.matching.config;
 
-import com.fh_wedel.matching.client.ApiClient;
-import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.user.client.ApiClient;
+import com.fh_wedel.user.client.api.UsersApi;
+import com.fh_wedel.user.client.api.GroupsApi;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,14 +16,11 @@ import java.util.function.Consumer;
 @Configuration
 public class ServiceClientsConfig {
 
-    @Value("${aws.matching.service.url:http://matching.internal.services:8081}")
-    private String matchingServiceUrl;
+    @Value("${aws.user-service.url:http://user.internal.services:8081}")
+    private String userServiceUrl;
 
     @Value("${aws.workflow.service.url:http://workflow.internal.services:8081}")
     private String workflowServiceUrl;
-
-    @Value("${aws.user-service.url:http://user.internal.services:8081}")
-    private String userServiceUrl;
 
     private Consumer<HttpRequest.Builder> createAuthInterceptor() {
         return builder -> {
@@ -46,16 +44,21 @@ public class ServiceClientsConfig {
     }
 
     @Bean
-    public ApiClient matchingApiClient() {
+    public ApiClient userApiClient() {
         ApiClient apiClient = new ApiClient();
-        apiClient.updateBaseUri(matchingServiceUrl + "/api/matching");
+        apiClient.updateBaseUri(userServiceUrl + "/api/users");
         apiClient.setRequestInterceptor(createAuthInterceptor());
         return apiClient;
     }
 
     @Bean
-    public MatchesApi matchingMatchesApi(ApiClient matchingApiClient) {
-        return new MatchesApi(matchingApiClient);
+    public UsersApi usersApi(ApiClient userApiClient) {
+        return new UsersApi(userApiClient);
+    }
+
+    @Bean
+    public GroupsApi groupsApi(ApiClient userApiClient) {
+        return new GroupsApi(userApiClient);
     }
 
     @Bean
@@ -69,18 +72,5 @@ public class ServiceClientsConfig {
     @Bean
     public com.fh_wedel.workflow.client.api.WorkflowRulesApi workflowRulesApi(com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
         return new com.fh_wedel.workflow.client.api.WorkflowRulesApi(workflowApiClient);
-    }
-
-    @Bean
-    public com.fh_wedel.user.client.ApiClient userApiClient() {
-        com.fh_wedel.user.client.ApiClient apiClient = new com.fh_wedel.user.client.ApiClient();
-        apiClient.updateBaseUri(userServiceUrl + "/api/users");
-        apiClient.setRequestInterceptor(createAuthInterceptor());
-        return apiClient;
-    }
-
-    @Bean
-    public com.fh_wedel.user.client.api.UsersApi usersApi(com.fh_wedel.user.client.ApiClient userApiClient) {
-        return new com.fh_wedel.user.client.api.UsersApi(userApiClient);
     }
 }
