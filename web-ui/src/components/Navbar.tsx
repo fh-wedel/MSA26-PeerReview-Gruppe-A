@@ -227,7 +227,11 @@ export const Navbar: React.FC = () => {
                               <ListItemText
                                 primary={
                                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <Typography variant="subtitle2">{userMap[msg.otherParticipantId] || msg.otherParticipantId}</Typography>
+                                    <Typography variant="subtitle2">
+                                      {msg.chatType === 'SUBMISSION' 
+                                        ? `Submission: ${msg.submissionId?.slice(0, 8)}...`
+                                        : (msg.otherParticipantId ? (userMap[msg.otherParticipantId] || msg.otherParticipantId) : 'Unknown')}
+                                    </Typography>
                                     <Typography variant="caption" color={'text.secondary'}>
                                     {msg.lastMessageAt ? formatDistanceToNow(new Date(msg.lastMessageAt), { addSuffix: true }) : ''}
                                   </Typography>

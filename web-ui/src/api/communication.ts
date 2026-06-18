@@ -7,8 +7,9 @@ export interface Message {
 
 export interface ChatDetailResponse {
   chatId: string;
-  participantA: string;
-  participantB: string;
+  participantA?: string;
+  participantB?: string;
+  participants?: string[];
   chatType: 'GENERAL' | 'SUBMISSION';
   submissionId?: string;
   createdAt: string;
@@ -18,7 +19,8 @@ export interface ChatDetailResponse {
 
 export interface ChatSummary {
   chatId: string;
-  otherParticipantId: string;
+  otherParticipantId?: string;
+  participants?: string[];
   chatType: 'GENERAL' | 'SUBMISSION';
   submissionId?: string;
   lastMessageAt?: string;
@@ -29,7 +31,7 @@ export interface ChatListResponse {
 }
 
 export interface SendMessageRequest {
-  recipientId: string;
+  recipientId?: string;
   body: string;
   chatContext: {
     type: 'GENERAL' | 'SUBMISSION';
@@ -108,4 +110,3 @@ export const fetchWorkflowPlugins = async (): Promise<WorkflowPlugin[]> => {
   const response = await workflowApiClient.plugins.listPlugins();
   return response.data as any;
 };
-

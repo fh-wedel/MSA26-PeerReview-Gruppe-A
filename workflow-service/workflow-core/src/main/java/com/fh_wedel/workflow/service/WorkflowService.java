@@ -8,6 +8,7 @@ import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
 import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WorkflowService {
 
     private final WorkflowPluginRegistry registry;
@@ -47,10 +49,13 @@ public class WorkflowService {
             return getPluginRules(workflowName);
         } catch (com.fh_wedel.configuration.client.ApiException e) {
             if (e.getCode() == 404) {
+                log.error("Submission not found: {}", submissionId, e);
                 throw new NoSuchElementException("Submission not found: " + submissionId, e);
             }
+            log.error("Failed to fetch configuration for submission: {}", submissionId, e);
             throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
         } catch (Exception e) {
+            log.error("Failed to fetch configuration for submission: {}", submissionId, e);
             throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
         }
     }
