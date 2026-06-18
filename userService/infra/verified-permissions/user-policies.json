@@ -1,0 +1,170 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminSearchUsers",
+            "groupName": "Admin",
+            "actionId": "get /api/users/search",
+            "description": "Allow Admin to search users"
+        },
+        {
+            "id": "ExamOfficerSearchUsers",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/users/search",
+            "description": "Allow ExamOfficer to search users"
+        },
+        {
+            "id": "ReviewerSearchUsers",
+            "groupName": "Reviewer",
+            "actionId": "get /api/users/search",
+            "description": "Allow Reviewer to search users"
+        },
+        {
+            "id": "AuthorSearchUsers",
+            "groupName": "Author",
+            "actionId": "get /api/users/search",
+            "description": "Allow Author to search users"
+        },
+        {
+            "id": "StudentSearchUsers",
+            "groupName": "Student",
+            "actionId": "get /api/users/search",
+            "description": "Allow Student to search users"
+        },
+
+        {
+            "id": "AdminGetUserBySub",
+            "groupName": "Admin",
+            "actionId": "get /api/users/{sub}",
+            "description": "Allow Admin to get user by sub"
+        },
+        {
+            "id": "ExamOfficerGetUserBySub",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/users/{sub}",
+            "description": "Allow ExamOfficer to get user by sub"
+        },
+        {
+            "id": "ReviewerGetUserBySub",
+            "groupName": "Reviewer",
+            "actionId": "get /api/users/{sub}",
+            "description": "Allow Reviewer to get user by sub"
+        },
+        {
+            "id": "AuthorGetUserBySub",
+            "groupName": "Author",
+            "actionId": "get /api/users/{sub}",
+            "description": "Allow Author to get user by sub"
+        },
+        {
+            "id": "StudentGetUserBySub",
+            "groupName": "Student",
+            "actionId": "get /api/users/{sub}",
+            "description": "Allow Student to get user by sub"
+        },
+
+        {
+            "id": "AdminBulkResolve",
+            "groupName": "Admin",
+            "actionId": "post /api/users/bulk",
+            "description": "Allow Admin to bulk resolve users"
+        },
+        {
+            "id": "ExamOfficerBulkResolve",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/users/bulk",
+            "description": "Allow ExamOfficer to bulk resolve users"
+        },
+        {
+            "id": "ReviewerBulkResolve",
+            "groupName": "Reviewer",
+            "actionId": "post /api/users/bulk",
+            "description": "Allow Reviewer to bulk resolve users"
+        },
+        {
+            "id": "AuthorBulkResolve",
+            "groupName": "Author",
+            "actionId": "post /api/users/bulk",
+            "description": "Allow Author to bulk resolve users"
+        },
+        {
+            "id": "StudentBulkResolve",
+            "groupName": "Student",
+            "actionId": "post /api/users/bulk",
+            "description": "Allow Student to bulk resolve users"
+        },
+
+
+        {
+            "id": "AdminListGroupMembers",
+            "groupName": "Admin",
+            "actionId": "get /api/users/groups/{groupName}/members",
+            "description": "Allow Admin to list group members"
+        },
+        {
+            "id": "ExamOfficerListGroupMembers",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/users/groups/{groupName}/members",
+            "description": "Allow ExaminationOfficer to list group members"
+        },
+
+        {
+            "id": "AdminAddGroupMember",
+            "groupName": "Admin",
+            "actionId": "post /api/users/groups/{groupName}/members",
+            "description": "Allow Admin to add group member"
+        },
+        {
+            "id": "ExamOfficerAddGroupMember",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/users/groups/{groupName}/members",
+            "description": "Allow ExaminationOfficer to add group member"
+        },
+
+        {
+            "id": "AdminRemoveGroupMember",
+            "groupName": "Admin",
+            "actionId": "delete /api/users/groups/{groupName}/members/{username}",
+            "description": "Allow Admin to remove group member"
+        },
+        {
+            "id": "ExamOfficerRemoveGroupMember",
+            "groupName": "ExaminationOfficer",
+            "actionId": "delete /api/users/groups/{groupName}/members/{username}",
+            "description": "Allow ExaminationOfficer to remove group member"
+        },
+
+        {
+            "id": "AdminGetUserDetails",
+            "groupName": "Admin",
+            "actionId": "get /api/users/details/{username}",
+            "description": "Allow Admin to get user details"
+        },
+        {
+            "id": "ExamOfficerGetUserDetails",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/users/details/{username}",
+            "description": "Allow ExaminationOfficer to get user details"
+        },
+
+        {
+            "id": "AdminUpdateUserAttributes",
+            "groupName": "Admin",
+            "actionId": "patch /api/users/groups/{groupName}/members/{username}/attributes",
+            "description": "Allow Admin to update user attributes"
+        },
+        {
+            "id": "ExamOfficerUpdateUserAttributes",
+            "groupName": "ExaminationOfficer",
+            "actionId": "patch /api/users/groups/{groupName}/members/{username}/attributes",
+            "description": "Allow ExaminationOfficer to update user attributes"
+        }
+    ]
+}

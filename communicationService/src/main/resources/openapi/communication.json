@@ -12,40 +12,7 @@
     }
   ],
   "paths": {
-    "/users": {
-      "get": {
-        "summary": "Search for users by username",
-        "description": "Proxies a search to Cognito to allow the Web-UI to find recipients by\nusername when initiating a new chat. Returns matching users' sub UUIDs\nand usernames. This endpoint will be extracted to a dedicated User\nManagement Service in a future iteration.\n",
-        "operationId": "searchUsers",
-        "tags": ["Users"],
-        "parameters": [
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Username prefix or substring to filter by"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of matching users",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserListResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      }
-    },
+
     "/chats": {
       "get": {
         "summary": "List all chats for the authenticated user",
@@ -72,7 +39,7 @@
     "/chats/messages": {
       "post": {
         "summary": "Send a message (creates chat implicitly if it does not exist)",
-        "description": "Sends a message to a recipient within a given chat context (GENERAL or\nSUBMISSION-specific). The backend derives a deterministic chatId from the\nsorted participant pair and context string — the chat is created atomically\non the first message if it does not yet exist.\nThe senderId is always taken from the x-auth-principal-id header, never\nfrom the request body, preventing impersonation.\n",
+        "description": "Sends a message within a given chat context (GENERAL or SUBMISSION-specific).\nFor GENERAL chats, recipientId is required and identifies the other participant.\nFor SUBMISSION chats, recipientId is not needed — the chat is a group chat\nshared by all participants of the submission.\nThe backend derives a deterministic chatId from the context.\nThe senderId is always taken from the x-auth-principal-id header, never\nfrom the request body, preventing impersonation.\n",
         "operationId": "sendMessage",
         "tags": ["Chats"],
         "requestBody": {
@@ -168,32 +135,7 @@
   },
   "components": {
     "schemas": {
-      "UserDto": {
-        "type": "object",
-        "required": ["sub", "username"],
-        "properties": {
-          "sub": {
-            "type": "string",
-            "description": "Cognito sub UUID — use this as recipientId when sending a message"
-          },
-          "username": {
-            "type": "string",
-            "description": "Human-readable Cognito username"
-          }
-        }
-      },
-      "UserListResponse": {
-        "type": "object",
-        "required": ["users"],
-        "properties": {
-          "users": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserDto"
-            }
-          }
-        }
-      },
+
       "ChatContext": {
         "type": "object",
         "required": ["type"],
@@ -201,22 +143,21 @@
           "type": {
             "type": "string",
             "enum": ["GENERAL", "SUBMISSION"],
-            "description": "GENERAL for an open thread; SUBMISSION for a submission-specific thread"
+            "description": "GENERAL for an open thread; SUBMISSION for a submission-specific group thread"
           },
           "submissionId": {
             "type": "string",
-            "nullable": true,
             "description": "Required when type is SUBMISSION. Any string identifier (typically a UUID)."
           }
         }
       },
       "SendMessageRequest": {
         "type": "object",
-        "required": ["recipientId", "chatContext", "body"],
+        "required": ["chatContext", "body"],
         "properties": {
           "recipientId": {
             "type": "string",
-            "description": "Cognito sub UUID of the recipient"
+            "description": "User sub UUID of the recipient. Required for GENERAL chats; ignored for SUBMISSION chats."
           },
           "chatContext": {
             "$ref": "#/components/schemas/ChatContext"
@@ -237,15 +178,21 @@
           },
           "otherParticipantId": {
             "type": "string",
-            "description": "Cognito sub UUID of the other participant"
+            "description": "User sub UUID of the other participant (GENERAL chats only)"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "All participant IDs (SUBMISSION group chats only)"
           },
           "chatType": {
             "type": "string",
             "enum": ["GENERAL", "SUBMISSION"]
           },
           "submissionId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastMessageAt": {
             "type": "string",
@@ -277,7 +224,7 @@
           },
           "senderId": {
             "type": "string",
-            "description": "Cognito sub UUID of the sender"
+            "description": "User sub UUID of the sender"
           },
           "body": {
             "type": "string"
@@ -296,19 +243,25 @@
           },
           "participantA": {
             "type": "string",
-            "description": "Cognito sub UUID of participant A (lower UUID alphabetically)"
+            "description": "User sub UUID of participant A (GENERAL chats, lower UUID alphabetically)"
           },
           "participantB": {
             "type": "string",
-            "description": "Cognito sub UUID of participant B (higher UUID alphabetically)"
+            "description": "User sub UUID of participant B (GENERAL chats, higher UUID alphabetically)"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "All participant IDs (SUBMISSION group chats)"
           },
           "chatType": {
             "type": "string",
             "enum": ["GENERAL", "SUBMISSION"]
           },
           "submissionId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -323,7 +276,6 @@
           },
           "nextToken": {
             "type": "string",
-            "nullable": true,
             "description": "Cursor for loading the next (older) page of messages. Null when no more messages exist."
           }
         }

@@ -13,7 +13,7 @@ import {
     Tabs,
     Typography
 } from '@mui/material';
-import {AccountCircle, Add as AddIcon, Description} from '@mui/icons-material';
+import {AccountCircle, Add as AddIcon, Group} from '@mui/icons-material';
 import {useChat} from '../contexts/ChatContext';
 import {ChatWidget} from '../components/chat/ChatWidget';
 import {UserSearchDialog} from '../components/chat/UserSearchDialog';
@@ -58,7 +58,7 @@ export const ChatPage: React.FC = () => {
     const existing = chats.find(c => c.chatType === 'GENERAL' && c.otherParticipantId === selectedUser.id);
     if (existing) {
       setSelectedChatId(existing.chatId);
-      setSelectedRecipientId(existing.otherParticipantId);
+      setSelectedRecipientId(existing.otherParticipantId ?? null);
       setChatTypeTab('GENERAL');
     } else {
       setSelectedChatId(null);
@@ -69,33 +69,32 @@ export const ChatPage: React.FC = () => {
     }
   };
 
-  const handleNewSubmissionChat = (selectedUser: UserSummary, submissionId: string) => {
+  const handleNewSubmissionChat = (submissionId: string) => {
     setSubmissionSearchOpen(false);
     
-    // Check if a SUBMISSION chat already exists with this user for this submission
-    const existing = chats.find(c => c.chatType === 'SUBMISSION' && c.submissionId === submissionId && c.otherParticipantId === selectedUser.id);
+    // Check if a SUBMISSION chat already exists for this submission
+    const existing = chats.find(c => c.chatType === 'SUBMISSION' && c.submissionId === submissionId);
     
     if (existing) {
       setSelectedChatId(existing.chatId);
-      setSelectedRecipientId(existing.otherParticipantId);
+      setSelectedRecipientId(null);
       setChatTypeTab('SUBMISSION');
+      setPendingSubmissionId(null);
     } else {
+      // No existing chat — the first message will create it
       setSelectedChatId(null);
-      setSelectedRecipientId(selectedUser.id);
-      // Store pseudonym in userMap so it displays correctly before chat creation
-      setUserMap(prev => ({...prev, [selectedUser.id]: selectedUser.username}));
+      setSelectedRecipientId(null);
+      setPendingSubmissionId(submissionId);
       setChatTypeTab('SUBMISSION');
-      // We need a way to pass the submissionId to the ChatWidget if we are creating a new one
-      // The ChatPage needs to hold the "pending" submissionId
     }
   };
 
   // We need a state for the pending submission ID
   const [pendingSubmissionId, setPendingSubmissionId] = useState<string | null>(null);
 
-  const handleSelectChat = (chatId: string, otherParticipantId: string) => {
+  const handleSelectChat = (chatId: string, otherParticipantId?: string) => {
     setSelectedChatId(chatId);
-    setSelectedRecipientId(otherParticipantId);
+    setSelectedRecipientId(otherParticipantId ?? null);
     setPendingSubmissionId(null);
   };
 
@@ -105,6 +104,17 @@ export const ChatPage: React.FC = () => {
       } else {
           setSearchOpen(true);
       }
+  };
+
+  // Derive the chat title based on type
+  const getChatTitle = () => {
+    if (chatTypeTab === 'SUBMISSION') {
+      const subId = selectedChatId
+        ? filteredChats.find(c => c.chatId === selectedChatId)?.submissionId
+        : pendingSubmissionId;
+      return subId ? `Submission Chat: ${subId.slice(0, 8)}...` : 'Submission Chat';
+    }
+    return `Chat with ${userMap[selectedRecipientId || ''] || selectedRecipientId}`;
   };
 
   return (
@@ -124,18 +134,22 @@ export const ChatPage: React.FC = () => {
               <ListItem disablePadding>
                 <ListItemButton 
                   selected={selectedChatId === chat.chatId} 
-                  onClick={() => handleSelectChat(chat.chatId, chat.otherParticipantId)}
+                  onClick={() => handleSelectChat(chat.chatId, chat.otherParticipantId ?? undefined)}
                 >
                   <ListItemAvatar>
                     <Avatar sx={{ bgcolor: chat.chatType === 'SUBMISSION' ? 'secondary.main' : 'primary.main' }}>
-                      {chat.chatType === 'SUBMISSION' ? <Description /> : <AccountCircle />}
+                      {chat.chatType === 'SUBMISSION' ? <Group /> : <AccountCircle />}
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText 
-                    primary={userMap[chat.otherParticipantId] || chat.otherParticipantId}
+                    primary={
+                      chat.chatType === 'SUBMISSION'
+                        ? `Submission: ${chat.submissionId?.slice(0, 8)}...`
+                        : (userMap[chat.otherParticipantId || ''] || chat.otherParticipantId)
+                    }
                     secondary={
-                        chat.chatType === 'SUBMISSION' 
-                        ? `Submission: ${chat.submissionId?.slice(0, 8)}...` 
+                      chat.chatType === 'SUBMISSION'
+                        ? (chat.participants ? `${chat.participants.length} participants` : '')
                         : (chat.lastMessageAt ? formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true }) : 'No messages')
                     }
                   />
@@ -159,22 +173,25 @@ export const ChatPage: React.FC = () => {
 
       {/* Main Chat Area */}
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        {(selectedChatId || selectedRecipientId) ? (
+        {(selectedChatId || selectedRecipientId || pendingSubmissionId) ? (
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
             <Typography variant="h6">
-              Chat with {userMap[selectedRecipientId || ''] || selectedRecipientId} {chatTypeTab === 'SUBMISSION' && '(Submission)'}
+              {getChatTitle()}
             </Typography>
           </Box>
         ) : null}
         
         <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-          {(selectedChatId || selectedRecipientId) ? (
+          {(selectedChatId || selectedRecipientId || pendingSubmissionId) ? (
             <ChatWidget 
               chatId={selectedChatId || undefined} 
               recipientId={selectedRecipientId || undefined} 
               chatType={chatTypeTab}
               submissionId={chatTypeTab === 'SUBMISSION' ? (selectedChatId ? filteredChats.find(c => c.chatId === selectedChatId)?.submissionId : pendingSubmissionId) || undefined : undefined}
-              onChatCreated={(newChatId) => setSelectedChatId(newChatId)}
+              onChatCreated={(newChatId) => {
+                setSelectedChatId(newChatId);
+                setPendingSubmissionId(null);
+              }}
             />
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -194,10 +211,7 @@ export const ChatPage: React.FC = () => {
       <SubmissionChatDialog
         open={submissionSearchOpen}
         onClose={() => setSubmissionSearchOpen(false)}
-        onSelectUser={(selectedUser, subId) => {
-            setPendingSubmissionId(subId);
-            handleNewSubmissionChat(selectedUser, subId);
-        }}
+        onStartSubmissionChat={handleNewSubmissionChat}
       />
     </Box>
   );

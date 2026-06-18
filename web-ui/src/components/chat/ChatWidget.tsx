@@ -51,10 +51,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   // Listen to SSE updates
   useEffect(() => {
     if (messagesStream && chatId) {
-      // Check if message belongs to this chat
-      // The stream sends {chatId, message} but we only mapped it to message with messageId extended
-      // Let's assume we can match by checking if messageId ends with chatId or we should just refresh
-      // Alternatively, we appended chatId to messageId in ChatContext: `newMsg.messageId + '-' + chatId`
       if (messagesStream.messageId.endsWith('-' + chatId)) {
         // Remove the chatId part from messageId
         const cleanMsg = { ...messagesStream, messageId: messagesStream.messageId.replace('-' + chatId, '') };
@@ -72,7 +68,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || (!chatId && !recipientId)) return;
+    // For GENERAL chats we need recipientId or chatId; for SUBMISSION chats we need submissionId
+    const canSend = chatType === 'SUBMISSION'
+      ? (submissionId && input.trim())
+      : ((chatId || recipientId) && input.trim());
+    
+    if (!canSend) return;
 
     const body = input.trim();
     setInput('');
@@ -87,12 +88,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
     setMessages(prev => [...prev, tempMsg]);
 
     try {
-      // If we only have recipientId, the backend creates the chat
       const response = await sendMessage({
-        recipientId: recipientId || '', // In practice, if chatId exists, we still need recipientId? Actually backend requires recipientId. 
-        // Wait, if we have chatId but don't know recipientId? We should get it from the chat details.
-        // Actually, if we are in an existing chat, we know the other participant from the ChatSummary.
-        // So the parent should always pass `recipientId`.
+        recipientId: chatType === 'GENERAL' ? recipientId : undefined,
         body,
         chatContext: {
           type: chatType,

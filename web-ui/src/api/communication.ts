@@ -7,8 +7,9 @@ export interface Message {
 
 export interface ChatDetailResponse {
   chatId: string;
-  participantA: string;
-  participantB: string;
+  participantA?: string;
+  participantB?: string;
+  participants?: string[];
   chatType: 'GENERAL' | 'SUBMISSION';
   submissionId?: string;
   createdAt: string;
@@ -18,7 +19,8 @@ export interface ChatDetailResponse {
 
 export interface ChatSummary {
   chatId: string;
-  otherParticipantId: string;
+  otherParticipantId?: string;
+  participants?: string[];
   chatType: 'GENERAL' | 'SUBMISSION';
   submissionId?: string;
   lastMessageAt?: string;
@@ -29,7 +31,7 @@ export interface ChatListResponse {
 }
 
 export interface SendMessageRequest {
-  recipientId: string;
+  recipientId?: string;
   body: string;
   chatContext: {
     type: 'GENERAL' | 'SUBMISSION';
@@ -71,7 +73,7 @@ export interface WorkflowPlugin {
 }
 
 
-import {communicationApiClient, matchingApiClient, workflowApiClient} from './clients';
+import {communicationApiClient, matchingApiClient, workflowApiClient, usersApiClient} from './clients';
 
 export const fetchChats = async (): Promise<ChatListResponse> => {
   const response = await communicationApiClient.chats.listChats();
@@ -89,9 +91,9 @@ export const sendMessage = async (request: SendMessageRequest): Promise<ChatDeta
 };
 
 export const searchUsers = async (query: string): Promise<UserSummary[]> => {
-  const response = await communicationApiClient.users.searchUsers({search: query});
+  const response = await usersApiClient.search.searchUsers({q: query});
   const raw = response.data.users || [];
-  return raw.map(u => ({ id: u.sub, username: u.username }));
+  return raw.map((u: any) => ({ id: u.sub, username: u.username }));
 };
 
 export const fetchSubmissionMatch = async (submissionId: string): Promise<SubmissionMatchResponse> => {
@@ -108,4 +110,3 @@ export const fetchWorkflowPlugins = async (): Promise<WorkflowPlugin[]> => {
   const response = await workflowApiClient.plugins.listPlugins();
   return response.data as any;
 };
-

@@ -64,6 +64,8 @@ export class ServiceStack extends cdk.Stack {
 
     const containerPort = props.containerPort;
 
+    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+
     taskDefinition.addContainer('AppContainer', {
       containerName: props.serviceName,
       image: ecs.ContainerImage.fromRegistry(imageName),
@@ -78,7 +80,9 @@ export class ServiceStack extends cdk.Stack {
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'DYNAMODB_TABLE_NAME': dynamoTable.tableName,
-        'COGNITO_USER_POOL_ID': ImportedRessources.getCognitoUserPoolId(this),
+        'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
+        'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
+        'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -104,7 +108,6 @@ export class ServiceStack extends cdk.Stack {
     const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
     ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming traffic from API Gateway proxy Lambda');
 
-    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
@@ -131,13 +134,6 @@ export class ServiceStack extends cdk.Stack {
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
     dynamoTable.grantReadWriteData(taskDefinition.taskRole);
-
-    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-      actions: ['cognito-idp:ListUsers'],
-      resources: [
-        `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${ImportedRessources.getCognitoUserPoolId(this)}`
-      ],
-    }));
 
     if (props.minTaskCount !== props.maxTaskCount) {
       logger.info(`Setting up auto-scaling for service ${props.serviceName} with min ${props.minTaskCount} and max ${props.maxTaskCount} tasks.`);
