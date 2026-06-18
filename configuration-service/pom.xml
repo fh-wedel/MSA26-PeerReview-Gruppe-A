@@ -158,7 +158,7 @@
                         </goals>
                         <configuration>
                             <inputSpec>
-                                ${project.basedir}/../workflow-service/workflow-core/src/main/resources/openapi/workflow.json
+                                ${project.basedir}/src/main/resources/openapi/workflow.json
                             </inputSpec>
                             <output>${project.build.directory}/generated-sources/openapi-workflow</output>
                             <generatorName>java</generatorName>
