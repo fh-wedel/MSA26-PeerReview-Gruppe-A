@@ -301,20 +301,12 @@
           "authorReviewerChatAllowed": {
             "type": "boolean",
             "description": "Whether direct chat between author and reviewer is allowed"
-          },
-          "defaultNumberOfReviewers": {
-            "type": "integer"
-          },
-          "defaultNumberOfAuthors": {
-            "type": "integer"
           }
         },
         "required": [
           "authorAnonymous",
           "reviewerAnonymous",
-          "authorReviewerChatAllowed",
-          "defaultNumberOfReviewers",
-          "defaultNumberOfAuthors"
+          "authorReviewerChatAllowed"
         ]
       },
       "WorkflowPluginDto": {
