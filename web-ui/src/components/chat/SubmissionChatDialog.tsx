@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, CircularProgress, Alert, Autocomplete } from '@mui/material';
-import { fetchSubmissionMatch, fetchWorkflowRulesForSubmission } from '../../api/communication';
-import type { UserSummary } from '../../api/communication';
+import { fetchWorkflowRulesForSubmission } from '../../api/communication';
 import { configApiClient } from '../../api/clients';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAssignments } from '../../hooks/useAssignments';
@@ -9,10 +8,10 @@ import { useAssignments } from '../../hooks/useAssignments';
 interface SubmissionChatDialogProps {
   open: boolean;
   onClose: () => void;
-  onSelectUser: (user: UserSummary, submissionId: string) => void;
+  onStartSubmissionChat: (submissionId: string) => void;
 }
 
-export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open, onClose, onSelectUser }) => {
+export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open, onClose, onStartSubmissionChat }) => {
   const [submissionId, setSubmissionId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,54 +40,15 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
     setError(null);
 
     try {
-      const match = await fetchSubmissionMatch(submissionId);
+      // Validate workflow rules — chat must be allowed for this review type
       const rules = await fetchWorkflowRulesForSubmission(submissionId);
-
       if (!rules.authorReviewerChatAllowed) {
         throw new Error('Chat is not allowed for this review type (Double Blind).');
       }
 
-      if (!user) throw new Error('Not authenticated');
-
-      const isAuthor = match.submitterId === user.id;
-      const examinerMatch = match.matches.find(m => m.examinerId === user.id);
-      const isReviewer = !!examinerMatch;
-
-      if (!isAuthor && !isReviewer) {
-        throw new Error('You are not a participant in this submission.');
-      }
-
-      let recipient: UserSummary;
-
-      if (isAuthor) {
-        if (match.matches.length === 0) {
-          throw new Error('No reviewers have been assigned to this submission yet.');
-        }
-        // For simplicity, we just take the first reviewer. If there are multiple,
-        // a more complex picker would be needed. 
-        const reviewer = match.matches[0];
-        
-        const reviewerDisplayName = rules.reviewerAnonymous
-          ? `Reviewer for Assignment ${submissionId.slice(0, 8)}`
-          : reviewer.examinerUsername;
-          
-        recipient = {
-          id: reviewer.examinerId,
-          username: reviewerDisplayName
-        };
-      } else {
-        // I am the reviewer, chatting with the author
-        const authorDisplayName = rules.authorAnonymous
-          ? `Author of Assignment ${submissionId.slice(0, 8)}`
-          : match.submitterUsername;
-
-        recipient = {
-          id: match.submitterId,
-          username: authorDisplayName
-        };
-      }
-
-      onSelectUser(recipient, submissionId);
+      // All good — start the group chat. The backend will resolve all participants
+      // from the Matching Service when the first message is sent.
+      onStartSubmissionChat(submissionId);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');

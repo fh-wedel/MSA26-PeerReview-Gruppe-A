@@ -88,6 +88,7 @@ public class ChatRepository {
         return new MessagePage(page.items(), newNextToken);
     }
 
+    /** Creates a 1:1 GENERAL chat with two participant links and the first message. */
     public void createChatWithFirstMessage(ChatMetaItem metaItem, ParticipantLinkItem link1, ParticipantLinkItem link2, MessageItem messageItem) {
         TransactWriteItemsEnhancedRequest transaction = TransactWriteItemsEnhancedRequest.builder()
                 .addPutItem(chatMetaTable, TransactPutItemEnhancedRequest.builder(ChatMetaItem.class).item(metaItem).build())
@@ -99,6 +100,20 @@ public class ChatRepository {
         enhancedClient.transactWriteItems(transaction);
     }
 
+    /** Creates a SUBMISSION group chat with N participant links and the first message. */
+    public void createGroupChatWithFirstMessage(ChatMetaItem metaItem, List<ParticipantLinkItem> links, MessageItem messageItem) {
+        TransactWriteItemsEnhancedRequest.Builder builder = TransactWriteItemsEnhancedRequest.builder()
+                .addPutItem(chatMetaTable, TransactPutItemEnhancedRequest.builder(ChatMetaItem.class).item(metaItem).build())
+                .addPutItem(messageTable, TransactPutItemEnhancedRequest.builder(MessageItem.class).item(messageItem).build());
+
+        for (ParticipantLinkItem link : links) {
+            builder.addPutItem(participantLinkTable, TransactPutItemEnhancedRequest.builder(ParticipantLinkItem.class).item(link).build());
+        }
+
+        enhancedClient.transactWriteItems(builder.build());
+    }
+
+    /** Adds a message to a 1:1 GENERAL chat and updates the two participant links. */
     public void addMessage(MessageItem messageItem, ParticipantLinkItem link1, ParticipantLinkItem link2) {
         TransactWriteItemsEnhancedRequest transaction = TransactWriteItemsEnhancedRequest.builder()
                 .addPutItem(messageTable, TransactPutItemEnhancedRequest.builder(MessageItem.class).item(messageItem).build())
@@ -107,6 +122,18 @@ public class ChatRepository {
                 .build();
 
         enhancedClient.transactWriteItems(transaction);
+    }
+
+    /** Adds a message to a SUBMISSION group chat and updates all N participant links. */
+    public void addGroupMessage(MessageItem messageItem, List<ParticipantLinkItem> links) {
+        TransactWriteItemsEnhancedRequest.Builder builder = TransactWriteItemsEnhancedRequest.builder()
+                .addPutItem(messageTable, TransactPutItemEnhancedRequest.builder(MessageItem.class).item(messageItem).build());
+
+        for (ParticipantLinkItem link : links) {
+            builder.addPutItem(participantLinkTable, TransactPutItemEnhancedRequest.builder(ParticipantLinkItem.class).item(link).build());
+        }
+
+        enhancedClient.transactWriteItems(builder.build());
     }
 
     public static class MessagePage {

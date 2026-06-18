@@ -10,7 +10,6 @@ import com.fh_wedel.communication.model.db.ChatMetaItem;
 import com.fh_wedel.communication.model.db.MessageItem;
 import com.fh_wedel.communication.model.db.ParticipantLinkItem;
 import com.fh_wedel.communication.repository.ChatRepository;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ChatService {
@@ -75,7 +74,7 @@ public class ChatService {
         }
         log.info("SSE subscribe: raw='{}' normalized='{}' activeEmitterKeys={}", rawUserId, userId, activeEmitters.keySet());
         // Timeout must be < API Gateway's 29s Lambda timeout so idle connections
-        // close cleanly and the Lambda proxy can return the (empty) response.
+        // close cleanly and the Lambda proxy's `await response.text()` resolves.
         SseEmitter emitter = new SseEmitter(25000L);
         activeEmitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 
@@ -125,19 +124,34 @@ public class ChatService {
         }
     }
 
+    /** Notifies all users in the list except the sender. */
+    private void notifyUsers(List<String> userIds, String senderId, String chatId, Message message) {
+        for (String userId : userIds) {
+            if (!userId.equals(senderId)) {
+                notifyUser(userId, chatId, message);
+            }
+        }
+    }
+
     public ChatListResponse listChats(String userId) {
         List<ParticipantLinkItem> links = chatRepository.findParticipantLinks(userId);
 
         List<ChatSummary> summaries = links.stream().map(link -> {
             ChatSummary summary = new ChatSummary();
             summary.setChatId(link.getChatId());
-            summary.setOtherParticipantId(link.getOtherParticipantId());
             summary.setChatType(ChatSummary.ChatTypeEnum.fromValue(link.getChatType()));
-            if ("SUBMISSION".equals(link.getChatType()) && link.getSubmissionId() != null) {
-                summary.setSubmissionId(JsonNullable.of(link.getSubmissionId()));
+            
+            if ("SUBMISSION".equals(link.getChatType())) {
+                summary.setSubmissionId(link.getSubmissionId());
+                // For group chats, otherParticipantId is not meaningful — leave null.
+                // The participants list is loaded when the chat detail is opened.
             } else {
-                summary.setSubmissionId(JsonNullable.undefined());
+                summary.setOtherParticipantId(link.getOtherParticipantId());
+                if (link.getSubmissionId() != null && !"GENERAL".equals(link.getSubmissionId())) {
+                    summary.setSubmissionId(link.getSubmissionId());
+                }
             }
+            
             if (link.getLastMessageAt() != null) {
                 summary.setLastMessageAt(OffsetDateTime.parse(link.getLastMessageAt()));
             }
@@ -157,8 +171,15 @@ public class ChatService {
 
         ChatMetaItem meta = metaOpt.get();
 
-        if (!userId.equals(meta.getParticipantA()) && !userId.equals(meta.getParticipantB())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not a participant in this chat");
+        // Authorization: check user is a participant
+        if ("SUBMISSION".equals(meta.getChatType())) {
+            if (meta.getParticipants() == null || !meta.getParticipants().contains(userId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not a participant in this chat");
+            }
+        } else {
+            if (!userId.equals(meta.getParticipantA()) && !userId.equals(meta.getParticipantB())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not a participant in this chat");
+            }
         }
 
         int pageSize = (limit != null && limit > 0) ? Math.min(limit, 200) : 100;
@@ -166,25 +187,21 @@ public class ChatService {
 
         ChatDetailResponse response = new ChatDetailResponse();
         response.setChatId(meta.getPk().replace("CHAT#", ""));
-        response.setParticipantA(meta.getParticipantA());
-        response.setParticipantB(meta.getParticipantB());
         response.setChatType(ChatDetailResponse.ChatTypeEnum.fromValue(meta.getChatType()));
-        
-        if ("SUBMISSION".equals(meta.getChatType()) && meta.getSubmissionId() != null) {
-            response.setSubmissionId(JsonNullable.of(meta.getSubmissionId()));
+
+        if ("SUBMISSION".equals(meta.getChatType())) {
+            response.setParticipants(meta.getParticipants());
+            response.setSubmissionId(meta.getSubmissionId());
         } else {
-            response.setSubmissionId(JsonNullable.undefined());
+            response.setParticipantA(meta.getParticipantA());
+            response.setParticipantB(meta.getParticipantB());
         }
         
         if (meta.getCreatedAt() != null) {
             response.setCreatedAt(OffsetDateTime.parse(meta.getCreatedAt()));
         }
         
-        if (page.nextToken != null) {
-            response.setNextToken(JsonNullable.of(page.nextToken));
-        } else {
-            response.setNextToken(JsonNullable.undefined());
-        }
+        response.setNextToken(page.nextToken);
 
         List<Message> messages = page.messages.stream().map(item -> {
             Message m = new Message();
@@ -203,39 +220,29 @@ public class ChatService {
 
     public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request, String authHeader) {
         String senderId = normalizeUserId(rawSenderId);
-        String recipientId = normalizeUserId(request.getRecipientId());
-        
-        log.info("sendMessage: rawSender='{}' normalizedSender='{}' rawRecipient='{}' normalizedRecipient='{}'",
-                rawSenderId, senderId, request.getRecipientId(), recipientId);
         ChatContext context = request.getChatContext();
-        
-        String contextStr = "GENERAL";
+        String chatTypeValue = context.getType() != null ? context.getType().getValue() : "GENERAL";
+
+        log.info("sendMessage: normalizedSender='{}' chatType='{}'", senderId, chatTypeValue);
+
         if (ChatContext.TypeEnum.SUBMISSION.equals(context.getType())) {
-            if (context.getSubmissionId() != null && context.getSubmissionId().isPresent()) {
-                contextStr = context.getSubmissionId().get();
-                
-                // Validate submission match and workflow rules for new or existing chats
-                MatchingServiceClient.SubmissionMatchDto match = matchingServiceClient.getSubmissionMatch(contextStr, authHeader);
-                WorkflowServiceClient.WorkflowRulesDto rules = workflowServiceClient.getWorkflowRules(contextStr, authHeader);
-                
-                if (!rules.authorReviewerChatAllowed) {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
-                }
-                
-                boolean senderInMatch = senderId.equals(match.submitterId) || 
-                        match.matches.stream().anyMatch(m -> senderId.equals(m.examinerId));
-                boolean recipientInMatch = recipientId.equals(match.submitterId) || 
-                        match.matches.stream().anyMatch(m -> recipientId.equals(m.examinerId));
-                        
-                if (!senderInMatch || !recipientInMatch) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender or recipient is not a participant in this submission");
-                }
-            }
+            return sendSubmissionMessage(senderId, request, authHeader);
+        } else {
+            return sendGeneralMessage(senderId, request);
+        }
+    }
+
+    // ── GENERAL 1:1 chat ─────────────────────────────────────────────────────
+
+    private ChatDetailResponse sendGeneralMessage(String senderId, SendMessageRequest request) {
+        String recipientId = normalizeUserId(request.getRecipientId());
+        if (recipientId == null || recipientId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "recipientId is required for GENERAL chats");
         }
 
         String lowerSub = senderId.compareTo(recipientId) <= 0 ? senderId : recipientId;
         String upperSub = senderId.compareTo(recipientId) <= 0 ? recipientId : senderId;
-        String seed = lowerSub + ":" + upperSub + ":" + contextStr;
+        String seed = lowerSub + ":" + upperSub + ":GENERAL";
         String chatId = UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).toString();
 
         String now = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
@@ -250,8 +257,6 @@ public class ChatService {
                 .build();
 
         Optional<ChatMetaItem> metaOpt = chatRepository.findChatMeta(chatId);
-        
-        String chatTypeValue = context.getType() != null ? context.getType().getValue() : "GENERAL";
 
         if (metaOpt.isEmpty()) {
             ChatMetaItem meta = ChatMetaItem.builder()
@@ -259,8 +264,8 @@ public class ChatService {
                     .sk("META")
                     .participantA(lowerSub)
                     .participantB(upperSub)
-                    .chatType(chatTypeValue)
-                    .submissionId(contextStr)
+                    .chatType("GENERAL")
+                    .submissionId("GENERAL")
                     .createdAt(now)
                     .lastMessageAt(now)
                     .build();
@@ -270,8 +275,8 @@ public class ChatService {
                     .sk("CHAT#" + chatId)
                     .chatId(chatId)
                     .otherParticipantId(recipientId)
-                    .chatType(chatTypeValue)
-                    .submissionId(contextStr)
+                    .chatType("GENERAL")
+                    .submissionId("GENERAL")
                     .lastMessageAt(now)
                     .build();
 
@@ -280,8 +285,8 @@ public class ChatService {
                     .sk("CHAT#" + chatId)
                     .chatId(chatId)
                     .otherParticipantId(senderId)
-                    .chatType(chatTypeValue)
-                    .submissionId(contextStr)
+                    .chatType("GENERAL")
+                    .submissionId("GENERAL")
                     .lastMessageAt(now)
                     .build();
 
@@ -292,8 +297,8 @@ public class ChatService {
                     .sk("CHAT#" + chatId)
                     .chatId(chatId)
                     .otherParticipantId(recipientId)
-                    .chatType(chatTypeValue)
-                    .submissionId(contextStr)
+                    .chatType("GENERAL")
+                    .submissionId("GENERAL")
                     .lastMessageAt(now)
                     .build();
 
@@ -302,8 +307,8 @@ public class ChatService {
                     .sk("CHAT#" + chatId)
                     .chatId(chatId)
                     .otherParticipantId(senderId)
-                    .chatType(chatTypeValue)
-                    .submissionId(contextStr)
+                    .chatType("GENERAL")
+                    .submissionId("GENERAL")
                     .lastMessageAt(now)
                     .build();
 
@@ -315,10 +320,124 @@ public class ChatService {
         m.setSenderId(senderId);
         m.setBody(request.getBody());
         m.setSentAt(OffsetDateTime.parse(now));
-        
+
         // Only notify the recipient — the sender already has an optimistic UI update
         notifyUser(recipientId, chatId, m);
 
         return getChat(senderId, chatId, null, 1);
+    }
+
+    // ── SUBMISSION group chat ────────────────────────────────────────────────
+
+    private ChatDetailResponse sendSubmissionMessage(String senderId, SendMessageRequest request, String authHeader) {
+        ChatContext context = request.getChatContext();
+        String submissionId = context.getSubmissionId();
+
+        if (submissionId == null || submissionId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "submissionId is required for SUBMISSION chats");
+        }
+
+        // Validate workflow rules
+        WorkflowServiceClient.WorkflowRulesDto rules = workflowServiceClient.getWorkflowRules(submissionId, authHeader);
+        if (!rules.authorReviewerChatAllowed) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
+        }
+
+        // Deterministic chatId keyed by submission only (one group chat per submission)
+        String seed = "SUBMISSION:" + submissionId;
+        String chatId = UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).toString();
+
+        String now = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
+        String messageId = UUID.randomUUID().toString();
+
+        MessageItem messageItem = MessageItem.builder()
+                .pk("CHAT#" + chatId)
+                .sk("MSG#" + now + "#" + messageId)
+                .senderId(senderId)
+                .body(request.getBody())
+                .sentAt(now)
+                .build();
+
+        Optional<ChatMetaItem> metaOpt = chatRepository.findChatMeta(chatId);
+
+        List<String> allParticipants;
+
+        if (metaOpt.isEmpty()) {
+            // First message: fetch all participants from the Matching Service
+            MatchingServiceClient.SubmissionMatchDto match = matchingServiceClient.getSubmissionMatch(submissionId, authHeader);
+            allParticipants = buildParticipantList(match);
+
+            if (!allParticipants.contains(senderId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant in this submission");
+            }
+
+            ChatMetaItem meta = ChatMetaItem.builder()
+                    .pk("CHAT#" + chatId)
+                    .sk("META")
+                    .participants(allParticipants)
+                    .chatType("SUBMISSION")
+                    .submissionId(submissionId)
+                    .createdAt(now)
+                    .lastMessageAt(now)
+                    .build();
+
+            List<ParticipantLinkItem> links = buildParticipantLinks(allParticipants, chatId, submissionId, now);
+            chatRepository.createGroupChatWithFirstMessage(meta, links, messageItem);
+            
+            log.info("Created SUBMISSION group chat: chatId='{}' submissionId='{}' participants={}", 
+                    chatId, submissionId, allParticipants);
+        } else {
+            // Subsequent message: participants are already stored in the meta
+            ChatMetaItem meta = metaOpt.get();
+            allParticipants = meta.getParticipants();
+
+            if (allParticipants == null || !allParticipants.contains(senderId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant in this chat");
+            }
+
+            List<ParticipantLinkItem> links = buildParticipantLinks(allParticipants, chatId, submissionId, now);
+            chatRepository.addGroupMessage(messageItem, links);
+        }
+
+        Message m = new Message();
+        m.setMessageId(messageId);
+        m.setSenderId(senderId);
+        m.setBody(request.getBody());
+        m.setSentAt(OffsetDateTime.parse(now));
+
+        // Notify ALL other participants via SSE
+        notifyUsers(allParticipants, senderId, chatId, m);
+
+        return getChat(senderId, chatId, null, 1);
+    }
+
+    /** Builds a deduplicated participant list from the Matching Service response. */
+    private List<String> buildParticipantList(MatchingServiceClient.SubmissionMatchDto match) {
+        List<String> participants = new ArrayList<>();
+        if (match.submitterId != null) {
+            participants.add(match.submitterId);
+        }
+        if (match.matches != null) {
+            for (MatchingServiceClient.MatchEntry entry : match.matches) {
+                if (entry.examinerId != null && !participants.contains(entry.examinerId)) {
+                    participants.add(entry.examinerId);
+                }
+            }
+        }
+        return participants;
+    }
+
+    /** Creates a ParticipantLinkItem for each participant in a group chat. */
+    private List<ParticipantLinkItem> buildParticipantLinks(List<String> participants, String chatId, String submissionId, String now) {
+        return participants.stream()
+                .map(userId -> ParticipantLinkItem.builder()
+                        .pk("USER#" + userId)
+                        .sk("CHAT#" + chatId)
+                        .chatId(chatId)
+                        .chatType("SUBMISSION")
+                        .submissionId(submissionId)
+                        .lastMessageAt(now)
+                        .build())
+                .collect(Collectors.toList());
     }
 }

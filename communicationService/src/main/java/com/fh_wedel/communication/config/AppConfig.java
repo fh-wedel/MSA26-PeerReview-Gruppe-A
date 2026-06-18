@@ -23,10 +23,7 @@ public class AppConfig {
     @Value("${spring.cloud.aws.region.static:eu-north-1}")
     private String awsRegion;
 
-    @Bean
-    public com.fasterxml.jackson.databind.Module jsonNullableModule() {
-        return new org.openapitools.jackson.nullable.JsonNullableModule();
-    }
+
 
     @Bean
     public DynamoDbClient dynamoDbClient() {
