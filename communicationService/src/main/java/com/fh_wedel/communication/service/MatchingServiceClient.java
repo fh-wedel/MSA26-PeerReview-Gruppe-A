@@ -16,7 +16,7 @@ public class MatchingServiceClient {
     private static final Logger log = LoggerFactory.getLogger(MatchingServiceClient.class);
     private final RestClient restClient;
 
-    public MatchingServiceClient(@Value("${api.base-url}") String baseUrl) {
+    public MatchingServiceClient(@Value("${aws.matching-service.url:http://matching.internal.services:8081}") String baseUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();

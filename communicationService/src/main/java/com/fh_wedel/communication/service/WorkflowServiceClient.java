@@ -14,7 +14,7 @@ public class WorkflowServiceClient {
     private static final Logger log = LoggerFactory.getLogger(WorkflowServiceClient.class);
     private final RestClient restClient;
 
-    public WorkflowServiceClient(@Value("${api.base-url}") String baseUrl) {
+    public WorkflowServiceClient(@Value("${aws.workflow-service.url:http://workflow.internal.services:8081}") String baseUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
