@@ -218,7 +218,7 @@ public class ChatService {
         return response;
     }
 
-    public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request, String authHeader) {
+    public ChatDetailResponse sendMessage(String rawSenderId, SendMessageRequest request) {
         String senderId = normalizeUserId(rawSenderId);
         ChatContext context = request.getChatContext();
         String chatTypeValue = context.getType() != null ? context.getType().getValue() : "GENERAL";
@@ -226,7 +226,7 @@ public class ChatService {
         log.info("sendMessage: normalizedSender='{}' chatType='{}'", senderId, chatTypeValue);
 
         if (ChatContext.TypeEnum.SUBMISSION.equals(context.getType())) {
-            return sendSubmissionMessage(senderId, request, authHeader);
+            return sendSubmissionMessage(senderId, request);
         } else {
             return sendGeneralMessage(senderId, request);
         }
@@ -329,7 +329,7 @@ public class ChatService {
 
     // ── SUBMISSION group chat ────────────────────────────────────────────────
 
-    private ChatDetailResponse sendSubmissionMessage(String senderId, SendMessageRequest request, String authHeader) {
+    private ChatDetailResponse sendSubmissionMessage(String senderId, SendMessageRequest request) {
         ChatContext context = request.getChatContext();
         String submissionId = context.getSubmissionId();
 
@@ -338,8 +338,8 @@ public class ChatService {
         }
 
         // Validate workflow rules
-        WorkflowServiceClient.WorkflowRulesDto rules = workflowServiceClient.getWorkflowRules(submissionId, authHeader);
-        if (!rules.authorReviewerChatAllowed) {
+        com.fh_wedel.workflow.client.model.WorkflowRulesResponse rules = workflowServiceClient.getWorkflowRules(submissionId);
+        if (Boolean.FALSE.equals(rules.getAuthorReviewerChatAllowed())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
         }
 
@@ -364,7 +364,7 @@ public class ChatService {
 
         if (metaOpt.isEmpty()) {
             // First message: fetch all participants from the Matching Service
-            MatchingServiceClient.SubmissionMatchDto match = matchingServiceClient.getSubmissionMatch(submissionId, authHeader);
+            com.fh_wedel.matching.client.model.SubmissionMatchResponse match = matchingServiceClient.getSubmissionMatch(submissionId);
             allParticipants = buildParticipantList(match);
 
             if (!allParticipants.contains(senderId)) {
@@ -412,15 +412,15 @@ public class ChatService {
     }
 
     /** Builds a deduplicated participant list from the Matching Service response. */
-    private List<String> buildParticipantList(MatchingServiceClient.SubmissionMatchDto match) {
+    private List<String> buildParticipantList(com.fh_wedel.matching.client.model.SubmissionMatchResponse match) {
         List<String> participants = new ArrayList<>();
-        if (match.submitterId != null) {
-            participants.add(match.submitterId);
+        if (match.getSubmitterId() != null) {
+            participants.add(match.getSubmitterId());
         }
-        if (match.matches != null) {
-            for (MatchingServiceClient.MatchEntry entry : match.matches) {
-                if (entry.examinerId != null && !participants.contains(entry.examinerId)) {
-                    participants.add(entry.examinerId);
+        if (match.getMatches() != null) {
+            for (com.fh_wedel.matching.client.model.MatchEntry entry : match.getMatches()) {
+                if (entry.getExaminerId() != null && !participants.contains(entry.getExaminerId())) {
+                    participants.add(entry.getExaminerId());
                 }
             }
         }

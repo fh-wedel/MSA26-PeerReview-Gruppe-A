@@ -1,41 +1,28 @@
 package com.fh_wedel.communication.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import com.fh_wedel.workflow.client.api.SubmissionsApi;
+import com.fh_wedel.workflow.client.model.WorkflowRulesResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Slf4j
 public class WorkflowServiceClient {
 
-    private static final Logger log = LoggerFactory.getLogger(WorkflowServiceClient.class);
-    private final RestClient restClient;
+    private final SubmissionsApi submissionsApi;
 
-    public WorkflowServiceClient(@Value("${aws.workflow-service.url:http://workflow.internal.services:8081}") String baseUrl) {
-        this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
-                .build();
+    public WorkflowServiceClient(SubmissionsApi submissionsApi) {
+        this.submissionsApi = submissionsApi;
     }
 
-    public static class WorkflowRulesDto {
-        public boolean authorAnonymous;
-        public boolean reviewerAnonymous;
-        public boolean authorReviewerChatAllowed;
-    }
-
-    public WorkflowRulesDto getWorkflowRules(String submissionId, String authHeader) {
+    public WorkflowRulesResponse getWorkflowRules(String submissionId) {
         log.info("Calling Workflow Service to get rules for submission: {}", submissionId);
         try {
-            return restClient.get()
-                    .uri("/api/workflow/submissions/{submissionId}/rules", submissionId)
-                    .header("Authorization", authHeader)
-                    .retrieve()
-                    .body(WorkflowRulesDto.class);
+            return submissionsApi.getWorkflowRules(submissionId);
         } catch (Exception e) {
-            log.error("Failed to fetch workflow rules for {}: {}", submissionId, e.getMessage());
+            log.error("Failed to fetch workflow rules for {}: {}", submissionId, e.getMessage(), e);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to fetch workflow rules: " + e.getMessage());
         }
     }
