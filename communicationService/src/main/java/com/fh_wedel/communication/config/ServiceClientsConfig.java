@@ -2,7 +2,6 @@ package com.fh_wedel.communication.config;
 
 import com.fh_wedel.matching.client.ApiClient;
 import com.fh_wedel.matching.client.api.MatchesApi;
-import com.fh_wedel.workflow.client.api.SubmissionsApi;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -65,7 +64,7 @@ public class ServiceClientsConfig {
     }
 
     @Bean
-    public SubmissionsApi workflowSubmissionsApi(com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
-        return new SubmissionsApi(workflowApiClient);
+    public com.fh_wedel.workflow.client.api.WorkflowRulesApi workflowRulesApi(com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
+        return new com.fh_wedel.workflow.client.api.WorkflowRulesApi(workflowApiClient);
     }
 }

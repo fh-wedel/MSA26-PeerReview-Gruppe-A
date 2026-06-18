@@ -338,7 +338,7 @@ public class ChatService {
         }
 
         // Validate workflow rules
-        com.fh_wedel.workflow.client.model.WorkflowRulesResponse rules = workflowServiceClient.getWorkflowRules(submissionId);
+        com.fh_wedel.workflow.client.model.WorkflowRulesDto rules = workflowServiceClient.getWorkflowRules(submissionId);
         if (Boolean.FALSE.equals(rules.getAuthorReviewerChatAllowed())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
         }

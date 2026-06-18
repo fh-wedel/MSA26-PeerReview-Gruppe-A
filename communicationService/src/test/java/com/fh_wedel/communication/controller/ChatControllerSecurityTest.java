@@ -50,7 +50,7 @@ public class ChatControllerSecurityTest {
         ChatDetailResponse mockRes = new ChatDetailResponse();
         mockRes.setChatId("chat-1");
 
-        when(chatService.sendMessage(eq("user-a"), eq(req), eq("Bearer token"))).thenReturn(mockRes);
+        when(chatService.sendMessage(eq("user-a"), eq(req))).thenReturn(mockRes);
 
         ResponseEntity<ChatDetailResponse> response = chatController.sendMessage(req);
 
@@ -74,7 +74,7 @@ public class ChatControllerSecurityTest {
         ChatDetailResponse mockRes = new ChatDetailResponse();
         mockRes.setChatId("group-chat-1");
 
-        when(chatService.sendMessage(eq("user-a"), eq(req), eq("Bearer token"))).thenReturn(mockRes);
+        when(chatService.sendMessage(eq("user-a"), eq(req))).thenReturn(mockRes);
 
         ResponseEntity<ChatDetailResponse> response = chatController.sendMessage(req);
 
