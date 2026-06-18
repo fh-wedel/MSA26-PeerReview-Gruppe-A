@@ -64,7 +64,12 @@ export const fetchWithAuth = async (input: RequestInfo | URL, init?: RequestInit
             sessionStorage.removeItem('id_token');
             sessionStorage.removeItem('access_token');
             sessionStorage.removeItem('refresh_token');
-            window.location.href = REDIRECT_URI;
+
+            const currentUrl = window.location.href.replace(/\/$/, '');
+            const targetUrl = REDIRECT_URI.replace(/\/$/, '');
+            if (currentUrl !== targetUrl) {
+                window.location.href = REDIRECT_URI;
+            }
         }
     }
 
