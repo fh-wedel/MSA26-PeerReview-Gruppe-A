@@ -56,8 +56,8 @@ export class ServiceStack extends cdk.Stack {
     const containerPort = props.containerPort;
 
     // Get the Cognito User Pool ID from the baseline stack exports
-    const cognitoUserPoolId = cdk.Fn.importValue('CognitoUserPoolId');
-    const cognitoUserPoolArn = cdk.Fn.importValue('CognitoUserPoolArn');
+    const cognitoUserPoolId = cdk.Fn.importValue(`${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`);
+    const cognitoUserPoolArn = `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${cognitoUserPoolId}`;
 
     taskDefinition.addContainer('AppContainer', {
       containerName: props.serviceName,
@@ -91,6 +91,7 @@ export class ServiceStack extends cdk.Stack {
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Outbound HTTPS IPv6');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
       ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.allTcp(), 'Outbound all TCP IPv6 (ECS-to-ECS)');
+      ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(containerPort), 'ECS-to-ECS IPv6');
     }
 
     const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);

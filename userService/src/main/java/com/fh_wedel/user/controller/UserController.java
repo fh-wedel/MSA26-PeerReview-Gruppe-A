@@ -145,10 +145,10 @@ public class UserController {
     /**
      * Get full user details. Admin/ExaminationOfficer only.
      */
-    @GetMapping("/{username}/details")
+    @GetMapping("/details/{username}")
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
     public ResponseEntity<UserProfile> getUserDetails(@PathVariable("username") String username) {
-        log.info("Request received: GET /{}/details", username);
+        log.info("Request received: GET /details/{}", username);
         
         AdminGetUserResponse user = userService.getUserByUsername(username);
         List<String> groups = userService.getUserGroups(username);

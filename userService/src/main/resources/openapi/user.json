@@ -191,7 +191,7 @@
         }
       }
     },
-    "/{username}/details": {
+    "/details/{username}": {
       "get": {
         "summary": "Get full user details by username",
         "description": "Returns the full UserProfile (including custom attributes and group memberships)\nfor a user identified by their Cognito username.\nReplaces GET /api/matching/examiners/{examinerUsername}.\nRestricted to Admin and ExaminationOfficer.\n",

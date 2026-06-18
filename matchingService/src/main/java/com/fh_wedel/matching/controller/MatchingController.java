@@ -93,15 +93,23 @@ public class MatchingController {
         final boolean hide = hideExaminer;
 
         Map<String, String> examinerIdToUserNameMap = new HashMap<>();
-        try {
-            var response = groupsApi.listGroupMembers("Reviewer");
-            if (response != null && response.getUsers() != null) {
-                response.getUsers().forEach(user -> {
-                    examinerIdToUserNameMap.put(user.getSub(), user.getUsername());
-                });
+        if (matches != null && !matches.isEmpty()) {
+            try {
+                List<String> examinerIds = matches.stream()
+                        .map(MatchRecord::getExaminerId)
+                        .distinct()
+                        .toList();
+
+                com.fh_wedel.user.client.model.BulkResolveRequest request = new com.fh_wedel.user.client.model.BulkResolveRequest();
+                request.setSubs(examinerIds);
+                var response = usersApi.bulkResolveUsers(request);
+                
+                if (response != null && response.getUsers() != null) {
+                    examinerIdToUserNameMap.putAll(response.getUsers());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch reviewer usernames", e);
             }
-        } catch (Exception e) {
-            log.warn("Failed to fetch reviewers", e);
         }
 
         List<MatchEntry> matchEntries = matches.stream()

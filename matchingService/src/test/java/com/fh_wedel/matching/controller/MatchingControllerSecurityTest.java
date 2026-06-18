@@ -69,7 +69,6 @@ class MatchingControllerSecurityTest {
         mockSummary.setUsername("other-username");
         try {
             when(usersApi.getUserBySub("other-user")).thenReturn(mockSummary);
-            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(new UserProfileListResponse());
         } catch(Exception e) {}
 
         Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
@@ -89,7 +88,6 @@ class MatchingControllerSecurityTest {
         mockSummary.setUsername("other-username");
         try {
             when(usersApi.getUserBySub("other-user")).thenReturn(mockSummary);
-            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(new UserProfileListResponse());
         } catch(Exception e) {}
 
         Authentication auth = createAuth("ExaminationOfficer", "officer-user", "officer-uuid");
@@ -109,7 +107,6 @@ class MatchingControllerSecurityTest {
         mockSummary.setUsername("author-user");
         try {
             when(usersApi.getUserBySub("author-uuid")).thenReturn(mockSummary);
-            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(new UserProfileListResponse());
         } catch(Exception e) {}
 
         Authentication auth = createAuth("Author", "author-user", "author-uuid");

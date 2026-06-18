@@ -487,18 +487,18 @@ export class Api<
         ...params,
       }),
   };
-  username = {
+  details = {
     /**
      * @description Returns the full UserProfile (including custom attributes and group memberships) for a user identified by their Cognito username. Replaces GET /api/matching/examiners/{examinerUsername}. Restricted to Admin and ExaminationOfficer.
      *
      * @tags Groups
      * @name GetUserDetails
      * @summary Get full user details by username
-     * @request GET:/{username}/details
+     * @request GET:/details/{username}
      */
     getUserDetails: (username: string, params: RequestParams = {}) =>
       this.request<UserProfile, void>({
-        path: `/${username}/details`,
+        path: `/details/${username}`,
         method: "GET",
         format: "json",
         ...params,

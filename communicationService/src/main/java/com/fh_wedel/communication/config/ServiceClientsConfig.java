@@ -15,13 +15,13 @@ import java.util.function.Consumer;
 @Configuration
 public class ServiceClientsConfig {
 
-    @Value("${aws.matching.service.url:http://matching.internal.services:8081}")
+    @Value("${matching.service.url:http://matching.internal.services:8081}")
     private String matchingServiceUrl;
 
-    @Value("${aws.workflow.service.url:http://workflow.internal.services:8081}")
+    @Value("${workflow.service.url:http://workflow.internal.services:8081}")
     private String workflowServiceUrl;
 
-    @Value("${aws.user-service.url:http://user.internal.services:8081}")
+    @Value("${user.service.url:http://user.internal.services:8081}")
     private String userServiceUrl;
 
     private Consumer<HttpRequest.Builder> createAuthInterceptor() {

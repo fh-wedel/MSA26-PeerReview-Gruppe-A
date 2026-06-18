@@ -81,8 +81,8 @@ export class ServiceStack extends cdk.Stack {
         'AWS_REGION': AWSConstants.AWS_REGION,
         'DYNAMODB_TABLE_NAME': dynamoTable.tableName,
         'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
-        'AWS_WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
-        'AWS_MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
+        'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
+        'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });

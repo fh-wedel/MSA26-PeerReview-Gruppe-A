@@ -144,13 +144,13 @@
         {
             "id": "AdminGetUserDetails",
             "groupName": "Admin",
-            "actionId": "get /api/users/{username}/details",
+            "actionId": "get /api/users/details/{username}",
             "description": "Allow Admin to get user details"
         },
         {
             "id": "ExamOfficerGetUserDetails",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/users/{username}/details",
+            "actionId": "get /api/users/details/{username}",
             "description": "Allow ExaminationOfficer to get user details"
         },
 

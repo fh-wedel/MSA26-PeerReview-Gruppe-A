@@ -39,6 +39,10 @@ public class ServiceClientsConfig {
                 
                 String auth = request.getHeader("Authorization");
                 if (auth != null) builder.header("Authorization", auth);
+            } else {
+                // Background SQS task: act as a system admin
+                builder.header("x-auth-username", "system-matching-service");
+                builder.header("x-auth-groups", "Admin");
             }
         };
     }
