@@ -6,6 +6,7 @@ import com.fh_wedel.configuration.model.AuthorMapping;
 import com.fh_wedel.configuration.model.MatchingRequestEvent;
 import com.fh_wedel.configuration.model.SubmissionConfiguration;
 import com.fh_wedel.configuration.repository.ConfigurationRepository;
+import com.fh_wedel.workflow.client.ApiException;
 import com.fh_wedel.workflow.client.api.WorkflowPluginsApi;
 import com.fh_wedel.workflow.client.model.WorkflowPluginDto;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
@@ -45,7 +46,7 @@ public class ConfigurationService {
      * a MatchingRequestEvent to the matching-request SQS queue.
      */
     public SubmissionConfiguration createConfiguration(String title, String reviewProcessType,
-                                                       List<String> authorIds, String creatorId, String creatorRole) {
+                                                       List<String> authorIds, String creatorId, String creatorRole) throws ApiException {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
@@ -79,7 +80,7 @@ public class ConfigurationService {
         repository.saveConfiguration(config, mappings);
 
         // 4. Publish SQS matching request event
-        sendMatchingRequest(submissionId, authorIds.get(0), numberOfExaminers);
+        sendMatchingRequest(submissionId, authorIds.get(0), examiners);
 
         return config;
     }

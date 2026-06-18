@@ -3,6 +3,7 @@ package com.fh_wedel.configuration.controller;
 import com.fh_wedel.configuration.model.CreateConfigurationRequest;
 import com.fh_wedel.configuration.model.SubmissionConfiguration;
 import com.fh_wedel.configuration.service.ConfigurationService;
+import com.fh_wedel.workflow.client.ApiException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -74,13 +76,19 @@ public class ConfigurationController {
             }
         }
 
-        SubmissionConfiguration config = configurationService.createConfiguration(
-                request.getTitle(),
-                request.getReviewProcessType(),
-                request.getAuthorIds(),
-                callerSub,
-                callerRole
-        );
+        SubmissionConfiguration config;
+        try {
+            config = configurationService.createConfiguration(
+                    request.getTitle(),
+                    request.getReviewProcessType(),
+                    request.getAuthorIds(),
+                    callerSub,
+                    callerRole
+            );
+        } catch (ApiException e) {
+            log.error("Failed to fetch workflow plugin rules", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to fetch workflow rules: " + e.getMessage());
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(config);
     }

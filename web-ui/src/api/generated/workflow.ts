@@ -18,8 +18,6 @@ export interface WorkflowRulesDto {
   reviewerAnonymous: boolean;
   /** Whether direct chat between author and reviewer is allowed */
   authorReviewerChatAllowed: boolean;
-  defaultNumberOfReviewers: number;
-  defaultNumberOfAuthors: number;
 }
 
 /** A registered workflow plugin with its metadata and rules */
@@ -32,8 +30,16 @@ export interface WorkflowPluginDto {
   description: string;
   /** The anonymity and communication rules of a workflow plugin */
   rules: WorkflowRulesDto;
-  defaultNumberOfReviewers: number;
-  defaultNumberOfAuthors: number;
+  /** ISO-8601 duration for the submission deadline (e.g., P14D) */
+  submissionDeadlineDuration: string;
+  /** ISO-8601 duration for the review deadline (e.g., P14D) */
+  reviewDeadlineDuration: string;
+  /** Whether the evaluation criteria is visible to authors */
+  evaluationCriteriaVisibleToAuthors: boolean;
+  /** Number of reviewers */
+  numberOfReviewers: number;
+  /** Number of authors */
+  numberOfAuthors: number;
   feedbackFormTemplate: ReviewQuestionDto[];
 }
 
