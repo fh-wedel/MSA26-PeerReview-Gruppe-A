@@ -7,6 +7,7 @@ import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
+import { usersApiClient } from '../../api/clients';
 
 interface ChatWidgetProps {
   chatId?: string;
@@ -22,6 +23,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   const { messagesStream, markChatAsRead, refreshChats } = useChat();
   const { showError } = useNotification();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,8 +34,22 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
         setLoading(true);
         try {
           const detail = await fetchChatDetail(chatId, 100);
-          setMessages(detail.messages.reverse()); // Reverse to show oldest first at top
+          const msgs = detail.messages.reverse(); // Reverse to show oldest first at top
+          setMessages(msgs);
           markChatAsRead(chatId);
+
+          // Resolve usernames for senders
+          const uniqueSenders = Array.from(new Set(msgs.map(m => m.senderId)));
+          if (uniqueSenders.length > 0) {
+            try {
+              const resolveRes = await usersApiClient.bulk.bulkResolveUsers({ subs: uniqueSenders });
+              if (resolveRes.data.users) {
+                setUserMap(prev => ({...prev, ...resolveRes.data.users}));
+              }
+            } catch (err) {
+              console.error('Failed to resolve usernames', err);
+            }
+          }
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Failed to load chat messages.';
           showError(msg, 'Communication Service');
@@ -42,6 +58,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
         }
       } else {
         setMessages([]);
+        setUserMap({});
       }
     };
     loadMessages();
@@ -59,9 +76,20 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
           return [...prev, cleanMsg];
         });
         markChatAsRead(chatId);
+
+        // Resolve username if not present
+        if (!userMap[cleanMsg.senderId]) {
+          usersApiClient.bulk.bulkResolveUsers({ subs: [cleanMsg.senderId] })
+            .then(res => {
+              if (res.data.users) {
+                setUserMap(prev => ({...prev, ...res.data.users}));
+              }
+            })
+            .catch(err => console.error('Failed to resolve new message sender', err));
+        }
       }
     }
-  }, [messagesStream, chatId, markChatAsRead]);
+  }, [messagesStream, chatId, markChatAsRead, userMap]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -130,6 +158,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
             <Box key={msg.messageId} sx={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
               {!isMine && <Avatar sx={{ width: 32, height: 32, mr: 1, mt: 1 }}><AccountCircle /></Avatar>}
               <Box sx={{ maxWidth: '70%' }}>
+                {!isMine && (
+                  <Typography variant="caption" sx={{ ml: 0.5, mb: 0.5, display: 'block', color: 'text.secondary' }}>
+                    {userMap[msg.senderId] || msg.senderId}
+                  </Typography>
+                )}
                 <Paper sx={{ p: 1.5, bgcolor: isMine ? 'primary.main' : 'background.paper', color: isMine ? 'primary.contrastText' : 'text.primary', borderRadius: 2 }}>
                   <Typography variant="body1">{msg.body}</Typography>
                 </Paper>
