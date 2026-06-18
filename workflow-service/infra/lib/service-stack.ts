@@ -59,6 +59,7 @@ export class ServiceStack extends cdk.Stack {
     const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
 
     const reviewTable = new dynamodb.Table(this, 'ReviewTable', {
+      tableName: 'workflow-service-reviews',
       partitionKey: {name: 'pk', type: dynamodb.AttributeType.STRING},
       sortKey: {name: 'sk', type: dynamodb.AttributeType.STRING},
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
