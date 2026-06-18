@@ -90,7 +90,7 @@ test('Service stack uses IPv6 defaults and creates dynamodb table', () => {
                     { Name: 'SERVER_PORT', Value: '8081' },
                     { Name: 'AWS_REGION', Value: AWSConstants.AWS_REGION },
                     { Name: 'DYNAMODB_TABLE_NAME', Value: Match.anyValue() },
-                    { Name: 'COGNITO_USER_POOL_ID', Value: Match.anyValue() },
+                    { Name: 'USER_SERVICE_URL', Value: Match.anyValue() },
                 ]),
                 HealthCheck: Match.objectLike({
                     Command: [

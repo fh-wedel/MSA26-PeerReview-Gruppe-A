@@ -91,7 +91,7 @@ export const sendMessage = async (request: SendMessageRequest): Promise<ChatDeta
 };
 
 export const searchUsers = async (query: string): Promise<UserSummary[]> => {
-  const response = await usersApiClient.users.searchUsers({q: query});
+  const response = await usersApiClient.search.searchUsers({q: query});
   const raw = response.data.users || [];
   return raw.map((u: any) => ({ id: u.sub, username: u.username }));
 };
