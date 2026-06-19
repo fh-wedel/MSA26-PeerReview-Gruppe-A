@@ -70,6 +70,7 @@ export class ServiceStack extends cdk.Stack {
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: props.memory,
       cpu: props.cpu,
+      runtimePlatform: EcsInfra.getDefaultRuntimePlatform(),
     });
 
     const imageName = props.enablePublicIpV4

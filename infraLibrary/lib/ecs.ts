@@ -13,6 +13,13 @@ const logger = pino({
 });
 
 export class EcsInfra {
+    public static getDefaultRuntimePlatform(): ecs.RuntimePlatform {
+        return {
+            cpuArchitecture: ecs.CpuArchitecture.ARM64,
+            operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+        };
+    }
+
     public static grantDefaultTaskRolePermissions(taskDefinition: ecs.FargateTaskDefinition) {
         const ecrBaseStatement = new flyod.Statement.Ecr()
             .allow()
