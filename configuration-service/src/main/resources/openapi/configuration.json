@@ -11,41 +11,6 @@
     }
   ],
   "paths": {
-    "/status": {
-      "get": {
-        "summary": "Returns the current status of the API",
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "OK"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/time": {
-      "get": {
-        "summary": "Returns the current server time",
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/": {
       "post": {
         "summary": "Create a new submission configuration",

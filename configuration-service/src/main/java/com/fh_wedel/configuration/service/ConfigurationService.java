@@ -107,13 +107,6 @@ public class ConfigurationService {
     }
 
     /**
-     * Returns service status.
-     */
-    public String getServiceStatus() {
-        return "Configuration Service is up and running!";
-    }
-
-    /**
      * Sends an SQS event to the Matching Service request queue.
      */
     private void sendMatchingRequest(String submissionId, String submitterId, int numberOfExaminers) {
