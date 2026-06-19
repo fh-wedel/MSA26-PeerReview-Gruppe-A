@@ -13,7 +13,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,29 +25,6 @@ public class ConfigurationController {
 
     public ConfigurationController(ConfigurationService configurationService) {
         this.configurationService = configurationService;
-    }
-
-    /**
-     * Endpoint for public health and service status checks.
-     */
-    @GetMapping("/status")
-    public String getStatus() {
-        log.info("Request received: GET /status");
-        return configurationService.getServiceStatus();
-    }
-
-    /**
-     * Returns server time with authenticated identity details.
-     */
-    @GetMapping("/time")
-    public String getCurrentTime(Authentication authentication) {
-        log.info("Request received: GET /time");
-        String username = authentication != null ? authentication.getName() : "Guest";
-        String groups = authentication != null ? authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList()
-                .toString() : "None";
-        return String.format("time=%s, username=%s, groups=%s", Instant.now(), username, groups);
     }
 
     /**
