@@ -145,36 +145,7 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <!-- OpenAPI Generator for workflow-client -->
-            <plugin>
-                <groupId>org.openapitools</groupId>
-                <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.5.0</version>
-                <executions>
-                    <execution>
-                        <id>generate-workflow-client</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>
-                                ${project.basedir}/src/main/resources/openapi/workflow.json
-                            </inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-workflow</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.workflow.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.workflow.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
         </plugins>
     </build>
 
