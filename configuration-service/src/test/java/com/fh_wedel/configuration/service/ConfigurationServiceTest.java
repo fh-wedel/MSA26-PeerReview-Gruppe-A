@@ -1,7 +1,6 @@
 package com.fh_wedel.configuration.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fh_wedel.configuration.model.ReviewProcessType;
 import com.fh_wedel.configuration.repository.ConfigurationRepository;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ class ConfigurationServiceTest {
 
         service.createConfiguration(
                 "My Thesis",
-                ReviewProcessType.DOUBLE_BLIND,
+                "DOUBLE_BLIND",
                 List.of("author-sub"),
                 "creator-sub",
                 "Author",

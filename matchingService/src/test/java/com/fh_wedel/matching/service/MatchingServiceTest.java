@@ -168,11 +168,16 @@ class MatchingServiceTest {
         // Arrange: enough reviewers for a successful match
         MatchingRequestEvent event = createEvent("sub-1", "submitter-1", 2);
 
-        List<UserType> reviewers = List.of(
+        List<UserProfile> reviewers = List.of(
                 createUser("reviewer-a"),
                 createUser("reviewer-b"),
                 createUser("reviewer-c"));
-        when(cognitoService.listReviewers()).thenReturn(reviewers);
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
 
         // Act
         matchingService.processMatchingRequest(event);
@@ -189,10 +194,15 @@ class MatchingServiceTest {
         // Arrange: too few eligible reviewers → FAILED branch
         MatchingRequestEvent event = createEvent("sub-2", "submitter-2", 5);
 
-        List<UserType> reviewers = List.of(
+        List<UserProfile> reviewers = List.of(
                 createUser("reviewer-a"),
                 createUser("reviewer-b"));
-        when(cognitoService.listReviewers()).thenReturn(reviewers);
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
 
         // Act
         matchingService.processMatchingRequest(event);
