@@ -1,12 +1,14 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Construct } from 'constructs';
+import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/lib/ecs';
-import { LogsInfra } from '../../../infraLibrary/lib/logs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
+import {EcsInfra} from '../../../infraLibrary/lib/ecs';
+import {LogsInfra} from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
+import {SqsInfra} from '../../../infraLibrary/lib/sqs';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -54,6 +56,21 @@ export class ServiceStack extends cdk.Stack {
 
     const containerPort = props.containerPort;
 
+    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+
+    const reviewTable = new dynamodb.Table(this, 'ReviewTable', {
+      partitionKey: {name: 'pk', type: dynamodb.AttributeType.STRING},
+      sortKey: {name: 'sk', type: dynamodb.AttributeType.STRING},
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+          removalPolicy: cdk.RemovalPolicy.DESTROY,
+      });
+
+      const workflowQueue = SqsInfra.createQueue(this, {
+          queueName: 'workflow-request-queue',
+          enableDeadLetterQueue: true,
+          maxReceiveCount: 3,
+      });
+
     taskDefinition.addContainer('AppContainer', {
       containerName: props.serviceName,
       image: ecs.ContainerImage.fromRegistry(imageName),
@@ -68,6 +85,11 @@ export class ServiceStack extends cdk.Stack {
       environment: {
         'SERVER_PORT': containerPort.toString(),
         "AWS_REGION": AWSConstants.AWS_REGION,
+        'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
+        'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
+        'DYNAMODB_TABLE_NAME': reviewTable.tableName,
+        'AWS_SQS_WORKFLOW_REQUEST_QUEUE_NAME': workflowQueue.queue.queueName,
+        'AWS_USE_DUALSTACK_ENDPOINT': 'true',
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -98,7 +120,6 @@ export class ServiceStack extends cdk.Stack {
     // route on the IPv6-only private subnet — only an Egress-Only IGW exists).
     ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(containerPort), 'Inbound HTTP IPv6 from VPC services (ECS-to-ECS via AAAA record)');
 
-    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {
@@ -125,6 +146,9 @@ export class ServiceStack extends cdk.Stack {
 
 
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
+
+      reviewTable.grantReadWriteData(taskDefinition.taskRole);
+      SqsInfra.grantReadPermissions(workflowQueue, taskDefinition.taskRole);
 
     if (props.minTaskCount !== props.maxTaskCount) {
       logger.info(`Setting up auto-scaling for service ${props.serviceName} with min ${props.minTaskCount} and max ${props.maxTaskCount} tasks.`);

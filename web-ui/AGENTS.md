@@ -10,3 +10,13 @@
 - **Vite Proxy Configuration:** To mirror production AWS API Gateway routing, the Vite dev server must proxy `/api` requests to the local Spring Boot backend (e.g., `http://localhost:8080`) via `vite.config.ts`.
 - **Frontend-Backend Plugin Name Coupling:** The frontend `SubmissionReviewMode` type and stubs must use the exact string identifiers returned by the backend workflow plugins (e.g., `double-blind`, not `double blind`).
 - **MUI Snackbar Positioning:** To maintain consistency with the application's toast notification style, `Snackbar` components should use `anchorOrigin={{ vertical: 'top', horizontal: 'right' }}` and `sx={{ mt: 8 }}`.
+- **API Client Generation:** The environment lacks a Java Runtime, blocking standard `openapi-generator-cli`. Use `swagger-typescript-api` (configured in npm scripts) to generate API clients from backend OpenAPI JSON specs.
+- **Missing JSON Parsing in Generated API:** If a backend OpenAPI spec lacks a `content` schema, `swagger-typescript-api` will return the raw Response object instead of parsed `.data`. Explicitly pass `{ format: 'json' }` to generated client methods (e.g. `configApiClient.getRoot({ format: 'json' })`) to force parsing.
+- **Duplicate API Calls in Dev:** `React.StrictMode` in `main.tsx` intentionally fires `useEffect` hooks twice. If this clutters the network tab during local debugging, temporarily remove the `<React.StrictMode>` wrapper.
+- **MUI Typography `fontWeight` Bug:** Passing `fontWeight` as a top-level prop to `<Typography>` triggers confusing TypeScript errors ("No overload matches this call"). Always place it inside the `sx` prop (`sx={{ fontWeight: 600 }}`).
+- **TypeScript `verbatimModuleSyntax`:** Because this is enabled in the TS config, all imported types/interfaces must
+  strictly use the `type` keyword (e.g., `import { type Foo }`). Normal type imports will fail the `tsc -b` build.
+- **Role-Based Access Control:** User roles are extracted from the `cognito:groups` claim in the JWT by
+  `AuthContext.tsx`. They are mapped to lowercase strings (e.g., `'admin'`) and used for frontend access control.
+- **API Generation Script Maintenance:** When consuming a new backend service API, you must manually add its OpenAPI
+  JSON path to a new `generate:api:<service>` script in `package.json` to include it in the generation process.

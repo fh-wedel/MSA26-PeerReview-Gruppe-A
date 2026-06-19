@@ -1,20 +1,22 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
+  Alert,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
   Snackbar,
-  Alert,
+  TextField,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { useWorkflowPlugins } from "../hooks/useWorkflowPlugins";
+import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
 type ReviewMode = string;
 
@@ -24,7 +26,6 @@ interface SubmissionModalProps {
   onSubmit: (
     title: string,
     reviewMode: string,
-    file: File | null,
   ) => Promise<void>;
   authorName: string;
 }
@@ -35,9 +36,10 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   onSubmit,
   authorName,
 }) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
-  const [reviewMode, setReviewMode] = useState<ReviewMode>("double-blind");
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("INDIVIDUAL_WORK");
   const { plugins, loading, error } = useWorkflowPlugins();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -51,10 +53,9 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await onSubmit(title, reviewMode, pdfFile);
+      await onSubmit(title, reviewMode);
       setTitle("");
-      setReviewMode("double-blind");
-      setPdfFile(null);
+      setReviewMode("INDIVIDUAL_WORK");
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -64,16 +65,9 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setPdfFile(file);
-    }
-  };
-
   return (
     <>
-      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
         <DialogTitle>Create Submission</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
@@ -109,27 +103,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   ))
                 ) : (
                   <>
-                    <MenuItem value="double-blind">Double Blind</MenuItem>
-                    <MenuItem value="single-blind">Single Blind</MenuItem>
-                    <MenuItem value="open-review">Open Review</MenuItem>
+                    <MenuItem value="INDIVIDUAL_WORK">Individual Work</MenuItem>
+                    <MenuItem value="GROUP_WORK">Group Work</MenuItem>
+                    <MenuItem value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>
                   </>
                 )}
               </Select>
             </FormControl>
-            <Button
-              variant="contained"
-              component="label"
-              color={pdfFile ? "primary" : "inherit"}
-              disabled={submitting}
-            >
-              {pdfFile ? pdfFile.name : "Upload PDF Document (Optional)"}
-              <input
-                type="file"
-                hidden
-                accept="application/pdf"
-                onChange={handleFileChange}
-              />
-            </Button>
           </Box>
         </DialogContent>
         <DialogActions>

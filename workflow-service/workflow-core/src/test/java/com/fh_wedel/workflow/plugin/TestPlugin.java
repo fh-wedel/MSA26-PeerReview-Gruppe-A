@@ -1,6 +1,12 @@
 package com.fh_wedel.workflow.plugin;
 
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
+import com.fh_wedel.workflow.api.model.ReviewGrade;
+import com.fh_wedel.workflow.api.model.ReviewQuestion;
+import com.fh_wedel.workflow.api.model.ReviewResponse;
+
+import java.util.Collections;
+import java.util.List;
 
 public class TestPlugin implements ReviewWorkflowPlugin {
     @Override
@@ -14,9 +20,25 @@ public class TestPlugin implements ReviewWorkflowPlugin {
     @Override
     public boolean isReviewerAnonymous() { return false; }
     @Override
-    public boolean isReviewerToReviewerAnonymous() { return true; }
-    @Override
     public boolean isAuthorReviewerChatAllowed() { return false; }
+
     @Override
-    public boolean isReviewerToReviewerChatAllowed() { return true; }
+    public int getDefaultNumberOfReviewers() {
+        return 2;
+    }
+
+    @Override
+    public int getDefaultNumberOfAuthors() {
+        return 1;
+    }
+
+    @Override
+    public List<ReviewQuestion> getFeedbackFormTemplate() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public ReviewGrade calculateGrade(List<ReviewResponse> responses) {
+        return new ReviewGrade(0, 0, 0.0, "Test Grade");
+    }
 }

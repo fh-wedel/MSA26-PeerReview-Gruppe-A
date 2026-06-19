@@ -35,9 +35,7 @@ class WorkflowPluginRegistryTest {
         assertEquals("A test plugin for unit testing", plugin.getDescription());
         assertTrue(plugin.isAuthorAnonymous());
         assertFalse(plugin.isReviewerAnonymous());
-        assertTrue(plugin.isReviewerToReviewerAnonymous());
         assertFalse(plugin.isAuthorReviewerChatAllowed());
-        assertTrue(plugin.isReviewerToReviewerChatAllowed());
     }
 
     @Test

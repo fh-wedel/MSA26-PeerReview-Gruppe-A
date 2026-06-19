@@ -1,12 +1,11 @@
 package com.fh_wedel.configuration.service;
 
-import com.fh_wedel.configuration.model.AuthorMapping;
-import com.fh_wedel.configuration.model.MatchingRequestEvent;
-import com.fh_wedel.configuration.model.ReviewProcessType;
-import com.fh_wedel.configuration.model.SubmissionConfiguration;
-import com.fh_wedel.configuration.repository.ConfigurationRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fh_wedel.configuration.model.AuthorMapping;
+import com.fh_wedel.configuration.model.MatchingRequestEvent;
+import com.fh_wedel.configuration.model.SubmissionConfiguration;
+import com.fh_wedel.configuration.repository.ConfigurationRepository;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,10 +43,9 @@ public class ConfigurationService {
      * Creates a new submission configuration, persists it in DynamoDB, and publishes
      * a MatchingRequestEvent to the matching-request SQS queue.
      */
-    public SubmissionConfiguration createConfiguration(String title, ReviewProcessType reviewProcessType,
-                                                        List<String> authorIds, String creatorId, String creatorRole,
-                                                        int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline,
-                                                        List<String> evaluationCriteria, boolean criteriaVisibleToAuthor) {
+    public SubmissionConfiguration createConfiguration(String title, String reviewProcessType,
+                                                       List<String> authorIds, String creatorId, String creatorRole,
+                                                       int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
@@ -59,7 +57,7 @@ public class ConfigurationService {
         // 1. Instantiate metadata record
         SubmissionConfiguration config = new SubmissionConfiguration(
                 submissionId, title, reviewProcessType, authorIds, creatorId, creatorRole,
-                numberOfExaminers, submissionDeadline, reviewDeadline, evaluationCriteria, criteriaVisibleToAuthor
+                numberOfExaminers, submissionDeadline, reviewDeadline
         );
 
         // 2. Instantiate author mappings (one for each author ID for indexed query lookup)

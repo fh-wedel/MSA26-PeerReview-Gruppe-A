@@ -24,6 +24,9 @@ jobs:
       template_service_code: ${{ steps.filter.outputs.template_service_code }}
       template_service_infra: ${{ steps.filter.outputs.template_service_infra }}
       template_service_any: ${{ steps.filter.outputs.template_service_any }}
+      user_service_code: ${{ steps.filter.outputs.user_service_code }}
+      user_service_infra: ${{ steps.filter.outputs.user_service_infra }}
+      user_service_any: ${{ steps.filter.outputs.user_service_any }}
       workflow_service_code: ${{ steps.filter.outputs.workflow_service_code }}
       workflow_service_infra: ${{ steps.filter.outputs.workflow_service_infra }}
       workflow_service_any: ${{ steps.filter.outputs.workflow_service_any }}
@@ -39,6 +42,9 @@ jobs:
       configuration_service_code: ${{ steps.filter.outputs.configuration_service_code }}
       configuration_service_infra: ${{ steps.filter.outputs.configuration_service_infra }}
       configuration_service_any: ${{ steps.filter.outputs.configuration_service_any }}
+      submission_service_code: ${{ steps.filter.outputs.submission_service_code }}
+      submission_service_infra: ${{ steps.filter.outputs.submission_service_infra }}
+      submission_service_any: ${{ steps.filter.outputs.submission_service_any }}
       notification_service_code: ${{ steps.filter.outputs.notification_service_code }}
       notification_service_infra: ${{ steps.filter.outputs.notification_service_infra }}
       notification_service_any: ${{ steps.filter.outputs.notification_service_any }}
@@ -66,6 +72,15 @@ jobs:
               - 'templateEcsService/infra/**'
             template_service_any:
               - 'templateEcsService/**'
+              - 'infraLibrary/**'
+            user_service_code:
+              - 'userService/src/**'
+              - 'userService/pom.xml'
+              - 'userService/Dockerfile'
+            user_service_infra:
+              - 'userService/infra/**'
+            user_service_any:
+              - 'userService/**'
               - 'infraLibrary/**'
             workflow_service_code:
               - 'workflow-service/workflow-*/**'
@@ -114,6 +129,15 @@ jobs:
               - 'configuration-service/infra/**'
             configuration_service_any:
               - 'configuration-service/**'
+              - 'infraLibrary/**'
+            submission_service_code:
+              - 'submission-service/src/**'
+              - 'submission-service/pom.xml'
+              - 'submission-service/Dockerfile'
+            submission_service_infra:
+              - 'submission-service/infra/**'
+            submission_service_any:
+              - 'submission-service/**'
               - 'infraLibrary/**'
             notification_service_code:
               - 'notificationService/src/**'
@@ -245,6 +269,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  user-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() && 
+      (needs.changes.outputs.user_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: user
+      service_path: userService
+      infra_path: userService/infra
+      docker_context: userService
+      ecr_repository: fh-wedel/user
+      run_maven: ${{ needs.changes.outputs.user_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.user_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.user_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   workflow-service:
     needs: [changes, infra-library-tests]
     if: |
@@ -345,6 +389,26 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
+  submission-service:
+    needs: [changes, infra-library-tests]
+    if: |
+      always() &&
+      (needs.changes.outputs.submission_service_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
+    uses: ./.github/workflows/reusable-service.yml
+    with:
+      service_name: submission
+      service_path: submission-service
+      infra_path: submission-service/infra
+      docker_context: submission-service
+      ecr_repository: fh-wedel/submission
+      run_maven: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_infra: ${{ needs.changes.outputs.submission_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_docker: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      deploy_environment: "fh-wedel-prod"
+    secrets: inherit
+
   notification-service:
     needs: [changes, infra-library-tests]
     if: |
@@ -392,7 +456,7 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service, workflow-service, matching-service, configuration-service, notification-service, response-service, communication-service]
+    needs: [changes, web-ui, template-service, user-service, workflow-service, matching-service, communication-service, configuration-service, submission-service, notification-service, response-service]
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
@@ -401,9 +465,12 @@ jobs:
       (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') &&
       (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped') &&
       (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') &&
+      (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') &&
       (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped') &&
+      (needs['submission-service'].result == 'success' || needs['submission-service'].result == 'skipped') &&
+      (needs['response-service'].result == 'success' || needs['response-service'].result == 'skipped') &&
       (needs['notification-service'].result == 'success' || needs['notification-service'].result == 'skipped') &&
-      (needs['response-service'].result == 'success' || needs['response-service'].result == 'skipped')
+      (needs['user-service'].result == 'success' || needs['user-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}

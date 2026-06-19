@@ -1,9 +1,17 @@
 package com.fh_wedel.workflow.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fh_wedel.configuration.client.api.DefaultApi;
+import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
+import com.fh_wedel.workflow.exception.DownstreamServiceException;
+import com.fh_wedel.workflow.exception.ReviewAlreadySubmittedException;
+import com.fh_wedel.workflow.model.ReviewSession;
+import com.fh_wedel.workflow.model.SubmittedReview;
 import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
 import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
+import com.fh_wedel.workflow.repository.ReviewRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +31,15 @@ class WorkflowServiceTest {
     @Mock
     private WorkflowPluginRegistry registry;
 
+    @Mock
+    private DefaultApi configurationApi;
+
+    @Mock
+    private ReviewRepository reviewRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
     @InjectMocks
     private WorkflowService service;
 
@@ -33,9 +50,7 @@ class WorkflowServiceTest {
         lenient().when(plugin.getTitle()).thenReturn(name + " title");
         lenient().when(plugin.isAuthorAnonymous()).thenReturn(true);
         lenient().when(plugin.isReviewerAnonymous()).thenReturn(false);
-        lenient().when(plugin.isReviewerToReviewerAnonymous()).thenReturn(true);
         lenient().when(plugin.isAuthorReviewerChatAllowed()).thenReturn(false);
-        lenient().when(plugin.isReviewerToReviewerChatAllowed()).thenReturn(true);
         return plugin;
     }
 
@@ -86,9 +101,7 @@ class WorkflowServiceTest {
         assertNotNull(result);
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
-        assertTrue(result.getReviewerToReviewerAnonymous());
         assertFalse(result.getAuthorReviewerChatAllowed());
-        assertTrue(result.getReviewerToReviewerChatAllowed());
         verify(registry).getByName("plugin-1");
     }
 
@@ -101,15 +114,110 @@ class WorkflowServiceTest {
     }
 
     @Test
-    void getRulesForSubmissionReturnsRandomPluginRules() {
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("mock-plugin");
-        when(registry.getByName(anyString())).thenReturn(Optional.of(mockPlugin));
+    void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
+        ModelConfiguration mockConfig = new ModelConfiguration();
+        mockConfig.setReviewProcessType("INDIVIDUAL_WORK");
+        when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
+
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
+        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
 
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
         assertNotNull(result);
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
-        verify(registry).getByName(anyString());
+        verify(configurationApi).submissionIdGet("sub-123");
+        verify(registry).getByName("INDIVIDUAL_WORK");
+    }
+
+    @Test
+    void getRulesForSubmissionThrowsWhenConfigurationFails() throws Exception {
+        when(configurationApi.submissionIdGet("sub-123")).thenThrow(new RuntimeException("API down"));
+
+        assertThrows(DownstreamServiceException.class, () -> service.getRulesForSubmission("sub-123"));
+        verify(configurationApi).submissionIdGet("sub-123");
+    }
+
+    @Test
+    void getRulesForSubmissionThrowsNoSuchElementExceptionOn404() throws Exception {
+        com.fh_wedel.configuration.client.ApiException apiException =
+                new com.fh_wedel.configuration.client.ApiException(404, "Not Found");
+        when(configurationApi.submissionIdGet("sub-123")).thenThrow(apiException);
+
+        assertThrows(NoSuchElementException.class, () -> service.getRulesForSubmission("sub-123"));
+        verify(configurationApi).submissionIdGet("sub-123");
+    }
+
+    @Test
+    void initializeReviewSessionSavesSession() {
+        service.initializeReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        verify(reviewRepository).saveSession(any(ReviewSession.class));
+    }
+
+    @Test
+    void submitReviewThrowsIfSessionNotFound() {
+        when(reviewRepository.getSession("sub-123")).thenReturn(null);
+        assertThrows(IllegalArgumentException.class, () -> service.submitReview("sub-123", "rev-1", List.of()));
+    }
+
+    @Test
+    void submitReviewThrowsIfAlreadySubmitted() {
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        when(reviewRepository.getSession("sub-123")).thenReturn(session);
+        when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(new SubmittedReview());
+
+        assertThrows(ReviewAlreadySubmittedException.class, () -> service.submitReview("sub-123", "rev-1", List.of()));
+    }
+
+    @Test
+    void submitReviewSavesReviewAndUpdatesCount() throws Exception {
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1", "rev-2"));
+        when(reviewRepository.getSession("sub-123")).thenReturn(session);
+        when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
+
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
+        com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
+        when(mockPlugin.calculateGrade(any())).thenReturn(grade);
+        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
+        when(objectMapper.writeValueAsString(any())).thenReturn("[]");
+        when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
+
+        com.fh_wedel.workflow.api.model.ReviewGrade result = service.submitReview("sub-123", "rev-1", List.of());
+
+        assertNotNull(result);
+        assertEquals(10, result.totalPoints());
+        verify(reviewRepository).saveReview(any(SubmittedReview.class));
+        verify(reviewRepository).incrementReceivedReviewCount("sub-123");
+    }
+
+    @Test
+    void submitReviewSavesReviewAndMarksComplete() throws Exception {
+        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        when(reviewRepository.getSession("sub-123")).thenReturn(session);
+        when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
+
+        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
+        com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
+        when(mockPlugin.calculateGrade(any())).thenReturn(grade);
+        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
+        when(objectMapper.writeValueAsString(any())).thenReturn("[]");
+        when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
+
+        com.fh_wedel.workflow.api.model.ReviewGrade result = service.submitReview("sub-123", "rev-1", List.of());
+
+        assertNotNull(result);
+        verify(reviewRepository).saveReview(any(SubmittedReview.class));
+        verify(reviewRepository).incrementReceivedReviewCount("sub-123");
+        verify(reviewRepository).markSessionComplete("sub-123");
+    }
+
+    @Test
+    void getFeedbackFormForSubmissionThrowsNoSuchElementExceptionOn404() throws Exception {
+        com.fh_wedel.configuration.client.ApiException apiException =
+                new com.fh_wedel.configuration.client.ApiException(404, "Not Found");
+        when(configurationApi.submissionIdGet("sub-123")).thenThrow(apiException);
+
+        assertThrows(NoSuchElementException.class, () -> service.getFeedbackFormForSubmission("sub-123"));
     }
 }

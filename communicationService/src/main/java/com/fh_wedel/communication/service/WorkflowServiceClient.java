@@ -1,43 +1,28 @@
 package com.fh_wedel.communication.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.server.ResponseStatusException;
+import com.fh_wedel.workflow.client.api.WorkflowRulesApi;
+import com.fh_wedel.workflow.client.model.WorkflowRulesDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Slf4j
 public class WorkflowServiceClient {
 
-    private static final Logger log = LoggerFactory.getLogger(WorkflowServiceClient.class);
-    private final RestClient restClient;
+    private final WorkflowRulesApi workflowRulesApi;
 
-    public WorkflowServiceClient(@Value("${api.base-url}") String baseUrl) {
-        this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
-                .build();
+    public WorkflowServiceClient(WorkflowRulesApi workflowRulesApi) {
+        this.workflowRulesApi = workflowRulesApi;
     }
 
-    public static class WorkflowRulesDto {
-        public boolean authorAnonymous;
-        public boolean reviewerAnonymous;
-        public boolean reviewerToReviewerAnonymous;
-        public boolean authorReviewerChatAllowed;
-        public boolean reviewerToReviewerChatAllowed;
-    }
-
-    public WorkflowRulesDto getWorkflowRules(String submissionId, String authHeader) {
+    public WorkflowRulesDto getWorkflowRules(String submissionId) {
         log.info("Calling Workflow Service to get rules for submission: {}", submissionId);
         try {
-            return restClient.get()
-                    .uri("/api/workflow/submissions/{submissionId}/rules", submissionId)
-                    .header("Authorization", authHeader)
-                    .retrieve()
-                    .body(WorkflowRulesDto.class);
+            return workflowRulesApi.getRulesForSubmission(submissionId);
         } catch (Exception e) {
-            log.error("Failed to fetch workflow rules for {}: {}", submissionId, e.getMessage());
+            log.error("Failed to fetch workflow rules for {}: {}", submissionId, e.getMessage(), e);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to fetch workflow rules: " + e.getMessage());
         }
     }

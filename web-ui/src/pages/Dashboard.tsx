@@ -1,25 +1,14 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Snackbar,
-  Alert,
-} from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import { PickerDay } from "@mui/x-date-pickers";
-import type { PickerDayProps } from "@mui/x-date-pickers";
-import { Badge } from "@mui/material";
-import { mockDeadlines } from "../stubs/deadlines";
-import { SubmissionModal } from "../components/SubmissionModal";
-import { useAuth } from "../contexts/AuthContext";
-import { isSameDay } from "date-fns";
+import React, {useState} from "react";
+import {Alert, Badge, Box, Button, List, ListItem, ListItemText, Paper, Snackbar, Typography,} from "@mui/material";
+import {LocalizationProvider} from "@mui/x-date-pickers/LocalizationProvider";
+import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
+import {DateCalendar} from "@mui/x-date-pickers/DateCalendar";
+import type {PickerDayProps} from "@mui/x-date-pickers";
+import {PickerDay} from "@mui/x-date-pickers";
+import {mockDeadlines} from "../stubs/deadlines";
+import {SubmissionModal} from "../components/SubmissionModal";
+import {useAuth} from "../contexts/AuthContext";
+import {isSameDay} from "date-fns";
 
 function ServerDay(props: PickerDayProps & { highlightedDays?: Date[] }) {
   const { highlightedDays = [], day, outsideCurrentMonth, ...other } = props;
@@ -55,7 +44,6 @@ export const Dashboard: React.FC = () => {
   const handleSubmission = async (
     title: string,
     reviewMode: string,
-    //file: File | null,
   ) => {
     try {
       const token = sessionStorage.getItem("access_token");
@@ -66,15 +54,12 @@ export const Dashboard: React.FC = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      // Map "double-blind" -> "DOUBLE_BLIND", etc.
-      const mappedReviewType = reviewMode.toUpperCase().replace("-", "_");
-
       const response = await fetch("/api/configuration/", {
         method: "POST",
         headers,
         body: JSON.stringify({
           title,
-          reviewProcessType: mappedReviewType,
+          reviewProcessType: reviewMode,
           authorIds: [user?.id],
           numberOfExaminers: 1,
           evaluationCriteria: [],

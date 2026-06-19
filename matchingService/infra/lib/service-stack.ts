@@ -72,14 +72,6 @@ export class ServiceStack extends cdk.Stack {
             projectionType: dynamodb.ProjectionType.ALL,
         });
 
-        // =============================================
-        // Import Cognito User Pool ID from baseline
-        // =============================================
-        const cognitoUserPoolId = cdk.Fn.importValue(
-            `${AWSConstants.COGNITO_USER_POOL_NAME}-UserPoolId`
-        );
-
-        const reviewerGroupName = props.cognitoReviewerGroupName ?? 'Reviewer';
 
         // =============================================
         // ECS Task Definition
@@ -112,12 +104,11 @@ export class ServiceStack extends cdk.Stack {
                 'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
                 'SERVER_PORT': containerPort.toString(),
                 'AWS_REGION': AWSConstants.AWS_REGION,
-                'COGNITO_USER_POOL_ID': cognitoUserPoolId,
-                'COGNITO_REVIEWER_GROUP_NAME': reviewerGroupName,
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
                 // Use the AAAA record in internal.services for ECS-to-ECS communication.
                 // ECS Service Connect (sc.internal) does NOT support IPv6-only subnets.
                 'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
+                'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
         });
@@ -139,6 +130,7 @@ export class ServiceStack extends cdk.Stack {
             ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Outbound HTTPS IPv6');
             ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Outbound HTTP IPv6');
             ecsSecurityGroup.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.allTcp(), 'Outbound all TCP IPv6 (ECS-to-ECS)');
+            ecsSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(8081), 'Inbound HTTP IPv6 (ECS-to-ECS)');
         }
 
         const lambdaSgId = cdk.Fn.importValue(`${props.serviceName}:ProxyLambdaSecurityGroupId`);
@@ -178,26 +170,18 @@ export class ServiceStack extends cdk.Stack {
         // DynamoDB permissions
         matchesTable.grantReadWriteData(taskDefinition.taskRole);
 
-        // Cognito admin permissions for the User Proxy API and reviewer lookup
-        taskDefinition.taskRole.addToPrincipalPolicy(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: [
-                    'cognito-idp:ListUsersInGroup',
-                    'cognito-idp:AdminGetUser',
-                    'cognito-idp:AdminCreateUser',
-                    'cognito-idp:AdminUpdateUserAttributes',
-                    'cognito-idp:AdminDeleteUser',
-                    'cognito-idp:AdminAddUserToGroup',
-                    'cognito-idp:AdminRemoveUserFromGroup',
-                    'cognito-idp:AdminListGroupsForUser',
-                    'cognito-idp:ListUsers'
-                ],
-                resources: [
-                    `arn:aws:cognito-idp:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:userpool/${cognitoUserPoolId}`,
-                ],
-            })
-        );
+        if (props.requestQueueNameNextService) {
+            taskDefinition.taskRole.addToPrincipalPolicy(
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
+                    resources: [
+                        `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:${props.requestQueueNameNextService}`
+                    ]
+                })
+            );
+        }
+
 
         // Grant SQS SendMessage permissions to the notification request queue
         ecsService.taskDefinition.taskRole.addToPrincipalPolicy(

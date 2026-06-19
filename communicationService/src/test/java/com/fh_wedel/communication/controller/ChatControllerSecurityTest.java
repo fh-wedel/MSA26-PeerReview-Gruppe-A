@@ -36,26 +36,50 @@ public class ChatControllerSecurityTest {
     }
 
     @Test
-    void testSendMessage() {
+    void testSendMessage_General() {
         when(request.getHeader("x-auth-principal-id")).thenReturn("user-a");
         when(request.getHeader("Authorization")).thenReturn("Bearer token");
 
         SendMessageRequest req = new SendMessageRequest();
         req.setBody("Hello");
+        req.setRecipientId("user-b");
         ChatContext ctx = new ChatContext();
         ctx.setType(ChatContext.TypeEnum.GENERAL);
         req.setChatContext(ctx);
-        req.setRecipientId("user-b");
 
         ChatDetailResponse mockRes = new ChatDetailResponse();
         mockRes.setChatId("chat-1");
 
-        when(chatService.sendMessage(eq("user-a"), eq(req), eq("Bearer token"))).thenReturn(mockRes);
+        when(chatService.sendMessage(eq("user-a"), eq(req))).thenReturn(mockRes);
 
         ResponseEntity<ChatDetailResponse> response = chatController.sendMessage(req);
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals("chat-1", response.getBody().getChatId());
+    }
+
+    @Test
+    void testSendMessage_Submission_NoRecipientIdRequired() {
+        when(request.getHeader("x-auth-principal-id")).thenReturn("user-a");
+        when(request.getHeader("Authorization")).thenReturn("Bearer token");
+
+        SendMessageRequest req = new SendMessageRequest();
+        req.setBody("Hello group");
+        // No recipientId — not required for SUBMISSION chats
+        ChatContext ctx = new ChatContext();
+        ctx.setType(ChatContext.TypeEnum.SUBMISSION);
+        ctx.setSubmissionId("sub-123");
+        req.setChatContext(ctx);
+
+        ChatDetailResponse mockRes = new ChatDetailResponse();
+        mockRes.setChatId("group-chat-1");
+
+        when(chatService.sendMessage(eq("user-a"), eq(req))).thenReturn(mockRes);
+
+        ResponseEntity<ChatDetailResponse> response = chatController.sendMessage(req);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals("group-chat-1", response.getBody().getChatId());
     }
 
     @Test

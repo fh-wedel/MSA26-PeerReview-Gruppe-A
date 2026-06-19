@@ -1,5 +1,7 @@
 package com.fh_wedel.configuration.model;
 
+import lombok.Getter;
+import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -7,6 +9,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 import java.time.Instant;
 import java.util.List;
 
+@Setter
 @DynamoDbBean
 public class SubmissionConfiguration {
 
@@ -15,40 +18,48 @@ public class SubmissionConfiguration {
 
     private String pk;
     private String sk;
+    @Getter
     private String submissionId;
+    @Getter
     private String title;
+    @Getter
     private String reviewProcessType; // Store as string (enum name)
+    @Getter
     private List<String> authorIds;
+    @Getter
     private String creatorId;
+    @Getter
     private String creatorRole;
+    @Getter
     private int numberOfExaminers;
+    @Getter
     private Instant submissionDeadline;
+    @Getter
     private Instant reviewDeadline;
-    private List<String> evaluationCriteria;
-    private boolean criteriaVisibleToAuthor;
+    @Getter
     private String status; // e.g. CREATED, MATCHED
+    @Getter
+    private Instant createdAt;
 
     public SubmissionConfiguration() {
     }
 
-    public SubmissionConfiguration(String submissionId, String title, ReviewProcessType reviewProcessType,
+    public SubmissionConfiguration(String submissionId, String title, String reviewProcessType,
                                    List<String> authorIds, String creatorId, String creatorRole,
-                                   int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline,
-                                   List<String> evaluationCriteria, boolean criteriaVisibleToAuthor) {
+                                   int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
         this.pk = PK_PREFIX + submissionId;
         this.sk = SK_VALUE;
         this.submissionId = submissionId;
         this.title = title;
-        this.reviewProcessType = reviewProcessType.name();
+        this.reviewProcessType = reviewProcessType;
         this.authorIds = authorIds;
         this.creatorId = creatorId;
         this.creatorRole = creatorRole;
         this.numberOfExaminers = numberOfExaminers;
         this.submissionDeadline = submissionDeadline;
         this.reviewDeadline = reviewDeadline;
-        this.evaluationCriteria = evaluationCriteria;
-        this.criteriaVisibleToAuthor = criteriaVisibleToAuthor;
         this.status = "CREATED";
+        this.createdAt = Instant.now();
     }
 
     @DynamoDbPartitionKey
@@ -56,112 +67,9 @@ public class SubmissionConfiguration {
         return pk;
     }
 
-    public void setPk(String pk) {
-        this.pk = pk;
-    }
-
     @DynamoDbSortKey
     public String getSk() {
         return sk;
     }
 
-    public void setSk(String sk) {
-        this.sk = sk;
-    }
-
-    public String getSubmissionId() {
-        return submissionId;
-    }
-
-    public void setSubmissionId(String submissionId) {
-        this.submissionId = submissionId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getReviewProcessType() {
-        return reviewProcessType;
-    }
-
-    public void setReviewProcessType(String reviewProcessType) {
-        this.reviewProcessType = reviewProcessType;
-    }
-
-    public List<String> getAuthorIds() {
-        return authorIds;
-    }
-
-    public void setAuthorIds(List<String> authorIds) {
-        this.authorIds = authorIds;
-    }
-
-    public String getCreatorId() {
-        return creatorId;
-    }
-
-    public void setCreatorId(String creatorId) {
-        this.creatorId = creatorId;
-    }
-
-    public String getCreatorRole() {
-        return creatorRole;
-    }
-
-    public void setCreatorRole(String creatorRole) {
-        this.creatorRole = creatorRole;
-    }
-
-    public int getNumberOfExaminers() {
-        return numberOfExaminers;
-    }
-
-    public void setNumberOfExaminers(int numberOfExaminers) {
-        this.numberOfExaminers = numberOfExaminers;
-    }
-
-    public Instant getSubmissionDeadline() {
-        return submissionDeadline;
-    }
-
-    public void setSubmissionDeadline(Instant submissionDeadline) {
-        this.submissionDeadline = submissionDeadline;
-    }
-
-    public Instant getReviewDeadline() {
-        return reviewDeadline;
-    }
-
-    public void setReviewDeadline(Instant reviewDeadline) {
-        this.reviewDeadline = reviewDeadline;
-    }
-
-    public List<String> getEvaluationCriteria() {
-        return evaluationCriteria;
-    }
-
-    public void setEvaluationCriteria(List<String> evaluationCriteria) {
-        this.evaluationCriteria = evaluationCriteria;
-    }
-
-    public boolean isCriteriaVisibleToAuthor() {
-        return criteriaVisibleToAuthor;
-    }
-
-    public void setCriteriaVisibleToAuthor(boolean criteriaVisibleToAuthor) {
-        this.criteriaVisibleToAuthor = criteriaVisibleToAuthor;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }

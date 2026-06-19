@@ -1,12 +1,14 @@
 package com.fh_wedel.matching.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.fh_wedel.matching.model.MatchRecord;
 import com.fh_wedel.matching.model.MatchStatus;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
 import com.fh_wedel.matching.model.events.MatchingRequestEvent;
 import com.fh_wedel.matching.repository.MatchRepository;
+import com.fh_wedel.user.client.api.GroupsApi;
+import com.fh_wedel.user.client.model.UserProfile;
+import com.fh_wedel.user.client.model.UserProfileListResponse;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,8 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
 import java.util.List;
 
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 class MatchingServiceTest {
 
     @Mock
-    private CognitoService cognitoService;
+    private GroupsApi groupsApi;
 
     @Mock
     private MatchRepository matchRepository;
@@ -49,51 +49,53 @@ class MatchingServiceTest {
 
     @BeforeEach
     void setUp() {
-        matchingService = new MatchingService(cognitoService, matchRepository, sqsTemplate, objectMapper, "test-response-queue", "notification-request-queue");
+        matchingService = new MatchingService(groupsApi, matchRepository, sqsTemplate, objectMapper,
+                "test-response-queue", "notification-request-queue");
     }
 
     @Test
     @DisplayName("Should successfully match when enough reviewers are available")
     void processMatchingRequest_success() {
-        // Given
         MatchingRequestEvent event = createEvent("sub-1", "submitter-1", 2);
 
-        List<UserType> reviewers = List.of(
+        List<UserProfile> reviewers = List.of(
                 createUser("reviewer-a"),
                 createUser("reviewer-b"),
-                createUser("reviewer-c")
-        );
-        when(cognitoService.listReviewers()).thenReturn(reviewers);
+                createUser("reviewer-c"));
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
 
-        // When
         matchingService.processMatchingRequest(event);
 
-        // Then
         verify(matchRepository).saveMatchBatch(matchRecordsCaptor.capture(), statusCaptor.capture());
         assertThat(matchRecordsCaptor.getValue()).hasSize(2);
         assertThat(statusCaptor.getValue().getStatus()).isEqualTo(MatchStatus.MATCHED.name());
         assertThat(statusCaptor.getValue().getSubmissionId()).isEqualTo("sub-1");
 
-        // Verify SQS success event was sent
         verify(sqsTemplate).send(eq("test-response-queue"), anyString());
     }
 
     @Test
     @DisplayName("Should fail when not enough reviewers are available")
     void processMatchingRequest_insufficientReviewers() {
-        // Given
         MatchingRequestEvent event = createEvent("sub-2", "submitter-2", 5);
 
-        List<UserType> reviewers = List.of(
+        List<UserProfile> reviewers = List.of(
                 createUser("reviewer-a"),
-                createUser("reviewer-b")
-        );
-        when(cognitoService.listReviewers()).thenReturn(reviewers);
+                createUser("reviewer-b"));
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
 
-        // When
         matchingService.processMatchingRequest(event);
 
-        // Then: status should be FAILED, persisted via saveStatus (not saveMatchBatch)
         verify(matchRepository).saveStatus(statusCaptor.capture());
         verify(matchRepository, never()).saveMatchBatch(anyList(), any());
         assertThat(statusCaptor.getValue().getStatus()).isEqualTo(MatchStatus.FAILED.name());
@@ -106,19 +108,20 @@ class MatchingServiceTest {
     @Test
     @DisplayName("Should exclude the submitter from the reviewer pool")
     void processMatchingRequest_excludesSubmitter() {
-        // Given: submitter is "submitter-user" who is also in the reviewer pool
         MatchingRequestEvent event = createEvent("sub-3", "submitter-user", 1);
 
-        List<UserType> reviewers = List.of(
-                createUser("submitter-user"), // should be excluded
-                createUser("reviewer-x")
-        );
-        when(cognitoService.listReviewers()).thenReturn(reviewers);
+        List<UserProfile> reviewers = List.of(
+                createUser("submitter-user"),
+                createUser("reviewer-x"));
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
 
-        // When
         matchingService.processMatchingRequest(event);
 
-        // Then: only reviewer-x should be selected
         verify(matchRepository).saveMatchBatch(matchRecordsCaptor.capture(), statusCaptor.capture());
         List<MatchRecord> records = matchRecordsCaptor.getValue();
         assertThat(records).hasSize(1);
@@ -128,18 +131,19 @@ class MatchingServiceTest {
     @Test
     @DisplayName("Should fail when submitter is the only reviewer")
     void processMatchingRequest_onlySubmitterAvailable() {
-        // Given
         MatchingRequestEvent event = createEvent("sub-4", "only-user", 1);
 
-        List<UserType> reviewers = List.of(
-                createUser("only-user")
-        );
-        when(cognitoService.listReviewers()).thenReturn(reviewers);
+        List<UserProfile> reviewers = List.of(
+                createUser("only-user"));
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
 
-        // When
         matchingService.processMatchingRequest(event);
 
-        // Then: FAILED because no eligible reviewers remain
         verify(matchRepository).saveStatus(statusCaptor.capture());
         verify(matchRepository, never()).saveMatchBatch(anyList(), any());
         assertThat(statusCaptor.getValue().getStatus()).isEqualTo(MatchStatus.FAILED.name());
@@ -148,15 +152,13 @@ class MatchingServiceTest {
     @Test
     @DisplayName("Should select exactly the requested number of reviewers")
     void selectRandomReviewers_correctCount() {
-        List<UserType> pool = List.of(
+        List<UserProfile> pool = List.of(
                 createUser("a"), createUser("b"), createUser("c"),
-                createUser("d"), createUser("e")
-        );
+                createUser("d"), createUser("e"));
 
-        List<UserType> selected = matchingService.selectRandomReviewers(pool, 3);
+        List<UserProfile> selected = matchingService.selectRandomReviewers(pool, 3);
 
         assertThat(selected).hasSize(3);
-        // All selected must be from the pool
         selected.forEach(user -> assertThat(pool).contains(user));
     }
 
@@ -169,8 +171,7 @@ class MatchingServiceTest {
         List<UserType> reviewers = List.of(
                 createUser("reviewer-a"),
                 createUser("reviewer-b"),
-                createUser("reviewer-c")
-        );
+                createUser("reviewer-c"));
         when(cognitoService.listReviewers()).thenReturn(reviewers);
 
         // Act
@@ -190,8 +191,7 @@ class MatchingServiceTest {
 
         List<UserType> reviewers = List.of(
                 createUser("reviewer-a"),
-                createUser("reviewer-b")
-        );
+                createUser("reviewer-b"));
         when(cognitoService.listReviewers()).thenReturn(reviewers);
 
         // Act
@@ -200,7 +200,8 @@ class MatchingServiceTest {
         // Assert: exactly one send to the notification queue with "Matching Failed"
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(sqsTemplate, atLeastOnce()).send(eq("notification-request-queue"), body.capture());
-        assertThat(body.getAllValues()).anyMatch(b -> b.contains("Matching Failed") && b.contains("IN_APP") && b.contains("submitter-2"));
+        assertThat(body.getAllValues())
+                .anyMatch(b -> b.contains("Matching Failed") && b.contains("IN_APP") && b.contains("submitter-2"));
     }
 
     // ========================
@@ -215,14 +216,12 @@ class MatchingServiceTest {
         return event;
     }
 
-    private UserType createUser(String sub) {
-        return UserType.builder()
-                .username(sub)
-                .attributes(
-                        AttributeType.builder().name("sub").value(sub).build(),
-                        AttributeType.builder().name("email").value(sub + "@test.com").build()
-                )
-                .enabled(true)
-                .build();
+    private UserProfile createUser(String sub) {
+        UserProfile profile = new UserProfile();
+        profile.setUsername(sub);
+        profile.setSub(sub);
+        profile.setEmail(sub + "@test.com");
+        profile.setEnabled(true);
+        return profile;
     }
 }

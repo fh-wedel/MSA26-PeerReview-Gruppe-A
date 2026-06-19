@@ -12,8 +12,8 @@ import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
-
+import com.fh_wedel.user.client.model.UserProfile;
+import com.fh_wedel.user.client.api.GroupsApi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,33 +25,34 @@ import com.fh_wedel.matching.model.events.NotificationEvent;
  * <p>
  * Workflow:
  * <ol>
- *   <li>Receive a matching request (from SQS or triggered programmatically)</li>
- *   <li>Fetch all users in the Cognito 'Reviewer' group</li>
- *   <li>Exclude the submitter from the pool (self-review prevention)</li>
- *   <li>Randomly select the requested number of reviewers</li>
- *   <li>Persist match records + status in DynamoDB</li>
- *   <li>On success: send a confirmation SQS event to the Submission Service</li>
- *   <li>On failure (insufficient reviewers): persist FAILED status, no SQS event</li>
+ * <li>Receive a matching request (from SQS or triggered programmatically)</li>
+ * <li>Fetch all users in the Cognito 'Reviewer' group</li>
+ * <li>Exclude the submitter from the pool (self-review prevention)</li>
+ * <li>Randomly select the requested number of reviewers</li>
+ * <li>Persist match records + status in DynamoDB</li>
+ * <li>On success: send a confirmation SQS event to the Submission Service</li>
+ * <li>On failure (insufficient reviewers): persist FAILED status, no SQS
+ * event</li>
  * </ol>
  */
 @Service
 @Slf4j
 public class MatchingService {
 
-    private final CognitoService cognitoService;
+    private final GroupsApi groupsApi;
     private final MatchRepository matchRepository;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String responseQueueName;
     private final String notificationQueueName;
 
-    public MatchingService(CognitoService cognitoService,
-                           MatchRepository matchRepository,
-                           SqsTemplate sqsTemplate,
-                           ObjectMapper objectMapper,
-                           @Value("${aws.sqs.next.request.queue-name}") String responseQueueName,
-                           @Value("${aws.sqs.notification.queue-name}") String notificationQueueName) {
-        this.cognitoService = cognitoService;
+    public MatchingService(GroupsApi groupsApi,
+            MatchRepository matchRepository,
+            SqsTemplate sqsTemplate,
+            ObjectMapper objectMapper,
+            @Value("${aws.sqs.next.request.queue-name}") String responseQueueName,
+            @Value("${aws.sqs.notification.queue-name}") String notificationQueueName) {
+        this.groupsApi = groupsApi;
         this.matchRepository = matchRepository;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
@@ -62,7 +63,8 @@ public class MatchingService {
     /**
      * Processes a matching request: assigns reviewers to a submission.
      *
-     * @param event the matching request event containing submissionId, submitterId, numberOfExaminers
+     * @param event the matching request event containing submissionId, submitterId,
+     *              numberOfExaminers
      */
     public void processMatchingRequest(MatchingRequestEvent event) {
         String submissionId = event.getSubmissionId();
@@ -72,13 +74,21 @@ public class MatchingService {
         log.info("Processing matching request: submissionId={}, submitterId={}, numberOfExaminers={}",
                 submissionId, submitterId, numberOfExaminers);
 
-        // 1. Fetch all reviewers from Cognito
-        List<UserType> allReviewers = cognitoService.listReviewers();
+        // 1. Fetch all reviewers from User Service
+        List<UserProfile> allReviewers = java.util.Collections.emptyList();
+        try {
+            var response = groupsApi.listGroupMembers("Reviewer");
+            if (response != null && response.getUsers() != null) {
+                allReviewers = response.getUsers();
+            }
+        } catch (Exception e) {
+            log.error("Failed to list reviewers via GroupsApi", e);
+        }
 
         // 2. Filter out the submitter (self-review prevention)
-        List<UserType> eligibleReviewers = allReviewers.stream()
+        List<UserProfile> eligibleReviewers = allReviewers.stream()
                 .filter(user -> {
-                    String sub = CognitoService.extractSub(user);
+                    String sub = user.getSub();
                     return sub != null && !sub.equals(submitterId);
                 })
                 .toList();
@@ -105,14 +115,14 @@ public class MatchingService {
         }
 
         // 4. Randomly select the required number of reviewers
-        List<UserType> selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
+        List<UserProfile> selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
 
         // 5. Create match records
         List<MatchRecord> matchRecords = new ArrayList<>();
-        for (UserType reviewer : selectedReviewers) {
-            String examinerId = CognitoService.extractSub(reviewer);
+        for (UserProfile reviewer : selectedReviewers) {
+            String examinerId = reviewer.getSub();
             matchRecords.add(new MatchRecord(submissionId, examinerId));
-            log.info("Selected reviewer: sub={}, username={}", examinerId, reviewer.username());
+            log.info("Selected reviewer: sub={}, username={}", examinerId, reviewer.getUsername());
         }
 
         // 6. Persist match records + status in DynamoDB (batch write)
@@ -164,8 +174,8 @@ public class MatchingService {
     /**
      * Selects a random subset of reviewers from the eligible pool.
      */
-    List<UserType> selectRandomReviewers(List<UserType> eligible, int count) {
-        List<UserType> shuffled = new ArrayList<>(eligible);
+    List<UserProfile> selectRandomReviewers(List<UserProfile> eligible, int count) {
+        List<UserProfile> shuffled = new ArrayList<>(eligible);
         Collections.shuffle(shuffled);
         return shuffled.subList(0, count);
     }

@@ -56,13 +56,29 @@
             <version>2.2.28</version>
         </dependency>
         <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>dynamodb-enhanced</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>dynamodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.awspring.cloud</groupId>
+            <artifactId>spring-cloud-aws-starter-sqs</artifactId>
         </dependency>
     </dependencies>
 
@@ -99,12 +115,15 @@
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <version>${openapi-generator.version}</version>
                 <executions>
+                    <!-- Server Stub Generation -->
                     <execution>
+                        <id>generate-server</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/resources/openapi/workflow.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-server</output>
                             <generatorName>spring</generatorName>
                             <apiPackage>com.fh_wedel.workflow.api</apiPackage>
                             <modelPackage>com.fh_wedel.workflow.model.api</modelPackage>
@@ -117,6 +136,73 @@
                                 <openApiNullable>false</openApiNullable>
                                 <documentationProvider>none</documentationProvider>
                             </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Client Generation -->
+                    <execution>
+                        <id>generate-configuration-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/configuration-client.json
+                            </inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-configuration</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-matching-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/matching-client.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-matching</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.matching.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.matching.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/openapi-server/src/main/java
+                                </source>
+                                <source>
+                                    ${project.build.directory}/generated-sources/openapi-configuration/src/main/java
+                                </source>
+                                <source>${project.build.directory}/generated-sources/openapi-matching/src/main/java
+                                </source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>
