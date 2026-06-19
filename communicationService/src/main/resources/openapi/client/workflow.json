@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Workflow Service API",
-    "description": "REST API for the Workflow Service – exposes available review workflow plugins and their rules.",
+    "description": "REST API for the Workflow Service \u2013 exposes available review workflow plugins and their rules.",
     "version": "0.0.1-SNAPSHOT"
   },
   "servers": [
@@ -12,103 +12,6 @@
     }
   ],
   "paths": {
-    "/plugins": {
-      "get": {
-        "operationId": "listPlugins",
-        "summary": "List all available workflow plugins",
-        "description": "Returns an array of all registered workflow plugins with their metadata and rules.",
-        "tags": [
-          "Workflow Plugins"
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved the list of workflow plugins",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WorkflowPluginDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/plugins/{pluginName}": {
-      "get": {
-        "operationId": "getPlugin",
-        "summary": "Get details of a specific workflow plugin",
-        "description": "Returns the metadata and rules for the workflow plugin identified by its name.",
-        "tags": [
-          "Workflow Plugins"
-        ],
-        "parameters": [
-          {
-            "name": "pluginName",
-            "in": "path",
-            "required": true,
-            "description": "The unique name of the workflow plugin",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved the workflow plugin",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkflowPluginDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Workflow plugin not found"
-          }
-        }
-      }
-    },
-    "/plugins/{pluginName}/rules": {
-      "get": {
-        "operationId": "getPluginRules",
-        "summary": "Get the rules of a specific workflow plugin",
-        "description": "Returns the anonymity and communication rules for the workflow plugin identified by its name.",
-        "tags": [
-          "Workflow Plugins"
-        ],
-        "parameters": [
-          {
-            "name": "pluginName",
-            "in": "path",
-            "required": true,
-            "description": "The unique name of the workflow plugin",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved the plugin rules",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkflowRulesDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Workflow plugin not found"
-          }
-        }
-      }
-    },
     "/submissions/{submissionId}/rules": {
       "get": {
         "operationId": "getRulesForSubmission",
@@ -282,6 +185,161 @@
           }
         }
       }
+    },
+    "/review-types": {
+      "get": {
+        "operationId": "listReviewTypes",
+        "summary": "List all available review types",
+        "description": "Returns an array of all registered workflow plugins with their metadata and rules.",
+        "tags": [
+          "Workflow Review Types"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of workflow plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-types/{typeName}": {
+      "get": {
+        "operationId": "getReviewType",
+        "summary": "Get details of a specific review type",
+        "description": "Returns the metadata and rules for the workflow plugin identified by its name.",
+        "tags": [
+          "Workflow Review Types"
+        ],
+        "parameters": [
+          {
+            "name": "typeName",
+            "in": "path",
+            "required": true,
+            "description": "The unique name of the review type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the workflow plugin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewTypeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/review-types/{typeName}/rules": {
+      "get": {
+        "operationId": "getReviewTypeRules",
+        "summary": "Get the rules of a specific workflow plugin",
+        "description": "Returns the anonymity and communication rules for the workflow plugin identified by its name.",
+        "tags": [
+          "Workflow Review Types"
+        ],
+        "parameters": [
+          {
+            "name": "typeName",
+            "in": "path",
+            "required": true,
+            "description": "The unique name of the review type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the plugin rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowRulesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/review-templates": {
+      "get": {
+        "operationId": "listReviewTemplates",
+        "summary": "List all available review templates",
+        "tags": [
+          "Workflow Templates"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewTemplateDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-templates/{templateName}": {
+      "get": {
+        "operationId": "getReviewTemplate",
+        "summary": "Get details of a specific review template",
+        "tags": [
+          "Workflow Templates"
+        ],
+        "parameters": [
+          {
+            "name": "templateName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewTemplateDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -301,62 +359,12 @@
           "authorReviewerChatAllowed": {
             "type": "boolean",
             "description": "Whether direct chat between author and reviewer is allowed"
-          },
-          "defaultNumberOfReviewers": {
-            "type": "integer"
-          },
-          "defaultNumberOfAuthors": {
-            "type": "integer"
           }
         },
         "required": [
           "authorAnonymous",
           "reviewerAnonymous",
-          "authorReviewerChatAllowed",
-          "defaultNumberOfReviewers",
-          "defaultNumberOfAuthors"
-        ]
-      },
-      "WorkflowPluginDto": {
-        "type": "object",
-        "description": "A registered workflow plugin with its metadata and rules",
-        "properties": {
-          "title": {
-            "type": "string",
-            "description": "Human-readable title of the workflow plugin"
-          },
-          "name": {
-            "type": "string",
-            "description": "Unique name of the workflow plugin"
-          },
-          "description": {
-            "type": "string",
-            "description": "Human-readable description of the workflow plugin"
-          },
-          "rules": {
-            "$ref": "#/components/schemas/WorkflowRulesDto"
-          },
-          "defaultNumberOfReviewers": {
-            "type": "integer"
-          },
-          "defaultNumberOfAuthors": {
-            "type": "integer"
-          },
-          "feedbackFormTemplate": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReviewQuestionDto"
-            }
-          }
-        },
-        "required": [
-          "name",
-          "title",
-          "description",
-          "rules",
-          "defaultNumberOfReviewers",
-          "defaultNumberOfAuthors",
-          "feedbackFormTemplate"
+          "authorReviewerChatAllowed"
         ]
       },
       "ReviewQuestionDto": {
@@ -519,6 +527,59 @@
           "percentage",
           "gradeSummary",
           "submittedAt"
+        ]
+      },
+      "ReviewTypeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/WorkflowRulesDto"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "rules"
+        ]
+      },
+      "ReviewTemplateDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "evaluationCriteriaVisibleToAuthors": {
+            "type": "boolean"
+          },
+          "feedbackFormTemplate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewQuestionDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "evaluationCriteriaVisibleToAuthors",
+          "feedbackFormTemplate"
         ]
       }
     }
