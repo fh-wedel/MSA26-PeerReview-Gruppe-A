@@ -1,40 +1,27 @@
 import {useEffect, useState} from 'react';
 import {workflowApiClient} from '../api/clients';
-
-export interface WorkflowRules {
-  authorAnonymous: boolean;
-  reviewerAnonymous: boolean;
-  authorReviewerChatAllowed: boolean;
-}
-
-export interface WorkflowPlugin {
-  name: string;
-  title: string;
-  description: string;
-  rules: WorkflowRules;
-  submissionDeadlineDuration: string;
-  reviewDeadlineDuration: string;
-  evaluationCriteriaVisibleToAuthors: boolean;
-  numberOfReviewers: number;
-  numberOfAuthors: number;
-}
+import type { ReviewTypeDto, ReviewTemplateDto } from '../api/generated/workflow';
 
 export const useWorkflowPlugins = () => {
-  const [plugins, setPlugins] = useState<WorkflowPlugin[]>([]);
+  const [types, setTypes] = useState<ReviewTypeDto[]>([]);
+  const [templates, setTemplates] = useState<ReviewTemplateDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchPlugins = async () => {
       try {
-        const response = await workflowApiClient.plugins.listPlugins();
+        const [typesRes, templatesRes] = await Promise.all([
+          workflowApiClient.reviewTypes.listReviewTypes(),
+          workflowApiClient.reviewTemplates.listReviewTemplates()
+        ]);
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch plugins: ${response.statusText}`);
+        if (!typesRes.ok || !templatesRes.ok) {
+          throw new Error(`Failed to fetch plugins`);
         }
 
-        // Response format handles the JSON conversion
-        setPlugins(response.data);
+        setTypes(typesRes.data);
+        setTemplates(templatesRes.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
       } finally {
@@ -45,5 +32,5 @@ export const useWorkflowPlugins = () => {
     fetchPlugins();
   }, []);
 
-  return { plugins, loading, error };
+  return { types, templates, loading, error };
 };

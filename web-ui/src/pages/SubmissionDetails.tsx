@@ -34,7 +34,7 @@ export const SubmissionDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { submissionId } = useParams();
-  const {plugins} = useWorkflowPlugins();
+  const {types} = useWorkflowPlugins();
   const {resolveUserId} = useUserResolver();
 
   const isAssignmentsPage = location.pathname.startsWith('/assignments');
@@ -271,7 +271,7 @@ export const SubmissionDetails: React.FC = () => {
                     Review Mode
                   </Typography>
                   <Typography sx={{ textTransform: 'capitalize' }}>
-                      {plugins.find(p => p.name === reviewType)?.title || reviewType}
+                      {types.find(p => p.name === reviewType)?.title || reviewType}
                   </Typography>
                 </Box>
 

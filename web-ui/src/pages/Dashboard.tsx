@@ -46,12 +46,20 @@ export const Dashboard: React.FC = () => {
     title: string,
     reviewType: string,
     authorIds: string[],
+    reviewTemplateType: string,
+    numberOfExaminers: number,
+    submissionDeadline: Date,
+    reviewDeadline: Date
   ) => {
     try {
         const response = await configApiClient.postRoot({
             title,
             reviewProcessType: reviewType,
             authorIds: authorIds.length > 0 ? authorIds : [user?.id || ''],
+            reviewTemplateType,
+            numberOfExaminers,
+            submissionDeadline: submissionDeadline.toISOString(),
+            reviewDeadline: reviewDeadline.toISOString(),
       });
 
       if (!response.ok) {
@@ -146,7 +154,6 @@ export const Dashboard: React.FC = () => {
           onSubmit={handleSubmission}
           authorName={user?.username || ""}
           currentUserId={user?.id || ""}
-          isAdminOrOfficer={roles.includes("admin") || roles.includes("examinationofficer")}
         />
       )}
 

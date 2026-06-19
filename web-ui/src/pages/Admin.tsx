@@ -14,16 +14,16 @@ import {
   Typography
 } from '@mui/material';
 import {Extension, Group} from '@mui/icons-material';
-import {fetchWorkflowPlugins, searchUsers, type WorkflowPlugin} from '../api/communication';
+import {searchUsers} from '../api/communication';
+import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 import {useAuth} from '../contexts/AuthContext';
 import {Navigate} from 'react-router-dom';
 
 export const Admin: React.FC = () => {
     const {user} = useAuth();
     const [userCount, setUserCount] = useState<number | null>(null);
-    const [plugins, setPlugins] = useState<WorkflowPlugin[] | null>(null);
     const [loadingUsers, setLoadingUsers] = useState(true);
-    const [loadingPlugins, setLoadingPlugins] = useState(true);
+    const { types, templates, loading: loadingPlugins } = useWorkflowPlugins();
 
     useEffect(() => {
         // Fetch total users
@@ -37,16 +37,7 @@ export const Admin: React.FC = () => {
             })
             .finally(() => setLoadingUsers(false));
 
-        // Fetch plugins
-        fetchWorkflowPlugins()
-            .then(fetchedPlugins => {
-                setPlugins(fetchedPlugins);
-            })
-            .catch(err => {
-                console.error('Failed to fetch plugins', err);
-                setPlugins([]);
-            })
-            .finally(() => setLoadingPlugins(false));
+        
     }, []);
 
     const userRoles = (user?.roles || []).map(r => r.toLowerCase());
@@ -115,7 +106,7 @@ export const Admin: React.FC = () => {
                                     <Skeleton variant="text" width={80} height={60}/>
                                 ) : (
                                     <Typography variant="h3" sx={{fontWeight: 'bold'}}>
-                                        {plugins?.length || 0}
+                                        {(types?.length || 0) + (templates?.length || 0)}
                                     </Typography>
                                 )}
                             </Box>
@@ -129,55 +120,63 @@ export const Admin: React.FC = () => {
                 Workflow Plugins Configuration
             </Typography>
 
-            <TableContainer component={Paper} elevation={3} sx={{borderRadius: 2, overflow: 'hidden'}}>
+            
+            <TableContainer component={Paper} elevation={3} sx={{borderRadius: 2, overflow: 'hidden', mb: 4}}>
+                <Typography variant="h6" sx={{p: 2, bgcolor: 'background.default'}}>Review Types</Typography>
                 <Table>
                     <TableHead sx={{bgcolor: 'background.default'}}>
                         <TableRow>
-                            <TableCell sx={{fontWeight: 'bold', width: '25%'}}>Plugin Name</TableCell>
+                            <TableCell sx={{fontWeight: 'bold', width: '25%'}}>Name</TableCell>
                             <TableCell sx={{fontWeight: 'bold', width: '25%'}}>Title</TableCell>
                             <TableCell sx={{fontWeight: 'bold', width: '50%'}}>Description</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {loadingPlugins ? (
-                            // Skeleton Loader for Table
-                            Array.from(new Array(3)).map((_, index) => (
-                                <TableRow key={index}>
-                                    <TableCell><Skeleton variant="text"/></TableCell>
-                                    <TableCell><Skeleton variant="text"/></TableCell>
-                                    <TableCell><Skeleton variant="text"/></TableCell>
-                                </TableRow>
-                            ))
-                        ) : plugins && plugins.length > 0 ? (
-                            plugins.map((plugin) => (
+                            <TableRow><TableCell colSpan={3}><Skeleton variant="text"/></TableCell></TableRow>
+                        ) : types && types.length > 0 ? (
+                            types.map((plugin) => (
                                 <TableRow key={plugin.name} hover>
-                                    <TableCell>
-                                        <Typography variant="body2" sx={{
-                                            fontFamily: 'monospace',
-                                            bgcolor: 'action.hover',
-                                            p: 0.5,
-                                            borderRadius: 1,
-                                            display: 'inline-block'
-                                        }}>
-                                            {plugin.name}
-                                        </Typography>
-                                    </TableCell>
+                                    <TableCell>{plugin.name}</TableCell>
                                     <TableCell>{plugin.title}</TableCell>
                                     <TableCell>{plugin.description}</TableCell>
                                 </TableRow>
                             ))
                         ) : (
-                            <TableRow>
-                                <TableCell colSpan={3} align="center" sx={{py: 3}}>
-                                    <Typography variant="body1" color="text.secondary">
-                                        No active workflow plugins found.
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
+                            <TableRow><TableCell colSpan={3} align="center">No types found.</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <TableContainer component={Paper} elevation={3} sx={{borderRadius: 2, overflow: 'hidden'}}>
+                <Typography variant="h6" sx={{p: 2, bgcolor: 'background.default'}}>Review Templates</Typography>
+                <Table>
+                    <TableHead sx={{bgcolor: 'background.default'}}>
+                        <TableRow>
+                            <TableCell sx={{fontWeight: 'bold', width: '25%'}}>Name</TableCell>
+                            <TableCell sx={{fontWeight: 'bold', width: '25%'}}>Title</TableCell>
+                            <TableCell sx={{fontWeight: 'bold', width: '50%'}}>Description</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {loadingPlugins ? (
+                            <TableRow><TableCell colSpan={3}><Skeleton variant="text"/></TableCell></TableRow>
+                        ) : templates && templates.length > 0 ? (
+                            templates.map((plugin) => (
+                                <TableRow key={plugin.name} hover>
+                                    <TableCell>{plugin.name}</TableCell>
+                                    <TableCell>{plugin.title}</TableCell>
+                                    <TableCell>{plugin.description}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow><TableCell colSpan={3} align="center">No templates found.</TableCell></TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
         </Box>
     );
 };
