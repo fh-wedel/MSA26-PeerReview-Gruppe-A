@@ -42,22 +42,22 @@
               }
             }
           },
-          "404": {
-            "description": "No matching record found for this submission or the requester does not have permission to view it.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Access denied. The Requester is not permitted to use this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No matching record found for this submission or the requester does not have permission to view it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -96,273 +96,22 @@
               }
             }
           },
+          "403": {
+            "description": "Access denied. The Requester is not permitted to use this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitoErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Examiner not found or no matching records for this examiner, or the requester does not have permission to view them.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied. The Requester is not permitted to use this endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitoErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/examiners": {
-      "get": {
-        "operationId": "listExaminers",
-        "summary": "Lists all available reviewers from the Cognito Reviewer group",
-        "tags": [
-          "examiners"
-        ],
-        "responses": {
-          "200": {
-            "description": "List of all reviewers",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ExaminerResponse"
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied. The Requester is not permitted to use this endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitoErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "operationId": "createExaminer",
-        "summary": "Creates a new reviewer in the Cognito Reviewer group",
-        "tags": [
-          "examiners"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateExaminerRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Reviewer created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExaminerResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied. The Requester is not permitted to use this endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitoErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/examiners/{examinerUsername}": {
-      "get": {
-        "operationId": "getExaminer",
-        "summary": "Returns details of a specific reviewer from Cognito",
-        "tags": [
-          "examiners"
-        ],
-        "parameters": [
-          {
-            "name": "examinerUsername",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Marcel"
-            },
-            "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Reviewer details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExaminerResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Reviewer not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied. The Requester is not permitted to use this endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitoErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "updateExaminer",
-        "summary": "Updates the metadata/custom attributes of a reviewer in Cognito",
-        "tags": [
-          "examiners"
-        ],
-        "parameters": [
-          {
-            "name": "examinerUsername",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Marcel"
-            },
-            "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateExaminerRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Reviewer updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExaminerResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Reviewer not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied. The Requester is not permitted to use this endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitoErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "deleteExaminer",
-        "summary": "Deletes a reviewer from the Cognito User Pool",
-        "tags": [
-          "examiners"
-        ],
-        "parameters": [
-          {
-            "name": "examinerUsername",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Marcel"
-            },
-            "description": "The Cognito username of the reviewer (e.g. 'Marcel'). Not the sub UUID."
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Reviewer deleted successfully"
-          },
-          "404": {
-            "description": "Reviewer not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied. The Requester is not permitted to use this endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitoErrorResponse"
                 }
               }
             }
@@ -493,91 +242,6 @@
           "submissionId",
           "assignedAt"
         ]
-      },
-      "ExaminerResponse": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "Cognito sub (UUID)",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "username": {
-            "type": "string",
-            "description": "Cognito username",
-            "example": "Marcel"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "description": "Email address of the reviewer"
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "Whether the Cognito user is enabled or disabled"
-          },
-          "status": {
-            "type": "string",
-            "description": "Cognito user status (e.g., CONFIRMED, FORCE_CHANGE_PASSWORD)",
-            "example": "CONFIRMED"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "customAttributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Custom Cognito attributes (e.g., specialty, availability)"
-          },
-          "groups": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "description": "Name of the Cognito group",
-              "example": "Reviewer"
-            },
-            "description": "The Cognito groups the user belongs to"
-          }
-        },
-        "required": [
-          "userId",
-          "username",
-          "email"
-        ]
-      },
-      "CreateExaminerRequest": {
-        "type": "object",
-        "properties": {
-          "username": {
-            "type": "string",
-            "description": "The Cognito username (e.g. 'Marcel') of an existing user to promote to reviewer. Not the sub UUID.",
-            "example": "Marcel"
-          },
-          "customAttributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "username"
-        ]
-      },
-      "UpdateExaminerRequest": {
-        "type": "object",
-        "properties": {
-          "customAttributes": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Custom attributes to update on the Cognito user"
-          }
-        }
       },
       "ErrorResponse": {
         "type": "object",

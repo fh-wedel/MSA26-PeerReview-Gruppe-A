@@ -3,7 +3,6 @@ package com.fh_wedel.configuration.controller;
 import com.fh_wedel.configuration.model.CreateConfigurationRequest;
 import com.fh_wedel.configuration.model.SubmissionConfiguration;
 import com.fh_wedel.configuration.service.ConfigurationService;
-import com.fh_wedel.workflow.client.ApiException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -14,7 +13,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,29 +25,6 @@ public class ConfigurationController {
 
     public ConfigurationController(ConfigurationService configurationService) {
         this.configurationService = configurationService;
-    }
-
-    /**
-     * Endpoint for public health and service status checks.
-     */
-    @GetMapping("/status")
-    public String getStatus() {
-        log.info("Request received: GET /status");
-        return configurationService.getServiceStatus();
-    }
-
-    /**
-     * Returns server time with authenticated identity details.
-     */
-    @GetMapping("/time")
-    public String getCurrentTime(Authentication authentication) {
-        log.info("Request received: GET /time");
-        String username = authentication != null ? authentication.getName() : "Guest";
-        String groups = authentication != null ? authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList()
-                .toString() : "None";
-        return String.format("time=%s, username=%s, groups=%s", Instant.now(), username, groups);
     }
 
     /**
@@ -81,13 +56,17 @@ public class ConfigurationController {
             config = configurationService.createConfiguration(
                     request.getTitle(),
                     request.getReviewProcessType(),
+                    request.getReviewTemplateType(),
+                    request.getNumberOfExaminers(),
+                    request.getSubmissionDeadline(),
+                    request.getReviewDeadline(),
                     request.getAuthorIds(),
                     callerSub,
                     callerRole
             );
-        } catch (ApiException e) {
-            log.error("Failed to fetch workflow plugin rules", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to fetch workflow rules: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid configuration request", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request: " + e.getMessage());
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(config);

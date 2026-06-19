@@ -134,10 +134,6 @@ public class SubmissionService {
         return repository.findDocuments(submissionId);
     }
 
-    public String getServiceStatus() {
-        return "Submission Service is up and running!";
-    }
-
     private void sendSubmissionReadyEvent(Submission submission) {
         if (workflowQueueName == null || workflowQueueName.isBlank()) {
             log.warn("No workflow queue name defined. Skipping sending event for submission {}", submission.getSubmissionId());

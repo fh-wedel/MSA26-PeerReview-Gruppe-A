@@ -5,7 +5,7 @@ Der Configuration Service (auch Creation Service genannt) ist für die Erstellun
 
 Zu den konfigurierbaren Parametern gehören:
 
-- Der Review-Prozess-Typ (z. B. `INDIVIDUAL_WORK`, `BACHELOR_THESIS`, `GROUP_WORK`).
+- Der Review-Prozess-Typ (z. B. `SINGLE_BLIND`, `OPEN_REVIEW`, `DOUBLE_BLIND`).
 - Die Anzahl der benötigten Prüfer/Gutachter (`numberOfExaminers`).
 - Fristen für die Abgabe (`submissionDeadline`) und die Begutachtung (`reviewDeadline`).
 - Bewertungskriterien (`evaluationCriteria`) und deren Sichtbarkeit für Autoren (`criteriaVisibleToAuthor`).
@@ -45,7 +45,7 @@ Die Autorisierung erfolgt über AWS Verified Permissions (Cedar-Policies). Auf C
     ```json
     {
       "title": "Masterarbeit - PeerReview System",
-      "reviewProcessType": "INDIVIDUAL_WORK",
+      "reviewProcessType": "SINGLE_BLIND",
       "authorIds": ["author-uuid-222"],
       "numberOfExaminers": 2,
       "submissionDeadline": "2026-06-30T23:59:59Z",
@@ -67,7 +67,7 @@ Nach der Speicherung einer neuen Konfiguration in der Datenbank wird ein Event a
   {
     "submissionId": "0e19eceb-1c99-44f7-a1f5-646da332d2e1",
     "numberOfExaminers": 2,
-    "reviewProcessType": "INDIVIDUAL_WORK"
+    "reviewProcessType": "SINGLE_BLIND"
   }
   ```
 
@@ -119,7 +119,7 @@ Da der API Gateway im lokalen Docker-Compose-Setup umgangen wird, kannst du die 
        -H "x-auth-username: prof-teacher" \
        -H "x-auth-groups: Teacher" \
        -H "x-auth-principal-id: PeerReviewUserPool|teacher-uuid-333" \
-       -d '{"title": "A Study on Peer Review System", "reviewProcessType": "INDIVIDUAL_WORK", "authorIds": ["author-uuid-222"], "numberOfExaminers": 2, "submissionDeadline": "2026-06-30T23:59:59Z", "reviewDeadline": "2026-07-31T23:59:59Z", "evaluationCriteria": ["Originality", "Clarity"], "criteriaVisibleToAuthor": true}' \
+       -d '{"title": "A Study on Peer Review System", "reviewProcessType": "SINGLE_BLIND", "authorIds": ["author-uuid-222"], "numberOfExaminers": 2, "submissionDeadline": "2026-06-30T23:59:59Z", "reviewDeadline": "2026-07-31T23:59:59Z", "evaluationCriteria": ["Originality", "Clarity"], "criteriaVisibleToAuthor": true}' \
        http://localhost:8082/api/configuration
   ```
 

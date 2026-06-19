@@ -25,6 +25,8 @@ public class SubmissionConfiguration {
     @Getter
     private String reviewProcessType; // Store as string (enum name)
     @Getter
+    private String reviewTemplateType;
+    @Getter
     private List<String> authorIds;
     @Getter
     private String creatorId;
@@ -45,13 +47,14 @@ public class SubmissionConfiguration {
     }
 
     public SubmissionConfiguration(String submissionId, String title, String reviewProcessType,
-                                   List<String> authorIds, String creatorId, String creatorRole,
+                                   String reviewTemplateType, List<String> authorIds, String creatorId, String creatorRole,
                                    int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
         this.pk = PK_PREFIX + submissionId;
         this.sk = SK_VALUE;
         this.submissionId = submissionId;
         this.title = title;
         this.reviewProcessType = reviewProcessType;
+        this.reviewTemplateType = reviewTemplateType;
         this.authorIds = authorIds;
         this.creatorId = creatorId;
         this.creatorRole = creatorRole;

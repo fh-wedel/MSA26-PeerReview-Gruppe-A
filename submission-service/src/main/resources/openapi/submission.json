@@ -11,42 +11,6 @@
     }
   ],
   "paths": {
-    "/status": {
-      "get": {
-        "operationId": "getStatus",
-        "summary": "Service health status",
-        "responses": {
-          "200": {
-            "description": "Service is healthy",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/time": {
-      "get": {
-        "operationId": "getTime",
-        "summary": "Server time with auth info",
-        "responses": {
-          "200": {
-            "description": "Current server time",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/configurations": {
       "post": {
         "operationId": "createConfiguration",

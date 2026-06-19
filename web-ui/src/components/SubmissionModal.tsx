@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -15,10 +16,9 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
-  Autocomplete,
 } from "@mui/material";
-import type { UserSummary } from "../api/generated/users";
-import { usersApiClient } from "../api/clients";
+import type {UserSummary} from "../api/communication";
+import {useUserResolver} from "../hooks/useUserResolver";
 
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
@@ -31,10 +31,13 @@ interface SubmissionModalProps {
     title: string,
     reviewType: string,
     authorIds: string[],
+    reviewTemplateType: string,
+    numberOfReviewers: number,
+    submissionDeadline: Date,
+    reviewDeadline: Date
   ) => Promise<void>;
   authorName: string;
     currentUserId: string;
-    isAdminOrOfficer: boolean;
 }
 
 export const SubmissionModal: React.FC<SubmissionModalProps> = ({
@@ -43,53 +46,21 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   onSubmit,
   authorName,
                                                                     currentUserId,
-                                                                    isAdminOrOfficer,
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
-    const [reviewType, setReviewType] = useState<ReviewType>("INDIVIDUAL_WORK");
-    const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ sub: currentUserId, username: authorName }]);
-    const [userOptions, setUserOptions] = useState<UserSummary[]>([]);
-    const [usersLoading, setUsersLoading] = useState(false);
-    const [userInputValue, setUserInputValue] = useState("");
-  const { plugins, loading, error } = useWorkflowPlugins();
+  const [reviewType, setReviewType] = useState<ReviewType>("SINGLE_BLIND");
+    const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ id: currentUserId, username: authorName }]);
+  const { types, templates, loading, error } = useWorkflowPlugins();
+  const [reviewTemplateType, setReviewTemplateType] = useState<string>("INDIVIDUAL_WORK");
+  const [numberOfReviewers, setNumberOfReviewers] = useState<number>(2);
+  const [submissionDeadline, setSubmissionDeadline] = useState<Date>(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  const [reviewDeadline, setReviewDeadline] = useState<Date>(new Date(Date.now() + 28 * 24 * 60 * 60 * 1000));
+  const { users: userOptions, loading: usersLoading } = useUserResolver();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
     const [validationError, setValidationError] = useState("");
-
-  React.useEffect(() => {
-    let active = true;
-
-    if (userInputValue === '') {
-      setUserOptions([]);
-      return undefined;
-    }
-
-    setUsersLoading(true);
-
-    const delayDebounceFn = setTimeout(() => {
-      usersApiClient.search.searchUsers({ q: userInputValue })
-        .then((res) => {
-          if (active) {
-            setUserOptions(res.data.users);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to fetch users", err);
-        })
-        .finally(() => {
-          if (active) {
-            setUsersLoading(false);
-          }
-        });
-    }, 300);
-
-    return () => {
-      active = false;
-      clearTimeout(delayDebounceFn);
-    };
-  }, [userInputValue]);
 
   React.useEffect(() => {
     if (error) {
@@ -101,23 +72,11 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     setSubmitting(true);
       setValidationError("");
     try {
-        const selectedPlugin = plugins.find(p => p.name === reviewType);
-        const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
-        const authorIds = isAuthorsEnabled
-            ? selectedAuthors.map(u => u.sub)
-            : [currentUserId];
-
-        if (selectedPlugin && authorIds.length !== selectedPlugin.numberOfAuthors) {
-            setValidationError(`Please enter exactly ${selectedPlugin.numberOfAuthors} author(s)`);
-            setSubmitting(false);
-            return;
-        }
-
-        await onSubmit(title, reviewType, authorIds);
+        const authorIds = selectedAuthors.map(u => u.id);
+        await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline);
       setTitle("");
-        setReviewType("INDIVIDUAL_WORK");
-        setSelectedAuthors([{ sub: currentUserId, username: authorName }]);
-        setUserInputValue("");
+      setReviewType("SINGLE_BLIND");
+        setSelectedAuthors([{ id: currentUserId, username: authorName }]);
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -142,25 +101,20 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               disabled={submitting}
             />
               {(() => {
-                  const selectedPlugin = plugins.find(p => p.name === reviewType);
-                  const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
+                  const isAuthorsEnabled = true;
                   return (
                       <Autocomplete
                           multiple
                           options={userOptions}
                           getOptionLabel={(option) => option.username}
-                          value={isAuthorsEnabled ? selectedAuthors : [{ sub: currentUserId, username: authorName }]}
+                          value={isAuthorsEnabled ? selectedAuthors : [{ id: currentUserId, username: authorName }]}
                           onChange={(_, newValue) => {
                               setSelectedAuthors(newValue);
                               setValidationError("");
                           }}
-                          onInputChange={(_, newInputValue) => {
-                              setUserInputValue(newInputValue);
-                          }}
-                          isOptionEqualToValue={(option, value) => option.sub === value.sub}
+                          isOptionEqualToValue={(option, value) => option.id === value.id}
                           disabled={!isAuthorsEnabled || submitting}
                           loading={usersLoading}
-                          filterOptions={(x) => x}
                           renderInput={(params) => (
                               <TextField
                                   {...params}
@@ -168,7 +122,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                                   variant="outlined"
                                   fullWidth
                                   error={!!validationError}
-                                  helperText={validationError || (isAuthorsEnabled ? `Expected number of authors: ${selectedPlugin?.numberOfAuthors || 1}` : "")}
+                                  helperText={validationError || "Select one or more authors"}
                               />
                           )}
                       />
@@ -183,56 +137,79 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   onChange={(e) => setReviewType(e.target.value as ReviewType)}
                 disabled={loading || submitting}
               >
-                {plugins.length > 0 ? (
-                  plugins.map((plugin) => (
+                {types.length > 0 ? (
+                  types.map((plugin) => (
                     <MenuItem key={plugin.name} value={plugin.name}>
                       {plugin.title}
                     </MenuItem>
                   ))
                 ) : (
                   <>
-                    <MenuItem value="INDIVIDUAL_WORK">Individual Work</MenuItem>
-                    <MenuItem value="GROUP_WORK">Group Work</MenuItem>
-                    <MenuItem value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>
+                    <MenuItem value="SINGLE_BLIND">Single Blind Review</MenuItem>
+                    <MenuItem value="DOUBLE_BLIND">Double Blind Review</MenuItem>
+                    <MenuItem value="OPEN_REVIEW">Open Review</MenuItem>
                   </>
                 )}
               </Select>
             </FormControl>
 
-              {plugins.length > 0 && (
-                  <Box sx={{mt: 1, p: 2, bgcolor: "background.default", borderRadius: 1}}>
-                      {(() => {
-                          const selectedPlugin = plugins.find(p => p.name === reviewType);
-                          if (!selectedPlugin) return null;
+              
+            <FormControl fullWidth>
+                <InputLabel id="review-template-label">Review Template</InputLabel>
+              <Select
+                  labelId="review-template-label"
+                  value={reviewTemplateType}
+                  label="Review Template"
+                  onChange={(e) => setReviewTemplateType(e.target.value as string)}
+                disabled={loading || submitting}
+              >
+                {templates.length > 0 ? (
+                  templates.map((template) => (
+                    <MenuItem key={template.name} value={template.name || ""}>
+                      {template.title}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <>
+                    <MenuItem value="INDIVIDUAL_WORK">Individual Work</MenuItem>
+                  </>
+                )}
+              </Select>
+            </FormControl>
 
-                          const parseDur = (dur: string) => {
-                              if (!dur) return 0;
-                              const h = dur.match(/PT(\d+)H/);
-                              if (h) return parseInt(h[1]) / 24;
-                              const d = dur.match(/P(\d+)D/);
-                              if (d) return parseInt(d[1]);
-                              return 0;
-                          };
-                          const subDays = parseDur(selectedPlugin.submissionDeadlineDuration);
-                          const revDays = parseDur(selectedPlugin.reviewDeadlineDuration);
+            <TextField
+              label="Number of Reviewers"
+              type="number"
+              variant="outlined"
+              fullWidth
+              value={numberOfReviewers}
+              onChange={(e) => setNumberOfReviewers(parseInt(e.target.value) || 0)}
+              disabled={submitting}
+              slotProps={{ htmlInput: { min: 1 } }}
+            />
+            
+            <TextField
+              label="Submission Deadline"
+              type="date"
+              variant="outlined"
+              fullWidth
+              value={submissionDeadline.toISOString().split('T')[0]}
+              onChange={(e) => setSubmissionDeadline(new Date(e.target.value))}
+              disabled={submitting}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
 
-                          return (
-                              <Box sx={{
-                                  typography: "body2",
-                                  color: "text.secondary",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 0.5
-                              }}>
-                                  <div><strong>Expected Authors:</strong> {selectedPlugin.numberOfAuthors}</div>
-                                  <div><strong>Expected Reviewers:</strong> {selectedPlugin.numberOfReviewers}</div>
-                                  <div><strong>Submission Deadline:</strong> in {subDays} days</div>
-                                  <div><strong>Review Deadline:</strong> in {subDays + revDays} days</div>
-                              </Box>
-                          );
-                      })()}
-                  </Box>
-              )}
+            <TextField
+              label="Review Deadline"
+              type="date"
+              variant="outlined"
+              fullWidth
+              value={reviewDeadline.toISOString().split('T')[0]}
+              onChange={(e) => setReviewDeadline(new Date(e.target.value))}
+              disabled={submitting}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
           </Box>
         </DialogContent>
         <DialogActions>

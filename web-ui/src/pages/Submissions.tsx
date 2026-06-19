@@ -26,7 +26,7 @@ export const Submissions: React.FC = () => {
   const { user } = useAuth();
   const [mySelectedStatuses, setMySelectedStatuses] = useState<string[]>([]);
   const [allSelectedStatuses, setAllSelectedStatuses] = useState<string[]>([]);
-  const {plugins} = useWorkflowPlugins();
+  const {types} = useWorkflowPlugins();
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAccess = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('author');
@@ -137,7 +137,7 @@ export const Submissions: React.FC = () => {
   const finalAllSubmissions = sortByStatus(filterByStatus(allSubmissions, allSelectedStatuses));
 
   const formatSubheading = (submission: any) => {
-    const plugin = plugins.find(p => p.name === submission.reviewProcessType);
+    const plugin = types.find(p => p.name === submission.reviewProcessType);
     const type = plugin ? plugin.title : (submission.reviewProcessType || 'Unknown');
     const datetime = submission.updateTime ? formatDateTime(submission.updateTime, 'PPPp') : 'Unknown';
     return (

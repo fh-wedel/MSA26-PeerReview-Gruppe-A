@@ -8,10 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -23,21 +21,6 @@ public class SubmissionController {
 
     public SubmissionController(SubmissionService submissionService) {
         this.submissionService = submissionService;
-    }
-
-    @GetMapping("/status")
-    public String getStatus() {
-        return submissionService.getServiceStatus();
-    }
-
-    @GetMapping("/time")
-    public String getCurrentTime(Authentication authentication) {
-        String username = authentication != null ? authentication.getName() : "Guest";
-        String groups = authentication != null ? authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList()
-                .toString() : "None";
-        return String.format("time=%s, username=%s, groups=%s", Instant.now(), username, groups);
     }
 
     @PostMapping("/submissions")

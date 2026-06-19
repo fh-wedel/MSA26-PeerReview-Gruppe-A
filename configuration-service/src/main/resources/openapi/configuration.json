@@ -11,41 +11,6 @@
     }
   ],
   "paths": {
-    "/status": {
-      "get": {
-        "summary": "Returns the current status of the API",
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "OK"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/time": {
-      "get": {
-        "summary": "Returns the current server time",
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/": {
       "post": {
         "summary": "Create a new submission configuration",
@@ -98,7 +63,9 @@
             "name": "submissionId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -126,7 +93,9 @@
             "name": "authorId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -154,6 +123,7 @@
         "required": [
           "title",
           "reviewProcessType",
+          "reviewTemplateType",
           "authorIds"
         ],
         "properties": {
@@ -168,6 +138,21 @@
             "items": {
               "type": "string"
             }
+          },
+          "numberOfExaminers": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "submissionDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewTemplateType": {
+            "type": "string"
           }
         }
       },
@@ -176,6 +161,7 @@
         "required": [
           "title",
           "reviewProcessType",
+          "reviewTemplateType",
           "authorIds",
           "numberOfExaminers"
         ],
@@ -207,6 +193,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "reviewTemplateType": {
+            "type": "string"
           }
         }
       }

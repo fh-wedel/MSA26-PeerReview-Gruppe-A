@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 import java.util.List;
+import java.time.Instant;
 
 @Data
 public class CreateConfigurationRequest {
@@ -17,5 +18,10 @@ public class CreateConfigurationRequest {
 
     @NotEmpty(message = "At least one author must be specified")
     private List<String> authorIds;
+
+    private Integer numberOfExaminers;
+    private Instant submissionDeadline;
+    private Instant reviewDeadline;
+    private String reviewTemplateType;
 
 }

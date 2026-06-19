@@ -65,12 +65,7 @@ export interface WorkflowRules {
   authorReviewerChatAllowed: boolean;
 }
 
-export interface WorkflowPlugin {
-  name: string;
-  title: string;
-  description: string;
-  rules: WorkflowRules;
-}
+
 
 
 import {communicationApiClient, matchingApiClient, workflowApiClient, usersApiClient} from './clients';
@@ -106,7 +101,4 @@ export const fetchWorkflowRulesForSubmission = async (submissionId: string): Pro
   return response.data as any;
 };
 
-export const fetchWorkflowPlugins = async (): Promise<WorkflowPlugin[]> => {
-  const response = await workflowApiClient.plugins.listPlugins();
-  return response.data as any;
-};
+
