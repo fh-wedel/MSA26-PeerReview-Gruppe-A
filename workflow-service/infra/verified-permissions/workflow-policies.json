@@ -9,22 +9,34 @@
     },
     "policies": [
         {
-            "id": "AdminListPlugins",
+            "id": "AdminListReviewTypes",
             "groupName": "Admin",
-            "actionId": "get /api/workflow/plugins",
-            "description": "Allow Admin to list workflow plugins"
+            "actionId": "get /api/workflow/review-types",
+            "description": "Allow Admin to list workflow review types"
         },
         {
-            "id": "AdminGetPlugin",
+            "id": "AdminListReviewTemplates",
             "groupName": "Admin",
-            "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow Admin to get workflow plugin details"
+            "actionId": "get /api/workflow/review-templates",
+            "description": "Allow Admin to list workflow review templates"
         },
         {
-            "id": "AdminGetPluginRules",
+            "id": "AdminGetReviewType",
             "groupName": "Admin",
-            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow Admin to get workflow plugin rules"
+            "actionId": "get /api/workflow/review-types/{typeName}",
+            "description": "Allow Admin to get workflow review type details"
+        },
+        {
+            "id": "AdminGetReviewTemplate",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/review-templates/{templateName}",
+            "description": "Allow Admin to get workflow review template details"
+        },
+        {
+            "id": "AdminGetReviewTypeRules",
+            "groupName": "Admin",
+            "actionId": "get /api/workflow/review-types/{typeName}/rules",
+            "description": "Allow Admin to get workflow review type rules"
         },
         {
             "id": "AdminGetSubmissionRules",
@@ -33,22 +45,34 @@
             "description": "Allow Admin to get submission rules"
         },
         {
-            "id": "AuthorListPlugins",
+            "id": "AuthorListReviewTypes",
             "groupName": "Author",
-            "actionId": "get /api/workflow/plugins",
-            "description": "Allow Author to list workflow plugins"
+            "actionId": "get /api/workflow/review-types",
+            "description": "Allow Author to list workflow review types"
         },
         {
-            "id": "AuthorGetPlugin",
+            "id": "AuthorListReviewTemplates",
             "groupName": "Author",
-            "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow Author to get workflow plugin details"
+            "actionId": "get /api/workflow/review-templates",
+            "description": "Allow Author to list workflow review templates"
         },
         {
-            "id": "AuthorGetPluginRules",
+            "id": "AuthorGetReviewType",
             "groupName": "Author",
-            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow Author to get workflow plugin rules"
+            "actionId": "get /api/workflow/review-types/{typeName}",
+            "description": "Allow Author to get workflow review type details"
+        },
+        {
+            "id": "AuthorGetReviewTemplate",
+            "groupName": "Author",
+            "actionId": "get /api/workflow/review-templates/{templateName}",
+            "description": "Allow Author to get workflow review template details"
+        },
+        {
+            "id": "AuthorGetReviewTypeRules",
+            "groupName": "Author",
+            "actionId": "get /api/workflow/review-types/{typeName}/rules",
+            "description": "Allow Author to get workflow review type rules"
         },
         {
             "id": "AuthorGetSubmissionRules",
@@ -57,22 +81,34 @@
             "description": "Allow Author to get submission rules"
         },
         {
-            "id": "TeacherListPlugins",
+            "id": "TeacherListReviewTypes",
             "groupName": "Teacher",
-            "actionId": "get /api/workflow/plugins",
-            "description": "Allow Teacher to list workflow plugins"
+            "actionId": "get /api/workflow/review-types",
+            "description": "Allow Teacher to list workflow review types"
         },
         {
-            "id": "TeacherGetPlugin",
+            "id": "TeacherListReviewTemplates",
             "groupName": "Teacher",
-            "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow Teacher to get workflow plugin details"
+            "actionId": "get /api/workflow/review-templates",
+            "description": "Allow Teacher to list workflow review templates"
         },
         {
-            "id": "TeacherGetPluginRules",
+            "id": "TeacherGetReviewType",
             "groupName": "Teacher",
-            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow Teacher to get workflow plugin rules"
+            "actionId": "get /api/workflow/review-types/{typeName}",
+            "description": "Allow Teacher to get workflow review type details"
+        },
+        {
+            "id": "TeacherGetReviewTemplate",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/review-templates/{templateName}",
+            "description": "Allow Teacher to get workflow review template details"
+        },
+        {
+            "id": "TeacherGetReviewTypeRules",
+            "groupName": "Teacher",
+            "actionId": "get /api/workflow/review-types/{typeName}/rules",
+            "description": "Allow Teacher to get workflow review type rules"
         },
         {
             "id": "TeacherGetSubmissionRules",
@@ -81,22 +117,34 @@
             "description": "Allow Teacher to get submission rules"
         },
         {
-            "id": "ReviewerListPlugins",
+            "id": "ReviewerListReviewTypes",
             "groupName": "Reviewer",
-            "actionId": "get /api/workflow/plugins",
-            "description": "Allow Reviewer to list workflow plugins"
+            "actionId": "get /api/workflow/review-types",
+            "description": "Allow Reviewer to list workflow review types"
         },
         {
-            "id": "ReviewerGetPlugin",
+            "id": "ReviewerListReviewTemplates",
             "groupName": "Reviewer",
-            "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow Reviewer to get workflow plugin details"
+            "actionId": "get /api/workflow/review-templates",
+            "description": "Allow Reviewer to list workflow review templates"
         },
         {
-            "id": "ReviewerGetPluginRules",
+            "id": "ReviewerGetReviewType",
             "groupName": "Reviewer",
-            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow Reviewer to get workflow plugin rules"
+            "actionId": "get /api/workflow/review-types/{typeName}",
+            "description": "Allow Reviewer to get workflow review type details"
+        },
+        {
+            "id": "ReviewerGetReviewTemplate",
+            "groupName": "Reviewer",
+            "actionId": "get /api/workflow/review-templates/{templateName}",
+            "description": "Allow Reviewer to get workflow review template details"
+        },
+        {
+            "id": "ReviewerGetReviewTypeRules",
+            "groupName": "Reviewer",
+            "actionId": "get /api/workflow/review-types/{typeName}/rules",
+            "description": "Allow Reviewer to get workflow review type rules"
         },
         {
             "id": "ReviewerGetSubmissionRules",
@@ -105,22 +153,34 @@
             "description": "Allow Reviewer to get submission rules"
         },
         {
-            "id": "OfficerListPlugins",
+            "id": "OfficerListReviewTypes",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/workflow/plugins",
-            "description": "Allow ExaminationOfficer to list workflow plugins"
+            "actionId": "get /api/workflow/review-types",
+            "description": "Allow ExaminationOfficer to list workflow review types"
         },
         {
-            "id": "OfficerGetPlugin",
+            "id": "OfficerListReviewTemplates",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/workflow/plugins/{pluginName}",
-            "description": "Allow ExaminationOfficer to get workflow plugin details"
+            "actionId": "get /api/workflow/review-templates",
+            "description": "Allow ExaminationOfficer to list workflow review templates"
         },
         {
-            "id": "OfficerGetPluginRules",
+            "id": "OfficerGetReviewType",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/workflow/plugins/{pluginName}/rules",
-            "description": "Allow ExaminationOfficer to get workflow plugin rules"
+            "actionId": "get /api/workflow/review-types/{typeName}",
+            "description": "Allow ExaminationOfficer to get workflow review type details"
+        },
+        {
+            "id": "OfficerGetReviewTemplate",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/review-templates/{templateName}",
+            "description": "Allow ExaminationOfficer to get workflow review template details"
+        },
+        {
+            "id": "OfficerGetReviewTypeRules",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/workflow/review-types/{typeName}/rules",
+            "description": "Allow ExaminationOfficer to get workflow review type rules"
         },
         {
             "id": "OfficerGetSubmissionRules",
