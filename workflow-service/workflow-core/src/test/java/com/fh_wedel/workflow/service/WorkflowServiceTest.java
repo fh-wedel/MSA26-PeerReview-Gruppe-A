@@ -182,7 +182,7 @@ class WorkflowServiceTest {
         com.fh_wedel.workflow.api.ReviewTemplatePlugin mockTemplate = mock(com.fh_wedel.workflow.api.ReviewTemplatePlugin.class);
         com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
         when(mockTemplate.calculateGrade(any())).thenReturn(grade);
-        when(templateRegistry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockTemplate));
+        when(templateRegistry.getByName("SINGLE_BLIND")).thenReturn(Optional.of(mockTemplate));
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
 
@@ -203,7 +203,7 @@ class WorkflowServiceTest {
         com.fh_wedel.workflow.api.ReviewTemplatePlugin mockTemplate = mock(com.fh_wedel.workflow.api.ReviewTemplatePlugin.class);
         com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
         when(mockTemplate.calculateGrade(any())).thenReturn(grade);
-        when(templateRegistry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockTemplate));
+        when(templateRegistry.getByName("SINGLE_BLIND")).thenReturn(Optional.of(mockTemplate));
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
 
