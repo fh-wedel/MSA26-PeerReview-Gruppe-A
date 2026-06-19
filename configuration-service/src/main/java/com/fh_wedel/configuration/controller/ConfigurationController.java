@@ -3,7 +3,6 @@ package com.fh_wedel.configuration.controller;
 import com.fh_wedel.configuration.model.CreateConfigurationRequest;
 import com.fh_wedel.configuration.model.SubmissionConfiguration;
 import com.fh_wedel.configuration.service.ConfigurationService;
-import com.fh_wedel.workflow.client.ApiException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -81,13 +80,17 @@ public class ConfigurationController {
             config = configurationService.createConfiguration(
                     request.getTitle(),
                     request.getReviewProcessType(),
+                    request.getReviewTemplateType(),
+                    request.getNumberOfExaminers(),
+                    request.getSubmissionDeadline(),
+                    request.getReviewDeadline(),
                     request.getAuthorIds(),
                     callerSub,
                     callerRole
             );
-        } catch (ApiException e) {
-            log.error("Failed to fetch workflow plugin rules", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to fetch workflow rules: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid configuration request", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request: " + e.getMessage());
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(config);
