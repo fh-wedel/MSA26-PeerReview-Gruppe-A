@@ -7,18 +7,23 @@ import com.fh_wedel.workflow.model.SubmissionReadyEvent;
 import com.fh_wedel.workflow.service.MatchingServiceClient;
 import com.fh_wedel.workflow.service.WorkflowService;
 import io.awspring.cloud.sqs.annotation.SqsListener;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 @ConditionalOnExpression("!'${aws.sqs.workflow-request-queue-name:}'.isEmpty()")
 public class SqsRequestListener {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SqsRequestListener.class);
+
+    public SqsRequestListener(WorkflowService workflowService, MatchingServiceClient matchingServiceClient, DefaultApi configurationApi) {
+        this.workflowService = workflowService;
+        this.matchingServiceClient = matchingServiceClient;
+        this.configurationApi = configurationApi;
+    }
+
+
 
     private final WorkflowService workflowService;
     private final MatchingServiceClient matchingServiceClient;

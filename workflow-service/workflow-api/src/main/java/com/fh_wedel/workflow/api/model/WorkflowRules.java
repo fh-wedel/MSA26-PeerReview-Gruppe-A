@@ -1,6 +1,6 @@
 package com.fh_wedel.workflow.api.model;
 
-import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
+import com.fh_wedel.workflow.api.ReviewTypePlugin;
 
 /**
  * Immutable snapshot of a plugin's complete configuration:
@@ -11,7 +11,7 @@ public record WorkflowRules(
     boolean reviewerAnonymous,
     boolean authorReviewerChatAllowed
 ) {
-    public static WorkflowRules fromPlugin(ReviewWorkflowPlugin plugin) {
+    public static WorkflowRules fromPlugin(ReviewTypePlugin plugin) {
         return new WorkflowRules(
                 plugin.isAuthorAnonymous(),
                 plugin.isReviewerAnonymous(),

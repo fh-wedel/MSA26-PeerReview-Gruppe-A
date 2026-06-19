@@ -2,7 +2,8 @@ package com.fh_wedel.workflow.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fh_wedel.workflow.api.WorkflowPluginsApi;
+import com.fh_wedel.workflow.api.WorkflowReviewTypesApi;
+import com.fh_wedel.workflow.api.WorkflowTemplatesApi;
 import com.fh_wedel.workflow.api.WorkflowReviewsApi;
 import com.fh_wedel.workflow.api.WorkflowRulesApi;
 import com.fh_wedel.workflow.exception.DownstreamServiceException;
@@ -10,7 +11,6 @@ import com.fh_wedel.workflow.exception.ReviewAlreadySubmittedException;
 import com.fh_wedel.workflow.model.api.*;
 import com.fh_wedel.workflow.service.WorkflowService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,26 +22,43 @@ import java.util.NoSuchElementException;
 
 @RestController
 @org.springframework.web.bind.annotation.RequestMapping("/api/workflow")
-@RequiredArgsConstructor
-public class WorkflowController implements WorkflowPluginsApi, WorkflowRulesApi, WorkflowReviewsApi {
+public class WorkflowController implements WorkflowReviewTypesApi, WorkflowTemplatesApi, WorkflowRulesApi, WorkflowReviewsApi {
+    public WorkflowController(WorkflowService workflowService, ObjectMapper objectMapper, HttpServletRequest requestContext) {
+        this.workflowService = workflowService;
+        this.objectMapper = objectMapper;
+        this.requestContext = requestContext;
+    }
+
+
 
     private final WorkflowService workflowService;
     private final ObjectMapper objectMapper;
     private final HttpServletRequest requestContext;
 
     @Override
-    public ResponseEntity<List<WorkflowPluginDto>> listPlugins() {
-        return ResponseEntity.ok(workflowService.listPlugins());
+    public ResponseEntity<List<ReviewTypeDto>> listReviewTypes() {
+        return ResponseEntity.ok(workflowService.listReviewTypes());
     }
 
     @Override
-    public ResponseEntity<WorkflowPluginDto> getPlugin(String pluginName) {
-        return ResponseEntity.ok(workflowService.getPlugin(pluginName));
+    public ResponseEntity<ReviewTypeDto> getReviewType(String typeName) {
+        return ResponseEntity.ok(workflowService.getReviewType(typeName));
     }
 
     @Override
-    public ResponseEntity<WorkflowRulesDto> getPluginRules(String pluginName) {
-        return ResponseEntity.ok(workflowService.getPluginRules(pluginName));
+    public ResponseEntity<WorkflowRulesDto> getReviewTypeRules(String typeName) {
+        return ResponseEntity.ok(workflowService.getReviewTypeRules(typeName));
+    }
+
+    
+    @Override
+    public ResponseEntity<List<ReviewTemplateDto>> listReviewTemplates() {
+        return ResponseEntity.ok(workflowService.listReviewTemplates());
+    }
+
+    @Override
+    public ResponseEntity<ReviewTemplateDto> getReviewTemplate(String templateName) {
+        return ResponseEntity.ok(workflowService.getReviewTemplate(templateName));
     }
 
     @Override
