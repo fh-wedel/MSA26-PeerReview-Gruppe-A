@@ -20,7 +20,7 @@ export interface CreateConfigurationRequest {
   submissionDeadline?: string;
   /** @format date-time */
   reviewDeadline?: string;
-  reviewTemplateType?: string;
+  reviewTemplateType: string;
 }
 
 export interface Configuration {
@@ -35,7 +35,7 @@ export interface Configuration {
   reviewDeadline?: string;
   /** @format date-time */
   createdAt?: string;
-  reviewTemplateType?: string;
+  reviewTemplateType: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;

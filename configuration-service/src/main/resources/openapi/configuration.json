@@ -123,6 +123,7 @@
         "required": [
           "title",
           "reviewProcessType",
+          "reviewTemplateType",
           "authorIds"
         ],
         "properties": {
@@ -160,6 +161,7 @@
         "required": [
           "title",
           "reviewProcessType",
+          "reviewTemplateType",
           "authorIds",
           "numberOfExaminers"
         ],
