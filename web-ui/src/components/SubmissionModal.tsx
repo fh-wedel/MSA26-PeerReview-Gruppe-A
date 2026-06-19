@@ -15,7 +15,11 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
+  Autocomplete,
 } from "@mui/material";
+import type { UserSummary } from "../api/generated/users";
+import { usersApiClient } from "../api/clients";
+
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
 type ReviewType = string;
@@ -45,11 +49,47 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
     const [reviewType, setReviewType] = useState<ReviewType>("INDIVIDUAL_WORK");
-    const [authorIdsInput, setAuthorIdsInput] = useState(currentUserId);
+    const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ sub: currentUserId, username: authorName }]);
+    const [userOptions, setUserOptions] = useState<UserSummary[]>([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [userInputValue, setUserInputValue] = useState("");
   const { plugins, loading, error } = useWorkflowPlugins();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
     const [validationError, setValidationError] = useState("");
+
+  React.useEffect(() => {
+    let active = true;
+
+    if (userInputValue === '') {
+      setUserOptions([]);
+      return undefined;
+    }
+
+    setUsersLoading(true);
+
+    const delayDebounceFn = setTimeout(() => {
+      usersApiClient.search.searchUsers({ q: userInputValue })
+        .then((res) => {
+          if (active) {
+            setUserOptions(res.data.users);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch users", err);
+        })
+        .finally(() => {
+          if (active) {
+            setUsersLoading(false);
+          }
+        });
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(delayDebounceFn);
+    };
+  }, [userInputValue]);
 
   React.useEffect(() => {
     if (error) {
@@ -64,11 +104,11 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
         const selectedPlugin = plugins.find(p => p.name === reviewType);
         const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
         const authorIds = isAuthorsEnabled
-            ? authorIdsInput.split(',').map(id => id.trim()).filter(id => id)
+            ? selectedAuthors.map(u => u.sub)
             : [currentUserId];
 
         if (selectedPlugin && authorIds.length !== selectedPlugin.numberOfAuthors) {
-            setValidationError(`Please enter exactly ${selectedPlugin.numberOfAuthors} author ID(s)`);
+            setValidationError(`Please enter exactly ${selectedPlugin.numberOfAuthors} author(s)`);
             setSubmitting(false);
             return;
         }
@@ -76,7 +116,8 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
         await onSubmit(title, reviewType, authorIds);
       setTitle("");
         setReviewType("INDIVIDUAL_WORK");
-        setAuthorIdsInput(currentUserId);
+        setSelectedAuthors([{ sub: currentUserId, username: authorName }]);
+        setUserInputValue("");
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -104,18 +145,32 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   const selectedPlugin = plugins.find(p => p.name === reviewType);
                   const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
                   return (
-                      <TextField
-                          label={isAuthorsEnabled ? "Authors (Comma-separated IDs)" : "Authors"}
-                          variant="outlined"
-                          fullWidth
-                          value={isAuthorsEnabled ? authorIdsInput : authorName}
-                          onChange={(e) => {
-                              setAuthorIdsInput(e.target.value);
+                      <Autocomplete
+                          multiple
+                          options={userOptions}
+                          getOptionLabel={(option) => option.username}
+                          value={isAuthorsEnabled ? selectedAuthors : [{ sub: currentUserId, username: authorName }]}
+                          onChange={(_, newValue) => {
+                              setSelectedAuthors(newValue);
                               setValidationError("");
                           }}
+                          onInputChange={(_, newInputValue) => {
+                              setUserInputValue(newInputValue);
+                          }}
+                          isOptionEqualToValue={(option, value) => option.sub === value.sub}
                           disabled={!isAuthorsEnabled || submitting}
-                          error={!!validationError}
-                          helperText={validationError || (isAuthorsEnabled ? `Expected number of authors: ${selectedPlugin?.numberOfAuthors || 1}` : "")}
+                          loading={usersLoading}
+                          filterOptions={(x) => x}
+                          renderInput={(params) => (
+                              <TextField
+                                  {...params}
+                                  label="Authors"
+                                  variant="outlined"
+                                  fullWidth
+                                  error={!!validationError}
+                                  helperText={validationError || (isAuthorsEnabled ? `Expected number of authors: ${selectedPlugin?.numberOfAuthors || 1}` : "")}
+                              />
+                          )}
                       />
                   );
               })()}
