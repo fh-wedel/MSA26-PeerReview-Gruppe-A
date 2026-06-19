@@ -42,6 +42,10 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
         requestQueueName: 'orders-request',
         responseQueueName: 'orders-response',
         containerPort: 8081,
+        memory: 512,
+        cpu: 256,
+        minTaskCount: 1,
+        maxTaskCount: 2,
     });
 
     const template = Template.fromStack(stack);
@@ -104,6 +108,10 @@ test('Service stack uses IPv6 defaults and creates queues', () => {
                 }),
             }),
         ]),
+        RuntimePlatform: Match.objectLike({
+            CpuArchitecture: 'ARM64',
+            OperatingSystemFamily: 'LINUX',
+        }),
     });
 
     template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
@@ -141,6 +149,10 @@ test('Service stack with public IPv4 enables public IP and ingress rules', () =>
         imageVersion: 'v2',
         enablePublicIpV4: true,
         containerPort: 8081,
+        memory: 512,
+        cpu: 256,
+        minTaskCount: 1,
+        maxTaskCount: 2,
     });
 
     const template = Template.fromStack(stack);
