@@ -21,7 +21,7 @@ public class GroupWorkTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public String getDescription() {
-        return "Open review process tailored for collaborative papers and group projects.";
+        return "Review template tailored for collaborative papers and group projects.";
     }
 
     @Override

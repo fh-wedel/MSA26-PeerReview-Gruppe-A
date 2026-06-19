@@ -21,7 +21,7 @@ public class IndividualWorkTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public String getDescription() {
-        return "Double-blind review process tailored for individual papers and assignments.";
+        return "Review template tailored for individual papers and assignments.";
     }
 
     @Override

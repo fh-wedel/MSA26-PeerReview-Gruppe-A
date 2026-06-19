@@ -21,7 +21,7 @@ public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public String getDescription() {
-        return "Single-blind review process tailored for bachelor theses.";
+        return "Review template tailored for bachelor theses.";
     }
 
     @Override
