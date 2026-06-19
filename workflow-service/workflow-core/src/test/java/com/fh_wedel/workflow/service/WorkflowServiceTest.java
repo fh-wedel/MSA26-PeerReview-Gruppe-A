@@ -118,11 +118,12 @@ class WorkflowServiceTest {
     @Test
     void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
         ModelConfiguration mockConfig = new ModelConfiguration();
-        mockConfig.setReviewProcessType("INDIVIDUAL_WORK");
+        mockConfig.setReviewProcessType("SINGLE_BLIND");
+        mockConfig.setReviewTemplateType("INDIVIDUAL_WORK");
         when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
 
-        ReviewTypePlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
-        when(typeRegistry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
+        ReviewTypePlugin mockPlugin = createMockPlugin("SINGLE_BLIND");
+        when(typeRegistry.getByName("SINGLE_BLIND")).thenReturn(Optional.of(mockPlugin));
 
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
@@ -130,7 +131,7 @@ class WorkflowServiceTest {
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
         verify(configurationApi).submissionIdGet("sub-123");
-        verify(typeRegistry).getByName("INDIVIDUAL_WORK");
+        verify(typeRegistry).getByName("SINGLE_BLIND");
     }
 
     @Test
@@ -153,7 +154,7 @@ class WorkflowServiceTest {
 
     @Test
     void initializeReviewSessionSavesSession() {
-        service.initializeReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        service.initializeReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         verify(reviewRepository).saveSession(any(ReviewSession.class));
     }
 
@@ -165,7 +166,7 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewThrowsIfAlreadySubmitted() {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(new SubmittedReview());
 
@@ -174,7 +175,7 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewSavesReviewAndUpdatesCount() throws Exception {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1", "rev-2"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1", "rev-2"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
 
@@ -195,7 +196,7 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewSavesReviewAndMarksComplete() throws Exception {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
 

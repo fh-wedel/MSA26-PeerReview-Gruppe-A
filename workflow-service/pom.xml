@@ -37,11 +37,11 @@
     <modules>
         <module>workflow-api</module>
         <module>workflow-core</module>
-        <module>workflow-type-individual-work</module>
+        <module>workflow-type-single-blind</module>
         <module>workflow-template-individual-work</module>
-        <module>workflow-type-bachelor-thesis</module>
+        <module>workflow-type-open-review</module>
         <module>workflow-template-bachelor-thesis</module>
-        <module>workflow-type-group-work</module>
+        <module>workflow-type-double-blind</module>
         <module>workflow-template-group-work</module>
     </modules>
 

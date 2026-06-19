@@ -7,11 +7,11 @@ WORKDIR /app
 # Copy all POMs for dependency caching
 COPY pom.xml .
 COPY workflow-api/pom.xml workflow-api/
-COPY workflow-type-individual-work/pom.xml workflow-type-individual-work/
+COPY workflow-type-single-blind/pom.xml workflow-type-single-blind/
 COPY workflow-template-individual-work/pom.xml workflow-template-individual-work/
-COPY workflow-type-bachelor-thesis/pom.xml workflow-type-bachelor-thesis/
+COPY workflow-type-open-review/pom.xml workflow-type-open-review/
 COPY workflow-template-bachelor-thesis/pom.xml workflow-template-bachelor-thesis/
-COPY workflow-type-group-work/pom.xml workflow-type-group-work/
+COPY workflow-type-double-blind/pom.xml workflow-type-double-blind/
 COPY workflow-template-group-work/pom.xml workflow-template-group-work/
 COPY workflow-core/pom.xml workflow-core/
 
@@ -19,11 +19,11 @@ RUN mvn dependency:go-offline -B
 
 # Copy all source code and build
 COPY workflow-api/src workflow-api/src
-COPY workflow-type-individual-work/src workflow-type-individual-work/src
+COPY workflow-type-single-blind/src workflow-type-single-blind/src
 COPY workflow-template-individual-work/src workflow-template-individual-work/src
-COPY workflow-type-bachelor-thesis/src workflow-type-bachelor-thesis/src
+COPY workflow-type-open-review/src workflow-type-open-review/src
 COPY workflow-template-bachelor-thesis/src workflow-template-bachelor-thesis/src
-COPY workflow-type-group-work/src workflow-type-group-work/src
+COPY workflow-type-double-blind/src workflow-type-double-blind/src
 COPY workflow-template-group-work/src workflow-template-group-work/src
 COPY workflow-core/src workflow-core/src
 
@@ -43,11 +43,11 @@ COPY --from=builder /app/workflow-core/target/*.jar app.jar
 
 # Copy plugin JARs to a separate directory for loader.path
 RUN mkdir plugins
-COPY --from=builder /app/workflow-type-individual-work/target/workflow-type-individual-work-*.jar plugins/
+COPY --from=builder /app/workflow-type-single-blind/target/workflow-type-single-blind-*.jar plugins/
 COPY --from=builder /app/workflow-template-individual-work/target/workflow-template-individual-work-*.jar plugins/
-COPY --from=builder /app/workflow-type-bachelor-thesis/target/workflow-type-bachelor-thesis-*.jar plugins/
+COPY --from=builder /app/workflow-type-open-review/target/workflow-type-open-review-*.jar plugins/
 COPY --from=builder /app/workflow-template-bachelor-thesis/target/workflow-template-bachelor-thesis-*.jar plugins/
-COPY --from=builder /app/workflow-type-group-work/target/workflow-type-group-work-*.jar plugins/
+COPY --from=builder /app/workflow-type-double-blind/target/workflow-type-double-blind-*.jar plugins/
 COPY --from=builder /app/workflow-template-group-work/target/workflow-template-group-work-*.jar plugins/
 
 USER spring:spring

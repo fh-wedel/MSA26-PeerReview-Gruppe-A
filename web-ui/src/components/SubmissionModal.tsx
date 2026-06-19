@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -15,10 +16,9 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
-  Autocomplete,
 } from "@mui/material";
-import type { UserSummary } from "../api/communication";
-import { useUserResolver } from "../hooks/useUserResolver";
+import type {UserSummary} from "../api/communication";
+import {useUserResolver} from "../hooks/useUserResolver";
 
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
@@ -50,7 +50,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
-    const [reviewType, setReviewType] = useState<ReviewType>("INDIVIDUAL_WORK");
+  const [reviewType, setReviewType] = useState<ReviewType>("SINGLE_BLIND");
     const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ id: currentUserId, username: authorName }]);
   const { types, templates, loading, error } = useWorkflowPlugins();
   const [reviewTemplateType, setReviewTemplateType] = useState<string>("INDIVIDUAL_WORK");
@@ -75,7 +75,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
         const authorIds = selectedAuthors.map(u => u.id);
         await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline);
       setTitle("");
-        setReviewType("INDIVIDUAL_WORK");
+      setReviewType("SINGLE_BLIND");
         setSelectedAuthors([{ id: currentUserId, username: authorName }]);
       onClose();
     } catch (err) {
@@ -145,9 +145,9 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   ))
                 ) : (
                   <>
-                    <MenuItem value="INDIVIDUAL_WORK">Individual Work</MenuItem>
-                    <MenuItem value="GROUP_WORK">Group Work</MenuItem>
-                    <MenuItem value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>
+                    <MenuItem value="SINGLE_BLIND">Single Blind Review</MenuItem>
+                    <MenuItem value="DOUBLE_BLIND">Double Blind Review</MenuItem>
+                    <MenuItem value="OPEN_REVIEW">Open Review</MenuItem>
                   </>
                 )}
               </Select>
