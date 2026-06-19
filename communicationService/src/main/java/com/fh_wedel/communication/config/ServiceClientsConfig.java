@@ -15,11 +15,14 @@ import java.util.function.Consumer;
 @Configuration
 public class ServiceClientsConfig {
 
-    @Value("${aws.matching.service.url:http://matching.internal.services:8081}")
+    @Value("${matching.service.url:http://matching.internal.services:8081}")
     private String matchingServiceUrl;
 
-    @Value("${aws.workflow.service.url:http://workflow.internal.services:8081}")
+    @Value("${workflow.service.url:http://workflow.internal.services:8081}")
     private String workflowServiceUrl;
+
+    @Value("${user.service.url:http://user.internal.services:8081}")
+    private String userServiceUrl;
 
     private Consumer<HttpRequest.Builder> createAuthInterceptor() {
         return builder -> {
@@ -66,5 +69,18 @@ public class ServiceClientsConfig {
     @Bean
     public com.fh_wedel.workflow.client.api.WorkflowRulesApi workflowRulesApi(com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
         return new com.fh_wedel.workflow.client.api.WorkflowRulesApi(workflowApiClient);
+    }
+
+    @Bean
+    public com.fh_wedel.user.client.ApiClient userApiClient() {
+        com.fh_wedel.user.client.ApiClient apiClient = new com.fh_wedel.user.client.ApiClient();
+        apiClient.updateBaseUri(userServiceUrl + "/api/users");
+        apiClient.setRequestInterceptor(createAuthInterceptor());
+        return apiClient;
+    }
+
+    @Bean
+    public com.fh_wedel.user.client.api.UsersApi usersApi(com.fh_wedel.user.client.ApiClient userApiClient) {
+        return new com.fh_wedel.user.client.api.UsersApi(userApiClient);
     }
 }

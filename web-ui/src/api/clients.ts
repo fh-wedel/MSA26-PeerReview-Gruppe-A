@@ -3,6 +3,7 @@ import {Api as MatchingApi} from './generated/matching';
 import {Api as SubmissionApi} from './generated/submission';
 import {Api as CommunicationApi} from './generated/communication';
 import {Api as WorkflowApi} from './generated/workflow';
+import {Api as UsersApi} from './generated/users';
 import {fetchWithAuth} from './fetchWrapper';
 
 const getBaseParams = () => ({
@@ -35,6 +36,11 @@ export const communicationApiClient = new CommunicationApi({
 });
 
 export const workflowApiClient = new WorkflowApi({
+  baseApiParams: getBaseParams(),
+  customFetch: fetchWithAuth,
+});
+
+export const usersApiClient = new UsersApi({
   baseApiParams: getBaseParams(),
   customFetch: fetchWithAuth,
 });

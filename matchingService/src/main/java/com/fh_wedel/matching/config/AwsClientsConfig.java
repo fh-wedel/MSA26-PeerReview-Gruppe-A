@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 
@@ -36,11 +35,4 @@ public class AwsClientsConfig {
                 .build();
     }
 
-    @Bean
-    public CognitoIdentityProviderClient cognitoClient() {
-        return CognitoIdentityProviderClient.builder()
-                .region(Region.of(awsRegion))
-                .dualstackEnabled(true)
-                .build();
-    }
 }
