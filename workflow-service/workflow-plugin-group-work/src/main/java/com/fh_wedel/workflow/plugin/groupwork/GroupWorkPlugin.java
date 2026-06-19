@@ -40,12 +40,12 @@ public class GroupWorkPlugin implements ReviewWorkflowPlugin {
     }
 
     @Override
-    public int getDefaultNumberOfReviewers() {
+    public int getNumberOfReviewers() {
         return 3;
     }
 
     @Override
-    public int getDefaultNumberOfAuthors() {
+    public int getNumberOfAuthors() {
         return 4; // Group work
     }
 
@@ -85,5 +85,20 @@ public class GroupWorkPlugin implements ReviewWorkflowPlugin {
         }
 
         return ReviewGrade.of(totalPoints, maxPoints, "Group Project Evaluation");
+    }
+
+    @Override
+    public java.time.Duration getSubmissionDeadlineDuration() {
+        return java.time.Duration.ofDays(14);
+    }
+
+    @Override
+    public java.time.Duration getReviewDeadlineDuration() {
+        return java.time.Duration.ofDays(14);
+    }
+
+    @Override
+    public boolean isEvaluationCriteriaVisibleToAuthors() {
+        return true;
     }
 }

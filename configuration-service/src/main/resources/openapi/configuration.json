@@ -54,7 +54,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Configuration"
+                "$ref": "#/components/schemas/CreateConfigurationRequest"
               }
             }
           }
@@ -149,6 +149,28 @@
   },
   "components": {
     "schemas": {
+      "CreateConfigurationRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "reviewProcessType",
+          "authorIds"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "reviewProcessType": {
+            "type": "string"
+          },
+          "authorIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "Configuration": {
         "type": "object",
         "required": [
@@ -181,15 +203,6 @@
           "reviewDeadline": {
             "type": "string",
             "format": "date-time"
-          },
-          "evaluationCriteria": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "criteriaVisibleToAuthor": {
-            "type": "boolean"
           },
           "createdAt": {
             "type": "string",

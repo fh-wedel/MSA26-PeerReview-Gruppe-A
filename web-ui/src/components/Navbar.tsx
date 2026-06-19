@@ -61,6 +61,7 @@ export const Navbar: React.FC = () => {
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
+      if (!isAuthenticated) return;
     searchUsers('')
       .then(users => {
         const map: Record<string, string> = {};
@@ -68,7 +69,7 @@ export const Navbar: React.FC = () => {
         setUserMap(map);
       })
       .catch(err => console.error('Failed to load user map in navbar', err));
-  }, []);
+  }, [isAuthenticated]);
   
   const { chats, unreadCount } = useChat();
 

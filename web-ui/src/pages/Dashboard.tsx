@@ -9,6 +9,7 @@ import {mockDeadlines} from "../stubs/deadlines";
 import {SubmissionModal} from "../components/SubmissionModal";
 import {useAuth} from "../contexts/AuthContext";
 import {isSameDay} from "date-fns";
+import {configApiClient} from "../api/clients";
 
 function ServerDay(props: PickerDayProps & { highlightedDays?: Date[] }) {
   const { highlightedDays = [], day, outsideCurrentMonth, ...other } = props;
@@ -43,34 +44,19 @@ export const Dashboard: React.FC = () => {
 
   const handleSubmission = async (
     title: string,
-    reviewMode: string,
+    reviewType: string,
+    authorIds: string[],
   ) => {
     try {
-      const token = sessionStorage.getItem("access_token");
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await fetch("/api/configuration/", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          title,
-          reviewProcessType: reviewMode,
-          authorIds: [user?.id],
-          numberOfExaminers: 1,
-          evaluationCriteria: [],
-          criteriaVisibleToAuthor: true,
-        }),
+        const response = await configApiClient.postRoot({
+            title,
+            reviewProcessType: reviewType,
+            authorIds: authorIds.length > 0 ? authorIds : [user?.id || ''],
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
         throw new Error(
-          `Failed to create configuration: ${response.status} ${errorText}`,
+            `Failed to create configuration: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -158,7 +144,9 @@ export const Dashboard: React.FC = () => {
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           onSubmit={handleSubmission}
-          authorName={user?.username ?? ""}
+          authorName={user?.username || ""}
+          currentUserId={user?.id || ""}
+          isAdminOrOfficer={roles.includes("admin") || roles.includes("examinationofficer")}
         />
       )}
 

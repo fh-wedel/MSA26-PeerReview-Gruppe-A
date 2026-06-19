@@ -10,6 +10,12 @@
  * ---------------------------------------------------------------
  */
 
+export interface CreateConfigurationRequest {
+    title: string;
+    reviewProcessType: string;
+    authorIds: string[];
+}
+
 export interface Configuration {
   title: string;
   reviewProcessType: string;
@@ -20,8 +26,6 @@ export interface Configuration {
   submissionDeadline?: string;
   /** @format date-time */
   reviewDeadline?: string;
-  evaluationCriteria?: string[];
-  criteriaVisibleToAuthor?: boolean;
   /** @format date-time */
   createdAt?: string;
 }
@@ -296,7 +300,7 @@ export class Api<
    * @summary Create a new submission configuration
    * @request POST:/
    */
-  postRoot = (data: Configuration, params: RequestParams = {}) =>
+  postRoot = (data: CreateConfigurationRequest, params: RequestParams = {}) =>
     this.request<void, void>({
       path: `/`,
       method: "POST",
@@ -316,7 +320,7 @@ export class Api<
       this.request<Configuration[], any>({
       path: `/`,
       method: "GET",
-        format: "json",
+          format: "json",
       ...params,
     });
 
@@ -362,7 +366,7 @@ export class Api<
         this.request<Configuration, void>({
         path: `/${submissionId}`,
         method: "GET",
-          format: "json",
+            format: "json",
         ...params,
       }),
   };
@@ -378,7 +382,7 @@ export class Api<
         this.request<Configuration[], any>({
         path: `/author/${authorId}`,
         method: "GET",
-          format: "json",
+            format: "json",
         ...params,
       }),
   };

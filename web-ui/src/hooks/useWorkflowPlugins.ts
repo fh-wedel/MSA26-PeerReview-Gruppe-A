@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import {workflowApiClient} from '../api/clients';
 
 export interface WorkflowRules {
   authorAnonymous: boolean;
@@ -11,6 +12,11 @@ export interface WorkflowPlugin {
   title: string;
   description: string;
   rules: WorkflowRules;
+  submissionDeadlineDuration: string;
+  reviewDeadlineDuration: string;
+  evaluationCriteriaVisibleToAuthors: boolean;
+  numberOfReviewers: number;
+  numberOfAuthors: number;
 }
 
 export const useWorkflowPlugins = () => {
@@ -21,27 +27,14 @@ export const useWorkflowPlugins = () => {
   useEffect(() => {
     const fetchPlugins = async () => {
       try {
-        const token = sessionStorage.getItem('access_token');
-        const headers: HeadersInit = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+        const response = await workflowApiClient.plugins.listPlugins();
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch plugins: ${response.statusText}`);
         }
 
-        const response = await fetch('/api/workflow/plugins', {
-          headers
-        });
-        if (!response.ok) {
-          let errMsg = `Failed to fetch plugins: ${response.statusText}`;
-          try {
-            const errData = await response.json();
-            if (errData.message) errMsg = errData.message;
-            else if (errData.error) errMsg = errData.error;
-            else if (typeof errData === 'string') errMsg = errData;
-          } catch (e) {}
-          throw new Error(errMsg);
-        }
-        const data = await response.json();
-        setPlugins(data);
+        // Response format handles the JSON conversion
+        setPlugins(response.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
       } finally {

@@ -44,8 +44,6 @@ class WorkflowControllerTest {
         rules.setAuthorAnonymous(true);
         rules.setReviewerAnonymous(false);
         rules.setAuthorReviewerChatAllowed(false);
-        rules.setDefaultNumberOfReviewers(2);
-        rules.setDefaultNumberOfAuthors(1);
         return rules;
     }
 
@@ -55,8 +53,8 @@ class WorkflowControllerTest {
         plugin.setTitle(title);
         plugin.setDescription(description);
         plugin.setRules(rules);
-        plugin.setDefaultNumberOfReviewers(2);
-        plugin.setDefaultNumberOfAuthors(1);
+        plugin.setNumberOfReviewers(2);
+        plugin.setNumberOfAuthors(1);
         plugin.setFeedbackFormTemplate(Collections.emptyList());
         return plugin;
     }
