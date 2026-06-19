@@ -47,9 +47,7 @@ class ConfigurationServiceTest {
                 "Author",
                 2,
                 Instant.now().plusSeconds(3600),
-                Instant.now().plusSeconds(7200),
-                List.of("Clarity", "Structure"),
-                true);
+                Instant.now().plusSeconds(7200));
 
         // Verify: at least one send to the notification queue with expected content
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
