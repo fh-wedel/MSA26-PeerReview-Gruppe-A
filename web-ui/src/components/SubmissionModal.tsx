@@ -17,8 +17,8 @@ import {
   useTheme,
   Autocomplete,
 } from "@mui/material";
-import type { UserSummary } from "../api/generated/users";
-import { usersApiClient } from "../api/clients";
+import type { UserSummary } from "../api/communication";
+import { useUserResolver } from "../hooks/useUserResolver";
 
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
@@ -49,47 +49,12 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [title, setTitle] = useState("");
     const [reviewType, setReviewType] = useState<ReviewType>("INDIVIDUAL_WORK");
-    const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ sub: currentUserId, username: authorName }]);
-    const [userOptions, setUserOptions] = useState<UserSummary[]>([]);
-    const [usersLoading, setUsersLoading] = useState(false);
-    const [userInputValue, setUserInputValue] = useState("");
+    const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ id: currentUserId, username: authorName }]);
   const { plugins, loading, error } = useWorkflowPlugins();
+  const { users: userOptions, loading: usersLoading } = useUserResolver();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
     const [validationError, setValidationError] = useState("");
-
-  React.useEffect(() => {
-    let active = true;
-
-    if (userInputValue === '') {
-      setUserOptions([]);
-      return undefined;
-    }
-
-    setUsersLoading(true);
-
-    const delayDebounceFn = setTimeout(() => {
-      usersApiClient.search.searchUsers({ q: userInputValue })
-        .then((res) => {
-          if (active) {
-            setUserOptions(res.data.users);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to fetch users", err);
-        })
-        .finally(() => {
-          if (active) {
-            setUsersLoading(false);
-          }
-        });
-    }, 300);
-
-    return () => {
-      active = false;
-      clearTimeout(delayDebounceFn);
-    };
-  }, [userInputValue]);
 
   React.useEffect(() => {
     if (error) {
@@ -104,7 +69,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
         const selectedPlugin = plugins.find(p => p.name === reviewType);
         const isAuthorsEnabled = isAdminOrOfficer || (selectedPlugin && selectedPlugin.numberOfAuthors > 1);
         const authorIds = isAuthorsEnabled
-            ? selectedAuthors.map(u => u.sub)
+            ? selectedAuthors.map(u => u.id)
             : [currentUserId];
 
         if (selectedPlugin && authorIds.length !== selectedPlugin.numberOfAuthors) {
@@ -116,8 +81,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
         await onSubmit(title, reviewType, authorIds);
       setTitle("");
         setReviewType("INDIVIDUAL_WORK");
-        setSelectedAuthors([{ sub: currentUserId, username: authorName }]);
-        setUserInputValue("");
+        setSelectedAuthors([{ id: currentUserId, username: authorName }]);
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -149,18 +113,14 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                           multiple
                           options={userOptions}
                           getOptionLabel={(option) => option.username}
-                          value={isAuthorsEnabled ? selectedAuthors : [{ sub: currentUserId, username: authorName }]}
+                          value={isAuthorsEnabled ? selectedAuthors : [{ id: currentUserId, username: authorName }]}
                           onChange={(_, newValue) => {
                               setSelectedAuthors(newValue);
                               setValidationError("");
                           }}
-                          onInputChange={(_, newInputValue) => {
-                              setUserInputValue(newInputValue);
-                          }}
-                          isOptionEqualToValue={(option, value) => option.sub === value.sub}
+                          isOptionEqualToValue={(option, value) => option.id === value.id}
                           disabled={!isAuthorsEnabled || submitting}
                           loading={usersLoading}
-                          filterOptions={(x) => x}
                           renderInput={(params) => (
                               <TextField
                                   {...params}
@@ -224,8 +184,8 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                                   flexDirection: "column",
                                   gap: 0.5
                               }}>
-                                  <div><strong>Expected Authors:</strong> {selectedPlugin.numberOfAuthors}</div>
-                                  <div><strong>Expected Reviewers:</strong> {selectedPlugin.numberOfReviewers}</div>
+                                  <div><strong>Authors:</strong> {selectedPlugin.numberOfAuthors}</div>
+                                  <div><strong>Reviewers:</strong> {selectedPlugin.numberOfReviewers}</div>
                                   <div><strong>Submission Deadline:</strong> in {subDays} days</div>
                                   <div><strong>Review Deadline:</strong> in {subDays + revDays} days</div>
                               </Box>
