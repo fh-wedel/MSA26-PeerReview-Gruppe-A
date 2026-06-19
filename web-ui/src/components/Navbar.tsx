@@ -36,16 +36,6 @@ import {
 import { useThemeContext } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../contexts/ChatContext';
-import { mockNotifications } from '../stubs/notifications';
-import { searchUsers } from '../api/communication';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Badge, Box, Menu, MenuItem, Button, List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Divider } from '@mui/material';
-import { Brightness4, Brightness7, SettingsBrightness, Notifications, Mail, AccountCircle, Assignment, Description, DoneAll } from '@mui/icons-material';
-import { useThemeContext } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useChat } from '../contexts/ChatContext';
 import {
   fetchNotifications,
   markNotificationRead,
@@ -54,7 +44,7 @@ import {
   type Notification,
 } from '../api/notification';
 import { searchUsers } from '../api/communication';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
 

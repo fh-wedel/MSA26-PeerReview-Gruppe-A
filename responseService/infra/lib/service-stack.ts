@@ -68,6 +68,7 @@ export class ResponseServiceStack extends cdk.Stack {
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: props.memory,
       cpu: props.cpu,
+      runtimePlatform: EcsInfra.getDefaultRuntimePlatform(),
     });
 
     const imageName = EcsInfra.getDefaultImageNameIpv6(props.serviceName, props.imageVersion);
