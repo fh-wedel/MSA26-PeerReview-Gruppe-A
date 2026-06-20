@@ -16,7 +16,7 @@ import {
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
-import {configApiClient, matchingApiClient, submissionApiClient} from '../api/clients';
+import {configApiClient, matchingApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
@@ -122,6 +122,15 @@ export const Submissions: React.FC = () => {
             }
           } catch (e) {
             // No submission yet
+          }
+
+          try {
+            const resResult = await responseApiClient.results.resultsDetail(id);
+            if (resResult && (resResult as any).data) {
+                status = 'Review Completed';
+            }
+          } catch (e) {
+            // No review yet
           }
 
             if (!config.createdAt) {

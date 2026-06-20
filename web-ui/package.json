@@ -13,7 +13,8 @@
     "generate:api:submission": "swagger-typescript-api generate -p ../submission-service/src/main/resources/openapi/submission.json -o src/api/generated -n submission.ts",
     "generate:api:communication": "swagger-typescript-api generate -p ../communicationService/src/main/resources/openapi/communication.json -o src/api/generated -n communication.ts",
     "generate:api:users": "swagger-typescript-api generate -p ../userService/src/main/resources/openapi/user.json -o src/api/generated -n users.ts",
-    "generate:api": "npm run generate:api:config && npm run generate:api:matching && npm run generate:api:submission && npm run generate:api:communication && npm run generate:api:users"
+    "generate:api:response": "swagger-typescript-api generate -p ../responseService/src/main/resources/openapi/response.json -o src/api/generated -n response.ts",
+    "generate:api": "npm run generate:api:config && npm run generate:api:matching && npm run generate:api:submission && npm run generate:api:communication && npm run generate:api:users && npm run generate:api:response"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

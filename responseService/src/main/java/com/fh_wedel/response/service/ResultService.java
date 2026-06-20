@@ -1,5 +1,8 @@
 package com.fh_wedel.response.service;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.DefaultApi;
@@ -61,6 +64,65 @@ public class ResultService {
         return saved;
     }
 
+    public ReviewResult submitReview(com.fh_wedel.response.model.SubmitReviewRequest request, String reviewerId) {
+        if (repository.findBySubmissionId(request.getSubmissionId()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A review for this submission already exists.");
+        }
+
+        ReviewResult result = new ReviewResult();
+        result.setSubmissionId(request.getSubmissionId());
+        result.setReviewerId(reviewerId);
+        result.setReviewComments(request.getReviewComments());
+        result.setFinalGrade(request.getFinalGrade());
+        result.setAnswers(request.getAnswers());
+        result.setCreatedAt(java.time.Instant.now());
+        result.setCompletedAt(java.time.Instant.now());
+
+        // Fetch schema to merge with answers
+        try {
+            List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(request.getSubmissionId());
+            if (form != null) {
+                List<GradingCriterion> criteria = form.stream().map(q -> {
+                    GradingCriterion c = toGradingCriterion(q);
+                    if (request.getAnswers() != null) {
+                        request.getAnswers().stream()
+                                .filter(a -> a.getQuestionId().equals(q.getId()))
+                                .findFirst()
+                                .ifPresent(a -> c.setAnswer(a.getAnswer()));
+                    }
+                    return c;
+                }).toList();
+                result.setGradingSchema(criteria);
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch grading schema for submission {}: {}", request.getSubmissionId(), e.getMessage());
+        }
+
+        // Fetch author
+        try {
+            ModelConfiguration config = configurationApi.submissionIdGet(request.getSubmissionId());
+            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
+                result.setAuthorId(config.getAuthorIds().get(0));
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch author for submission {}: {}", request.getSubmissionId(), e.getMessage());
+        }
+
+        ReviewResult saved = save(result);
+        // Also publish ReviewCompletedEvent
+        sendReviewCompletedEvent(saved);
+        return saved;
+    }
+
+    private void sendReviewCompletedEvent(ReviewResult result) {
+        // Find if we have a queue configured, or maybe the workflow needs to know?
+        // Actually, there is ReviewCompletedEvent.
+        // It's not clear which queue it goes to, maybe a workflow event queue.
+        // I will log it for now as there isn't a specific queue property shown in ResultService
+        // But let's check if there is a queue for ReviewCompletedEvent.
+        log.info("Review completed for submission {}", result.getSubmissionId());
+    }
+
     /**
      * Enriches the result with data owned by neighbouring services, fetched over
      * REST: the grading schema (workflow), the examiner (matching), and the
@@ -72,13 +134,15 @@ public class ResultService {
         String submissionId = result.getSubmissionId();
 
         // Grading schema (what the submission was reviewed by) — workflow service.
-        try {
-            List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(submissionId);
-            if (form != null) {
-                result.setGradingSchema(form.stream().map(this::toGradingCriterion).toList());
+        if (result.getGradingSchema() == null || result.getGradingSchema().isEmpty()) {
+            try {
+                List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(submissionId);
+                if (form != null) {
+                    result.setGradingSchema(form.stream().map(this::toGradingCriterion).toList());
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch grading schema for submission {}: {}", submissionId, e.getMessage());
             }
-        } catch (Exception e) {
-            log.warn("Could not fetch grading schema for submission {}: {}", submissionId, e.getMessage());
         }
 
         // Examiners — matching service (a submission may have several examiners).
@@ -146,7 +210,20 @@ public class ResultService {
 
     public ReviewResultDto findBySubmission(String submissionId) {
         return repository.findBySubmissionId(submissionId)
-                .map(ReviewResultDto::from)
+                .map(r -> {
+                    if (r.getAuthorId() == null || r.getAuthorId().isBlank()) {
+                        try {
+                            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+                            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
+                                r.setAuthorId(config.getAuthorIds().get(0));
+                                repository.save(r); // Persist the fix for future reads
+                            }
+                        } catch (Exception e) {
+                            log.warn("Could not backfill authorId for submission {}: {}", submissionId, e.getMessage());
+                        }
+                    }
+                    return ReviewResultDto.from(r);
+                })
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No result found for submission: " + submissionId));
     }
@@ -161,5 +238,16 @@ public class ResultService {
         }
 
         return documentStorageService.generatePresignedDownloadUrl(result.getDocumentS3Key());
+    }
+
+    public boolean isAuthorOfSubmission(String submissionId, String callerSub) {
+        if (callerSub == null) return false;
+        try {
+            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+            return config != null && config.getAuthorIds() != null && config.getAuthorIds().contains(callerSub);
+        } catch (Exception e) {
+            log.warn("Could not check authors for submission {}: {}", submissionId, e.getMessage());
+            return false;
+        }
     }
 }

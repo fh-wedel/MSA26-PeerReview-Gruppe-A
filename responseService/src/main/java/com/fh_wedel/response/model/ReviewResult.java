@@ -75,6 +75,8 @@ public class ReviewResult {
     /** Grading schema the submission was reviewed by (snapshot from the workflow service). */
     private List<GradingCriterion> gradingSchema;
 
+    private List<ReviewAnswer> answers;
+
     private Instant completedAt;
 
     @Builder.Default

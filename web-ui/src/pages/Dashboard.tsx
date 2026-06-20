@@ -23,7 +23,7 @@ import {PickerDay} from "@mui/x-date-pickers";
 import {SubmissionModal} from "../components/SubmissionModal";
 import {useAuth} from "../contexts/AuthContext";
 import {isSameDay, startOfDay} from "date-fns";
-import {configApiClient, matchingApiClient} from "../api/clients";
+import {configApiClient, matchingApiClient, submissionApiClient, responseApiClient} from "../api/clients";
 
 type TaskType = "Submission" | "Assignment";
 
@@ -123,8 +123,36 @@ export const Dashboard: React.FC = () => {
         console.error("Failed to fetch assignments", e);
       }
 
-      // Filter and sort tasks
-      const validTasks = fetchedTasks.filter((t) => t.dueDate >= now);
+      // Filter out completed tasks
+      const incompleteTasks: Task[] = [];
+      for (const task of fetchedTasks) {
+        if (task.type === 'Submission') {
+            try {
+                const subRes = await submissionApiClient.submissions.getSubmission(task.submissionId);
+                if (subRes && (subRes as any).data && (subRes as any).data.status) {
+                    const status = (subRes as any).data.status;
+                    if (status !== 'WAITING_FOR_SUBMISSION' && status !== 'DRAFT') {
+                        continue; // Already submitted
+                    }
+                }
+            } catch (e) {
+                // If 404, it means not submitted yet, so it's incomplete.
+            }
+        } else if (task.type === 'Assignment') {
+            try {
+                const resResult = await responseApiClient.results.resultsDetail(task.submissionId);
+                if (resResult && (resResult as any).data) {
+                    continue; // Already reviewed
+                }
+            } catch (e) {
+                // Not reviewed yet
+            }
+        }
+        incompleteTasks.push(task);
+      }
+
+      // Filter by date and sort tasks
+      const validTasks = incompleteTasks.filter((t) => t.dueDate >= now);
       validTasks.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
       setTasks(validTasks.slice(0, 5));

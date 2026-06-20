@@ -21,7 +21,7 @@ import {useAssignments} from '../hooks/useAssignments';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
-import {configApiClient, submissionApiClient} from '../api/clients';
+import {configApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
 export const Assignments: React.FC = () => {
@@ -109,6 +109,15 @@ export const Assignments: React.FC = () => {
                 }
             } catch (e) {
                 // ignore
+            }
+
+            try {
+                const resResult = await responseApiClient.results.resultsDetail(assignment.submissionId);
+                if (resResult && (resResult as any).data) {
+                    status = 'Review Completed';
+                }
+            } catch (e) {
+                // No review yet
             }
 
           try {

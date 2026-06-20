@@ -29,4 +29,5 @@ public class GradingCriterion {
     private Integer maxPoints;
     private Boolean required;
     private List<String> options;
+    private String answer;
 }
