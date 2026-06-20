@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
-import { ServiceStack } from '../lib/service-stack';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
-import { ApiStack } from '../../../infraLibrary/lib/stacks/api/api';
+import {ServiceStack} from '../lib/service-stack';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
+import {ApiStack} from '../../../infraLibrary/lib/stacks/api/api';
 import path from 'path';
-import {
-  AuthStack,
-} from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
+import {AuthStack,} from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
 
 const app = new cdk.App();
 
@@ -38,7 +36,7 @@ const apiStack = new ApiStack(app, 'ConfigurationApiStack', {
   description: 'API Gateway for Configuration service',
   targetServiceName: serviceNameContext,
   targetPort: containerPort,
-  openApiSpecPath: '../src/main/resources/openapi/configuration.json',
+  openApiSpecPath: '../configuration-core/src/main/resources/openapi/configuration.json',
   authorizerConfig: {
     policyStoreId: authStack.policyStore.policyStore.policyStoreId,
     namespace: authStack.policyConfig.namespace,
