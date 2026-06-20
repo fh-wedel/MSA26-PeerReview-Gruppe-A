@@ -16,7 +16,7 @@ import {
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
-import {configApiClient, matchingApiClient} from '../api/clients';
+import {configApiClient, matchingApiClient, submissionApiClient} from '../api/clients';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
@@ -104,6 +104,26 @@ export const Submissions: React.FC = () => {
             // Not matched yet or 404
           }
 
+          let submissionUpdatedAt: string | undefined = undefined;
+          try {
+            const subRes = await submissionApiClient.submissions.getSubmission(id);
+            if (subRes && (subRes as any).data && (subRes as any).data.status) {
+              const subData = (subRes as any).data;
+              if (subData.status === 'SUBMITTED') {
+                status = 'Submitted';
+              } else if (subData.status === 'READY_FOR_REVIEW') {
+                status = 'Ready for Review';
+              } else if (subData.status === 'WAITING_FOR_SUBMISSION') {
+                status = 'Waiting for Submission';
+              } else if (subData.status === 'DRAFT') {
+                status = 'Draft';
+              }
+              submissionUpdatedAt = subData.updatedAt;
+            }
+          } catch (e) {
+            // No submission yet
+          }
+
             if (!config.createdAt) {
                 throw new Error(`Submission ${id} is missing a creation date from the backend.`);
             }
@@ -114,6 +134,13 @@ export const Submissions: React.FC = () => {
             const updateDate = new Date(updateTime);
             if (matchDate > updateDate) {
               updateTime = matchedAt;
+            }
+          }
+          if (submissionUpdatedAt) {
+            const subDate = new Date(submissionUpdatedAt);
+            const updateDate = new Date(updateTime);
+            if (subDate > updateDate) {
+              updateTime = submissionUpdatedAt;
             }
           }
 

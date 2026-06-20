@@ -146,8 +146,20 @@ export const SubmissionDetails: React.FC = () => {
   
   // Resolve status based on realSubmission or matching
   let status = 'Created';
+  let rawStatus = undefined;
   if (realSubmission && realSubmission.status) {
-    status = realSubmission.status;
+    rawStatus = realSubmission.status;
+    if (rawStatus === 'SUBMITTED') {
+      status = 'Submitted';
+    } else if (rawStatus === 'WAITING_FOR_SUBMISSION') {
+      status = 'Waiting for Submission';
+    } else if (rawStatus === 'READY_FOR_REVIEW') {
+      status = 'Ready for Review';
+    } else if (rawStatus === 'DRAFT') {
+      status = 'Draft';
+    } else {
+      status = rawStatus;
+    }
   } else if (submissionMatch && submissionMatch.status === 'MATCHED') {
     status = isAssignmentsPage ? 'Assigned' : 'Matched';
   } else if (submissionMatch && submissionMatch.status === 'FAILED') {
@@ -343,7 +355,7 @@ export const SubmissionDetails: React.FC = () => {
     }
   };
 
-  const isDraftOrWaiting = status === 'DRAFT' || status === 'Wartet auf Abgabe';
+  const isDraftOrWaiting = rawStatus === 'DRAFT' || rawStatus === 'WAITING_FOR_SUBMISSION';
   const showUploadArea = isAuthor && isDraftOrWaiting;
 
   return (
