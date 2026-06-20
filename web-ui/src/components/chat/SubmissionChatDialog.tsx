@@ -3,6 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, C
 import { fetchWorkflowRulesForSubmission } from '../../api/communication';
 import { configApiClient } from '../../api/clients';
 import { useAuth } from '../../contexts/AuthContext';
+import { useChat } from '../../contexts/ChatContext';
 import { useAssignments } from '../../hooks/useAssignments';
 
 interface SubmissionOption {
@@ -27,6 +28,7 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
   const [optionsLoading, setOptionsLoading] = useState(false);
   
   const { user } = useAuth();
+  const { chats } = useChat();
   const { assignments } = useAssignments();
 
   useEffect(() => {
@@ -56,13 +58,22 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
               ]);
               
               const title = subRes?.data?.title || id;
-              const allowed = rules ? !!rules.authorReviewerChatAllowed : false;
+              const isWorkflowAllowed = rules ? !!rules.authorReviewerChatAllowed : false;
+              const existingChat = chats.find(c => c.chatType === 'SUBMISSION' && c.submissionId === id);
+              
+              const allowed = isWorkflowAllowed && !existingChat;
+              let reason = undefined;
+              if (existingChat) {
+                reason = 'A chat for this submission already exists';
+              } else if (!isWorkflowAllowed) {
+                reason = 'Communication not allowed in the current review phase (e.g. Double Blind)';
+              }
               
               newOptions.push({
                 id,
                 title,
                 allowed,
-                reason: allowed ? undefined : 'Communication not allowed in the current review phase (e.g. Double Blind)'
+                reason
               });
             } catch (e) {
               console.error(`Failed to load details for submission ${id}`, e);
@@ -79,7 +90,7 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
           setOptionsLoading(false);
         });
     }
-  }, [user?.id, open, assignments]);
+  }, [user?.id, open, assignments, chats]);
 
   const handleCreate = async () => {
     if (!submissionOption) {
