@@ -23,6 +23,7 @@ import type {UserSummary} from '../api/communication';
 import {searchUsers} from '../api/communication';
 import {useAuth} from '../contexts/AuthContext';
 import {useLocation} from 'react-router-dom';
+import { configApiClient } from '../api/clients';
 
 export const ChatPage: React.FC = () => {
   const { chats } = useChat();
@@ -38,6 +39,7 @@ export const ChatPage: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [submissionSearchOpen, setSubmissionSearchOpen] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
+  const [submissionMap, setSubmissionMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Fetch users once to resolve usernames
@@ -49,6 +51,26 @@ export const ChatPage: React.FC = () => {
       })
       .catch(err => console.error('Failed to load user map', err));
   }, []);
+
+  useEffect(() => {
+    const submissionIds = chats
+      .filter(c => c.chatType === 'SUBMISSION' && c.submissionId)
+      .map(c => c.submissionId as string);
+    
+    const uniqueIds = Array.from(new Set(submissionIds));
+    
+    uniqueIds.forEach(id => {
+      setSubmissionMap(prev => {
+        if (!prev[id]) {
+          configApiClient.submissionId.getSubmissionId(id)
+            .then(res => setSubmissionMap(current => ({ ...current, [id]: res.data.title || id })))
+            .catch(err => console.error(`Failed to load submission ${id}`, err));
+          return { ...prev, [id]: 'Loading...' };
+        }
+        return prev;
+      });
+    });
+  }, [chats]);
 
   const filteredChats = chats.filter(c => c.chatType === chatTypeTab);
 
@@ -112,7 +134,8 @@ export const ChatPage: React.FC = () => {
       const subId = selectedChatId
         ? filteredChats.find(c => c.chatId === selectedChatId)?.submissionId
         : pendingSubmissionId;
-      return subId ? `Submission Chat: ${subId.slice(0, 8)}...` : 'Submission Chat';
+      const title = subId ? (submissionMap[subId] || subId) : 'Unknown Submission';
+      return `Submission Chat: ${title}`;
     }
     return `Chat with ${userMap[selectedRecipientId || ''] || selectedRecipientId}`;
   };
@@ -144,12 +167,12 @@ export const ChatPage: React.FC = () => {
                   <ListItemText 
                     primary={
                       chat.chatType === 'SUBMISSION'
-                        ? `Submission: ${chat.submissionId?.slice(0, 8)}...`
+                        ? `Submission: ${submissionMap[chat.submissionId || ''] || chat.submissionId?.slice(0, 8) + '...'}`
                         : (userMap[chat.otherParticipantId || ''] || chat.otherParticipantId)
                     }
                     secondary={
                       chat.chatType === 'SUBMISSION'
-                        ? (chat.participants ? `${chat.participants.length} participants` : '')
+                        ? ''
                         : (chat.lastMessageAt ? formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true }) : 'No messages')
                     }
                   />

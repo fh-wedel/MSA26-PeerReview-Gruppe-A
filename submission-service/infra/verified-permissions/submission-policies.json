@@ -21,12 +21,6 @@
             "description": "Allow Admin to request upload URL"
         },
         {
-            "id": "AdminUpdateSubmission",
-            "groupName": "Admin",
-            "actionId": "put /api/submission/submissions/{id}",
-            "description": "Allow Admin to update submission details"
-        },
-        {
             "id": "AdminSubmitWork",
             "groupName": "Admin",
             "actionId": "post /api/submission/submissions/{id}/submit",
@@ -70,12 +64,6 @@
             "description": "Allow ExaminationOfficer to request upload URL"
         },
         {
-            "id": "OfficerUpdateSubmission",
-            "groupName": "ExaminationOfficer",
-            "actionId": "put /api/submission/submissions/{id}",
-            "description": "Allow ExaminationOfficer to update submission details"
-        },
-        {
             "id": "OfficerSubmitWork",
             "groupName": "ExaminationOfficer",
             "actionId": "post /api/submission/submissions/{id}/submit",
@@ -117,12 +105,6 @@
             "groupName": "Author",
             "actionId": "post /api/submission/submissions/{id}/presigned-url",
             "description": "Allow Author to request upload URL"
-        },
-        {
-            "id": "AuthorUpdateSubmission",
-            "groupName": "Author",
-            "actionId": "put /api/submission/submissions/{id}",
-            "description": "Allow Author to update submission details"
         },
         {
             "id": "AuthorSubmitWork",

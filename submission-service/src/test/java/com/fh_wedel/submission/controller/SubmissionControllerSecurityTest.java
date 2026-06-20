@@ -44,7 +44,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Admin can fetch any submission")
     void getSubmission_admin_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
 
         Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
@@ -57,7 +57,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Author can fetch their own submission")
     void getSubmission_authorOwn_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
 
         Authentication auth = createAuth("Author", "author-user", "author-1");
@@ -70,7 +70,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Author CANNOT fetch other author's submission")
     void getSubmission_authorOther_forbidden() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
 
         Authentication auth = createAuth("Author", "author-user", "author-2");
@@ -83,7 +83,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Teacher/Reviewer can fetch any submission")
     void getSubmission_teacher_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
 
         Authentication auth = createAuth("Teacher", "teacher-user", "teacher-uuid");
@@ -97,10 +97,9 @@ class SubmissionControllerSecurityTest {
     void createSubmission_success() {
         CreateSubmissionRequest request = new CreateSubmissionRequest();
         request.setConfigurationId("config-1");
-        request.setTitle("My Thesis");
 
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
-        when(submissionService.createSubmission("config-1", "author-1", "My Thesis")).thenReturn(submission);
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        when(submissionService.createSubmission("config-1", List.of("author-1"))).thenReturn(submission);
 
         Authentication auth = createAuth("Author", "author-user", "author-1");
         ResponseEntity<Submission> response = controller.createSubmission(request, auth);
@@ -112,7 +111,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Admin can fetch presigned download URL for any submission")
     void getPresignedDownloadUrl_admin_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
         when(submissionService.getPresignedDownloadUrl("sub-1", "doc-1")).thenReturn("http://s3.download.url");
 
@@ -127,7 +126,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Author can fetch presigned download URL for their own submission")
     void getPresignedDownloadUrl_authorOwn_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
         when(submissionService.getPresignedDownloadUrl("sub-1", "doc-1")).thenReturn("http://s3.download.url");
 
@@ -142,7 +141,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Author CANNOT fetch presigned download URL for other author's submission")
     void getPresignedDownloadUrl_authorOther_forbidden() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
 
         Authentication auth = createAuth("Author", "author-user", "author-2");
@@ -156,7 +155,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Teacher/Reviewer can fetch presigned download URL for any submission")
     void getPresignedDownloadUrl_teacher_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
         when(submissionService.getPresignedDownloadUrl("sub-1", "doc-1")).thenReturn("http://s3.download.url");
 
@@ -181,43 +180,9 @@ class SubmissionControllerSecurityTest {
     }
 
     @Test
-    @DisplayName("Admin can update submission owned by another author")
-    void updateSubmission_adminBypass_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
-        UpdateSubmissionRequest request = new UpdateSubmissionRequest();
-        request.setTitle("New Title");
-
-        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
-        when(submissionService.updateSubmission("sub-1", "author-1", request)).thenReturn(submission);
-
-        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
-        ResponseEntity<Submission> response = controller.updateSubmission("sub-1", request, auth);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(submission);
-    }
-
-    @Test
-    @DisplayName("ExaminationOfficer can update submission owned by another author")
-    void updateSubmission_officerBypass_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
-        UpdateSubmissionRequest request = new UpdateSubmissionRequest();
-        request.setTitle("New Title");
-
-        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
-        when(submissionService.updateSubmission("sub-1", "author-1", request)).thenReturn(submission);
-
-        Authentication auth = createAuth("ExaminationOfficer", "officer-user", "officer-uuid");
-        ResponseEntity<Submission> response = controller.updateSubmission("sub-1", request, auth);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(submission);
-    }
-
-    @Test
     @DisplayName("Admin can get upload URL for submission owned by another author")
     void getPresignedUploadUrl_adminBypass_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         PresignedUrlRequest request = new PresignedUrlRequest();
         request.setFileName("file.pdf");
         request.setContentType("application/pdf");
@@ -237,7 +202,7 @@ class SubmissionControllerSecurityTest {
     @Test
     @DisplayName("Admin can finalize submission owned by another author")
     void submitSubmission_adminBypass_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
 
         when(submissionService.getSubmission("sub-1")).thenReturn(submission);
         when(submissionService.submitSubmission("sub-1", "author-1")).thenReturn(submission);

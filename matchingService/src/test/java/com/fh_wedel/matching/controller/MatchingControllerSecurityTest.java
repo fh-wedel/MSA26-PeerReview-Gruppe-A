@@ -62,7 +62,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("Admin can access any submission")
     void getMatchesBySubmission_admin_success() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "other-user", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("other-user"), MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         UserSummary mockSummary = new UserSummary();
@@ -81,7 +81,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("ExaminationOfficer can access any submission")
     void getMatchesBySubmission_examOfficer_success() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "other-user", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("other-user"), MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         UserSummary mockSummary = new UserSummary();
@@ -100,7 +100,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("Author can access their own submission")
     void getMatchesBySubmission_authorOwn_success() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "author-uuid", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("author-uuid"), MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         UserSummary mockSummary = new UserSummary();
@@ -119,7 +119,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("Author CANNOT access someone else's submission")
     void getMatchesBySubmission_authorOther_forbidden() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "other-uuid", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("other-uuid"), MatchStatus.MATCHED, 1, null));
 
         Authentication auth = createAuth("Author", "author-user", "author-uuid");
 
@@ -134,10 +134,13 @@ class MatchingControllerSecurityTest {
         String examinerUsername = "reviewer-username";
         String examinerSub = "reviewer-uuid";
 
-        UserProfile mockProfile = new UserProfile();
-        mockProfile.setSub(examinerSub);
+        com.fh_wedel.user.client.model.UserSearchResponse mockSearchResponse = new com.fh_wedel.user.client.model.UserSearchResponse();
+        UserSummary mockSummary = new UserSummary();
+        mockSummary.setUsername(examinerUsername);
+        mockSummary.setSub(examinerSub);
+        mockSearchResponse.setUsers(List.of(mockSummary));
         try {
-            when(groupsApi.getUserDetails(examinerUsername)).thenReturn(mockProfile);
+            when(usersApi.searchUsers(examinerUsername)).thenReturn(mockSearchResponse);
         } catch(Exception e) {}
         when(matchingService.getMatchesByExaminer(examinerSub)).thenReturn(Collections.emptyList());
 
@@ -153,10 +156,13 @@ class MatchingControllerSecurityTest {
         String otherExaminerUsername = "other-username";
         String otherExaminerSub = "other-uuid";
 
-        UserProfile mockProfile = new UserProfile();
-        mockProfile.setSub(otherExaminerSub);
+        com.fh_wedel.user.client.model.UserSearchResponse mockSearchResponse = new com.fh_wedel.user.client.model.UserSearchResponse();
+        UserSummary mockSummary = new UserSummary();
+        mockSummary.setUsername(otherExaminerUsername);
+        mockSummary.setSub(otherExaminerSub);
+        mockSearchResponse.setUsers(List.of(mockSummary));
         try {
-            when(groupsApi.getUserDetails(otherExaminerUsername)).thenReturn(mockProfile);
+            when(usersApi.searchUsers(otherExaminerUsername)).thenReturn(mockSearchResponse);
         } catch(Exception e) {}
 
         Authentication auth = createAuth("Reviewer", "reviewer-username", "reviewer-uuid");

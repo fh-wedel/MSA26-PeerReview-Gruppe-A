@@ -8,12 +8,19 @@
       "type": "string",
       "description": "Unique identifier of the submission that was successfully matched."
     },
+    "authorIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The unique identifiers of the submission authors."
+    },
     "status": {
       "type": "string",
       "enum": ["MATCHED"],
       "description": "Status of the matching operation. Only success events are published to SQS."
     }
   },
-  "required": ["submissionId", "status"],
+  "required": ["submissionId", "authorIds", "status"],
   "additionalProperties": false
 }

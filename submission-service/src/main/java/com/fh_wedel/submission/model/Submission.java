@@ -2,11 +2,10 @@ package com.fh_wedel.submission.model;
 
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 import java.time.Instant;
+import java.util.List;
 
 @DynamoDbBean
 public class Submission {
@@ -18,8 +17,7 @@ public class Submission {
     private String sk;
     private String submissionId;
     private String configurationId;
-    private String authorId;
-    private String title;
+    private List<String> authorIds;
     private String status;
     private Instant createdAt;
     private Instant updatedAt;
@@ -28,13 +26,12 @@ public class Submission {
     public Submission() {
     }
 
-    public Submission(String submissionId, String configurationId, String authorId, String title) {
+    public Submission(String submissionId, String configurationId, List<String> authorIds) {
         this.pk = PK_PREFIX + submissionId;
         this.sk = SK_VALUE;
         this.submissionId = submissionId;
         this.configurationId = configurationId;
-        this.authorId = authorId;
-        this.title = title;
+        this.authorIds = authorIds;
         this.status = SubmissionStatus.DRAFT.getDbValue();
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
@@ -74,21 +71,12 @@ public class Submission {
         this.configurationId = configurationId;
     }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "AuthorIndex")
-    public String getAuthorId() {
-        return authorId;
+    public List<String> getAuthorIds() {
+        return authorIds;
     }
 
-    public void setAuthorId(String authorId) {
-        this.authorId = authorId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
+    public void setAuthorIds(List<String> authorIds) {
+        this.authorIds = authorIds;
     }
 
     public String getStatus() {
@@ -99,7 +87,6 @@ public class Submission {
         this.status = status;
     }
 
-    @DynamoDbSecondarySortKey(indexNames = "AuthorIndex")
     public Instant getCreatedAt() {
         return createdAt;
     }

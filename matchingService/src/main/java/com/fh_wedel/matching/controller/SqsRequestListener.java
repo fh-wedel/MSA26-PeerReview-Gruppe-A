@@ -33,8 +33,8 @@ public class SqsRequestListener {
         try {
             MatchingRequestEvent event = objectMapper.readValue(message, MatchingRequestEvent.class);
 
-            log.info("Parsed matching request: submissionId={}, submitterId={}, numberOfExaminers={}",
-                    event.getSubmissionId(), event.getSubmitterId(), event.getNumberOfExaminers());
+            log.info("Parsed matching request: submissionId={}, submitterIds={}, numberOfExaminers={}",
+                    event.getSubmissionId(), event.getSubmitterIds(), event.getNumberOfExaminers());
 
             matchingService.processMatchingRequest(event);
 

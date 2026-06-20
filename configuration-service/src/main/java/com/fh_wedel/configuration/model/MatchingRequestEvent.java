@@ -4,11 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class MatchingRequestEvent {
     private String submissionId;
-    private String submitterId;
+    private List<String> submitterIds;
     private int numberOfExaminers;
 }

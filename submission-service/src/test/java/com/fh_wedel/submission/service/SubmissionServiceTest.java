@@ -45,7 +45,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should successfully create a submission draft")
     void createSubmission_success() {
-        Submission submission = submissionService.createSubmission("config-1", "author-1", "My Thesis");
+        Submission submission = submissionService.createSubmission("config-1", List.of("author-1"));
 
         assertThat(submission).isNotNull();
         assertThat(submission.getSubmissionId()).isNotNull();
@@ -56,7 +56,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should successfully generate presigned upload URL for PDF and allowed status")
     void generatePresignedUploadUrl_pdf_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "Title");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         submission.setStatus("Wartet auf Abgabe");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
         when(s3Service.generatePresignedPutUrl(anyString(), eq("application/pdf"))).thenReturn("http://s3.url");
@@ -72,7 +72,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should fail generating presigned URL if file is not PDF")
     void generatePresignedUploadUrl_notPdf_throwsException() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "Title");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         submission.setStatus("Wartet auf Abgabe");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
@@ -95,7 +95,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should fail generating presigned URL if status is not allowed")
     void generatePresignedUploadUrl_wrongStatus_throwsException() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "Title");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         submission.setStatus("SUBMITTED");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
@@ -108,7 +108,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should successfully submit when at least one document exists and status is WAITING_FOR_SUBMISSION")
     void submitSubmission_success() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "Title");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         submission.setStatus("Wartet auf Abgabe");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
@@ -126,7 +126,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should fail submission if no documents are attached")
     void submitSubmission_noDocuments_throwsException() {
-        Submission submission = new Submission("sub-1", "config-1", "author-1", "Title");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         submission.setStatus("Wartet auf Abgabe");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
         when(repository.findDocuments("sub-1")).thenReturn(Collections.emptyList());

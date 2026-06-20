@@ -5,6 +5,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * DynamoDB entity representing the overall status of a matching operation for a submission.
@@ -23,21 +24,21 @@ public class SubmissionStatusRecord {
     private String pk;
     private String sk;
     private String submissionId;
-    private String submitterId;
+    private List<String> submitterIds;
     private String status;
     private String reason;
     private int numberOfExaminers;
     private Instant timestamp;
-
+ 
     public SubmissionStatusRecord() {
     }
-
-    public SubmissionStatusRecord(String submissionId, String submitterId, MatchStatus status,
+ 
+    public SubmissionStatusRecord(String submissionId, List<String> submitterIds, MatchStatus status,
                                   int numberOfExaminers, String reason) {
         this.pk = MatchRecord.PK_PREFIX + submissionId;
         this.sk = SK_VALUE;
         this.submissionId = submissionId;
-        this.submitterId = submitterId;
+        this.submitterIds = submitterIds;
         this.status = status.name();
         this.numberOfExaminers = numberOfExaminers;
         this.reason = reason;
@@ -70,12 +71,12 @@ public class SubmissionStatusRecord {
         this.submissionId = submissionId;
     }
 
-    public String getSubmitterId() {
-        return submitterId;
+    public List<String> getSubmitterIds() {
+        return submitterIds;
     }
 
-    public void setSubmitterId(String submitterId) {
-        this.submitterId = submitterId;
+    public void setSubmitterIds(List<String> submitterIds) {
+        this.submitterIds = submitterIds;
     }
 
     public String getStatus() {

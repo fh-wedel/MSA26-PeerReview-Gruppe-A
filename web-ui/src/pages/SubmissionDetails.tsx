@@ -78,7 +78,7 @@ export const SubmissionDetails: React.FC = () => {
       }
 
       if (match && fetchedRules) {
-        const isAuthor = match.submitterId === user.id;
+        const isAuthor = match.submitterIds?.includes(user.id);
         const isReviewer = match.matches.some((m: any) => m.examinerId === user.id);
         setChatAllowed(fetchedRules.authorReviewerChatAllowed && (isAuthor || isReviewer));
       } else {
@@ -147,6 +147,8 @@ export const SubmissionDetails: React.FC = () => {
     status = realSubmission.status;
   } else if (submissionMatch && submissionMatch.status === 'MATCHED') {
     status = isAssignmentsPage ? 'Assigned' : 'Matched';
+  } else if (submissionMatch && submissionMatch.status === 'FAILED') {
+    status = 'Failed';
   }
   const reviewType = submissionConfig?.reviewProcessType || mockSubmission?.reviewType || 'unknown';
 
@@ -160,7 +162,7 @@ export const SubmissionDetails: React.FC = () => {
   // Determine user context for smart anonymity
   const privilegedRoles = ['Admin', 'Teacher', 'ExaminationOfficer'];
   const isPrivileged = user?.roles?.some(r => privilegedRoles.includes(r)) ?? false;
-  const authorIds: string[] = submissionConfig?.authorIds ?? (submissionMatch?.submitterId ? [submissionMatch.submitterId] : []);
+  const authorIds: string[] = submissionConfig?.authorIds ?? submissionMatch?.submitterIds ?? [];
   const isAuthor = !!user && authorIds.includes(user.id);
 
   const redactedNode = (tooltipText: string) => (
@@ -179,9 +181,13 @@ export const SubmissionDetails: React.FC = () => {
   const displayAuthors: React.ReactNode[] = shouldHideAuthors
       ? [redactedNode('Author is anonymous')]
       : authorIds.map((id: string) => {
-        const name = id === submissionMatch?.submitterId
-            ? (submissionMatch.submitterUsername || resolveUserId(id))
-            : resolveUserId(id);
+        let name = resolveUserId(id);
+        if (submissionMatch?.submitterIds && submissionMatch.submitterUsernames) {
+          const index = submissionMatch.submitterIds.indexOf(id);
+          if (index !== -1 && submissionMatch.submitterUsernames[index]) {
+            name = submissionMatch.submitterUsernames[index];
+          }
+        }
         return <Typography key={id}>{name}</Typography>;
       });
   if (displayAuthors.length === 0) {
@@ -222,6 +228,13 @@ export const SubmissionDetails: React.FC = () => {
       description: isAssignmentsPage
           ? `You were assigned to review this submission.`
           : `${reviewerCount} reviewer${reviewerCount === 1 ? '' : 's'} assigned to the submission.`
+    });
+  } else if (submissionMatch && submissionMatch.status === 'FAILED' && submissionMatch.matchedAt) {
+    dynamicHistory.push({
+      id: 'event-failed',
+      label: 'Matching Failed',
+      changedAt: submissionMatch.matchedAt,
+      description: 'The automated matching process could not assign reviewers for this submission.'
     });
   }
 
@@ -362,9 +375,16 @@ export const SubmissionDetails: React.FC = () => {
               </Typography>
               <Chip
                 label={status}
-                color={status === 'Published' ? 'success' : (status === 'Matched' || status === 'Assigned') ? 'info' : 'default'}
+                color={status === 'Failed' ? 'error' : status === 'Published' ? 'success' : (status === 'Matched' || status === 'Assigned') ? 'info' : 'default'}
                 sx={{ mb: 3 }}
               />
+
+              {status === 'Failed' && (
+                  <Alert severity="error" sx={{mb: 3}}>
+                    The matching process failed for this submission. The workflow has ended early and no reviewers will
+                    be assigned.
+                  </Alert>
+              )}
 
               {isPrivileged && (workflowRules?.authorAnonymous || workflowRules?.reviewerAnonymous) && (
                   <Alert severity="info" sx={{mb: 3}}>

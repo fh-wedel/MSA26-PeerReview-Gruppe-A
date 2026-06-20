@@ -12,11 +12,6 @@
 
 export interface CreateSubmissionRequest {
   configurationId: string;
-  title: string;
-}
-
-export interface UpdateSubmissionRequest {
-  title?: string;
 }
 
 export interface PresignedUrlRequest {
@@ -33,8 +28,7 @@ export interface PresignedUrlResponse {
 export interface Submission {
   submissionId?: string;
   configurationId?: string;
-  authorId?: string;
-  title?: string;
+  authorIds?: string[];
   status?: "DRAFT" | "SUBMITTED" | "READY_FOR_REVIEW";
   /** @format date-time */
   createdAt?: string;
@@ -357,27 +351,6 @@ export class Api<
       this.request<Submission, any>({
         path: `/submissions`,
         method: "POST",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @name UpdateSubmission
-     * @summary Update submission draft details
-     * @request PUT:/submissions/{id}
-     */
-    updateSubmission: (
-      id: string,
-      data: UpdateSubmissionRequest,
-      params: RequestParams = {},
-    ) =>
-      this.request<Submission, any>({
-        path: `/submissions/${id}`,
-        method: "PUT",
         body: data,
         type: ContentType.Json,
         format: "json",
