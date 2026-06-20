@@ -1,17 +1,12 @@
-# Typst Paper Makefile
+# Makefile mit Docker-Integration
 
-.PHONY: default build watch clean
+.PHONY: default build clean
 
 default: build
 
-# Einmalige Kompilierung von Paper/main.typ zu Paper/main.pdf
 build:
-	typst compile main.typ main.pdf
+	docker build -t typst-projekt .
+	docker run --rm -v "$(pwd):/data" typst-projekt
 
-# Watch-Modus: Überwacht alle Dateien und kompiliert bei Änderungen automatisch neu
-watch:
-	typst watch main.typ main.pdf
-
-# Bereinigung der generierten PDF-Datei
 clean:
 	rm -f main.pdf
