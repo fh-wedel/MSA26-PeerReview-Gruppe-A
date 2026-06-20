@@ -18,7 +18,7 @@ public class ServiceClientsConfig {
     @Value("${matching.service.url:http://matching.internal.services:8081}")
     private String matchingServiceUrl;
 
-    @Value("${configuration.service.url:http://configuration.internal.services:8081}")
+    @Value("${configuration.service.url:http://configuration.internal.services:8080}")
     private String configurationServiceUrl;
 
     @Value("${user.service.url:http://user.internal.services:8081}")
