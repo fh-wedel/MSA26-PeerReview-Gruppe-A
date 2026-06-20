@@ -602,7 +602,7 @@ export const SubmissionDetails: React.FC = () => {
                   <Box component="ul" sx={{ m: 0, pl: 3 }}>
                     {reviewResult.gradingSchema.map((criterion: any, index: number) => (
                       <Box component="li" key={criterion.id || index} sx={{ mb: 1.5 }}>
-                        <Typography variant="body2" fontWeight="bold">{criterion.text}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{criterion.text}</Typography>
                         <Typography variant="body2" color="text.secondary">
                           Answer: {criterion.answer || 'N/A'} {criterion.maxPoints ? `/ ${criterion.maxPoints}` : ''}
                         </Typography>
