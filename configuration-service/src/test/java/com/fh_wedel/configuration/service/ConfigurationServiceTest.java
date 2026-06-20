@@ -42,12 +42,13 @@ class ConfigurationServiceTest {
         service.createConfiguration(
                 "My Thesis",
                 "DOUBLE_BLIND",
-                List.of("author-sub"),
-                "creator-sub",
-                "Author",
+                "STANDARD",
                 2,
                 Instant.now().plusSeconds(3600),
-                Instant.now().plusSeconds(7200));
+                Instant.now().plusSeconds(7200),
+                List.of("author-sub"),
+                "creator-sub",
+                "Author");
 
         // Verify: at least one send to the notification queue with expected content
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
