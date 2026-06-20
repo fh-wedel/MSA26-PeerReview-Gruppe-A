@@ -354,7 +354,7 @@ jobs:
       service_name: configuration
       service_path: configuration-service
       infra_path: configuration-service/infra
-      docker_context: configuration-service
+      docker_context: .
       ecr_repository: fh-wedel/configuration
       run_maven: ${{ needs.changes.outputs.configuration_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_infra: ${{ needs.changes.outputs.configuration_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
