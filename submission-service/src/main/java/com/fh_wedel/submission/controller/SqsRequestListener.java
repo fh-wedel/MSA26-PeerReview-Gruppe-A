@@ -45,10 +45,7 @@ public class SqsRequestListener {
                 return;
             }
 
-            if (!"MATCHED".equalsIgnoreCase(status)) {
-                log.warn("Received event status '{}' for submission {}, but expected 'MATCHED'. Ignoring.", status, submissionId);
-                return;
-            }
+            String finalStatus = "MATCHED".equalsIgnoreCase(status) ? SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue() : status;
 
             Submission submission = repository.findSubmissionById(submissionId);
             if (submission == null) {
@@ -75,7 +72,7 @@ public class SqsRequestListener {
                         authorIds = config.getAuthorIds() != null ? config.getAuthorIds() : java.util.Collections.emptyList();
                         
                         submission = new Submission(submissionId, submissionId, authorIds);
-                        submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                        submission.setStatus(finalStatus);
                         repository.saveSubmission(submission);
                         log.info("Created new submission {} with status '{}' via configuration-service", submissionId, submission.getStatus());
                     } else {
@@ -84,13 +81,13 @@ public class SqsRequestListener {
                 } else {
                     log.info("Submission {} not found in database. Creating it using authorIds={} from SQS message.", submissionId, authorIds);
                     submission = new Submission(submissionId, submissionId, authorIds);
-                    submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                    submission.setStatus(finalStatus);
                     repository.saveSubmission(submission);
                     log.info("Created new submission {} with status '{}' and authorIds={} directly from SQS message", submissionId, submission.getStatus(), authorIds);
                 }
             } else {
-                log.info("Updating existing submission {} status from {} to '{}'", submissionId, submission.getStatus(), SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
-                submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                log.info("Updating existing submission {} status from {} to '{}'", submissionId, submission.getStatus(), finalStatus);
+                submission.setStatus(finalStatus);
                 repository.saveSubmission(submission);
             }
         } catch (Exception e) {

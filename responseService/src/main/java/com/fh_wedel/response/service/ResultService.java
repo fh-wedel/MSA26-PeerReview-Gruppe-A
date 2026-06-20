@@ -1,5 +1,8 @@
 package com.fh_wedel.response.service;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.DefaultApi;
@@ -62,6 +65,10 @@ public class ResultService {
     }
 
     public ReviewResult submitReview(com.fh_wedel.response.model.SubmitReviewRequest request, String reviewerId) {
+        if (repository.findBySubmissionId(request.getSubmissionId()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A review for this submission already exists.");
+        }
+
         ReviewResult result = new ReviewResult();
         result.setSubmissionId(request.getSubmissionId());
         result.setReviewerId(reviewerId);

@@ -43,6 +43,36 @@
             "groupName": "Admin",
             "actionId": "get /api/response/results/{submissionId}/document",
             "description": "Allow Admin to download review document"
+        },
+        {
+            "id": "AdminSubmitReview",
+            "groupName": "Admin",
+            "actionId": "post /api/response/results",
+            "description": "Allow Admin to submit review results"
+        },
+        {
+            "id": "ReviewerGetResults",
+            "groupName": "Reviewer",
+            "actionId": "get /api/response/results",
+            "description": "Allow Reviewer to view results"
+        },
+        {
+            "id": "ReviewerSubmitReview",
+            "groupName": "Reviewer",
+            "actionId": "post /api/response/results",
+            "description": "Allow Reviewer to submit review results"
+        },
+        {
+            "id": "ReviewerGetResultBySubmission",
+            "groupName": "Reviewer",
+            "actionId": "get /api/response/results/{submissionId}",
+            "description": "Allow Reviewer to view a specific result"
+        },
+        {
+            "id": "ReviewerGetDocument",
+            "groupName": "Reviewer",
+            "actionId": "get /api/response/results/{submissionId}/document",
+            "description": "Allow Reviewer to download review document"
         }
     ]
 }

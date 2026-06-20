@@ -103,7 +103,7 @@ public class ServiceClientsConfig {
     @Bean
     public com.fh_wedel.configuration.client.ApiClient configurationApiClient() {
         com.fh_wedel.configuration.client.ApiClient apiClient = new com.fh_wedel.configuration.client.ApiClient();
-        apiClient.updateBaseUri(configurationServiceUrl + "/api/configuration");
+        apiClient.updateBaseUri(configurationServiceUrl + "/api/configuration/submissions");
         apiClient.setRequestInterceptor(createAuthInterceptor());
         return apiClient;
     }

@@ -23,7 +23,7 @@ import {useTheme} from '@mui/material/styles';
 
 import {useAuth} from '../contexts/AuthContext';
 import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
-import {configApiClient, submissionApiClient} from '../api/clients';
+import {configApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {ReviewFormModal} from '../components/ReviewFormModal';
 import {getMockSubmissionById} from '../stubs/submissions';
 import {formatDateTime} from '../utils/date';
@@ -45,6 +45,7 @@ export const SubmissionDetails: React.FC = () => {
   const [chatAllowed, setChatAllowed] = useState(true);
   const [loadingContext, setLoadingContext] = useState(true);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [isReviewerState, setIsReviewerState] = useState(false);
   const [submissionConfig, setSubmissionConfig] = useState<any>(null);
   const [submissionMatch, setSubmissionMatch] = useState<any>(null);
@@ -54,6 +55,7 @@ export const SubmissionDetails: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [reviewResult, setReviewResult] = useState<any>(null);
 
   const { user } = useAuth();
 
@@ -69,7 +71,8 @@ export const SubmissionDetails: React.FC = () => {
       configApiClient.submissions.submissionsDetail(submissionId, {format: 'json'}).catch(() => null),
       submissionApiClient.submissions.getSubmission(submissionId).catch(() => null),
       submissionApiClient.submissions.getDocuments(submissionId).catch(() => null),
-    ]).then(([match, fetchedRules, configRes, realSubRes, docsRes]) => {
+      responseApiClient.results.resultsDetail(submissionId).catch(() => null),
+    ]).then(([match, fetchedRules, configRes, realSubRes, docsRes, reviewRes]) => {
       setSubmissionMatch(match);
       setWorkflowRules(fetchedRules);
       if (configRes && (configRes as any).data) {
@@ -80,6 +83,9 @@ export const SubmissionDetails: React.FC = () => {
       }
       if (docsRes && (docsRes as any).data) {
         setDocuments((docsRes as any).data);
+      }
+      if (reviewRes && (reviewRes as any).data) {
+        setReviewResult((reviewRes as any).data);
       }
 
       if (match && fetchedRules) {
@@ -143,7 +149,7 @@ export const SubmissionDetails: React.FC = () => {
   }
 
   // Combine real API data with mock data as a fallback
-  const reviewAvailable = mockSubmission ? Boolean(mockSubmission.review) : false;
+  const reviewAvailable = reviewResult ? true : (mockSubmission ? Boolean(mockSubmission.review) : false);
   const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
@@ -453,13 +459,13 @@ export const SubmissionDetails: React.FC = () => {
                 {downloading ? 'Loading PDF...' : 'View Uploaded PDF'}
               </Button>
 
-              {status === 'Submitted' && isReviewerState && (
+              {status === 'Submitted' && isReviewerState && !reviewAvailable && (
                 <Button
                   variant="contained"
                   color="secondary"
                   size="large"
                   fullWidth
-                  onClick={() => setReviewOpen(true)}
+                  onClick={() => setReviewFormOpen(true)}
                 >
                   Start Review
                 </Button>
@@ -563,7 +569,50 @@ export const SubmissionDetails: React.FC = () => {
       <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} fullWidth maxWidth="md">
         <DialogTitle>Review</DialogTitle>
         <DialogContent dividers>
-          {mockSubmission?.review && (
+          {reviewResult ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {reviewResult.finalGrade && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Final Grade
+                  </Typography>
+                  <Typography>{reviewResult.finalGrade}</Typography>
+                </Box>
+              )}
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Reviewed At
+                </Typography>
+                <Typography>{formatDateTime(reviewResult.completedAt || reviewResult.createdAt)}</Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Overall Comments
+                </Typography>
+                <Typography sx={{ whiteSpace: 'pre-line' }}>{reviewResult.reviewComments}</Typography>
+              </Box>
+
+              {reviewResult.gradingSchema && reviewResult.gradingSchema.length > 0 && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Detailed Assessment
+                  </Typography>
+                  <Box component="ul" sx={{ m: 0, pl: 3 }}>
+                    {reviewResult.gradingSchema.map((criterion: any, index: number) => (
+                      <Box component="li" key={criterion.id || index} sx={{ mb: 1.5 }}>
+                        <Typography variant="body2" fontWeight="bold">{criterion.text}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Answer: {criterion.answer || 'N/A'} {criterion.maxPoints ? `/ ${criterion.maxPoints}` : ''}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          ) : mockSubmission?.review ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -612,6 +661,8 @@ export const SubmissionDetails: React.FC = () => {
                 </Box>
               </Box>
             </Box>
+          ) : (
+            <Typography>No review data available.</Typography>
           )}
         </DialogContent>
         <DialogActions>
@@ -621,12 +672,18 @@ export const SubmissionDetails: React.FC = () => {
 
       {submissionId && (
         <ReviewFormModal
-          open={reviewOpen}
-          onClose={() => setReviewOpen(false)}
+          open={reviewFormOpen}
+          onClose={() => setReviewFormOpen(false)}
           submissionId={submissionId}
           onSubmitted={() => {
             alert("Review submitted successfully!");
-            // Optionally refresh the data here
+            setReviewFormOpen(false);
+            // Optionally reload the review data
+            responseApiClient.results.resultsDetail(submissionId).then(res => {
+              if (res && (res as any).data) {
+                setReviewResult((res as any).data);
+              }
+            }).catch(console.error);
           }}
         />
       )}
