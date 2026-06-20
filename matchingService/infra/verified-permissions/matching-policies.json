@@ -43,6 +43,30 @@
             "groupName": "ExaminationOfficer",
             "actionId": "get /api/matching/matches/submissions/{submissionId}",
             "description": "Allow ExaminationOfficer to view matches for a submission"
+        },
+        {
+            "id": "ExamOfficerViewMatchesByExaminer",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
+            "description": "Allow ExaminationOfficer to view matches for an examiner"
+        },
+        {
+            "id": "TeacherViewMatchesBySubmission",
+            "groupName": "Teacher",
+            "actionId": "get /api/matching/matches/submissions/{submissionId}",
+            "description": "Allow Teacher to view matches for a submission"
+        },
+        {
+            "id": "TeacherViewMatchesByExaminer",
+            "groupName": "Teacher",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
+            "description": "Allow Teacher to view matches for an examiner"
+        },
+        {
+            "id": "AuthorViewMatchesByExaminer",
+            "groupName": "Author",
+            "actionId": "get /api/matching/matches/examiners/{examinerUsername}",
+            "description": "Allow Author to view matches for an examiner"
         }
     ]
 }
