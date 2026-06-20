@@ -11,164 +11,374 @@
         {
             "id": "AdminCreateConfiguration",
             "groupName": "Admin",
-          "actionId": "post /api/configuration/submissions",
+            "actionId": "post /api/configuration/submissions",
             "description": "Allow Admin to create configurations"
         },
         {
             "id": "AdminListConfigurations",
             "groupName": "Admin",
-          "actionId": "get /api/configuration/submissions",
+            "actionId": "get /api/configuration/submissions",
             "description": "Allow Admin to list all configurations"
         },
         {
             "id": "AdminGetConfiguration",
             "groupName": "Admin",
-          "actionId": "get /api/configuration/submissions/{submissionId}",
+            "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Admin to get configuration details"
         },
         {
             "id": "AdminGetConfigurationsByAuthor",
             "groupName": "Admin",
-          "actionId": "get /api/configuration/submissions/author/{authorId}",
+            "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Admin to list configurations by author"
         },
         {
             "id": "ExamOfficerCreateConfiguration",
             "groupName": "ExaminationOfficer",
-          "actionId": "post /api/configuration/submissions",
+            "actionId": "post /api/configuration/submissions",
             "description": "Allow Exam Officer to create configurations"
         },
         {
             "id": "ExamOfficerListConfigurations",
             "groupName": "ExaminationOfficer",
-          "actionId": "get /api/configuration/submissions",
+            "actionId": "get /api/configuration/submissions",
             "description": "Allow Exam Officer to list all configurations"
         },
         {
             "id": "ExamOfficerGetConfiguration",
             "groupName": "ExaminationOfficer",
-          "actionId": "get /api/configuration/submissions/{submissionId}",
+            "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Exam Officer to get configuration details"
         },
         {
             "id": "ExamOfficerGetConfigurationsByAuthor",
             "groupName": "ExaminationOfficer",
-          "actionId": "get /api/configuration/submissions/author/{authorId}",
+            "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Exam Officer to list configurations by author"
         },
         {
             "id": "TeacherCreateConfiguration",
             "groupName": "Teacher",
-          "actionId": "post /api/configuration/submissions",
+            "actionId": "post /api/configuration/submissions",
             "description": "Allow Teacher to create configurations"
         },
         {
             "id": "TeacherGetConfiguration",
             "groupName": "Teacher",
-          "actionId": "get /api/configuration/submissions/{submissionId}",
+            "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Teacher to get configuration details"
         },
         {
             "id": "TeacherGetConfigurationsByAuthor",
             "groupName": "Teacher",
-          "actionId": "get /api/configuration/submissions/author/{authorId}",
+            "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Teacher to list configurations by author"
         },
         {
             "id": "ReviewerCreateConfiguration",
             "groupName": "Reviewer",
-          "actionId": "post /api/configuration/submissions",
+            "actionId": "post /api/configuration/submissions",
             "description": "Allow Reviewer to create configurations"
         },
         {
             "id": "ReviewerGetConfiguration",
             "groupName": "Reviewer",
-          "actionId": "get /api/configuration/submissions/{submissionId}",
+            "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Reviewer to get configuration details"
         },
         {
             "id": "ReviewerGetConfigurationsByAuthor",
             "groupName": "Reviewer",
-          "actionId": "get /api/configuration/submissions/author/{authorId}",
+            "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Reviewer to list configurations by author"
         },
         {
             "id": "AuthorCreateConfiguration",
             "groupName": "Author",
-          "actionId": "post /api/configuration/submissions",
+            "actionId": "post /api/configuration/submissions",
             "description": "Allow Author to create configurations"
         },
         {
             "id": "AuthorGetConfiguration",
             "groupName": "Author",
-          "actionId": "get /api/configuration/submissions/{submissionId}",
+            "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Author to get configuration details"
         },
         {
             "id": "AuthorGetConfigurationsByAuthor",
             "groupName": "Author",
-          "actionId": "get /api/configuration/submissions/author/{authorId}",
+            "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Author to list configurations by author"
         },
         {
             "id": "AdminGetSubmissionDeadline",
             "groupName": "Admin",
-          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Admin to get submission deadline"
         },
         {
             "id": "AdminGetReviewDeadline",
             "groupName": "Admin",
-          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Admin to get review deadline"
         },
         {
             "id": "ExamOfficerGetSubmissionDeadline",
             "groupName": "ExaminationOfficer",
-          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Exam Officer to get submission deadline"
         },
         {
             "id": "ExamOfficerGetReviewDeadline",
             "groupName": "ExaminationOfficer",
-          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Exam Officer to get review deadline"
         },
         {
             "id": "TeacherGetSubmissionDeadline",
             "groupName": "Teacher",
-          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Teacher to get submission deadline"
         },
         {
             "id": "TeacherGetReviewDeadline",
             "groupName": "Teacher",
-          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Teacher to get review deadline"
         },
         {
             "id": "ReviewerGetSubmissionDeadline",
             "groupName": "Reviewer",
-          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Reviewer to get submission deadline"
         },
         {
             "id": "ReviewerGetReviewDeadline",
             "groupName": "Reviewer",
-          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Reviewer to get review deadline"
         },
         {
             "id": "AuthorGetSubmissionDeadline",
             "groupName": "Author",
-          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Author to get submission deadline"
         },
         {
             "id": "AuthorGetReviewDeadline",
             "groupName": "Author",
-          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
+            "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Author to get review deadline"
+        },
+        {
+            "id": "AdminListReviewTemplates",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/review-templates",
+            "description": "Allow Admin to ListReviewTemplates"
+        },
+        {
+            "id": "AdminGetReviewTemplate",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/review-templates/{templateName}",
+            "description": "Allow Admin to GetReviewTemplate"
+        },
+        {
+            "id": "AdminListReviewTypes",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/review-types",
+            "description": "Allow Admin to ListReviewTypes"
+        },
+        {
+            "id": "AdminGetReviewType",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/review-types/{typeName}",
+            "description": "Allow Admin to GetReviewType"
+        },
+        {
+            "id": "AdminGetReviewTypeRules",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/review-types/{typeName}/rules",
+            "description": "Allow Admin to GetReviewTypeRules"
+        },
+        {
+            "id": "AdminGetSubmissionFeedbackForm",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/submissions/{submissionId}/feedback-form",
+            "description": "Allow Admin to GetSubmissionFeedbackForm"
+        },
+        {
+            "id": "AdminGetSubmissionRules",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/submissions/{submissionId}/rules",
+            "description": "Allow Admin to GetSubmissionRules"
+        },
+        {
+            "id": "ExaminationOfficerListReviewTemplates",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/review-templates",
+            "description": "Allow ExaminationOfficer to ListReviewTemplates"
+        },
+        {
+            "id": "ExaminationOfficerGetReviewTemplate",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/review-templates/{templateName}",
+            "description": "Allow ExaminationOfficer to GetReviewTemplate"
+        },
+        {
+            "id": "ExaminationOfficerListReviewTypes",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/review-types",
+            "description": "Allow ExaminationOfficer to ListReviewTypes"
+        },
+        {
+            "id": "ExaminationOfficerGetReviewType",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/review-types/{typeName}",
+            "description": "Allow ExaminationOfficer to GetReviewType"
+        },
+        {
+            "id": "ExaminationOfficerGetReviewTypeRules",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/review-types/{typeName}/rules",
+            "description": "Allow ExaminationOfficer to GetReviewTypeRules"
+        },
+        {
+            "id": "ExaminationOfficerGetSubmissionFeedbackForm",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/submissions/{submissionId}/feedback-form",
+            "description": "Allow ExaminationOfficer to GetSubmissionFeedbackForm"
+        },
+        {
+            "id": "ExaminationOfficerGetSubmissionRules",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/submissions/{submissionId}/rules",
+            "description": "Allow ExaminationOfficer to GetSubmissionRules"
+        },
+        {
+            "id": "TeacherListReviewTemplates",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/review-templates",
+            "description": "Allow Teacher to ListReviewTemplates"
+        },
+        {
+            "id": "TeacherGetReviewTemplate",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/review-templates/{templateName}",
+            "description": "Allow Teacher to GetReviewTemplate"
+        },
+        {
+            "id": "TeacherListReviewTypes",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/review-types",
+            "description": "Allow Teacher to ListReviewTypes"
+        },
+        {
+            "id": "TeacherGetReviewType",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/review-types/{typeName}",
+            "description": "Allow Teacher to GetReviewType"
+        },
+        {
+            "id": "TeacherGetReviewTypeRules",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/review-types/{typeName}/rules",
+            "description": "Allow Teacher to GetReviewTypeRules"
+        },
+        {
+            "id": "TeacherGetSubmissionFeedbackForm",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/submissions/{submissionId}/feedback-form",
+            "description": "Allow Teacher to GetSubmissionFeedbackForm"
+        },
+        {
+            "id": "TeacherGetSubmissionRules",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/submissions/{submissionId}/rules",
+            "description": "Allow Teacher to GetSubmissionRules"
+        },
+        {
+            "id": "ReviewerListReviewTemplates",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/review-templates",
+            "description": "Allow Reviewer to ListReviewTemplates"
+        },
+        {
+            "id": "ReviewerGetReviewTemplate",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/review-templates/{templateName}",
+            "description": "Allow Reviewer to GetReviewTemplate"
+        },
+        {
+            "id": "ReviewerListReviewTypes",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/review-types",
+            "description": "Allow Reviewer to ListReviewTypes"
+        },
+        {
+            "id": "ReviewerGetReviewType",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/review-types/{typeName}",
+            "description": "Allow Reviewer to GetReviewType"
+        },
+        {
+            "id": "ReviewerGetReviewTypeRules",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/review-types/{typeName}/rules",
+            "description": "Allow Reviewer to GetReviewTypeRules"
+        },
+        {
+            "id": "ReviewerGetSubmissionFeedbackForm",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/submissions/{submissionId}/feedback-form",
+            "description": "Allow Reviewer to GetSubmissionFeedbackForm"
+        },
+        {
+            "id": "ReviewerGetSubmissionRules",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/submissions/{submissionId}/rules",
+            "description": "Allow Reviewer to GetSubmissionRules"
+        },
+        {
+            "id": "AuthorListReviewTemplates",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/review-templates",
+            "description": "Allow Author to ListReviewTemplates"
+        },
+        {
+            "id": "AuthorGetReviewTemplate",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/review-templates/{templateName}",
+            "description": "Allow Author to GetReviewTemplate"
+        },
+        {
+            "id": "AuthorListReviewTypes",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/review-types",
+            "description": "Allow Author to ListReviewTypes"
+        },
+        {
+            "id": "AuthorGetReviewType",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/review-types/{typeName}",
+            "description": "Allow Author to GetReviewType"
+        },
+        {
+            "id": "AuthorGetReviewTypeRules",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/review-types/{typeName}/rules",
+            "description": "Allow Author to GetReviewTypeRules"
+        },
+        {
+            "id": "AuthorGetSubmissionFeedbackForm",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/submissions/{submissionId}/feedback-form",
+            "description": "Allow Author to GetSubmissionFeedbackForm"
+        },
+        {
+            "id": "AuthorGetSubmissionRules",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/submissions/{submissionId}/rules",
+            "description": "Allow Author to GetSubmissionRules"
         }
     ]
 }
