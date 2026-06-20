@@ -35,7 +35,7 @@ public class Submission {
         this.configurationId = configurationId;
         this.authorId = authorId;
         this.title = title;
-        this.status = SubmissionStatus.DRAFT.name();
+        this.status = SubmissionStatus.DRAFT.getDbValue();
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }

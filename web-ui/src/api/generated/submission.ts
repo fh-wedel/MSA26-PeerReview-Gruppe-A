@@ -309,36 +309,6 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
-  status = {
-    /**
-     * No description
-     *
-     * @name GetStatus
-     * @summary Service health status
-     * @request GET:/status
-     */
-    getStatus: (params: RequestParams = {}) =>
-      this.request<string, any>({
-        path: `/status`,
-        method: "GET",
-        ...params,
-      }),
-  };
-  time = {
-    /**
-     * No description
-     *
-     * @name GetTime
-     * @summary Server time with auth info
-     * @request GET:/time
-     */
-    getTime: (params: RequestParams = {}) =>
-      this.request<string, any>({
-        path: `/time`,
-        method: "GET",
-        ...params,
-      }),
-  };
   configurations = {
     /**
      * No description
@@ -410,6 +380,64 @@ export class Api<
         method: "PUT",
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name GetSubmission
+     * @summary Get submission details
+     * @request GET:/submissions/{id}
+     */
+    getSubmission: (id: string, params: RequestParams = {}) =>
+      this.request<Submission, any>({
+        path: `/submissions/${id}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name GetDocuments
+     * @summary Get list of uploaded documents
+     * @request GET:/submissions/{id}/documents
+     */
+    getDocuments: (id: string, params: RequestParams = {}) =>
+      this.request<
+        {
+          documentId?: string;
+          fileName?: string;
+          s3Key?: string;
+          contentType?: string;
+          fileSize?: number;
+        }[],
+        any
+      >({
+        path: `/submissions/${id}/documents`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name GetPresignedDownloadUrl
+     * @summary Generate presigned S3 download URL for a document
+     * @request GET:/submissions/{id}/documents/{documentId}/download
+     */
+    getPresignedDownloadUrl: (
+      id: string,
+      documentId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<PresignedUrlResponse, any>({
+        path: `/submissions/${id}/documents/${documentId}/download`,
+        method: "GET",
         format: "json",
         ...params,
       }),

@@ -136,6 +136,30 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getDocuments(id));
     }
 
+    @GetMapping("/submissions/{id}/documents/{documentId}/download")
+    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
+    public ResponseEntity<PresignedUrlResponse> getPresignedDownloadUrl(
+            @PathVariable String id,
+            @PathVariable String documentId,
+            Authentication authentication) {
+
+        log.info("Request received: GET /submissions/{}/documents/{}/download", id, documentId);
+
+        Submission submission = submissionService.getSubmission(id);
+        if (submission == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String callerSub = extractSubFromDetails(authentication);
+        if (isOnlyAuthor(authentication) && !submission.getAuthorId().equals(callerSub)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        String downloadUrl = submissionService.getPresignedDownloadUrl(id, documentId);
+        PresignedUrlResponse response = new PresignedUrlResponse(downloadUrl, documentId, null);
+        return ResponseEntity.ok(response);
+    }
+
     private boolean isOnlyAuthor(Authentication auth) {
         if (auth == null || auth.getAuthorities() == null) return false;
         boolean hasAuthor = auth.getAuthorities().stream()
