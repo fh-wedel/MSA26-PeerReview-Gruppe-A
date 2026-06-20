@@ -13,6 +13,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -64,6 +65,15 @@ public class ReviewResult {
     private String reviewComments;
 
     private String documentS3Key;
+
+    /** Usernames of the examiners who reviewed the submission (from the matching service). */
+    private List<String> examinerUsernames;
+
+    /** Review deadline / end date for the submission (from the configuration service). */
+    private Instant reviewDeadline;
+
+    /** Grading schema the submission was reviewed by (snapshot from the workflow service). */
+    private List<GradingCriterion> gradingSchema;
 
     private Instant completedAt;
 

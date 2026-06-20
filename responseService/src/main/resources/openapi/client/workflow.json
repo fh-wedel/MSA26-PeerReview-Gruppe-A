@@ -1,0 +1,587 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Workflow Service API",
+    "description": "REST API for the Workflow Service \u2013 exposes available review workflow plugins and their rules.",
+    "version": "0.0.1-SNAPSHOT"
+  },
+  "servers": [
+    {
+      "url": "/api/workflow",
+      "description": "Workflow Service base path"
+    }
+  ],
+  "paths": {
+    "/submissions/{submissionId}/rules": {
+      "get": {
+        "operationId": "getRulesForSubmission",
+        "summary": "Get the rules for a specific submission",
+        "description": "Returns the anonymity and communication rules for the workflow plugin associated with the given submission ID.",
+        "tags": [
+          "Workflow Rules"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the submission",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the rules for the submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowRulesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Submission or workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}/feedback-form": {
+      "get": {
+        "operationId": "getFeedbackFormForSubmission",
+        "summary": "Get the feedback form for a submission",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved feedback form",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewQuestionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}/reviews": {
+      "post": {
+        "operationId": "submitReview",
+        "summary": "Submit a review",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully submitted review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitReviewResponseDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getReviewsForSubmission",
+        "summary": "Get all reviews for a submission",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubmittedReviewDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}/reviews/status": {
+      "get": {
+        "operationId": "getReviewStatus",
+        "summary": "Get review status for a submission",
+        "tags": [
+          "Workflow Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-types": {
+      "get": {
+        "operationId": "listReviewTypes",
+        "summary": "List all available review types",
+        "description": "Returns an array of all registered workflow plugins with their metadata and rules.",
+        "tags": [
+          "Workflow Review Types"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of workflow plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-types/{typeName}": {
+      "get": {
+        "operationId": "getReviewType",
+        "summary": "Get details of a specific review type",
+        "description": "Returns the metadata and rules for the workflow plugin identified by its name.",
+        "tags": [
+          "Workflow Review Types"
+        ],
+        "parameters": [
+          {
+            "name": "typeName",
+            "in": "path",
+            "required": true,
+            "description": "The unique name of the review type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the workflow plugin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewTypeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/review-types/{typeName}/rules": {
+      "get": {
+        "operationId": "getReviewTypeRules",
+        "summary": "Get the rules of a specific workflow plugin",
+        "description": "Returns the anonymity and communication rules for the workflow plugin identified by its name.",
+        "tags": [
+          "Workflow Review Types"
+        ],
+        "parameters": [
+          {
+            "name": "typeName",
+            "in": "path",
+            "required": true,
+            "description": "The unique name of the review type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the plugin rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowRulesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/review-templates": {
+      "get": {
+        "operationId": "listReviewTemplates",
+        "summary": "List all available review templates",
+        "tags": [
+          "Workflow Templates"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewTemplateDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-templates/{templateName}": {
+      "get": {
+        "operationId": "getReviewTemplate",
+        "summary": "Get details of a specific review template",
+        "tags": [
+          "Workflow Templates"
+        ],
+        "parameters": [
+          {
+            "name": "templateName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewTemplateDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "WorkflowRulesDto": {
+        "type": "object",
+        "description": "The anonymity and communication rules of a workflow plugin",
+        "properties": {
+          "authorAnonymous": {
+            "type": "boolean",
+            "description": "Whether the author's identity is hidden from reviewers"
+          },
+          "reviewerAnonymous": {
+            "type": "boolean",
+            "description": "Whether the reviewer's identity is hidden from the author"
+          },
+          "authorReviewerChatAllowed": {
+            "type": "boolean",
+            "description": "Whether direct chat between author and reviewer is allowed"
+          }
+        },
+        "required": [
+          "authorAnonymous",
+          "reviewerAnonymous",
+          "authorReviewerChatAllowed"
+        ]
+      },
+      "ReviewQuestionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "RATING",
+              "MULTIPLE_CHOICE",
+              "SCALE"
+            ]
+          },
+          "maxPoints": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "type",
+          "maxPoints",
+          "required"
+        ]
+      },
+      "ReviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "textValue": {
+            "type": "string"
+          },
+          "numericValue": {
+            "type": "integer"
+          },
+          "selectedOption": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "SubmitReviewRequest": {
+        "type": "object",
+        "properties": {
+          "responses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewResponseDto"
+            }
+          }
+        },
+        "required": [
+          "responses"
+        ]
+      },
+      "SubmitReviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalPoints": {
+            "type": "integer"
+          },
+          "maxPossiblePoints": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "totalPoints",
+          "maxPossiblePoints",
+          "percentage",
+          "summary"
+        ]
+      },
+      "ReviewStatusDto": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "totalExpected": {
+            "type": "integer"
+          },
+          "receivedCount": {
+            "type": "integer"
+          },
+          "complete": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "submissionId",
+          "totalExpected",
+          "receivedCount",
+          "complete"
+        ]
+      },
+      "SubmittedReviewDto": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "responses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewResponseDto"
+            }
+          },
+          "totalPoints": {
+            "type": "integer"
+          },
+          "maxPossiblePoints": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "gradeSummary": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "submissionId",
+          "reviewerId",
+          "responses",
+          "totalPoints",
+          "maxPossiblePoints",
+          "percentage",
+          "gradeSummary",
+          "submittedAt"
+        ]
+      },
+      "ReviewTypeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/WorkflowRulesDto"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "rules"
+        ]
+      },
+      "ReviewTemplateDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "evaluationCriteriaVisibleToAuthors": {
+            "type": "boolean"
+          },
+          "feedbackFormTemplate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewQuestionDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "evaluationCriteriaVisibleToAuthors",
+          "feedbackFormTemplate"
+        ]
+      }
+    }
+  }
+}

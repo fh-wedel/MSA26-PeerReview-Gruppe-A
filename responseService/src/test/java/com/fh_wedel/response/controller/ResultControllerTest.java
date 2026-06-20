@@ -43,8 +43,8 @@ class ResultControllerTest {
 
     private ReviewResultDto dtoForAuthor(String authorId) {
         return new ReviewResultDto(
-                UUID.randomUUID(), "sub-1", "rev-1", authorId,
-                "1.7", "Good", true, Instant.now(), Instant.now());
+                UUID.randomUUID(), "sub-1", "rev-1", List.of("examiner-1"), authorId,
+                "1.7", "Good", null, null, true, Instant.now(), Instant.now());
     }
 
     @Test

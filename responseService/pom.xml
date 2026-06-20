@@ -16,6 +16,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <openapi-generator.version>7.14.0</openapi-generator.version>
     </properties>
 
     <dependencyManagement>
@@ -76,6 +77,23 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
+
+        <!-- OpenAPI generated client dependencies (workflow / matching / configuration) -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>2.2.28</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.6</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -113,6 +131,76 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <!-- Workflow client: grading schema (feedback form) per submission -->
+                    <execution>
+                        <id>generate-workflow-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/workflow.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-workflow</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.workflow.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.workflow.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Matching client: examiner per submission -->
+                    <execution>
+                        <id>generate-matching-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/matching.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-matching</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.matching.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.matching.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Configuration client: review deadline (end date) per submission -->
+                    <execution>
+                        <id>generate-configuration-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/configuration.json</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-configuration</output>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <openApiNullable>false</openApiNullable>
+                                <useJakartaEe>true</useJakartaEe>
+                                <annotationLibrary>none</annotationLibrary>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
