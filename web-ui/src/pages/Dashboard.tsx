@@ -1,18 +1,18 @@
 import React, {useEffect, useState} from "react";
 import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Paper,
-  Snackbar,
-  Typography,
+    Alert,
+    Badge,
+    Box,
+    Button,
+    Chip,
+    CircularProgress,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemText,
+    Paper,
+    Snackbar,
+    Typography,
 } from "@mui/material";
 import {useNavigate} from "react-router-dom";
 import {LocalizationProvider} from "@mui/x-date-pickers/LocalizationProvider";
@@ -78,9 +78,9 @@ export const Dashboard: React.FC = () => {
       // 1. Fetch own submissions
       if (hasAuthorOrAdminRole) {
         try {
-          const submissionsResponse = await configApiClient.author.authorDetail(user.id);
+            const submissionsResponse = await configApiClient.submissions.authorDetail(user.id);
           if (submissionsResponse.data && Array.isArray(submissionsResponse.data)) {
-            submissionsResponse.data.forEach((config, index) => {
+              submissionsResponse.data.forEach((config: any, index: number) => {
               const subId = (config as any).id || (config as any).submissionId || `sub-${index}`;
               if (config.submissionDeadline) {
                 fetchedTasks.push({
@@ -104,7 +104,7 @@ export const Dashboard: React.FC = () => {
         if (assignmentsResponse.data && assignmentsResponse.data.assignments) {
           for (const assignment of assignmentsResponse.data.assignments) {
             try {
-              const configResponse = await configApiClient.submissionId.getSubmissionId(assignment.submissionId);
+                const configResponse = await configApiClient.submissions.submissionsDetail(assignment.submissionId);
               if (configResponse.data && configResponse.data.reviewDeadline) {
                 fetchedTasks.push({
                   id: `ass-${assignment.submissionId}`,
@@ -152,7 +152,7 @@ export const Dashboard: React.FC = () => {
     reviewDeadline: Date
   ) => {
     try {
-      const response = await configApiClient.postRoot({
+        const response = await configApiClient.submissions.submissionsCreate({
         title,
         reviewProcessType: reviewType,
         authorIds: authorIds.length > 0 ? authorIds : [user?.id || ""],

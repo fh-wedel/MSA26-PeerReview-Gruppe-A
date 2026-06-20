@@ -66,9 +66,7 @@ export interface WorkflowRules {
 }
 
 
-
-
-import {communicationApiClient, matchingApiClient, workflowApiClient, usersApiClient} from './clients';
+import {communicationApiClient, configurationApiClient, matchingApiClient, usersApiClient} from './clients';
 
 export const fetchChats = async (): Promise<ChatListResponse> => {
   const response = await communicationApiClient.chats.listChats();
@@ -97,7 +95,7 @@ export const fetchSubmissionMatch = async (submissionId: string): Promise<Submis
 };
 
 export const fetchWorkflowRulesForSubmission = async (submissionId: string): Promise<WorkflowRules> => {
-  const response = await workflowApiClient.submissions.getRulesForSubmission(submissionId);
+  const response = await configurationApiClient.submissions.getRulesForSubmission(submissionId);
   return response.data as any;
 };
 

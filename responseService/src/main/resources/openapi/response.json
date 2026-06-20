@@ -19,7 +19,9 @@
             "name": "authorId",
             "in": "query",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -29,7 +31,9 @@
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "$ref": "#/components/schemas/ReviewResult" }
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewResult"
+                  }
                 }
               }
             }
@@ -45,7 +49,9 @@
             "name": "submissionId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -53,7 +59,9 @@
             "description": "Review result",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ReviewResult" }
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
               }
             }
           }
@@ -68,7 +76,9 @@
             "name": "submissionId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -79,7 +89,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "downloadUrl": { "type": "string" }
+                    "downloadUrl": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -94,15 +106,35 @@
       "ReviewResult": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "submissionId": { "type": "string" },
-          "reviewerId": { "type": "string" },
-          "authorId": { "type": "string" },
-          "finalGrade": { "type": "string" },
-          "reviewComments": { "type": "string" },
-          "hasDocument": { "type": "boolean" },
-          "completedAt": { "type": "string", "format": "date-time" },
-          "createdAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "submissionId": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "finalGrade": {
+            "type": "string"
+          },
+          "reviewComments": {
+            "type": "string"
+          },
+          "hasDocument": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }

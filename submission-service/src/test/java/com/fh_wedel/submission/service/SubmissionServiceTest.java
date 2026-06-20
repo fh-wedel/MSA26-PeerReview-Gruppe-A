@@ -37,14 +37,14 @@ class SubmissionServiceTest {
     private ConfigurationServiceClient configurationServiceClient;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-    private String workflowQueueName = "test-workflow-queue";
+    private String submissionReadyQueueName = "test-submission-ready-queue";
 
     private SubmissionService submissionService;
 
     @BeforeEach
     void setUp() {
         submissionService = new SubmissionService(
-                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, workflowQueueName);
+                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, submissionReadyQueueName);
     }
 
     @Test
@@ -129,7 +129,7 @@ class SubmissionServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getStatus()).isEqualTo(SubmissionStatus.SUBMITTED.getDbValue());
         verify(repository).saveSubmission(submission);
-        verify(sqsTemplate).send(eq("test-workflow-queue"), anyString());
+        verify(sqsTemplate).send(eq("test-submission-ready-queue"), anyString());
     }
 
     @Test

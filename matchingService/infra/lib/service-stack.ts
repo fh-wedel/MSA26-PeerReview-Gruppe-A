@@ -1,15 +1,15 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Construct } from 'constructs';
+import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/lib/ecs';
-import { SqsInfra } from '../../../infraLibrary/lib/sqs';
-import { LogsInfra } from '../../../infraLibrary/lib/logs';
+import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
+import {EcsInfra} from '../../../infraLibrary/lib/ecs';
+import {SqsInfra} from '../../../infraLibrary/lib/sqs';
+import {LogsInfra} from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
     level: process.env.LOG_LEVEL || 'info',
@@ -108,7 +108,7 @@ export class ServiceStack extends cdk.Stack {
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
                 // Use the AAAA record in internal.services for ECS-to-ECS communication.
                 // ECS Service Connect (sc.internal) does NOT support IPv6-only subnets.
-                'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
+                'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8081`,
                 'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),

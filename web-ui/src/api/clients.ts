@@ -1,8 +1,7 @@
-import {Api as ConfigApi} from './generated/configuration';
+import {Api as ConfigApi, Api as ConfigurationApi} from './generated/configuration';
 import {Api as MatchingApi} from './generated/matching';
 import {Api as SubmissionApi} from './generated/submission';
 import {Api as CommunicationApi} from './generated/communication';
-import {Api as WorkflowApi} from './generated/workflow';
 import {Api as UsersApi} from './generated/users';
 import {fetchWithAuth} from './fetchWrapper';
 
@@ -35,7 +34,7 @@ export const communicationApiClient = new CommunicationApi({
   customFetch: fetchWithAuth,
 });
 
-export const workflowApiClient = new WorkflowApi({
+export const configurationApiClient = new ConfigurationApi({
   baseApiParams: getBaseParams(),
   customFetch: fetchWithAuth,
 });

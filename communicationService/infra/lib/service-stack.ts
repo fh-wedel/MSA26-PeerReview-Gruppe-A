@@ -1,14 +1,13 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Construct } from 'constructs';
+import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/lib/ecs';
-import { LogsInfra } from '../../../infraLibrary/lib/logs';
+import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
+import {EcsInfra} from '../../../infraLibrary/lib/ecs';
+import {LogsInfra} from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -82,7 +81,7 @@ export class ServiceStack extends cdk.Stack {
         'AWS_REGION': AWSConstants.AWS_REGION,
         'DYNAMODB_TABLE_NAME': dynamoTable.tableName,
         'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
-        'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
+        'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8081`,
         'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),

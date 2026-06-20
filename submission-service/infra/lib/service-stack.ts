@@ -1,16 +1,16 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Construct } from 'constructs';
+import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/lib/ecs';
-import { LogsInfra } from '../../../infraLibrary/lib/logs';
-import { SqsInfra } from '../../../infraLibrary/lib/sqs';
+import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
+import {EcsInfra} from '../../../infraLibrary/lib/ecs';
+import {LogsInfra} from '../../../infraLibrary/lib/logs';
+import {SqsInfra} from '../../../infraLibrary/lib/sqs';
 import pino from 'pino';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -120,7 +120,7 @@ export class ServiceStack extends cdk.Stack {
         'DYNAMODB_TABLE_NAME': dynamoTableName,
         'S3_BUCKET_NAME': submissionsBucket.bucketName,
         'SQS_REQUEST_QUEUE': requestQueues.queue.queueName,
-        'SQS_WORKFLOW_QUEUE': 'workflow-request-queue',
+        'SQS_SUBMISSION_READY_QUEUE': 'submission-ready-queue',
         'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
@@ -181,13 +181,13 @@ export class ServiceStack extends cdk.Stack {
     submissionsBucket.grantReadWrite(taskDefinition.taskRole);
     SqsInfra.grantReadPermissions(requestQueues, taskDefinition.taskRole);
 
-    // Grant write to workflow service's queue (owned by workflow-service stack)
+    // Grant write to submission-ready queue (owned by responseService stack)
     taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
         resources: [
-          `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:workflow-request-queue`
+          `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:submission-ready-queue`
         ]
       })
     );

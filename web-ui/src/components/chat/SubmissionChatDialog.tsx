@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, CircularProgress, Alert, Autocomplete } from '@mui/material';
-import { fetchWorkflowRulesForSubmission } from '../../api/communication';
-import { configApiClient } from '../../api/clients';
-import { useAuth } from '../../contexts/AuthContext';
-import { useChat } from '../../contexts/ChatContext';
-import { useAssignments } from '../../hooks/useAssignments';
+import React, {useEffect, useState} from 'react';
+import {
+  Alert,
+  Autocomplete,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField
+} from '@mui/material';
+import {fetchWorkflowRulesForSubmission} from '../../api/communication';
+import {configApiClient} from '../../api/clients';
+import {useAuth} from '../../contexts/AuthContext';
+import {useChat} from '../../contexts/ChatContext';
+import {useAssignments} from '../../hooks/useAssignments';
 
 interface SubmissionOption {
   id: string;
@@ -41,8 +51,8 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
 
     if (user?.id) {
       setOptionsLoading(true);
-      configApiClient.author.authorDetail(user.id, { format: 'json' })
-        .then(async res => {
+      configApiClient.submissions.authorDetail(user.id, {format: 'json'})
+          .then(async (res: any) => {
           const configs = (res.data as unknown as Array<Record<string, unknown>>) || [];
           const authorIds = configs.map(c => (c.id || c.submissionId) as string);
           
@@ -53,7 +63,7 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
             if (!id) continue;
             try {
               const [subRes, rules] = await Promise.all([
-                configApiClient.submissionId.getSubmissionId(id).catch(() => null),
+                configApiClient.submissions.submissionsDetail(id).catch(() => null),
                 fetchWorkflowRulesForSubmission(id).catch(() => null)
               ]);
               
@@ -82,7 +92,7 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
           
           setOptions(newOptions);
         })
-        .catch(err => {
+          .catch((err: any) => {
           console.error(err);
           setError('Failed to load submissions.');
         })

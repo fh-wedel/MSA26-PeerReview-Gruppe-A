@@ -11,163 +11,163 @@
         {
             "id": "AdminCreateConfiguration",
             "groupName": "Admin",
-            "actionId": "post /api/configuration",
+          "actionId": "post /api/configuration/submissions",
             "description": "Allow Admin to create configurations"
         },
         {
             "id": "AdminListConfigurations",
             "groupName": "Admin",
-            "actionId": "get /api/configuration",
+          "actionId": "get /api/configuration/submissions",
             "description": "Allow Admin to list all configurations"
         },
         {
             "id": "AdminGetConfiguration",
             "groupName": "Admin",
-            "actionId": "get /api/configuration/{submissionId}",
+          "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Admin to get configuration details"
         },
         {
             "id": "AdminGetConfigurationsByAuthor",
             "groupName": "Admin",
-            "actionId": "get /api/configuration/author/{authorId}",
+          "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Admin to list configurations by author"
         },
         {
             "id": "ExamOfficerCreateConfiguration",
             "groupName": "ExaminationOfficer",
-            "actionId": "post /api/configuration",
+          "actionId": "post /api/configuration/submissions",
             "description": "Allow Exam Officer to create configurations"
         },
         {
             "id": "ExamOfficerListConfigurations",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/configuration",
+          "actionId": "get /api/configuration/submissions",
             "description": "Allow Exam Officer to list all configurations"
         },
         {
             "id": "ExamOfficerGetConfiguration",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/configuration/{submissionId}",
+          "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Exam Officer to get configuration details"
         },
         {
             "id": "ExamOfficerGetConfigurationsByAuthor",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/configuration/author/{authorId}",
+          "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Exam Officer to list configurations by author"
         },
         {
             "id": "TeacherCreateConfiguration",
             "groupName": "Teacher",
-            "actionId": "post /api/configuration",
+          "actionId": "post /api/configuration/submissions",
             "description": "Allow Teacher to create configurations"
         },
         {
             "id": "TeacherGetConfiguration",
             "groupName": "Teacher",
-            "actionId": "get /api/configuration/{submissionId}",
+          "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Teacher to get configuration details"
         },
         {
             "id": "TeacherGetConfigurationsByAuthor",
             "groupName": "Teacher",
-            "actionId": "get /api/configuration/author/{authorId}",
+          "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Teacher to list configurations by author"
         },
         {
             "id": "ReviewerCreateConfiguration",
             "groupName": "Reviewer",
-            "actionId": "post /api/configuration",
+          "actionId": "post /api/configuration/submissions",
             "description": "Allow Reviewer to create configurations"
         },
         {
             "id": "ReviewerGetConfiguration",
             "groupName": "Reviewer",
-            "actionId": "get /api/configuration/{submissionId}",
+          "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Reviewer to get configuration details"
         },
         {
             "id": "ReviewerGetConfigurationsByAuthor",
             "groupName": "Reviewer",
-            "actionId": "get /api/configuration/author/{authorId}",
+          "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Reviewer to list configurations by author"
         },
         {
             "id": "AuthorCreateConfiguration",
             "groupName": "Author",
-            "actionId": "post /api/configuration",
+          "actionId": "post /api/configuration/submissions",
             "description": "Allow Author to create configurations"
         },
         {
             "id": "AuthorGetConfiguration",
             "groupName": "Author",
-            "actionId": "get /api/configuration/{submissionId}",
+          "actionId": "get /api/configuration/submissions/{submissionId}",
             "description": "Allow Author to get configuration details"
         },
         {
             "id": "AuthorGetConfigurationsByAuthor",
             "groupName": "Author",
-            "actionId": "get /api/configuration/author/{authorId}",
+          "actionId": "get /api/configuration/submissions/author/{authorId}",
             "description": "Allow Author to list configurations by author"
         },
         {
             "id": "AdminGetSubmissionDeadline",
             "groupName": "Admin",
-            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Admin to get submission deadline"
         },
         {
             "id": "AdminGetReviewDeadline",
             "groupName": "Admin",
-            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Admin to get review deadline"
         },
         {
             "id": "ExamOfficerGetSubmissionDeadline",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Exam Officer to get submission deadline"
         },
         {
             "id": "ExamOfficerGetReviewDeadline",
             "groupName": "ExaminationOfficer",
-            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Exam Officer to get review deadline"
         },
         {
             "id": "TeacherGetSubmissionDeadline",
             "groupName": "Teacher",
-            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Teacher to get submission deadline"
         },
         {
             "id": "TeacherGetReviewDeadline",
             "groupName": "Teacher",
-            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Teacher to get review deadline"
         },
         {
             "id": "ReviewerGetSubmissionDeadline",
             "groupName": "Reviewer",
-            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Reviewer to get submission deadline"
         },
         {
             "id": "ReviewerGetReviewDeadline",
             "groupName": "Reviewer",
-            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Reviewer to get review deadline"
         },
         {
             "id": "AuthorGetSubmissionDeadline",
             "groupName": "Author",
-            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/submission-deadline",
             "description": "Allow Author to get submission deadline"
         },
         {
             "id": "AuthorGetReviewDeadline",
             "groupName": "Author",
-            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+          "actionId": "get /api/configuration/submissions/{submissionId}/review-deadline",
             "description": "Allow Author to get review deadline"
         }
     ]

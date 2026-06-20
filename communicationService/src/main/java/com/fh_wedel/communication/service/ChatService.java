@@ -1,15 +1,12 @@
 package com.fh_wedel.communication.service;
 
-import com.fh_wedel.communication.model.api.ChatContext;
-import com.fh_wedel.communication.model.api.ChatDetailResponse;
-import com.fh_wedel.communication.model.api.ChatListResponse;
-import com.fh_wedel.communication.model.api.ChatSummary;
-import com.fh_wedel.communication.model.api.Message;
-import com.fh_wedel.communication.model.api.SendMessageRequest;
+import com.fh_wedel.communication.model.api.*;
 import com.fh_wedel.communication.model.db.ChatMetaItem;
 import com.fh_wedel.communication.model.db.MessageItem;
 import com.fh_wedel.communication.model.db.ParticipantLinkItem;
 import com.fh_wedel.communication.repository.ChatRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,11 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatService {
@@ -36,13 +31,13 @@ public class ChatService {
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
     private final ChatRepository chatRepository;
     private final MatchingServiceClient matchingServiceClient;
-    private final WorkflowServiceClient workflowServiceClient;
+    private final ConfigurationServiceClient configurationServiceClient;
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> activeEmitters = new ConcurrentHashMap<>();
 
-    public ChatService(ChatRepository chatRepository, MatchingServiceClient matchingServiceClient, WorkflowServiceClient workflowServiceClient) {
+    public ChatService(ChatRepository chatRepository, MatchingServiceClient matchingServiceClient, ConfigurationServiceClient configurationServiceClient) {
         this.chatRepository = chatRepository;
         this.matchingServiceClient = matchingServiceClient;
-        this.workflowServiceClient = workflowServiceClient;
+        this.configurationServiceClient = configurationServiceClient;
     }
     /**
      * Strips Cedar entity type prefix and Cognito pool prefix from a raw principal ID.
@@ -338,7 +333,7 @@ public class ChatService {
         }
 
         // Validate workflow rules
-        com.fh_wedel.workflow.client.model.WorkflowRulesDto rules = workflowServiceClient.getWorkflowRules(submissionId);
+        com.fh_wedel.configuration.client.model.ReviewRulesDto rules = configurationServiceClient.getSubmissionRules(submissionId);
         if (Boolean.FALSE.equals(rules.getAuthorReviewerChatAllowed())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
         }

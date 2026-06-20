@@ -27,9 +27,6 @@ jobs:
       user_service_code: ${{ steps.filter.outputs.user_service_code }}
       user_service_infra: ${{ steps.filter.outputs.user_service_infra }}
       user_service_any: ${{ steps.filter.outputs.user_service_any }}
-      workflow_service_code: ${{ steps.filter.outputs.workflow_service_code }}
-      workflow_service_infra: ${{ steps.filter.outputs.workflow_service_infra }}
-      workflow_service_any: ${{ steps.filter.outputs.workflow_service_any }}
       web_ui_code: ${{ steps.filter.outputs.web_ui_code }}
       web_ui_infra: ${{ steps.filter.outputs.web_ui_infra }}
       web_ui_any: ${{ steps.filter.outputs.web_ui_any }}
@@ -82,13 +79,10 @@ jobs:
             user_service_any:
               - 'userService/**'
               - 'infraLibrary/**'
-            workflow_service_code:
               - 'workflow-service/workflow-*/**'
               - 'workflow-service/pom.xml'
               - 'workflow-service/Dockerfile'
-            workflow_service_infra:
               - 'workflow-service/infra/**'
-            workflow_service_any:
               - 'workflow-service/**'
               - 'infraLibrary/**'
             web_ui_code:
@@ -289,31 +283,11 @@ jobs:
       deploy_environment: "fh-wedel-prod"
     secrets: inherit
 
-  workflow-service:
-    needs: [changes, infra-library-tests]
-    if: |
-      always() && 
-      (needs.changes.outputs.workflow_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
-      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
-    uses: ./.github/workflows/reusable-service.yml
-    with:
-      service_name: workflow
-      service_path: workflow-service
-      infra_path: workflow-service/infra
-      docker_context: workflow-service
-      ecr_repository: fh-wedel/workflow
-      run_maven: ${{ needs.changes.outputs.workflow_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
-      run_infra: ${{ needs.changes.outputs.workflow_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
-      run_docker: ${{ needs.changes.outputs.workflow_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
-      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
-      deploy_environment: "fh-wedel-prod"
-    secrets: inherit
-
   web-ui:
     needs: [changes, infra-library-tests]
     if: |
-      always() &&
-      (needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      always() && 
+      (needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') && 
       (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
     uses: ./.github/workflows/reusable-service.yml
     with:
@@ -372,8 +346,8 @@ jobs:
   configuration-service:
     needs: [changes, infra-library-tests]
     if: |
-      always() &&
-      (needs.changes.outputs.configuration_service_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      always() && 
+      (needs.changes.outputs.configuration_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
       (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
     uses: ./.github/workflows/reusable-service.yml
     with:
@@ -392,8 +366,8 @@ jobs:
   submission-service:
     needs: [changes, infra-library-tests]
     if: |
-      always() &&
-      (needs.changes.outputs.submission_service_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      always() && 
+      (needs.changes.outputs.submission_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
       (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
     uses: ./.github/workflows/reusable-service.yml
     with:
@@ -412,8 +386,8 @@ jobs:
   notification-service:
     needs: [changes, infra-library-tests]
     if: |
-      always() &&
-      (needs.changes.outputs.notification_service_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      always() && 
+      (needs.changes.outputs.notification_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
       (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
     uses: ./.github/workflows/reusable-service.yml
     with:
@@ -432,8 +406,8 @@ jobs:
   response-service:
     needs: [changes, infra-library-tests]
     if: |
-      always() &&
-      (needs.changes.outputs.response_service_any == 'true' || github.event_name == 'workflow_dispatch') &&
+      always() && 
+      (needs.changes.outputs.response_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
       (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
     uses: ./.github/workflows/reusable-service.yml
     with:
@@ -456,20 +430,19 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [changes, web-ui, template-service, user-service, workflow-service, matching-service, communication-service, configuration-service, submission-service, notification-service, response-service]
+    needs: [ changes, web-ui, template-service, user-service, matching-service, communication-service, configuration-service, submission-service, notification-service, response-service ]
     if: |
-      always() &&
-      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
-      (needs.changes.outputs.cloudfront == 'true' || needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') &&
-      (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') &&
-      (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') &&
-      (needs['workflow-service'].result == 'success' || needs['workflow-service'].result == 'skipped') &&
-      (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') &&
-      (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') &&
-      (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped') &&
-      (needs['submission-service'].result == 'success' || needs['submission-service'].result == 'skipped') &&
-      (needs['response-service'].result == 'success' || needs['response-service'].result == 'skipped') &&
-      (needs['notification-service'].result == 'success' || needs['notification-service'].result == 'skipped') &&
+      always() && 
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && 
+      (needs.changes.outputs.cloudfront == 'true' || needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') && 
+      (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') && 
+      (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') && 
+      (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') && 
+      (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') && 
+      (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped') && 
+      (needs['submission-service'].result == 'success' || needs['submission-service'].result == 'skipped') && 
+      (needs['response-service'].result == 'success' || needs['response-service'].result == 'skipped') && 
+      (needs['notification-service'].result == 'success' || needs['notification-service'].result == 'skipped') && 
       (needs['user-service'].result == 'success' || needs['user-service'].result == 'skipped')
     environment: "fh-wedel-prod"
     env:

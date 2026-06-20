@@ -200,12 +200,13 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/workflow.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-workflow</output>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/configuration.json
+                            </inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-configuration</output>
                             <generatorName>java</generatorName>
                             <library>native</library>
-                            <apiPackage>com.fh_wedel.workflow.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.workflow.client.model</modelPackage>
+                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
+                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
                             <generateSupportingFiles>true</generateSupportingFiles>
                             <configOptions>
                                 <openApiNullable>false</openApiNullable>
@@ -250,7 +251,9 @@
                         <configuration>
                             <sources>
                                 <source>${project.build.directory}/generated-sources/openapi-matching/src/main/java</source>
-                                <source>${project.build.directory}/generated-sources/openapi-workflow/src/main/java</source>
+                                <source>
+                                    ${project.build.directory}/generated-sources/openapi-configuration/src/main/java
+                                </source>
                                 <source>${project.build.directory}/generated-sources/openapi-user/src/main/java</source>
                             </sources>
                         </configuration>
