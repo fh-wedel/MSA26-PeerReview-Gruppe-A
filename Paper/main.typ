@@ -1,25 +1,8 @@
 #import "template.typ": statutory-declaration, thesis
 
-#show: thesis.with(
-  title: "MSA26-PeerReview-Gruppe-A",
-  degree: "Moderne Softwarearchitektur",
-  authors: (
-    (name: "Matthias Matthies", id: "106971", email: "stud106971@fh-wedel.de"),
-    (name: "Max Mustermann", id: "123456", email: "stud123456@fh-wedel.de"),
-    (name: "Erika Musterfrau", id: "654321", email: "stud654321@fh-wedel.de"),
-    (name: "John Doe", id: "987654", email: "stud987654@fh-wedel.de"),
-  ),
-  date: "17.07.2026",
-  supervisor: (
-    name: "Prof. Dr. Ulrich Hoffmann",
-    institution: "Fachhochschule Wedel",
-    street: "Feldstraße 143",
-    zip: "22880",
-    city: "Wedel",
-    phone: "04103 - 8048 - 41",
-    email: "urlic.hoffmann@fh-wedel.de",
-  ),
-)
+// Load the JSON data into a variable
+#let metadata = json("metadata.json")
+#show: thesis.with(..metadata)
 
 // Roman numbering for front matter
 #set page(numbering: "I")
