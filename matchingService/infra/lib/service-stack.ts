@@ -108,7 +108,7 @@ export class ServiceStack extends cdk.Stack {
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
                 // Use the AAAA record in internal.services for ECS-to-ECS communication.
                 // ECS Service Connect (sc.internal) does NOT support IPv6-only subnets.
-                'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8081`,
+                'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
                 'USER_SERVICE_URL': `http://user.${cloudMapNamespace.namespaceName}:8081`,
             },
             healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),

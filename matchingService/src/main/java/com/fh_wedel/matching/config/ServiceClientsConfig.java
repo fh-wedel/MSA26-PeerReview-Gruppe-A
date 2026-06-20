@@ -19,7 +19,7 @@ public class ServiceClientsConfig {
     @Value("${aws.user-service.url:http://user.internal.services:8081}")
     private String userServiceUrl;
 
-    @Value("${aws.configuration.service.url:http://configuration.internal.services:8081}")
+    @Value("${aws.configuration.service.url:http://configuration.internal.services:8080}")
     private String configurationServiceUrl;
 
     private Consumer<HttpRequest.Builder> createAuthInterceptor() {
