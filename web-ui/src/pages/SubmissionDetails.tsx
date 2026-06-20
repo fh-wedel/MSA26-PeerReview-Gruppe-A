@@ -49,6 +49,9 @@ export const SubmissionDetails: React.FC = () => {
   const [workflowRules, setWorkflowRules] = useState<any>(null);
   const [realSubmission, setRealSubmission] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const { user } = useAuth();
 
@@ -255,9 +258,6 @@ export const SubmissionDetails: React.FC = () => {
   historyToDisplay.sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
 
   // Upload/Submit Handlers
-  const [uploading, setUploading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const firstDoc = documents.length > 0 ? documents[0] : null;
 
