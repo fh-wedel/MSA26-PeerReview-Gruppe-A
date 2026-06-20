@@ -1,6 +1,8 @@
 package com.fh_wedel.response.controller;
 
 import com.fh_wedel.response.model.ReviewResultDto;
+import com.fh_wedel.response.model.SubmitReviewRequest;
+import com.fh_wedel.response.model.ReviewResult;
 import com.fh_wedel.response.service.ResultService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,25 @@ public class ResultController {
 
     public ResultController(ResultService resultService) {
         this.resultService = resultService;
+    }
+
+    @PostMapping("/results")
+    @PreAuthorize("hasAnyRole('Admin', 'Reviewer')")
+    public ResponseEntity<ReviewResultDto> submitReview(
+            @RequestBody SubmitReviewRequest request,
+            Authentication authentication) {
+
+        String callerSub = extractSubFromDetails(authentication);
+
+        if (callerSub == null || callerSub.isBlank()) {
+            log.warn("Could not determine callerSub for caller '{}'",
+                    authentication != null ? authentication.getName() : "anonymous");
+            return ResponseEntity.badRequest().build();
+        }
+
+        log.info("Submitting review for submission: {}", request.getSubmissionId());
+        ReviewResult saved = resultService.submitReview(request, callerSub);
+        return ResponseEntity.status(201).body(ReviewResultDto.from(saved));
     }
 
     @GetMapping("/results")

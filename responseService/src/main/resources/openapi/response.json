@@ -12,6 +12,31 @@
   ],
   "paths": {
     "/results": {
+      "post": {
+        "summary": "Submit a review result for a submission",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review result submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "summary": "Get all review results for an author",
         "parameters": [
@@ -103,6 +128,45 @@
   },
   "components": {
     "schemas": {
+      "SubmitReviewRequest": {
+        "type": "object",
+        "required": [
+          "submissionId",
+          "reviewComments"
+        ],
+        "properties": {
+          "submissionId": {
+            "type": "string"
+          },
+          "reviewComments": {
+            "type": "string"
+          },
+          "finalGrade": {
+            "type": "string"
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewAnswer"
+            }
+          }
+        }
+      },
+      "ReviewAnswer": {
+        "type": "object",
+        "required": [
+          "questionId",
+          "answer"
+        ],
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      },
       "ReviewResult": {
         "type": "object",
         "properties": {

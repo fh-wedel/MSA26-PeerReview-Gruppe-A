@@ -24,6 +24,7 @@ import {useTheme} from '@mui/material/styles';
 import {useAuth} from '../contexts/AuthContext';
 import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
 import {configApiClient, submissionApiClient} from '../api/clients';
+import {ReviewFormModal} from '../components/ReviewFormModal';
 import {getMockSubmissionById} from '../stubs/submissions';
 import {formatDateTime} from '../utils/date';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
@@ -44,6 +45,7 @@ export const SubmissionDetails: React.FC = () => {
   const [chatAllowed, setChatAllowed] = useState(true);
   const [loadingContext, setLoadingContext] = useState(true);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [isReviewerState, setIsReviewerState] = useState(false);
   const [submissionConfig, setSubmissionConfig] = useState<any>(null);
   const [submissionMatch, setSubmissionMatch] = useState<any>(null);
   const [workflowRules, setWorkflowRules] = useState<any>(null);
@@ -83,6 +85,7 @@ export const SubmissionDetails: React.FC = () => {
       if (match && fetchedRules) {
         const isAuthor = match.submitterIds?.includes(user.id);
         const isReviewer = match.matches.some((m: any) => m.examinerId === user.id);
+        setIsReviewerState(isReviewer);
         setChatAllowed(fetchedRules.authorReviewerChatAllowed && (isAuthor || isReviewer));
       } else {
         setChatAllowed(false);
@@ -450,6 +453,18 @@ export const SubmissionDetails: React.FC = () => {
                 {downloading ? 'Loading PDF...' : 'View Uploaded PDF'}
               </Button>
 
+              {status === 'Submitted' && isReviewerState && (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  size="large"
+                  fullWidth
+                  onClick={() => setReviewOpen(true)}
+                >
+                  Start Review
+                </Button>
+              )}
+
               <Button
                 variant="contained"
                 size="large"
@@ -603,6 +618,18 @@ export const SubmissionDetails: React.FC = () => {
           <Button onClick={() => setReviewOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {submissionId && (
+        <ReviewFormModal
+          open={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+          submissionId={submissionId}
+          onSubmitted={() => {
+            alert("Review submitted successfully!");
+            // Optionally refresh the data here
+          }}
+        />
+      )}
     </Box>
   );
 };

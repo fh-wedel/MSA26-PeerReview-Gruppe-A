@@ -7,3 +7,5 @@
 
 # Keep infra Jest configs tracked (every service needs its ts-jest transform in CI)
 !**/jest.config.js
+**/target/**
+**/cdk.out
