@@ -94,10 +94,14 @@ export const SubmissionDetails: React.FC = () => {
         setReviewQuestions((formRes as any).data);
       }
 
+      if (match) {
+        const isReviewer = isAssignmentsPage || (match.matches?.some((m: any) => m.examinerId === user.id) || false);
+        setIsReviewerState(isReviewer);
+      }
+      
       if (match && fetchedRules) {
         const isAuthor = match.submitterIds?.includes(user.id);
-        const isReviewer = match.matches.some((m: any) => m.examinerId === user.id);
-        setIsReviewerState(isReviewer);
+        const isReviewer = isAssignmentsPage || (match.matches?.some((m: any) => m.examinerId === user.id) || false);
         setChatAllowed(fetchedRules.authorReviewerChatAllowed && (isAuthor || isReviewer));
       } else {
         setChatAllowed(false);
@@ -469,7 +473,7 @@ export const SubmissionDetails: React.FC = () => {
                 {downloading ? 'Loading PDF...' : 'View Uploaded PDF'}
               </Button>
 
-              {status === 'Submitted' && isReviewerState && !reviewAvailable && (
+              {(status === 'Submitted' || status === 'Ready for Review') && isReviewerState && !reviewAvailable && (
                 <Button
                   variant="contained"
                   color="secondary"
