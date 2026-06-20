@@ -64,7 +64,7 @@ export const SubmissionDetails: React.FC = () => {
     Promise.all([
       fetchSubmissionMatch(submissionId).catch(() => null),
       fetchWorkflowRulesForSubmission(submissionId).catch(() => null),
-      configApiClient.submissionId.getSubmissionId(submissionId, { format: 'json' }).catch(() => null),
+      configApiClient.submissions.submissionsDetail(submissionId, {format: 'json'}).catch(() => null),
       submissionApiClient.submissions.getSubmission(submissionId).catch(() => null),
       submissionApiClient.submissions.getDocuments(submissionId).catch(() => null),
     ]).then(([match, fetchedRules, configRes, realSubRes, docsRes]) => {

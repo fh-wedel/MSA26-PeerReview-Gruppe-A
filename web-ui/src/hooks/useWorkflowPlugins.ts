@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
-import {workflowApiClient} from '../api/clients';
-import type { ReviewTypeDto, ReviewTemplateDto } from '../api/generated/workflow';
+import {configurationApiClient} from '../api/clients';
+import type {ReviewTemplateDto, ReviewTypeDto} from '../api/generated/configuration';
 
 export const useWorkflowPlugins = () => {
   const [types, setTypes] = useState<ReviewTypeDto[]>([]);
@@ -12,8 +12,8 @@ export const useWorkflowPlugins = () => {
     const fetchPlugins = async () => {
       try {
         const [typesRes, templatesRes] = await Promise.all([
-          workflowApiClient.reviewTypes.listReviewTypes(),
-          workflowApiClient.reviewTemplates.listReviewTemplates()
+          configurationApiClient.reviewTypes.listReviewTypes(),
+          configurationApiClient.reviewTemplates.listReviewTemplates()
         ]);
         
         if (!typesRes.ok || !templatesRes.ok) {

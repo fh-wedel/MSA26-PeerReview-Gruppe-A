@@ -1,15 +1,15 @@
 package com.fh_wedel.matching;
 
+import com.fh_wedel.configuration.client.api.SubmissionRulesApi;
+import com.fh_wedel.matching.repository.MatchRepository;
+import com.fh_wedel.user.client.api.GroupsApi;
+import com.fh_wedel.user.client.api.UsersApi;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import io.awspring.cloud.sqs.operations.SqsTemplate;
-import com.fh_wedel.user.client.api.GroupsApi;
-import com.fh_wedel.user.client.api.UsersApi;
-import com.fh_wedel.workflow.client.api.WorkflowRulesApi;
-import com.fh_wedel.matching.repository.MatchRepository;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 @SpringBootTest
 class MatchingApplicationTests {
@@ -30,7 +30,7 @@ class MatchingApplicationTests {
     private UsersApi usersApi;
 
     @MockitoBean
-    private WorkflowRulesApi workflowRulesApi;
+    private SubmissionRulesApi configurationRulesApi;
 
     @MockitoBean
     private MatchRepository matchRepository;

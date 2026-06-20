@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
-import { ResponseServiceStack } from '../lib/service-stack';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
-import { ApiStack } from '../../../infraLibrary/lib/stacks/api/api';
-import { AuthStack } from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
+import {ResponseServiceStack} from '../lib/service-stack';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
+import {ApiStack} from '../../../infraLibrary/lib/stacks/api/api';
+import {AuthStack} from '../../../infraLibrary/lib/stacks/verified-permissions/auth-stack';
 import path from 'path';
 
 const app = new cdk.App();
@@ -53,6 +53,7 @@ const serviceStack = new ResponseServiceStack(app, 'ResponseServiceStack', {
   description: 'Response service for storing and exposing review results',
   containerPort,
   requestQueueName: 'response-request-queue',
+  submissionReadyQueueName: 'submission-ready-queue',
   s3BucketName: 'msa26-peer-review-response-documents',
   dynamoDbTableName: 'response-service-results',
   minTaskCount: 1,

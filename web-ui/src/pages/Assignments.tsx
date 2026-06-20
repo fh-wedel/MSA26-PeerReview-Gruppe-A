@@ -112,7 +112,7 @@ export const Assignments: React.FC = () => {
             }
 
           try {
-            const res = await configApiClient.submissionId.getSubmissionId(assignment.submissionId, {format: 'json'});
+            const res = await configApiClient.submissions.submissionsDetail(assignment.submissionId, {format: 'json'});
             if (res && (res as any).data) {
               const data = (res as any).data;
               title = data.title || title;

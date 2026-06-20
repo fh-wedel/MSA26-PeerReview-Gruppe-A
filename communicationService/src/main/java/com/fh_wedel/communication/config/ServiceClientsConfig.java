@@ -18,8 +18,8 @@ public class ServiceClientsConfig {
     @Value("${matching.service.url:http://matching.internal.services:8081}")
     private String matchingServiceUrl;
 
-    @Value("${workflow.service.url:http://workflow.internal.services:8081}")
-    private String workflowServiceUrl;
+    @Value("${configuration.service.url:http://configuration.internal.services:8080}")
+    private String configurationServiceUrl;
 
     @Value("${user.service.url:http://user.internal.services:8081}")
     private String userServiceUrl;
@@ -59,16 +59,16 @@ public class ServiceClientsConfig {
     }
 
     @Bean
-    public com.fh_wedel.workflow.client.ApiClient workflowApiClient() {
-        com.fh_wedel.workflow.client.ApiClient apiClient = new com.fh_wedel.workflow.client.ApiClient();
-        apiClient.updateBaseUri(workflowServiceUrl + "/api/workflow");
+    public com.fh_wedel.configuration.client.ApiClient configurationApiClient() {
+        com.fh_wedel.configuration.client.ApiClient apiClient = new com.fh_wedel.configuration.client.ApiClient();
+        apiClient.updateBaseUri(configurationServiceUrl + "/api/configuration");
         apiClient.setRequestInterceptor(createAuthInterceptor());
         return apiClient;
     }
 
     @Bean
-    public com.fh_wedel.workflow.client.api.WorkflowRulesApi workflowRulesApi(com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
-        return new com.fh_wedel.workflow.client.api.WorkflowRulesApi(workflowApiClient);
+    public com.fh_wedel.configuration.client.api.SubmissionRulesApi configurationRulesApi(com.fh_wedel.configuration.client.ApiClient configurationApiClient) {
+        return new com.fh_wedel.configuration.client.api.SubmissionRulesApi(configurationApiClient);
     }
 
     @Bean

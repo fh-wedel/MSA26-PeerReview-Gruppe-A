@@ -1,15 +1,15 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Construct } from 'constructs';
+import {Construct} from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
-import { EcsInfra } from '../../../infraLibrary/lib/ecs';
-import { SqsInfra } from '../../../infraLibrary/lib/sqs';
-import { LogsInfra } from '../../../infraLibrary/lib/logs';
-import { AWSConstants } from '../../../infrabaseline/lib/constants';
+import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
+import {EcsInfra} from '../../../infraLibrary/lib/ecs';
+import {SqsInfra} from '../../../infraLibrary/lib/sqs';
+import {LogsInfra} from '../../../infraLibrary/lib/logs';
+import {AWSConstants} from '../../../infrabaseline/lib/constants';
 
 export interface ResponseServiceStackProps extends cdk.StackProps {
   serviceName: string;
@@ -20,6 +20,7 @@ export interface ResponseServiceStackProps extends cdk.StackProps {
   minTaskCount: number;
   maxTaskCount: number;
   requestQueueName: string;
+  submissionReadyQueueName: string;
   s3BucketName: string;
   dynamoDbTableName: string;
 }
@@ -85,6 +86,7 @@ export class ResponseServiceStack extends cdk.Stack {
       portMappings: [{ containerPort, protocol: ecs.Protocol.TCP }],
       environment: {
         'SQS_REQUEST_QUEUE': props.requestQueueName,
+        'SQS_SUBMISSION_READY_QUEUE': props.submissionReadyQueueName,
         'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
@@ -142,6 +144,12 @@ export class ResponseServiceStack extends cdk.Stack {
       enableDeadLetterQueue: true,
     });
     SqsInfra.grantReadPermissions(requestQueues, ecsService.taskDefinition.taskRole);
+
+    const submissionReadyQueues = SqsInfra.createQueue(this, {
+      queueName: props.submissionReadyQueueName,
+      enableDeadLetterQueue: true,
+    });
+    SqsInfra.grantReadPermissions(submissionReadyQueues, ecsService.taskDefinition.taskRole);
 
     // Grant S3 read access
     documentBucket.grantRead(ecsService.taskDefinition.taskRole);

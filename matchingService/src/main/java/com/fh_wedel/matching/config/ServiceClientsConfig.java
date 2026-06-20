@@ -1,8 +1,8 @@
 package com.fh_wedel.matching.config;
 
 import com.fh_wedel.user.client.ApiClient;
-import com.fh_wedel.user.client.api.UsersApi;
 import com.fh_wedel.user.client.api.GroupsApi;
+import com.fh_wedel.user.client.api.UsersApi;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,8 +19,8 @@ public class ServiceClientsConfig {
     @Value("${aws.user-service.url:http://user.internal.services:8081}")
     private String userServiceUrl;
 
-    @Value("${aws.workflow.service.url:http://workflow.internal.services:8081}")
-    private String workflowServiceUrl;
+    @Value("${aws.configuration.service.url:http://configuration.internal.services:8080}")
+    private String configurationServiceUrl;
 
     private Consumer<HttpRequest.Builder> createAuthInterceptor() {
         return builder -> {
@@ -66,15 +66,15 @@ public class ServiceClientsConfig {
     }
 
     @Bean
-    public com.fh_wedel.workflow.client.ApiClient workflowApiClient() {
-        com.fh_wedel.workflow.client.ApiClient apiClient = new com.fh_wedel.workflow.client.ApiClient();
-        apiClient.updateBaseUri(workflowServiceUrl + "/api/workflow");
+    public com.fh_wedel.configuration.client.ApiClient configurationApiClient() {
+        com.fh_wedel.configuration.client.ApiClient apiClient = new com.fh_wedel.configuration.client.ApiClient();
+        apiClient.updateBaseUri(configurationServiceUrl + "/api/configuration");
         apiClient.setRequestInterceptor(createAuthInterceptor());
         return apiClient;
     }
 
     @Bean
-    public com.fh_wedel.workflow.client.api.WorkflowRulesApi workflowRulesApi(com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
-        return new com.fh_wedel.workflow.client.api.WorkflowRulesApi(workflowApiClient);
+    public com.fh_wedel.configuration.client.api.SubmissionRulesApi configurationRulesApi(com.fh_wedel.configuration.client.ApiClient configurationApiClient) {
+        return new com.fh_wedel.configuration.client.api.SubmissionRulesApi(configurationApiClient);
     }
 }

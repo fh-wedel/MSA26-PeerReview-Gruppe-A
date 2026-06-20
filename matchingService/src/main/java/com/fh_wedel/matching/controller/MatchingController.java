@@ -1,16 +1,15 @@
 package com.fh_wedel.matching.controller;
 
+import com.fh_wedel.configuration.client.api.SubmissionRulesApi;
 import com.fh_wedel.matching.model.MatchRecord;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
 import com.fh_wedel.matching.model.api.AssignmentEntry;
 import com.fh_wedel.matching.model.api.ExaminerMatchResponse;
 import com.fh_wedel.matching.model.api.MatchEntry;
 import com.fh_wedel.matching.model.api.SubmissionMatchResponse;
-import com.fh_wedel.user.client.model.UserProfile;
+import com.fh_wedel.matching.service.MatchingService;
 import com.fh_wedel.user.client.api.GroupsApi;
 import com.fh_wedel.user.client.api.UsersApi;
-import com.fh_wedel.workflow.client.api.WorkflowRulesApi;
-import com.fh_wedel.matching.service.MatchingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,8 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fh_wedel.matching.model.api.WorkflowRulesDto;
-
 
 /**
  * REST controller for querying match information.
@@ -40,16 +37,16 @@ public class MatchingController {
     private final MatchingService matchingService;
     private final GroupsApi groupsApi;
     private final UsersApi usersApi;
-    private final WorkflowRulesApi workflowRulesApi;
+    private final SubmissionRulesApi configurationRulesApi;
 
     public MatchingController(MatchingService matchingService, 
                               GroupsApi groupsApi,
                               UsersApi usersApi,
-                              WorkflowRulesApi workflowRulesApi) {
+                              SubmissionRulesApi configurationRulesApi) {
         this.matchingService = matchingService;
         this.groupsApi = groupsApi;
         this.usersApi = usersApi;
-        this.workflowRulesApi = workflowRulesApi;
+        this.configurationRulesApi = configurationRulesApi;
     }
 
     @GetMapping("/matches/submissions/{submissionId}")
@@ -82,7 +79,7 @@ public class MatchingController {
         boolean hideExaminer = false;
         if (!isAdminOrOfficer(authentication)) {
             try {
-                com.fh_wedel.workflow.client.model.WorkflowRulesDto rules = workflowRulesApi.getRulesForSubmission(submissionId);
+                com.fh_wedel.configuration.client.model.ReviewRulesDto rules = configurationRulesApi.getRulesForSubmission(submissionId);
                 if (rules != null && Boolean.TRUE.equals(rules.getReviewerAnonymous())) {
                     hideExaminer = true;
                 }

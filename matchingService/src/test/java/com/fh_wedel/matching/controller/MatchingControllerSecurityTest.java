@@ -1,14 +1,12 @@
 package com.fh_wedel.matching.controller;
 
+import com.fh_wedel.configuration.client.api.SubmissionRulesApi;
 import com.fh_wedel.matching.model.MatchStatus;
 import com.fh_wedel.matching.model.SubmissionStatusRecord;
 import com.fh_wedel.matching.service.MatchingService;
-import com.fh_wedel.user.client.model.UserProfile;
-import com.fh_wedel.user.client.model.UserProfileListResponse;
-import com.fh_wedel.user.client.model.UserSummary;
 import com.fh_wedel.user.client.api.GroupsApi;
 import com.fh_wedel.user.client.api.UsersApi;
-import com.fh_wedel.workflow.client.api.WorkflowRulesApi;
+import com.fh_wedel.user.client.model.UserSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 
 import java.util.Collections;
 import java.util.List;
@@ -41,14 +38,14 @@ class MatchingControllerSecurityTest {
     private UsersApi usersApi;
 
     @Mock
-    private WorkflowRulesApi workflowRulesApi;
+    private SubmissionRulesApi configurationRulesApi;
 
     @InjectMocks
     private MatchingController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new MatchingController(matchingService, groupsApi, usersApi, workflowRulesApi);
+        controller = new MatchingController(matchingService, groupsApi, usersApi, configurationRulesApi);
     }
 
     private Authentication createAuth(String role, String username, String sub) {

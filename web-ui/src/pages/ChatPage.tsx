@@ -23,7 +23,7 @@ import type {UserSummary} from '../api/communication';
 import {searchUsers} from '../api/communication';
 import {useAuth} from '../contexts/AuthContext';
 import {useLocation} from 'react-router-dom';
-import { configApiClient } from '../api/clients';
+import {configApiClient} from '../api/clients';
 
 export const ChatPage: React.FC = () => {
   const { chats } = useChat();
@@ -62,9 +62,9 @@ export const ChatPage: React.FC = () => {
     uniqueIds.forEach(id => {
       setSubmissionMap(prev => {
         if (!prev[id]) {
-          configApiClient.submissionId.getSubmissionId(id)
-            .then(res => setSubmissionMap(current => ({ ...current, [id]: res.data.title || id })))
-            .catch(err => console.error(`Failed to load submission ${id}`, err));
+            configApiClient.submissions.submissionsDetail(id)
+                .then((res: any) => setSubmissionMap(current => ({...current, [id]: res.data.title || id})))
+                .catch((err: any) => console.error(`Failed to load submission ${id}`, err));
           return { ...prev, [id]: 'Loading...' };
         }
         return prev;

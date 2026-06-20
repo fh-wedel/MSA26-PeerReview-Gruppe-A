@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
-import { CloudFrontStack } from '../lib/cloudfront-stack';
-import { AWSConstants } from '../../infrabaseline/lib/constants';
-
+import {CloudFrontStack} from '../lib/cloudfront-stack';
+import {AWSConstants} from '../../infrabaseline/lib/constants';
 
 
 const app = new cdk.App();
@@ -49,7 +48,7 @@ new CloudFrontStack(app, 'PeerReviewCloudFrontStack', {
         { apiName: 'ConfigurationServiceAPI', pathPattern: '/api/configuration/*', enableCaching: false },
         { apiName: 'SubmissionServiceAPI', pathPattern: '/api/submission/*', enableCaching: false },
         { apiName: 'UserServiceAPI', pathPattern: '/api/users/*', enableCaching: false },
-        { apiName: 'WorkflowServiceAPI', pathPattern: '/api/workflow/*', enableCaching: false },
+
         { apiName: 'MatchingServiceAPI', pathPattern: '/api/matching/*', enableCaching: false },
         { apiName: 'NotificationServiceAPI', pathPattern: '/api/notification/*', enableCaching: false },
         { apiName: 'ResponseServiceAPI', pathPattern: '/api/response/*', enableCaching: false },

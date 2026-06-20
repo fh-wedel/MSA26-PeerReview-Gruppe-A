@@ -72,12 +72,12 @@ export const Submissions: React.FC = () => {
         let allConfigs: any[] = [];
 
         // Fetch user's own submissions
-        const myRes = await configApiClient.author.authorDetail(user.id, { format: 'json' });
+        const myRes = await configApiClient.submissions.authorDetail(user.id, {format: 'json'});
         myConfigs = (myRes as any).data || [];
 
         // Fetch all submissions if admin/exam officer
         if (hasOverviewAccess) {
-          const allRes = await configApiClient.getRoot({ format: 'json' });
+          const allRes = await configApiClient.submissions.submissionsList({format: 'json'});
           allConfigs = (allRes as any).data || [];
         }
 

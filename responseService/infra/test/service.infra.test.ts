@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Match, Template } from 'aws-cdk-lib/assertions';
-import { ResponseServiceStack } from '../lib/service-stack';
+import {Match, Template} from 'aws-cdk-lib/assertions';
+import {ResponseServiceStack} from '../lib/service-stack';
 
 const synth = () => {
     const app = new cdk.App();
@@ -12,6 +12,7 @@ const synth = () => {
         requestQueueName: 'response-request-queue',
         s3BucketName: 'msa26-peer-review-response-documents',
         dynamoDbTableName: 'response-service-results',
+        submissionReadyQueueName: 'submission-ready-queue',
         minTaskCount: 1,
         maxTaskCount: 1,
         memory: 512,

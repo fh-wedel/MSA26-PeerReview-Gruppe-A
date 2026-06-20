@@ -1,0 +1,624 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Configuration API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/configuration",
+      "description": "Basepath for the Configuration API"
+    }
+  ],
+  "paths": {
+    "/submissions": {
+      "post": {
+        "summary": "Create a new submission configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConfigurationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Configuration created successfully"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Submissions"
+        ]
+      },
+      "get": {
+        "summary": "List all configurations",
+        "responses": {
+          "200": {
+            "description": "List of configurations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Configuration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Submissions"
+        ]
+      }
+    },
+    "/submissions/{submissionId}": {
+      "get": {
+        "summary": "Get configuration details by submission ID",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Configuration"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Configuration not found"
+          }
+        },
+        "tags": [
+          "Submissions"
+        ]
+      }
+    },
+    "/submissions/{submissionId}/submission-deadline": {
+      "get": {
+        "summary": "Get submission deadline by submission ID",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Configuration not found"
+          }
+        },
+        "tags": [
+          "Submissions"
+        ]
+      }
+    },
+    "/submissions/{submissionId}/review-deadline": {
+      "get": {
+        "summary": "Get review deadline by submission ID",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Configuration not found"
+          }
+        },
+        "tags": [
+          "Submissions"
+        ]
+      }
+    },
+    "/submissions/author/{authorId}": {
+      "get": {
+        "summary": "Get all configurations for a specific author",
+        "parameters": [
+          {
+            "name": "authorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of configurations for the author",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Configuration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Submissions"
+        ]
+      }
+    },
+    "/submissions/{submissionId}/rules": {
+      "get": {
+        "operationId": "getRulesForSubmission",
+        "summary": "Get the rules for a specific submission",
+        "description": "Returns the anonymity and communication rules for the workflow plugin associated with the given submission ID.",
+        "tags": [
+          "Submission Rules"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the submission",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the rules for the submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewRulesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Submission or workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/submissions/{submissionId}/feedback-form": {
+      "get": {
+        "operationId": "getFeedbackFormForSubmission",
+        "summary": "Get the feedback form for a submission",
+        "tags": [
+          "Submission Reviews"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved feedback form",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewQuestionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-types": {
+      "get": {
+        "operationId": "listReviewTypes",
+        "summary": "List all available review types",
+        "description": "Returns an array of all registered workflow plugins with their metadata and rules.",
+        "tags": [
+          "Review Types"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of workflow plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-types/{typeName}": {
+      "get": {
+        "operationId": "getReviewType",
+        "summary": "Get details of a specific review type",
+        "description": "Returns the metadata and rules for the workflow plugin identified by its name.",
+        "tags": [
+          "Review Types"
+        ],
+        "parameters": [
+          {
+            "name": "typeName",
+            "in": "path",
+            "required": true,
+            "description": "The unique name of the review type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the workflow plugin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewTypeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/review-types/{typeName}/rules": {
+      "get": {
+        "operationId": "getReviewTypeRules",
+        "summary": "Get the rules of a specific workflow plugin",
+        "description": "Returns the anonymity and communication rules for the workflow plugin identified by its name.",
+        "tags": [
+          "Review Types"
+        ],
+        "parameters": [
+          {
+            "name": "typeName",
+            "in": "path",
+            "required": true,
+            "description": "The unique name of the review type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the plugin rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewRulesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workflow plugin not found"
+          }
+        }
+      }
+    },
+    "/review-templates": {
+      "get": {
+        "operationId": "listReviewTemplates",
+        "summary": "List all available review templates",
+        "tags": [
+          "Review Templates"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewTemplateDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review-templates/{templateName}": {
+      "get": {
+        "operationId": "getReviewTemplate",
+        "summary": "Get details of a specific review template",
+        "tags": [
+          "Review Templates"
+        ],
+        "parameters": [
+          {
+            "name": "templateName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewTemplateDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateConfigurationRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "reviewProcessType",
+          "reviewTemplateType",
+          "authorIds"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "reviewProcessType": {
+            "type": "string"
+          },
+          "authorIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "numberOfExaminers": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "submissionDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewTemplateType": {
+            "type": "string"
+          }
+        }
+      },
+      "Configuration": {
+        "type": "object",
+        "required": [
+          "title",
+          "reviewProcessType",
+          "reviewTemplateType",
+          "authorIds",
+          "numberOfExaminers"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "reviewProcessType": {
+            "type": "string"
+          },
+          "authorIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "numberOfExaminers": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "submissionDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewTemplateType": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewQuestionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "RATING",
+              "MULTIPLE_CHOICE",
+              "SCALE"
+            ]
+          },
+          "maxPoints": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "type",
+          "maxPoints",
+          "required"
+        ]
+      },
+      "ReviewTypeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/ReviewRulesDto"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "rules"
+        ]
+      },
+      "ReviewTemplateDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "evaluationCriteriaVisibleToAuthors": {
+            "type": "boolean"
+          },
+          "feedbackFormTemplate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewQuestionDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "evaluationCriteriaVisibleToAuthors",
+          "feedbackFormTemplate"
+        ]
+      },
+      "ReviewRulesDto": {
+        "type": "object",
+        "description": "The anonymity and communication rules of a workflow plugin",
+        "properties": {
+          "authorAnonymous": {
+            "type": "boolean",
+            "description": "Whether the author's identity is hidden from reviewers"
+          },
+          "reviewerAnonymous": {
+            "type": "boolean",
+            "description": "Whether the reviewer's identity is hidden from the author"
+          },
+          "authorReviewerChatAllowed": {
+            "type": "boolean",
+            "description": "Whether direct chat between author and reviewer is allowed"
+          }
+        },
+        "required": [
+          "authorAnonymous",
+          "reviewerAnonymous",
+          "authorReviewerChatAllowed"
+        ]
+      }
+    }
+  }
+}
