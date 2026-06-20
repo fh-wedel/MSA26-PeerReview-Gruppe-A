@@ -146,15 +146,19 @@
           "numberOfExaminers": {
             "type": "integer"
           },
-          "submitterId": {
-            "type": "string",
-            "description": "Cognito sub UUID of the submitter (as stored in DynamoDB)",
-            "example": "123e4567-e89b-12d3-a456-426614174000"
+          "submitterIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Cognito sub UUIDs of the submitters (as stored in DynamoDB)"
           },
-          "submitterUsername": {
-            "type": "string",
-            "description": "Cognito username of the submitter, resolved from the submitterId",
-            "example": "Marcel"
+          "submitterUsernames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Cognito usernames of the submitters, resolved from the submitterIds"
           },
           "matchedAt": {
             "type": "string",
@@ -171,8 +175,8 @@
           "submissionId",
           "status",
           "matchedAt",
-          "submitterId",
-          "submitterUsername"
+          "submitterIds",
+          "submitterUsernames"
         ]
       },
       "MatchEntry": {

@@ -22,6 +22,7 @@ public class SubmissionService {
     private final S3Service s3Service;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
+    private final ConfigurationServiceClient configurationServiceClient;
     private final String workflowQueueName;
     private final String notificationQueueName;
 
@@ -29,12 +30,14 @@ public class SubmissionService {
                              S3Service s3Service,
                              SqsTemplate sqsTemplate,
                              ObjectMapper objectMapper,
+                             ConfigurationServiceClient configurationServiceClient,
                              @Value("${aws.sqs.workflow.queue-name}") String workflowQueueName,
                              @Value("${aws.sqs.notification.queue-name:}") String notificationQueueName) {
         this.repository = repository;
         this.s3Service = s3Service;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
+        this.configurationServiceClient = configurationServiceClient;
         this.workflowQueueName = workflowQueueName;
         this.notificationQueueName = notificationQueueName;
     }
@@ -107,6 +110,15 @@ public class SubmissionService {
         boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
         if (!isDraft && !isWaiting) {
             throw new IllegalStateException("Can only submit submissions in DRAFT or WAITING_FOR_SUBMISSION status");
+        }
+
+        SubmissionConfiguration config = configurationServiceClient.getConfiguration(submission.getConfigurationId());
+        if (config == null) {
+            throw new IllegalStateException("Submission configuration not found");
+        }
+
+        if (config.getSubmissionDeadline() != null && Instant.now().isAfter(config.getSubmissionDeadline())) {
+            throw new IllegalStateException("Submission deadline has passed");
         }
 
         List<DocumentRecord> documents = repository.findDocuments(submissionId);

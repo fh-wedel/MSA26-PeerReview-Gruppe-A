@@ -1,17 +1,41 @@
-import React, {useState} from "react";
-import {Alert, Badge, Box, Button, List, ListItem, ListItemText, Paper, Snackbar, Typography,} from "@mui/material";
+import React, {useEffect, useState} from "react";
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Snackbar,
+  Typography,
+} from "@mui/material";
+import {useNavigate} from "react-router-dom";
 import {LocalizationProvider} from "@mui/x-date-pickers/LocalizationProvider";
 import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
 import {DateCalendar} from "@mui/x-date-pickers/DateCalendar";
 import type {PickerDayProps} from "@mui/x-date-pickers";
 import {PickerDay} from "@mui/x-date-pickers";
-import {mockDeadlines} from "../stubs/deadlines";
 import {SubmissionModal} from "../components/SubmissionModal";
 import {useAuth} from "../contexts/AuthContext";
-import {isSameDay} from "date-fns";
-import {configApiClient} from "../api/clients";
+import {isSameDay, startOfDay} from "date-fns";
+import {configApiClient, matchingApiClient} from "../api/clients";
 
-function ServerDay(props: PickerDayProps & { highlightedDays?: Date[] }) {
+type TaskType = "Submission" | "Assignment";
+
+interface Task {
+  id: string;
+  title: string;
+  type: TaskType;
+  dueDate: Date;
+  submissionId: string;
+}
+
+function ServerDay(props: PickerDayProps<any> & { highlightedDays?: Date[] }) {
   const { highlightedDays = [], day, outsideCurrentMonth, ...other } = props;
   const isSelected =
     !outsideCurrentMonth &&
@@ -34,13 +58,89 @@ function ServerDay(props: PickerDayProps & { highlightedDays?: Date[] }) {
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const deadlineDates = mockDeadlines.map((d) => d.date);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const roles = (user?.roles || []).map((r) => r.toLowerCase());
   const hasAuthorOrAdminRole =
     roles.includes("admin") || roles.includes("author");
+
+  const fetchTasks = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const fetchedTasks: Task[] = [];
+      const now = startOfDay(new Date());
+
+      // 1. Fetch own submissions
+      if (hasAuthorOrAdminRole) {
+        try {
+          const submissionsResponse = await configApiClient.author.authorDetail(user.id);
+          if (submissionsResponse.data && Array.isArray(submissionsResponse.data)) {
+            submissionsResponse.data.forEach((config, index) => {
+              const subId = (config as any).id || (config as any).submissionId || `sub-${index}`;
+              if (config.submissionDeadline) {
+                fetchedTasks.push({
+                  id: `sub-${subId}`,
+                  title: config.title,
+                  type: "Submission",
+                  dueDate: new Date(config.submissionDeadline),
+                  submissionId: subId,
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch author configurations", e);
+        }
+      }
+
+      // 2. Fetch assignments
+      try {
+        const assignmentsResponse = await matchingApiClient.matches.getMatchesByExaminer(user.username);
+        if (assignmentsResponse.data && assignmentsResponse.data.assignments) {
+          for (const assignment of assignmentsResponse.data.assignments) {
+            try {
+              const configResponse = await configApiClient.submissionId.getSubmissionId(assignment.submissionId);
+              if (configResponse.data && configResponse.data.reviewDeadline) {
+                fetchedTasks.push({
+                  id: `ass-${assignment.submissionId}`,
+                  title: configResponse.data.title,
+                  type: "Assignment",
+                  dueDate: new Date(configResponse.data.reviewDeadline),
+                  submissionId: assignment.submissionId,
+                });
+              }
+            } catch (err) {
+              console.error(`Failed to fetch config for assignment ${assignment.submissionId}`, err);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch assignments", e);
+      }
+
+      // Filter and sort tasks
+      const validTasks = fetchedTasks.filter((t) => t.dueDate >= now);
+      validTasks.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+
+      setTasks(validTasks.slice(0, 5));
+    } catch (err) {
+      console.error("Error aggregating tasks", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const deadlineDates = tasks.map((t) => t.dueDate);
 
   const handleSubmission = async (
     title: string,
@@ -52,26 +152,27 @@ export const Dashboard: React.FC = () => {
     reviewDeadline: Date
   ) => {
     try {
-        const response = await configApiClient.postRoot({
-            title,
-            reviewProcessType: reviewType,
-            authorIds: authorIds.length > 0 ? authorIds : [user?.id || ''],
-            reviewTemplateType,
-            numberOfExaminers,
-            submissionDeadline: submissionDeadline.toISOString(),
-            reviewDeadline: reviewDeadline.toISOString(),
+      const response = await configApiClient.postRoot({
+        title,
+        reviewProcessType: reviewType,
+        authorIds: authorIds.length > 0 ? authorIds : [user?.id || ""],
+        reviewTemplateType,
+        numberOfExaminers,
+        submissionDeadline: submissionDeadline.toISOString(),
+        reviewDeadline: reviewDeadline.toISOString(),
       });
 
       if (!response.ok) {
         throw new Error(
-            `Failed to create configuration: ${response.status} ${response.statusText}`,
+            `Failed to create configuration: ${response.status} ${response.statusText}`
         );
       }
 
       setSnackbarOpen(true);
+      fetchTasks(); // Refresh tasks after a new submission
     } catch (err) {
       console.error("Submission failed:", err);
-      throw err; // Re-throw to be caught by SubmissionModal's error state
+      throw err;
     }
   };
 
@@ -108,18 +209,48 @@ export const Dashboard: React.FC = () => {
         <Box sx={{ flex: 2 }}>
           <Paper sx={{ p: 3, mb: 4 }}>
             <Typography variant="h6" gutterBottom>
-              Your Active Assignments
+              Your Tasks
             </Typography>
-            <List>
-              {mockDeadlines.map((deadline) => (
-                <ListItem key={deadline.id} divider>
-                  <ListItemText
-                    primary={deadline.title}
-                    secondary={`Due: ${deadline.date.toLocaleDateString()}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
+            {loading ? (
+                <Box sx={{display: "flex", justifyContent: "center", p: 4}}>
+                  <CircularProgress/>
+                </Box>
+            ) : tasks.length === 0 ? (
+                <Typography variant="body1" color="text.secondary">
+                  You have no upcoming tasks.
+                </Typography>
+            ) : (
+                <List>
+                  {tasks.map((task) => (
+                      <ListItem key={task.id} disablePadding divider>
+                        <ListItemButton
+                            onClick={() =>
+                                navigate(
+                                    task.type === "Assignment"
+                                        ? `/assignments/${task.submissionId}`
+                                        : `/submissions/${task.submissionId}`
+                                )
+                            }
+                        >
+                          <ListItemText
+                              primary={
+                                <Box sx={{display: "flex", alignItems: "center", gap: 1}}>
+                                  {task.title}
+                                  <Chip
+                                      label={task.type}
+                                      size="small"
+                                      color={task.type === "Submission" ? "primary" : "secondary"}
+                                      variant="outlined"
+                                  />
+                                </Box>
+                              }
+                              secondary={`Due: ${task.dueDate.toLocaleDateString()}`}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                  ))}
+                </List>
+            )}
           </Paper>
         </Box>
 

@@ -109,6 +109,66 @@
             "groupName": "Author",
             "actionId": "get /api/configuration/author/{authorId}",
             "description": "Allow Author to list configurations by author"
+        },
+        {
+            "id": "AdminGetSubmissionDeadline",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+            "description": "Allow Admin to get submission deadline"
+        },
+        {
+            "id": "AdminGetReviewDeadline",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+            "description": "Allow Admin to get review deadline"
+        },
+        {
+            "id": "ExamOfficerGetSubmissionDeadline",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+            "description": "Allow Exam Officer to get submission deadline"
+        },
+        {
+            "id": "ExamOfficerGetReviewDeadline",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+            "description": "Allow Exam Officer to get review deadline"
+        },
+        {
+            "id": "TeacherGetSubmissionDeadline",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+            "description": "Allow Teacher to get submission deadline"
+        },
+        {
+            "id": "TeacherGetReviewDeadline",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+            "description": "Allow Teacher to get review deadline"
+        },
+        {
+            "id": "ReviewerGetSubmissionDeadline",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+            "description": "Allow Reviewer to get submission deadline"
+        },
+        {
+            "id": "ReviewerGetReviewDeadline",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+            "description": "Allow Reviewer to get review deadline"
+        },
+        {
+            "id": "AuthorGetSubmissionDeadline",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/{submissionId}/submission-deadline",
+            "description": "Allow Author to get submission deadline"
+        },
+        {
+            "id": "AuthorGetReviewDeadline",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/{submissionId}/review-deadline",
+            "description": "Allow Author to get review deadline"
         }
     ]
 }

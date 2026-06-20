@@ -1,5 +1,6 @@
 package com.fh_wedel.submission.model;
 
+import java.time.Instant;
 import java.util.List;
 
 public class SubmissionConfiguration {
@@ -7,6 +8,8 @@ public class SubmissionConfiguration {
     private String submissionId;
     private String title;
     private List<String> authorIds;
+    private Instant submissionDeadline;
+    private Instant reviewDeadline;
 
     public SubmissionConfiguration() {
     }
@@ -15,6 +18,15 @@ public class SubmissionConfiguration {
         this.submissionId = submissionId;
         this.title = title;
         this.authorIds = authorIds;
+    }
+
+    public SubmissionConfiguration(String submissionId, String title, List<String> authorIds,
+                                   Instant submissionDeadline, Instant reviewDeadline) {
+        this.submissionId = submissionId;
+        this.title = title;
+        this.authorIds = authorIds;
+        this.submissionDeadline = submissionDeadline;
+        this.reviewDeadline = reviewDeadline;
     }
 
     public String getSubmissionId() {
@@ -39,5 +51,21 @@ public class SubmissionConfiguration {
 
     public void setAuthorIds(List<String> authorIds) {
         this.authorIds = authorIds;
+    }
+
+    public Instant getSubmissionDeadline() {
+        return submissionDeadline;
+    }
+
+    public void setSubmissionDeadline(Instant submissionDeadline) {
+        this.submissionDeadline = submissionDeadline;
+    }
+
+    public Instant getReviewDeadline() {
+        return reviewDeadline;
+    }
+
+    public void setReviewDeadline(Instant reviewDeadline) {
+        this.reviewDeadline = reviewDeadline;
     }
 }

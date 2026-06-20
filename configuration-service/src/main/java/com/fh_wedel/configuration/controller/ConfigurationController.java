@@ -13,6 +13,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -102,6 +103,66 @@ public class ConfigurationController {
         }
 
         return ResponseEntity.ok(config);
+    }
+
+    /**
+     * Gets the submission deadline of a configuration by submission ID.
+     */
+    @GetMapping("/{submissionId}/submission-deadline")
+    public ResponseEntity<Instant> getSubmissionDeadline(
+            @PathVariable String submissionId,
+            Authentication authentication) {
+
+        log.info("Request received: GET /{}/submission-deadline", submissionId);
+
+        SubmissionConfiguration config = configurationService.getConfiguration(submissionId);
+        if (config == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String callerSub = extractSubFromDetails(authentication);
+
+        // Access check: If caller is ONLY an Author, verify they are in authorIds
+        boolean callerIsAuthor = isOnlyAuthor(authentication);
+        if (callerIsAuthor) {
+            if (callerSub == null || !config.getAuthorIds().contains(callerSub)) {
+                log.warn("Access Denied: Author '{}' tried to access submission deadline for configuration {}",
+                        authentication.getName(), submissionId);
+                throw new AccessDeniedException("Access Denied: You do not have access to this configuration.");
+            }
+        }
+
+        return ResponseEntity.ok(config.getSubmissionDeadline());
+    }
+
+    /**
+     * Gets the review deadline of a configuration by submission ID.
+     */
+    @GetMapping("/{submissionId}/review-deadline")
+    public ResponseEntity<Instant> getReviewDeadline(
+            @PathVariable String submissionId,
+            Authentication authentication) {
+
+        log.info("Request received: GET /{}/review-deadline", submissionId);
+
+        SubmissionConfiguration config = configurationService.getConfiguration(submissionId);
+        if (config == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String callerSub = extractSubFromDetails(authentication);
+
+        // Access check: If caller is ONLY an Author, verify they are in authorIds
+        boolean callerIsAuthor = isOnlyAuthor(authentication);
+        if (callerIsAuthor) {
+            if (callerSub == null || !config.getAuthorIds().contains(callerSub)) {
+                log.warn("Access Denied: Author '{}' tried to access review deadline for configuration {}",
+                        authentication.getName(), submissionId);
+                throw new AccessDeniedException("Access Denied: You do not have access to this configuration.");
+            }
+        }
+
+        return ResponseEntity.ok(config.getReviewDeadline());
     }
 
     /**
