@@ -8,7 +8,7 @@
     .enumerate()
     .map(((i, _)) => {
       let num = i + start
-      text(fill: rgb("888888"), font: "Helvetica", size: 8.5pt)[#num]
+      text(fill: rgb("888888"), font: "Liberation Sans", size: 8.5pt)[#num]
     })
     .join("\n")
 
@@ -34,7 +34,7 @@
         inset: (x: 10pt, y: 6pt),
         radius: (top: 3pt, bottom: 0pt),
         width: 100%,
-        text(size: 9pt, weight: "bold", font: "Helvetica")[#title],
+        text(size: 9pt, weight: "bold", font: "Liberation Sans")[#title],
       )
       #v(-1em)
       #block(
@@ -78,14 +78,14 @@
   align(center)[
     #if logo != none { image(logo, width: 50%) }
     #v(1.5em)
-    #text(size: 14pt, font: "Helvetica", weight: "bold")[#smallcaps(department)]
+    #text(size: 14pt, font: "Liberation Sans", weight: "bold")[#smallcaps(department)]
     #v(3em)
-    #text(size: 14pt, weight: "medium", font: "Helvetica")[#degree]
+    #text(size: 14pt, weight: "medium", font: "Liberation Sans")[#degree]
     #v(1.5em)
-    #text(size: 18pt, weight: "bold", font: "Helvetica")[#title]
+    #text(size: 18pt, weight: "bold", font: "Liberation Sans")[#title]
     #if subtitle != "" {
       v(0.8em)
-      text(size: 14pt, font: "Helvetica")[#subtitle]
+      text(size: 14pt, font: "Liberation Sans")[#subtitle]
     }
     #v(2.5em)
     #text(size: 10pt)[Abgabedatum:] \
@@ -101,7 +101,7 @@
       column-gutter: 1em,
       row-gutter: 1.5em,
       ..authors.map(a => [
-        #text(size: 12pt, weight: "bold", font: "Helvetica")[#a.name] \
+        #text(size: 12pt, weight: "bold", font: "Liberation Sans")[#a.name] \
         #text(size: 9pt)[Matr.-Nr.: #a.id] \
         #text(size: 9pt)[#a.email]
       ])
@@ -113,7 +113,7 @@
       align(left)[
         #text(size: 10pt)[Betreut von:] \
         #v(0.5em)
-        #text(size: 12pt, weight: "bold", font: "Helvetica")[#supervisor.name] \
+        #text(size: 12pt, weight: "bold", font: "Liberation Sans")[#supervisor.name] \
         #text(
           size: 10pt,
         )[#supervisor.institution \ #supervisor.street \ #supervisor.zip #supervisor.city \ Tel: #supervisor.phone \ #supervisor.email]
@@ -126,7 +126,7 @@
   set par(justify: true, leading: 0.8em, spacing: 1.5em, first-line-indent: 0pt)
 
   show heading: it => {
-    set text(font: "Helvetica", weight: "bold")
+    set text(font: "Liberation Sans", weight: "bold")
     let size = if it.level == 1 { 22pt } else if it.level == 2 { 16pt } else { 12pt }
     block(width: 100%, above: 2em, below: 1em, it)
   }
@@ -155,7 +155,7 @@
     ..authors.map(a => [
       #line(length: 80%, stroke: 0.5pt + rgb("555555"))
       #v(0.5em)
-      #text(size: 10pt, font: "Helvetica")[#a.name]
+      #text(size: 10pt, font: "Liberation Sans")[#a.name]
     ]),
   )
 }
