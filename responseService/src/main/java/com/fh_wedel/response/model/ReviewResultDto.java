@@ -14,6 +14,7 @@ public record ReviewResultDto(
         String reviewComments,
         Instant reviewDeadline,
         List<GradingCriterion> gradingSchema,
+        List<ReviewAnswer> answers,
         boolean hasDocument,
         Instant completedAt,
         Instant createdAt
@@ -29,6 +30,7 @@ public record ReviewResultDto(
                 entity.getReviewComments(),
                 entity.getReviewDeadline(),
                 entity.getGradingSchema(),
+                entity.getAnswers(),
                 entity.getDocumentS3Key() != null && !entity.getDocumentS3Key().isBlank(),
                 entity.getCompletedAt(),
                 entity.getCreatedAt()

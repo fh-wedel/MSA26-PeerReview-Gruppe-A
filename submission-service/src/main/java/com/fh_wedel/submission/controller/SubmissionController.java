@@ -24,7 +24,7 @@ public class SubmissionController {
     }
 
     @PostMapping("/submissions")
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
+    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Reviewer', 'Author')")
     public ResponseEntity<Submission> createSubmission(
             @Valid @RequestBody CreateSubmissionRequest request,
             Authentication authentication) {
@@ -66,7 +66,8 @@ public class SubmissionController {
             @PathVariable String id,
             Authentication authentication) {
 
-        log.info("Request received: POST /submissions/{}/submit by user {}", id, authentication != null ? authentication.getName() : "unknown");
+        log.info("Request received: POST /submissions/{}/submit by user {}", id,
+                authentication != null ? authentication.getName() : "unknown");
 
         String authorId = extractSubFromDetails(authentication);
         if (isAdminOrOfficer(authentication)) {
@@ -99,7 +100,8 @@ public class SubmissionController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isOnlyAuthor(authentication) && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
+        if (isOnlyAuthor(authentication)
+                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
             log.warn("Access Denied: Author '{}' tried to access other author's submission {}", callerSub, id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -131,8 +133,10 @@ public class SubmissionController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isOnlyAuthor(authentication) && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
-            log.warn("Access Denied: Author '{}' tried to access documents for other author's submission {}", callerSub, id);
+        if (isOnlyAuthor(authentication)
+                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
+            log.warn("Access Denied: Author '{}' tried to access documents for other author's submission {}", callerSub,
+                    id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -147,7 +151,8 @@ public class SubmissionController {
             Authentication authentication) {
 
         String callerSub = extractSubFromDetails(authentication);
-        log.info("Request received: GET /submissions/{}/documents/{}/download (callerSub={})", id, documentId, callerSub);
+        log.info("Request received: GET /submissions/{}/documents/{}/download (callerSub={})", id, documentId,
+                callerSub);
 
         Submission submission = submissionService.getSubmission(id);
         if (submission == null) {
@@ -155,8 +160,10 @@ public class SubmissionController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isOnlyAuthor(authentication) && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
-            log.warn("Access Denied: Author '{}' tried to download document for other author's submission {}", callerSub, id);
+        if (isOnlyAuthor(authentication)
+                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
+            log.warn("Access Denied: Author '{}' tried to download document for other author's submission {}",
+                    callerSub, id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -166,7 +173,8 @@ public class SubmissionController {
     }
 
     private boolean isOnlyAuthor(Authentication auth) {
-        if (auth == null || auth.getAuthorities() == null) return false;
+        if (auth == null || auth.getAuthorities() == null)
+            return false;
         boolean hasAuthor = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_Author"));
         boolean hasHigherRole = auth.getAuthorities().stream()
@@ -178,14 +186,16 @@ public class SubmissionController {
     }
 
     private boolean isAdminOrOfficer(Authentication auth) {
-        if (auth == null || auth.getAuthorities() == null) return false;
+        if (auth == null || auth.getAuthorities() == null)
+            return false;
         return auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
                         || a.getAuthority().equals("ROLE_ExaminationOfficer"));
     }
 
     private String extractSubFromDetails(Authentication auth) {
-        if (auth == null || auth.getDetails() == null) return null;
+        if (auth == null || auth.getDetails() == null)
+            return null;
         String raw = auth.getDetails().toString();
 
         int firstQuote = raw.indexOf('"');

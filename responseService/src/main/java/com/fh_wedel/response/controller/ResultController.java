@@ -90,7 +90,10 @@ public class ResultController {
         log.info("Fetching result for submission: {}", submissionId);
         ReviewResultDto result = resultService.findBySubmission(submissionId);
 
-        if (!isAdmin(authentication) && !isCallerSub(authentication, result.authorId()) && !isCallerSub(authentication, result.reviewerId())) {
+        if (!isAdmin(authentication) 
+            && !isCallerSub(authentication, result.authorId()) 
+            && !isCallerSub(authentication, result.reviewerId())
+            && !resultService.isAuthorOfSubmission(submissionId, extractSubFromDetails(authentication))) {
             log.warn("Access Denied: caller '{}' (details: '{}') is neither the author '{}' nor reviewer '{}' of submission {}",
                     authentication.getName(), authentication.getDetails(), result.authorId(), result.reviewerId(), submissionId);
             return ResponseEntity.notFound().build();
@@ -109,7 +112,10 @@ public class ResultController {
 
         // Verify ownership before generating a pre-signed URL.
         ReviewResultDto result = resultService.findBySubmission(submissionId);
-        if (!isAdmin(authentication) && !isCallerSub(authentication, result.authorId()) && !isCallerSub(authentication, result.reviewerId())) {
+        if (!isAdmin(authentication) 
+            && !isCallerSub(authentication, result.authorId()) 
+            && !isCallerSub(authentication, result.reviewerId())
+            && !resultService.isAuthorOfSubmission(submissionId, extractSubFromDetails(authentication))) {
             log.warn("Access Denied: caller '{}' (details: '{}') is neither the author '{}' nor reviewer '{}' of submission {}",
                     authentication.getName(), authentication.getDetails(), result.authorId(), result.reviewerId(), submissionId);
             return ResponseEntity.notFound().build();

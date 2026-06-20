@@ -12,6 +12,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Rating,
   Skeleton,
   Stack,
   Tooltip,
@@ -23,7 +24,7 @@ import {useTheme} from '@mui/material/styles';
 
 import {useAuth} from '../contexts/AuthContext';
 import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
-import {configApiClient, submissionApiClient, responseApiClient} from '../api/clients';
+import {configApiClient, configurationApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {ReviewFormModal} from '../components/ReviewFormModal';
 import {getMockSubmissionById} from '../stubs/submissions';
 import {formatDateTime} from '../utils/date';
@@ -56,6 +57,7 @@ export const SubmissionDetails: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reviewResult, setReviewResult] = useState<any>(null);
+  const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
 
   const { user } = useAuth();
 
@@ -72,7 +74,8 @@ export const SubmissionDetails: React.FC = () => {
       submissionApiClient.submissions.getSubmission(submissionId).catch(() => null),
       submissionApiClient.submissions.getDocuments(submissionId).catch(() => null),
       responseApiClient.results.resultsDetail(submissionId).catch(() => null),
-    ]).then(([match, fetchedRules, configRes, realSubRes, docsRes, reviewRes]) => {
+      configurationApiClient.submissions.getFeedbackFormForSubmission(submissionId).catch(() => null),
+    ]).then(([match, fetchedRules, configRes, realSubRes, docsRes, reviewRes, formRes]) => {
       setSubmissionMatch(match);
       setWorkflowRules(fetchedRules);
       if (configRes && (configRes as any).data) {
@@ -86,6 +89,9 @@ export const SubmissionDetails: React.FC = () => {
       }
       if (reviewRes && (reviewRes as any).data) {
         setReviewResult((reviewRes as any).data);
+      }
+      if (formRes && (formRes as any).data) {
+        setReviewQuestions((formRes as any).data);
       }
 
       if (match && fetchedRules) {
@@ -173,6 +179,10 @@ export const SubmissionDetails: React.FC = () => {
     status = isAssignmentsPage ? 'Assigned' : 'Matched';
   } else if (submissionMatch && submissionMatch.status === 'FAILED') {
     status = 'Failed';
+  }
+
+  if (reviewAvailable) {
+    status = 'Review Completed';
   }
   const reviewType = submissionConfig?.reviewProcessType || mockSubmission?.reviewType || 'unknown';
 
@@ -594,23 +604,59 @@ export const SubmissionDetails: React.FC = () => {
                 <Typography sx={{ whiteSpace: 'pre-line' }}>{reviewResult.reviewComments}</Typography>
               </Box>
 
-              {reviewResult.gradingSchema && reviewResult.gradingSchema.length > 0 && (
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Detailed Assessment
-                  </Typography>
-                  <Box component="ul" sx={{ m: 0, pl: 3 }}>
-                    {reviewResult.gradingSchema.map((criterion: any, index: number) => (
-                      <Box component="li" key={criterion.id || index} sx={{ mb: 1.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{criterion.text}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Answer: {criterion.answer || 'N/A'} {criterion.maxPoints ? `/ ${criterion.maxPoints}` : ''}
-                        </Typography>
+              {(() => {
+                const schemaToUse = reviewQuestions.length > 0 ? reviewQuestions : reviewResult.gradingSchema;
+                if (schemaToUse && schemaToUse.length > 0) {
+                  return (
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Detailed Assessment
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {schemaToUse.map((q: any, index: number) => {
+                          const answerObj = reviewResult.answers?.find((a: any) => a.questionId === (q.id || q.questionId));
+                          const displayAnswer = answerObj?.answer || q.answer || '';
+                          return (
+                            <Box key={q.id || index} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                                {q.text}
+                              </Typography>
+                              {q.type === 'RATING' ? (
+                                <Rating value={parseFloat(displayAnswer) || 0} max={q.maxPoints || 5} readOnly />
+                              ) : q.type === 'SCALE' ? (
+                                <Typography variant="body2">{displayAnswer} / {q.maxPoints || 10}</Typography>
+                              ) : q.type === 'MULTIPLE_CHOICE' ? (
+                                <Chip label={displayAnswer || 'No answer'} size="small" />
+                              ) : (
+                                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{displayAnswer || 'No answer'}</Typography>
+                              )}
+                            </Box>
+                          );
+                        })}
                       </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
+                    </Box>
+                  );
+                } else if (reviewResult.answers && reviewResult.answers.length > 0) {
+                  return (
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Detailed Assessment
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {reviewResult.answers.map((answer: any, index: number) => (
+                          <Box key={answer.questionId || index} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>Question ID: {answer.questionId}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {answer.answer}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  );
+                }
+                return null;
+              })()}
             </Box>
           ) : mockSubmission?.review ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

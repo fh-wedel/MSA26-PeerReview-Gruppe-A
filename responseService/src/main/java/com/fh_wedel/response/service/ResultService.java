@@ -74,6 +74,7 @@ public class ResultService {
         result.setReviewerId(reviewerId);
         result.setReviewComments(request.getReviewComments());
         result.setFinalGrade(request.getFinalGrade());
+        result.setAnswers(request.getAnswers());
         result.setCreatedAt(java.time.Instant.now());
         result.setCompletedAt(java.time.Instant.now());
 
@@ -133,13 +134,15 @@ public class ResultService {
         String submissionId = result.getSubmissionId();
 
         // Grading schema (what the submission was reviewed by) — workflow service.
-        try {
-            List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(submissionId);
-            if (form != null) {
-                result.setGradingSchema(form.stream().map(this::toGradingCriterion).toList());
+        if (result.getGradingSchema() == null || result.getGradingSchema().isEmpty()) {
+            try {
+                List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(submissionId);
+                if (form != null) {
+                    result.setGradingSchema(form.stream().map(this::toGradingCriterion).toList());
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch grading schema for submission {}: {}", submissionId, e.getMessage());
             }
-        } catch (Exception e) {
-            log.warn("Could not fetch grading schema for submission {}: {}", submissionId, e.getMessage());
         }
 
         // Examiners — matching service (a submission may have several examiners).
@@ -207,7 +210,20 @@ public class ResultService {
 
     public ReviewResultDto findBySubmission(String submissionId) {
         return repository.findBySubmissionId(submissionId)
-                .map(ReviewResultDto::from)
+                .map(r -> {
+                    if (r.getAuthorId() == null || r.getAuthorId().isBlank()) {
+                        try {
+                            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+                            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
+                                r.setAuthorId(config.getAuthorIds().get(0));
+                                repository.save(r); // Persist the fix for future reads
+                            }
+                        } catch (Exception e) {
+                            log.warn("Could not backfill authorId for submission {}: {}", submissionId, e.getMessage());
+                        }
+                    }
+                    return ReviewResultDto.from(r);
+                })
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No result found for submission: " + submissionId));
     }
@@ -222,5 +238,16 @@ public class ResultService {
         }
 
         return documentStorageService.generatePresignedDownloadUrl(result.getDocumentS3Key());
+    }
+
+    public boolean isAuthorOfSubmission(String submissionId, String callerSub) {
+        if (callerSub == null) return false;
+        try {
+            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+            return config != null && config.getAuthorIds() != null && config.getAuthorIds().contains(callerSub);
+        } catch (Exception e) {
+            log.warn("Could not check authors for submission {}: {}", submissionId, e.getMessage());
+            return false;
+        }
     }
 }
