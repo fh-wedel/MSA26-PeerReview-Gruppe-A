@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,19 +24,22 @@ public class SubmissionService {
     private final ObjectMapper objectMapper;
     private final ConfigurationServiceClient configurationServiceClient;
     private final String workflowQueueName;
+    private final String notificationQueueName;
 
     public SubmissionService(SubmissionRepository repository,
                              S3Service s3Service,
                              SqsTemplate sqsTemplate,
                              ObjectMapper objectMapper,
                              ConfigurationServiceClient configurationServiceClient,
-                             @Value("${aws.sqs.workflow.queue-name}") String workflowQueueName) {
+                             @Value("${aws.sqs.workflow.queue-name}") String workflowQueueName,
+                             @Value("${aws.sqs.notification.queue-name:}") String notificationQueueName) {
         this.repository = repository;
         this.s3Service = s3Service;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
         this.configurationServiceClient = configurationServiceClient;
         this.workflowQueueName = workflowQueueName;
+        this.notificationQueueName = notificationQueueName;
     }
 
     public Submission createSubmission(String configurationId, List<String> authorIds) {
@@ -128,6 +132,7 @@ public class SubmissionService {
         repository.saveSubmission(submission);
 
         sendSubmissionReadyEvent(submission);
+        sendSubmissionNotification(submission);
         log.info("Submission {} submitted by author {}", submissionId, authorId);
         return submission;
     }
@@ -142,6 +147,30 @@ public class SubmissionService {
             throw new IllegalStateException("Document not found");
         }
         return s3Service.generatePresignedGetUrl(document.getS3Key());
+    }
+
+    private void sendSubmissionNotification(Submission submission) {
+        if (notificationQueueName == null || notificationQueueName.isBlank()) {
+            log.warn("No notification queue configured. Skipping submitted notification for {}", submission.getSubmissionId());
+            return;
+        }
+        List<String> authorIds = submission.getAuthorIds();
+        if (authorIds == null || authorIds.isEmpty()) return;
+        for (String authorId : authorIds) {
+            NotificationEvent event = new NotificationEvent(
+                    "SUBMISSION_SUBMITTED",
+                    List.of("IN_APP"),
+                    authorId,
+                    "Submission Submitted",
+                    "Your submission was successfully submitted and is now under review.",
+                    Map.of("submissionId", submission.getSubmissionId()));
+            try {
+                sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+                log.info("Sent submitted notification to '{}' for submission {}", authorId, submission.getSubmissionId());
+            } catch (JsonProcessingException e) {
+                log.error("Failed to serialize submitted notification for {}", submission.getSubmissionId(), e);
+            }
+        }
     }
 
     private void sendSubmissionReadyEvent(Submission submission) {

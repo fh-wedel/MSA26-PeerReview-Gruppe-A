@@ -118,7 +118,7 @@ public class ConfigurationService {
                 List.of("IN_APP"),
                 authorSub,
                 "Submission Created",
-                "Your submission '" + title + "' was submitted.",
+                "Your submission '" + title + "' was created and is awaiting document upload.",
                 Map.of("submissionId", submissionId));
         try {
             sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
