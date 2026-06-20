@@ -31,6 +31,6 @@ public class DoubleBlindTypePlugin implements ReviewTypePlugin {
 
     @Override
     public boolean isAuthorReviewerChatAllowed() {
-        return true;
+        return false;
     }
 }
