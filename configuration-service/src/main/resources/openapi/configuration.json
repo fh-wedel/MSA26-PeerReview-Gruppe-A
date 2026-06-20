@@ -85,6 +85,68 @@
         }
       }
     },
+    "/{submissionId}/submission-deadline": {
+      "get": {
+        "summary": "Get submission deadline by submission ID",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Configuration not found"
+          }
+        }
+      }
+    },
+    "/{submissionId}/review-deadline": {
+      "get": {
+        "summary": "Get review deadline by submission ID",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Configuration not found"
+          }
+        }
+      }
+    },
     "/author/{authorId}": {
       "get": {
         "summary": "Get all configurations for a specific author",

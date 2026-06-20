@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.submission.model.*;
 import com.fh_wedel.submission.repository.SubmissionRepository;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ class SubmissionServiceTest {
     @Mock
     private SqsTemplate sqsTemplate;
 
+    @Mock
+    private ConfigurationServiceClient configurationServiceClient;
+
     private ObjectMapper objectMapper = new ObjectMapper();
     private String workflowQueueName = "test-workflow-queue";
 
@@ -39,7 +43,7 @@ class SubmissionServiceTest {
     @BeforeEach
     void setUp() {
         submissionService = new SubmissionService(
-                repository, s3Service, sqsTemplate, objectMapper, workflowQueueName);
+                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, workflowQueueName);
     }
 
     @Test
@@ -112,6 +116,10 @@ class SubmissionServiceTest {
         submission.setStatus("Wartet auf Abgabe");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
+        SubmissionConfiguration config = new SubmissionConfiguration(
+                "config-1", "Test Title", List.of("author-1"), Instant.now().plusSeconds(3600), Instant.now().plusSeconds(7200));
+        when(configurationServiceClient.getConfiguration("config-1")).thenReturn(config);
+
         DocumentRecord doc = new DocumentRecord("sub-1", "doc-1", "paper.pdf", "key", "application/pdf");
         when(repository.findDocuments("sub-1")).thenReturn(List.of(doc));
 
@@ -129,11 +137,65 @@ class SubmissionServiceTest {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
         submission.setStatus("Wartet auf Abgabe");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
+
+        SubmissionConfiguration config = new SubmissionConfiguration(
+                "config-1", "Test Title", List.of("author-1"), Instant.now().plusSeconds(3600), Instant.now().plusSeconds(7200));
+        when(configurationServiceClient.getConfiguration("config-1")).thenReturn(config);
+
         when(repository.findDocuments("sub-1")).thenReturn(Collections.emptyList());
 
         assertThatThrownBy(() -> submissionService.submitSubmission("sub-1", "author-1"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Cannot submit without at least one document");
+    }
+
+    @Test
+    @DisplayName("Should fail submission if configuration is not found")
+    void submitSubmission_configurationNotFound_throwsException() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        submission.setStatus("Wartet auf Abgabe");
+        when(repository.findSubmissionById("sub-1")).thenReturn(submission);
+        when(configurationServiceClient.getConfiguration("config-1")).thenReturn(null);
+
+        assertThatThrownBy(() -> submissionService.submitSubmission("sub-1", "author-1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Submission configuration not found");
+    }
+
+    @Test
+    @DisplayName("Should fail submission if the submission deadline has passed")
+    void submitSubmission_deadlinePassed_throwsException() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        submission.setStatus("Wartet auf Abgabe");
+        when(repository.findSubmissionById("sub-1")).thenReturn(submission);
+
+        SubmissionConfiguration config = new SubmissionConfiguration(
+                "config-1", "Test Title", List.of("author-1"), Instant.now().minusSeconds(10), Instant.now().plusSeconds(7200));
+        when(configurationServiceClient.getConfiguration("config-1")).thenReturn(config);
+
+        assertThatThrownBy(() -> submissionService.submitSubmission("sub-1", "author-1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Submission deadline has passed");
+    }
+
+    @Test
+    @DisplayName("Should successfully submit when deadline is null")
+    void submitSubmission_noDeadline_success() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        submission.setStatus("Wartet auf Abgabe");
+        when(repository.findSubmissionById("sub-1")).thenReturn(submission);
+
+        SubmissionConfiguration config = new SubmissionConfiguration(
+                "config-1", "Test Title", List.of("author-1"), null, null);
+        when(configurationServiceClient.getConfiguration("config-1")).thenReturn(config);
+
+        DocumentRecord doc = new DocumentRecord("sub-1", "doc-1", "paper.pdf", "key", "application/pdf");
+        when(repository.findDocuments("sub-1")).thenReturn(List.of(doc));
+
+        Submission result = submissionService.submitSubmission("sub-1", "author-1");
+
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo(SubmissionStatus.SUBMITTED.getDbValue());
     }
 
     @Test
