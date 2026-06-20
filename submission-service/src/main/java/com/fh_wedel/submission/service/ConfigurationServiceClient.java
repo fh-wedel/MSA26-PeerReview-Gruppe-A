@@ -20,10 +20,10 @@ public class ConfigurationServiceClient {
     }
 
     public String createConfiguration(String requestBody, String username, String groups, String principalId) {
-        log.info("Proxying POST /api/configuration to configuration-service");
+        log.info("Proxying POST /api/configuration/submissions to configuration-service");
 
         return restClient.post()
-                .uri(configurationServiceUrl + "/api/configuration")
+                .uri(configurationServiceUrl + "/api/configuration/submissions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("x-auth-username", username)
                 .header("x-auth-groups", groups)
@@ -34,10 +34,10 @@ public class ConfigurationServiceClient {
     }
 
     public String getGradingForm(String configurationId, String username, String groups, String principalId) {
-        log.info("Proxying GET /api/configuration/{} to configuration-service", configurationId);
+        log.info("Proxying GET /api/configuration/submissions/{} to configuration-service", configurationId);
 
         return restClient.get()
-                .uri(configurationServiceUrl + "/api/configuration/" + configurationId)
+                .uri(configurationServiceUrl + "/api/configuration/submissions/" + configurationId)
                 .header("x-auth-username", username)
                 .header("x-auth-groups", groups)
                 .header("x-auth-principal-id", principalId)
@@ -49,7 +49,7 @@ public class ConfigurationServiceClient {
         log.info("Fetching configuration for submission {} from configuration-service", submissionId);
         try {
             return restClient.get()
-                    .uri(configurationServiceUrl + "/api/configuration/" + submissionId)
+                    .uri(configurationServiceUrl + "/api/configuration/submissions/" + submissionId)
                     .retrieve()
                     .body(com.fh_wedel.submission.model.SubmissionConfiguration.class);
         } catch (Exception e) {
