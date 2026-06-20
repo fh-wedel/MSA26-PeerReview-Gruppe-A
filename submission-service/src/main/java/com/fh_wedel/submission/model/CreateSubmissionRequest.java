@@ -7,9 +7,6 @@ public class CreateSubmissionRequest {
     @NotBlank
     private String configurationId;
 
-    @NotBlank
-    private String title;
-
     public CreateSubmissionRequest() {
     }
 
@@ -19,13 +16,5 @@ public class CreateSubmissionRequest {
 
     public void setConfigurationId(String configurationId) {
         this.configurationId = configurationId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
     }
 }

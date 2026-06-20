@@ -68,11 +68,11 @@ public class MatchingService {
      */
     public void processMatchingRequest(MatchingRequestEvent event) {
         String submissionId = event.getSubmissionId();
-        String submitterId = event.getSubmitterId();
+        List<String> submitterIds = event.getSubmitterIds();
         int numberOfExaminers = event.getNumberOfExaminers();
 
-        log.info("Processing matching request: submissionId={}, submitterId={}, numberOfExaminers={}",
-                submissionId, submitterId, numberOfExaminers);
+        log.info("Processing matching request: submissionId={}, submitterIds={}, numberOfExaminers={}",
+                submissionId, submitterIds, numberOfExaminers);
 
         // 1. Fetch all reviewers from User Service
         List<UserProfile> allReviewers = java.util.Collections.emptyList();
@@ -85,32 +85,33 @@ public class MatchingService {
             log.error("Failed to list reviewers via GroupsApi", e);
         }
 
-        // 2. Filter out the submitter (self-review prevention)
+        // 2. Filter out the submitters (self-review prevention)
         List<UserProfile> eligibleReviewers = allReviewers.stream()
                 .filter(user -> {
                     String sub = user.getSub();
-                    return sub != null && !sub.equals(submitterId);
+                    return sub != null && !submitterIds.contains(sub);
                 })
                 .toList();
 
-        log.info("Found {} total reviewers, {} eligible (after excluding submitter {})",
-                allReviewers.size(), eligibleReviewers.size(), submitterId);
+        log.info("Found {} total reviewers, {} eligible (after excluding submitters {})",
+                allReviewers.size(), eligibleReviewers.size(), submitterIds);
 
         // 3. Check if we have enough eligible reviewers
         if (eligibleReviewers.size() < numberOfExaminers) {
             String reason = String.format(
-                    "Not enough eligible reviewers. Required: %d, available: %d (total: %d, excluded submitter: %s)",
-                    numberOfExaminers, eligibleReviewers.size(), allReviewers.size(), submitterId);
+                    "Not enough eligible reviewers. Required: %d, available: %d (total: %d, excluded submitters: %s)",
+                    numberOfExaminers, eligibleReviewers.size(), allReviewers.size(), submitterIds);
 
             log.warn("Matching FAILED for submission {}: {}", submissionId, reason);
 
             SubmissionStatusRecord failedStatus = new SubmissionStatusRecord(
-                    submissionId, submitterId, MatchStatus.FAILED, numberOfExaminers, reason);
+                    submissionId, submitterIds, MatchStatus.FAILED, numberOfExaminers, reason);
             matchRepository.saveStatus(failedStatus);
 
-            sendInAppNotification(submitterId, "Matching Failed",
-                    "Matching failed for your submission: " + reason, submissionId);
-
+            for (String sId : submitterIds) {
+                sendInAppNotification(sId, "Matching Failed",
+                        "Matching failed for your submission: " + reason, submissionId);
+            }
             return; // No SQS event on failure
         }
 
@@ -127,13 +128,13 @@ public class MatchingService {
 
         // 6. Persist match records + status in DynamoDB (batch write)
         SubmissionStatusRecord successStatus = new SubmissionStatusRecord(
-                submissionId, submitterId, MatchStatus.MATCHED, numberOfExaminers, null);
+                submissionId, submitterIds, MatchStatus.MATCHED, numberOfExaminers, null);
         matchRepository.saveMatchBatch(matchRecords, successStatus);
 
         log.info("Successfully matched submission {} with {} reviewers", submissionId, numberOfExaminers);
 
         // 7. Send success event to SQS
-        sendSuccessEvent(submissionId);
+        sendSuccessEvent(submissionId, submitterIds);
 
         for (MatchRecord match : matchRecords) {
             sendInAppNotification(match.getExaminerId(),
@@ -207,7 +208,7 @@ public class MatchingService {
     /**
      * Sends a success SQS event to the Submission Service response queue.
      */
-    private void sendSuccessEvent(String submissionId) {
+    private void sendSuccessEvent(String submissionId, List<String> authorIds) {
         if (responseQueueName == null || responseQueueName.isBlank()) {
             log.warn("No SQS response queue defined. Skipping sending success event for submission {}", submissionId);
             return;
@@ -215,6 +216,7 @@ public class MatchingService {
 
         MatchingResponseEvent responseEvent = new MatchingResponseEvent();
         responseEvent.setSubmissionId(submissionId);
+        responseEvent.setAuthorIds(authorIds);
         responseEvent.setStatus(MatchingResponseEvent.Status.MATCHED);
 
         try {

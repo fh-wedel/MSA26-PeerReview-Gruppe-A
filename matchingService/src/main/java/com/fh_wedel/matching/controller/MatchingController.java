@@ -65,15 +65,17 @@ public class MatchingController {
             return ResponseEntity.notFound().build();
         }
 
-        String submitterSub = status.getSubmitterId();
+        List<String> submitterSubs = status.getSubmitterIds();
         List<MatchRecord> matches = matchingService.getMatchesBySubmission(submissionId);
 
         boolean isExaminer = matches.stream()
                 .anyMatch(m -> m.getExaminerId().equals(extractSubFromDetails(authentication)));
 
-        if (!isAdminOrOfficer(authentication) && !isCallerSub(authentication, submitterSub) && !isExaminer) {
-            log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter sub '{}' and is not an examiner for submission {}",
-                    authentication.getName(), authentication.getDetails(), submitterSub, submissionId);
+        boolean isCallerSubmitter = submitterSubs != null && submitterSubs.contains(extractSubFromDetails(authentication));
+
+        if (!isAdminOrOfficer(authentication) && !isCallerSubmitter && !isExaminer) {
+            log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter subs '{}' and is not an examiner for submission {}",
+                    authentication.getName(), authentication.getDetails(), submitterSubs, submissionId);
             return ResponseEntity.notFound().build();
         }
 
@@ -85,7 +87,7 @@ public class MatchingController {
                     hideExaminer = true;
                 }
             } catch (Exception e) {
-                log.warn("Failed to fetch workflow rules for submission {}, defaulting to hiding examiner", submissionId, e);
+                log.warn("Failed to delete/fetch workflow rules for submission {}, defaulting to hiding examiner", submissionId, e);
                 hideExaminer = true;
             }
         }
@@ -128,13 +130,19 @@ public class MatchingController {
         response.setMatchedAt(status.getTimestamp().atOffset(ZoneOffset.UTC));
         response.setReason(status.getReason());
         response.setNumberOfExaminers(status.getNumberOfExaminers());
-        response.setSubmitterId(status.getSubmitterId());
+        response.setSubmitterIds(submitterSubs);
         
-        try {
-            response.setSubmitterUsername(usersApi.getUserBySub(status.getSubmitterId()).getUsername());
-        } catch (Exception e) {
-            response.setSubmitterUsername("Unknown");
+        List<String> usernames = new java.util.ArrayList<>();
+        if (submitterSubs != null) {
+            for (String sub : submitterSubs) {
+                try {
+                    usernames.add(usersApi.getUserBySub(sub).getUsername());
+                } catch (Exception e) {
+                    usernames.add("Unknown");
+                }
+            }
         }
+        response.setSubmitterUsernames(usernames);
         
         response.setMatches(matchEntries);
 

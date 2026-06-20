@@ -54,7 +54,7 @@ class MatchRepositoryTest {
     void saveStatus_persistsRecord() {
         // Given
         SubmissionStatusRecord status = new SubmissionStatusRecord(
-                "sub-1", "submitter-1", MatchStatus.FAILED, 3, "Not enough reviewers");
+                "sub-1", java.util.List.of("submitter-1"), MatchStatus.FAILED, 3, "Not enough reviewers");
 
         // When
         matchRepository.saveStatus(status);
@@ -72,7 +72,7 @@ class MatchRepositoryTest {
                 new MatchRecord("sub-1", "examiner-b")
         );
         var status = new SubmissionStatusRecord(
-                "sub-1", "submitter-1", MatchStatus.MATCHED, 2, null);
+                "sub-1", java.util.List.of("submitter-1"), MatchStatus.MATCHED, 2, null);
 
         // When
         matchRepository.saveMatchBatch(matches, status);
@@ -100,7 +100,7 @@ class MatchRepositoryTest {
     @DisplayName("SubmissionStatusRecord should construct with correct PK/SK format")
     void submissionStatusRecord_correctKeyFormat() {
         SubmissionStatusRecord record = new SubmissionStatusRecord(
-                "submission-789", "submitter-1", MatchStatus.MATCHED, 2, null);
+                "submission-789", java.util.List.of("submitter-1"), MatchStatus.MATCHED, 2, null);
 
         assertThat(record.getPk()).isEqualTo("SUBMISSION#submission-789");
         assertThat(record.getSk()).isEqualTo("STATUS");

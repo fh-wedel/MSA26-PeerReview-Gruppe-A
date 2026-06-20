@@ -54,8 +54,8 @@ export interface MatchEntry {
 export interface SubmissionMatchResponse {
   submissionId: string;
   status: 'MATCHED' | 'FAILED';
-  submitterId: string;
-  submitterUsername: string;
+  submitterIds: string[];
+  submitterUsernames: string[];
   matches: MatchEntry[];
 }
 

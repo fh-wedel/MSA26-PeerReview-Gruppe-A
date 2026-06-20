@@ -23,16 +23,10 @@ export interface SubmissionMatchResponse {
    */
   reason?: string | null;
   numberOfExaminers?: number;
-  /**
-   * Cognito sub UUID of the submitter (as stored in DynamoDB)
-   * @example "123e4567-e89b-12d3-a456-426614174000"
-   */
-  submitterId: string;
-  /**
-   * Cognito username of the submitter, resolved from the submitterId
-   * @example "Marcel"
-   */
-  submitterUsername: string;
+  /** Cognito sub UUIDs of the submitters (as stored in DynamoDB) */
+  submitterIds: string[];
+  /** Cognito usernames of the submitters, resolved from the submitterIds */
+  submitterUsernames: string[];
   /** @format date-time */
   matchedAt: string;
   matches?: MatchEntry[];
