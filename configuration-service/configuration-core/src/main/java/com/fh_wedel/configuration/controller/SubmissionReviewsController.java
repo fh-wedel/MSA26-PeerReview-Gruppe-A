@@ -6,11 +6,13 @@ import com.fh_wedel.configuration.model.api.ReviewQuestionDto;
 import com.fh_wedel.configuration.service.ConfigurationService;
 import com.fh_wedel.configuration.service.PluginService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/configuration")
 public class SubmissionReviewsController implements SubmissionReviewsApi {
 
     private final ConfigurationService configurationService;
