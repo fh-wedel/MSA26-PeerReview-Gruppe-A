@@ -44,83 +44,78 @@ class WorkflowControllerTest {
         rules.setAuthorAnonymous(true);
         rules.setReviewerAnonymous(false);
         rules.setAuthorReviewerChatAllowed(false);
-        rules.setDefaultNumberOfReviewers(2);
-        rules.setDefaultNumberOfAuthors(1);
         return rules;
     }
 
-    private WorkflowPluginDto createPlugin(String name, String title, String description, WorkflowRulesDto rules) {
-        WorkflowPluginDto plugin = new WorkflowPluginDto();
+    private ReviewTypeDto createPlugin(String name, String title, String description, WorkflowRulesDto rules) {
+        ReviewTypeDto plugin = new ReviewTypeDto();
         plugin.setName(name);
         plugin.setTitle(title);
         plugin.setDescription(description);
         plugin.setRules(rules);
-        plugin.setDefaultNumberOfReviewers(2);
-        plugin.setDefaultNumberOfAuthors(1);
-        plugin.setFeedbackFormTemplate(Collections.emptyList());
         return plugin;
     }
 
     @Test
-    void listPluginsReturns200() {
+    void listReviewTypesReturns200() {
         WorkflowRulesDto rules = createRules();
-        WorkflowPluginDto plugin1 = createPlugin("plugin-1", "Plugin 1", "description 1", rules);
-        WorkflowPluginDto plugin2 = createPlugin("plugin-2", "Plugin 2", "description 2", rules);
+        ReviewTypeDto plugin1 = createPlugin("plugin-1", "Plugin 1", "description 1", rules);
+        ReviewTypeDto plugin2 = createPlugin("plugin-2", "Plugin 2", "description 2", rules);
         
-        when(workflowService.listPlugins()).thenReturn(List.of(plugin1, plugin2));
+        when(workflowService.listReviewTypes()).thenReturn(List.of(plugin1, plugin2));
 
-        ResponseEntity<List<WorkflowPluginDto>> response = controller.listPlugins();
+        ResponseEntity<List<ReviewTypeDto>> response = controller.listReviewTypes();
 
         assertEquals(200, response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().size());
         assertEquals("plugin-1", response.getBody().get(0).getName());
-        verify(workflowService).listPlugins();
+        verify(workflowService).listReviewTypes();
     }
 
     @Test
-    void getPluginReturns200() {
+    void getReviewTypeReturns200() {
         WorkflowRulesDto rules = createRules();
-        WorkflowPluginDto plugin = createPlugin("plugin-1", "Plugin 1", "description 1", rules);
+        ReviewTypeDto plugin = createPlugin("plugin-1", "Plugin 1", "description 1", rules);
 
-        when(workflowService.getPlugin("plugin-1")).thenReturn(plugin);
+        when(workflowService.getReviewType("plugin-1")).thenReturn(plugin);
 
-        ResponseEntity<WorkflowPluginDto> response = controller.getPlugin("plugin-1");
+        ResponseEntity<ReviewTypeDto> response = controller.getReviewType("plugin-1");
 
         assertEquals(200, response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals("plugin-1", response.getBody().getName());
-        verify(workflowService).getPlugin("plugin-1");
+        verify(workflowService).getReviewType("plugin-1");
     }
 
     @Test
-    void getPluginThrowsForUnknown() {
-        when(workflowService.getPlugin("unknown")).thenThrow(new NoSuchElementException("Not found"));
+    void getReviewTypeThrowsForUnknown() {
+        when(workflowService.getReviewType("unknown")).thenThrow(new NoSuchElementException("Not found"));
 
-        assertThrows(NoSuchElementException.class, () -> controller.getPlugin("unknown"));
-        verify(workflowService).getPlugin("unknown");
+        assertThrows(NoSuchElementException.class, () -> controller.getReviewType("unknown"));
+        verify(workflowService).getReviewType("unknown");
     }
 
     @Test
-    void getPluginRulesReturns200() {
+    void getReviewTypeRulesReturns200() {
         WorkflowRulesDto rules = createRules();
 
-        when(workflowService.getPluginRules("plugin-1")).thenReturn(rules);
+        when(workflowService.getReviewTypeRules("plugin-1")).thenReturn(rules);
 
-        ResponseEntity<WorkflowRulesDto> response = controller.getPluginRules("plugin-1");
+        ResponseEntity<WorkflowRulesDto> response = controller.getReviewTypeRules("plugin-1");
 
         assertEquals(200, response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertTrue(response.getBody().getAuthorAnonymous());
-        verify(workflowService).getPluginRules("plugin-1");
+        verify(workflowService).getReviewTypeRules("plugin-1");
     }
 
     @Test
-    void getPluginRulesThrowsForUnknown() {
-        when(workflowService.getPluginRules("unknown")).thenThrow(new NoSuchElementException("Not found"));
+    void getReviewTypeRulesThrowsForUnknown() {
+        when(workflowService.getReviewTypeRules("unknown")).thenThrow(new NoSuchElementException("Not found"));
 
-        assertThrows(NoSuchElementException.class, () -> controller.getPluginRules("unknown"));
-        verify(workflowService).getPluginRules("unknown");
+        assertThrows(NoSuchElementException.class, () -> controller.getReviewTypeRules("unknown"));
+        verify(workflowService).getReviewTypeRules("unknown");
     }
 
     @Test
@@ -183,7 +178,7 @@ class WorkflowControllerTest {
 
     @Test
     void getReviewStatusReturns200() {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         session.setReceivedReviewCount(1);
         session.setComplete(true);
         when(workflowService.getReviewStatus("sub-123")).thenReturn(session);

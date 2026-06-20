@@ -4,16 +4,19 @@ import com.fh_wedel.matching.client.api.MatchesApi;
 import com.fh_wedel.matching.client.model.MatchEntry;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.workflow.exception.DownstreamServiceException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class MatchingServiceClient {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MatchingServiceClient.class);
+
+    public MatchingServiceClient(MatchesApi matchesApi) {
+        this.matchesApi = matchesApi;
+    }
+
+
 
     private final MatchesApi matchesApi;
 

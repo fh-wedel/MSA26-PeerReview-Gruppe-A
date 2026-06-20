@@ -1,0 +1,104 @@
+package com.fh_wedel.submission.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fh_wedel.submission.model.Submission;
+import com.fh_wedel.submission.model.SubmissionConfiguration;
+import com.fh_wedel.submission.model.SubmissionStatus;
+import com.fh_wedel.submission.repository.SubmissionRepository;
+import com.fh_wedel.submission.service.ConfigurationServiceClient;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class SqsRequestListenerTest {
+
+    @Mock
+    private SubmissionRepository repository;
+
+    @Mock
+    private ConfigurationServiceClient configurationServiceClient;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    private SqsRequestListener sqsRequestListener;
+
+    @BeforeEach
+    void setUp() {
+        sqsRequestListener = new SqsRequestListener(repository, objectMapper, configurationServiceClient);
+    }
+
+    @Test
+    @DisplayName("Should create a new submission in status 'Wartet auf Abgabe' when it does not exist")
+    void handleMessage_newSubmission_createsRecord() {
+        String submissionId = "sub-123";
+        String message = String.format("{\"submissionId\":\"%s\",\"status\":\"MATCHED\"}", submissionId);
+
+        when(repository.findSubmissionById(submissionId)).thenReturn(null);
+
+        SubmissionConfiguration config = new SubmissionConfiguration(submissionId, "Test Title", List.of("author-uuid"));
+        when(configurationServiceClient.getConfiguration(submissionId)).thenReturn(config);
+
+        sqsRequestListener.handleMessage(message);
+
+        ArgumentCaptor<Submission> captor = ArgumentCaptor.forClass(Submission.class);
+        verify(repository).saveSubmission(captor.capture());
+
+        Submission saved = captor.getValue();
+        assertThat(saved.getSubmissionId()).isEqualTo(submissionId);
+        assertThat(saved.getAuthorId()).isEqualTo("author-uuid");
+        assertThat(saved.getTitle()).isEqualTo("Test Title");
+        assertThat(saved.getStatus()).isEqualTo(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+    }
+
+    @Test
+    @DisplayName("Should update an existing submission status to 'Wartet auf Abgabe'")
+    void handleMessage_existingSubmission_updatesStatus() {
+        String submissionId = "sub-456";
+        String message = String.format("{\"submissionId\":\"%s\",\"status\":\"MATCHED\"}", submissionId);
+
+        Submission existing = new Submission(submissionId, submissionId, "author-uuid", "Old Title");
+        existing.setStatus(SubmissionStatus.DRAFT.getDbValue());
+
+        when(repository.findSubmissionById(submissionId)).thenReturn(existing);
+
+        sqsRequestListener.handleMessage(message);
+
+        verify(repository).saveSubmission(existing);
+        assertThat(existing.getStatus()).isEqualTo(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+        verifyNoInteractions(configurationServiceClient);
+    }
+
+    @Test
+    @DisplayName("Should ignore event if status is not MATCHED")
+    void handleMessage_statusNotMatched_ignored() {
+        String submissionId = "sub-789";
+        String message = String.format("{\"submissionId\":\"%s\",\"status\":\"FAILED\"}", submissionId);
+
+        sqsRequestListener.handleMessage(message);
+
+        verifyNoInteractions(repository);
+        verifyNoInteractions(configurationServiceClient);
+    }
+
+    @Test
+    @DisplayName("Should ignore event if submissionId is blank")
+    void handleMessage_blankSubmissionId_ignored() {
+        String message = "{\"submissionId\":\"\",\"status\":\"MATCHED\"}";
+
+        sqsRequestListener.handleMessage(message);
+
+        verifyNoInteractions(repository);
+        verifyNoInteractions(configurationServiceClient);
+    }
+}

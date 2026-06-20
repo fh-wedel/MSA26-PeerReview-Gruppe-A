@@ -1,43 +1,55 @@
 package com.fh_wedel.workflow.service;
 
 import com.fh_wedel.configuration.client.api.DefaultApi;
-import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
 import com.fh_wedel.workflow.exception.DownstreamServiceException;
 import com.fh_wedel.workflow.exception.ReviewAlreadySubmittedException;
-import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
+import com.fh_wedel.workflow.model.api.ReviewTypeDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
-import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.fh_wedel.workflow.plugin.ReviewTypeRegistry;
+import com.fh_wedel.workflow.plugin.ReviewTemplateRegistry;
+import com.fh_wedel.workflow.api.ReviewTypePlugin;
+import com.fh_wedel.workflow.api.ReviewTemplatePlugin;
+import com.fh_wedel.workflow.model.api.ReviewTypeDto;
+import com.fh_wedel.workflow.model.api.ReviewTemplateDto;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class WorkflowService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(WorkflowService.class);
 
-    private final WorkflowPluginRegistry registry;
+    public WorkflowService(ReviewTypeRegistry typeRegistry, ReviewTemplateRegistry templateRegistry, DefaultApi configurationApi, com.fh_wedel.workflow.repository.ReviewRepository reviewRepository, com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        this.typeRegistry = typeRegistry;
+        this.templateRegistry = templateRegistry;
+        this.configurationApi = configurationApi;
+        this.reviewRepository = reviewRepository;
+        this.objectMapper = objectMapper;
+    }
+
+
+
+    private final ReviewTypeRegistry typeRegistry;
+    private final ReviewTemplateRegistry templateRegistry;
     private final DefaultApi configurationApi;
     private final com.fh_wedel.workflow.repository.ReviewRepository reviewRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    public List<WorkflowPluginDto> listPlugins() {
-        return registry.getAll().stream()
+    public List<ReviewTypeDto> listReviewTypes() {
+        return typeRegistry.getAll().stream()
             .map(this::toDto)
             .toList();
     }
 
-    public WorkflowPluginDto getPlugin(String name) {
-        return registry.getByName(name)
+    public ReviewTypeDto getReviewType(String name) {
+        return typeRegistry.getByName(name)
             .map(this::toDto)
             .orElseThrow(() -> new NoSuchElementException("Workflow plugin not found: " + name));
     }
 
-    public WorkflowRulesDto getPluginRules(String name) {
-        return registry.getByName(name)
+    public WorkflowRulesDto getReviewTypeRules(String name) {
+        return typeRegistry.getByName(name)
             .map(this::toRulesDto)
             .orElseThrow(() -> new NoSuchElementException("Workflow plugin not found: " + name));
     }
@@ -46,7 +58,7 @@ public class WorkflowService {
         try {
             com.fh_wedel.configuration.client.model.ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
             String workflowName = config.getReviewProcessType();
-            return getPluginRules(workflowName);
+            return getReviewTypeRules(workflowName);
         } catch (com.fh_wedel.configuration.client.ApiException e) {
             if (e.getCode() == 404) {
                 log.error("Submission not found: {}", submissionId, e);
@@ -58,6 +70,16 @@ public class WorkflowService {
             log.error("Failed to fetch configuration for submission: {}", submissionId, e);
             throw new DownstreamServiceException("Failed to fetch configuration for submission: " + submissionId, e);
         }
+    }
+
+    
+    public List<ReviewTemplateDto> listReviewTemplates() {
+        return templateRegistry.getAll().stream().map(this::toTemplateDto).toList();
+    }
+
+    public ReviewTemplateDto getReviewTemplate(String name) {
+        return templateRegistry.getByName(name).map(this::toTemplateDto)
+            .orElseThrow(() -> new NoSuchElementException("Template not found: " + name));
     }
 
     public void initializeReviewSession(String submissionId, String pluginName, List<String> expectedReviewerIds) {
@@ -78,7 +100,7 @@ public class WorkflowService {
             throw new ReviewAlreadySubmittedException("Reviewer " + reviewerId + " has already submitted a review for submission " + submissionId);
         }
 
-        ReviewWorkflowPlugin plugin = registry.getByName(session.getPluginName())
+        ReviewTemplatePlugin plugin = templateRegistry.getByName(session.getPluginName())
                 .orElseThrow(() -> new IllegalStateException("Plugin not found: " + session.getPluginName()));
 
         com.fh_wedel.workflow.api.model.ReviewGrade grade = plugin.calculateGrade(responses);
@@ -116,8 +138,8 @@ public class WorkflowService {
         try {
             com.fh_wedel.configuration.client.model.ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
             String workflowName = config.getReviewProcessType();
-            return registry.getByName(workflowName)
-                    .map(ReviewWorkflowPlugin::getFeedbackFormTemplate)
+            return templateRegistry.getByName(workflowName)
+                    .map(ReviewTemplatePlugin::getFeedbackFormTemplate)
                     .orElseThrow(() -> new NoSuchElementException("Plugin not found: " + workflowName));
         } catch (com.fh_wedel.configuration.client.ApiException e) {
             if (e.getCode() == 404) {
@@ -129,15 +151,21 @@ public class WorkflowService {
         }
     }
 
-    private WorkflowPluginDto toDto(ReviewWorkflowPlugin plugin) {
-        WorkflowPluginDto dto = new WorkflowPluginDto();
+    private ReviewTypeDto toDto(ReviewTypePlugin plugin) {
+        ReviewTypeDto dto = new ReviewTypeDto();
         dto.setName(plugin.getName());
         dto.setTitle(plugin.getTitle());
         dto.setDescription(plugin.getDescription());
         dto.setRules(toRulesDto(plugin));
-        dto.setDefaultNumberOfReviewers(plugin.getDefaultNumberOfReviewers());
-        dto.setDefaultNumberOfAuthors(plugin.getDefaultNumberOfAuthors());
+        return dto;
+    }
 
+    private ReviewTemplateDto toTemplateDto(ReviewTemplatePlugin plugin) {
+        ReviewTemplateDto dto = new ReviewTemplateDto();
+        dto.setName(plugin.getName());
+        dto.setTitle(plugin.getTitle());
+        dto.setDescription(plugin.getDescription());
+        dto.setEvaluationCriteriaVisibleToAuthors(plugin.isEvaluationCriteriaVisibleToAuthors());
         List<com.fh_wedel.workflow.model.api.ReviewQuestionDto> feedbackDtos = plugin.getFeedbackFormTemplate().stream()
                 .map(q -> {
                     com.fh_wedel.workflow.model.api.ReviewQuestionDto qDto = new com.fh_wedel.workflow.model.api.ReviewQuestionDto();
@@ -151,17 +179,14 @@ public class WorkflowService {
                 })
                 .toList();
         dto.setFeedbackFormTemplate(feedbackDtos);
-        
         return dto;
     }
 
-    private WorkflowRulesDto toRulesDto(ReviewWorkflowPlugin plugin) {
+    private WorkflowRulesDto toRulesDto(ReviewTypePlugin plugin) {
         WorkflowRulesDto dto = new WorkflowRulesDto();
         dto.setAuthorAnonymous(plugin.isAuthorAnonymous());
         dto.setReviewerAnonymous(plugin.isReviewerAnonymous());
         dto.setAuthorReviewerChatAllowed(plugin.isAuthorReviewerChatAllowed());
-        dto.setDefaultNumberOfReviewers(plugin.getDefaultNumberOfReviewers());
-        dto.setDefaultNumberOfAuthors(plugin.getDefaultNumberOfAuthors());
         return dto;
     }
 }

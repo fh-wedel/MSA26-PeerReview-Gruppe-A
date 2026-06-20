@@ -3,14 +3,14 @@ package com.fh_wedel.workflow.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.DefaultApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
-import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
+import com.fh_wedel.workflow.api.ReviewTypePlugin;
 import com.fh_wedel.workflow.exception.DownstreamServiceException;
 import com.fh_wedel.workflow.exception.ReviewAlreadySubmittedException;
 import com.fh_wedel.workflow.model.ReviewSession;
 import com.fh_wedel.workflow.model.SubmittedReview;
-import com.fh_wedel.workflow.model.api.WorkflowPluginDto;
+import com.fh_wedel.workflow.model.api.ReviewTypeDto;
 import com.fh_wedel.workflow.model.api.WorkflowRulesDto;
-import com.fh_wedel.workflow.plugin.WorkflowPluginRegistry;
+import com.fh_wedel.workflow.plugin.ReviewTypeRegistry;
 import com.fh_wedel.workflow.repository.ReviewRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +29,9 @@ import static org.mockito.Mockito.*;
 class WorkflowServiceTest {
 
     @Mock
-    private WorkflowPluginRegistry registry;
+    private ReviewTypeRegistry typeRegistry;
+    @Mock
+    private com.fh_wedel.workflow.plugin.ReviewTemplateRegistry templateRegistry;
 
     @Mock
     private DefaultApi configurationApi;
@@ -43,8 +45,8 @@ class WorkflowServiceTest {
     @InjectMocks
     private WorkflowService service;
 
-    private ReviewWorkflowPlugin createMockPlugin(String name) {
-        ReviewWorkflowPlugin plugin = mock(ReviewWorkflowPlugin.class);
+    private ReviewTypePlugin createMockPlugin(String name) {
+        ReviewTypePlugin plugin = mock(ReviewTypePlugin.class);
         lenient().when(plugin.getName()).thenReturn(name);
         lenient().when(plugin.getDescription()).thenReturn(name + " description");
         lenient().when(plugin.getTitle()).thenReturn(name + " title");
@@ -56,71 +58,72 @@ class WorkflowServiceTest {
 
     @Test
     void listPluginsReturnsAllPlugins() {
-        ReviewWorkflowPlugin mock1 = createMockPlugin("plugin-1");
-        ReviewWorkflowPlugin mock2 = createMockPlugin("plugin-2");
-        when(registry.getAll()).thenReturn(List.of(mock1, mock2));
+        ReviewTypePlugin mock1 = createMockPlugin("plugin-1");
+        ReviewTypePlugin mock2 = createMockPlugin("plugin-2");
+        when(typeRegistry.getAll()).thenReturn(List.of(mock1, mock2));
 
-        List<WorkflowPluginDto> result = service.listPlugins();
+        List<ReviewTypeDto> result = service.listReviewTypes();
 
         assertEquals(2, result.size());
         assertEquals("plugin-1", result.get(0).getName());
         assertEquals("plugin-2", result.get(1).getName());
-        verify(registry).getAll();
+        verify(typeRegistry).getAll();
     }
 
     @Test
     void getPluginReturnsDto() {
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("plugin-1");
-        when(registry.getByName("plugin-1")).thenReturn(Optional.of(mockPlugin));
+        ReviewTypePlugin mockPlugin = createMockPlugin("plugin-1");
+        when(typeRegistry.getByName("plugin-1")).thenReturn(Optional.of(mockPlugin));
 
-        WorkflowPluginDto result = service.getPlugin("plugin-1");
+        ReviewTypeDto result = service.getReviewType("plugin-1");
 
         assertNotNull(result);
         assertEquals("plugin-1", result.getName());
         assertEquals("plugin-1 description", result.getDescription());
         assertTrue(result.getRules().getAuthorAnonymous());
         assertFalse(result.getRules().getReviewerAnonymous());
-        verify(registry).getByName("plugin-1");
+        verify(typeRegistry).getByName("plugin-1");
     }
 
     @Test
     void getPluginThrowsForUnknown() {
-        when(registry.getByName("unknown")).thenReturn(Optional.empty());
+        when(typeRegistry.getByName("unknown")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.getPlugin("unknown"));
-        verify(registry).getByName("unknown");
+        assertThrows(NoSuchElementException.class, () -> service.getReviewType("unknown"));
+        verify(typeRegistry).getByName("unknown");
     }
 
     @Test
     void getPluginRulesReturnsCorrectValues() {
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("plugin-1");
-        when(registry.getByName("plugin-1")).thenReturn(Optional.of(mockPlugin));
+        ReviewTypePlugin mockPlugin = createMockPlugin("plugin-1");
+        when(typeRegistry.getByName("plugin-1")).thenReturn(Optional.of(mockPlugin));
 
-        WorkflowRulesDto result = service.getPluginRules("plugin-1");
+        WorkflowRulesDto result = service.getReviewTypeRules("plugin-1");
 
         assertNotNull(result);
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
         assertFalse(result.getAuthorReviewerChatAllowed());
-        verify(registry).getByName("plugin-1");
+        verify(typeRegistry).getByName("plugin-1");
     }
 
     @Test
     void getPluginRulesThrowsForUnknown() {
-        when(registry.getByName("unknown")).thenReturn(Optional.empty());
+        when(typeRegistry.getByName("unknown")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.getPluginRules("unknown"));
-        verify(registry).getByName("unknown");
+        assertThrows(NoSuchElementException.class, () -> service.getReviewTypeRules("unknown"));
+        verify(typeRegistry).getByName("unknown");
     }
 
     @Test
     void getRulesForSubmissionCallsConfigurationServiceAndReturnsRules() throws Exception {
         ModelConfiguration mockConfig = new ModelConfiguration();
-        mockConfig.setReviewProcessType("INDIVIDUAL_WORK");
+        mockConfig.setReviewProcessType("SINGLE_BLIND");
+        mockConfig.setReviewTemplateType("INDIVIDUAL_WORK");
         when(configurationApi.submissionIdGet("sub-123")).thenReturn(mockConfig);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
-        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
+        ReviewTypePlugin mockPlugin = createMockPlugin("SINGLE_BLIND");
+        when(typeRegistry.getByName("SINGLE_BLIND")).thenReturn(Optional.of(mockPlugin));
 
         WorkflowRulesDto result = service.getRulesForSubmission("sub-123");
 
@@ -128,7 +131,7 @@ class WorkflowServiceTest {
         assertTrue(result.getAuthorAnonymous());
         assertFalse(result.getReviewerAnonymous());
         verify(configurationApi).submissionIdGet("sub-123");
-        verify(registry).getByName("INDIVIDUAL_WORK");
+        verify(typeRegistry).getByName("SINGLE_BLIND");
     }
 
     @Test
@@ -151,7 +154,7 @@ class WorkflowServiceTest {
 
     @Test
     void initializeReviewSessionSavesSession() {
-        service.initializeReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        service.initializeReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         verify(reviewRepository).saveSession(any(ReviewSession.class));
     }
 
@@ -163,7 +166,7 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewThrowsIfAlreadySubmitted() {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(new SubmittedReview());
 
@@ -172,14 +175,14 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewSavesReviewAndUpdatesCount() throws Exception {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1", "rev-2"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1", "rev-2"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
+        com.fh_wedel.workflow.api.ReviewTemplatePlugin mockTemplate = mock(com.fh_wedel.workflow.api.ReviewTemplatePlugin.class);
         com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
-        when(mockPlugin.calculateGrade(any())).thenReturn(grade);
-        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
+        when(mockTemplate.calculateGrade(any())).thenReturn(grade);
+        when(templateRegistry.getByName("SINGLE_BLIND")).thenReturn(Optional.of(mockTemplate));
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
 
@@ -193,14 +196,14 @@ class WorkflowServiceTest {
 
     @Test
     void submitReviewSavesReviewAndMarksComplete() throws Exception {
-        ReviewSession session = new ReviewSession("sub-123", "INDIVIDUAL_WORK", List.of("rev-1"));
+        ReviewSession session = new ReviewSession("sub-123", "SINGLE_BLIND", List.of("rev-1"));
         when(reviewRepository.getSession("sub-123")).thenReturn(session);
         when(reviewRepository.getReview("sub-123", "rev-1")).thenReturn(null);
 
-        ReviewWorkflowPlugin mockPlugin = createMockPlugin("INDIVIDUAL_WORK");
+        com.fh_wedel.workflow.api.ReviewTemplatePlugin mockTemplate = mock(com.fh_wedel.workflow.api.ReviewTemplatePlugin.class);
         com.fh_wedel.workflow.api.model.ReviewGrade grade = new com.fh_wedel.workflow.api.model.ReviewGrade(10, 20, 50.0, "Summary");
-        when(mockPlugin.calculateGrade(any())).thenReturn(grade);
-        when(registry.getByName("INDIVIDUAL_WORK")).thenReturn(Optional.of(mockPlugin));
+        when(mockTemplate.calculateGrade(any())).thenReturn(grade);
+        when(templateRegistry.getByName("SINGLE_BLIND")).thenReturn(Optional.of(mockTemplate));
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         when(reviewRepository.incrementReceivedReviewCount("sub-123")).thenReturn(1);
 

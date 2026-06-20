@@ -23,7 +23,7 @@ import {useTheme} from '@mui/material/styles';
 
 import {useAuth} from '../contexts/AuthContext';
 import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
-import {configApiClient} from '../api/clients';
+import {configApiClient, submissionApiClient} from '../api/clients';
 import {getMockSubmissionById} from '../stubs/submissions';
 import {formatDateTime} from '../utils/date';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
@@ -34,7 +34,7 @@ export const SubmissionDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { submissionId } = useParams();
-  const {plugins} = useWorkflowPlugins();
+  const {types} = useWorkflowPlugins();
   const {resolveUserId} = useUserResolver();
 
   const isAssignmentsPage = location.pathname.startsWith('/assignments');
@@ -47,6 +47,8 @@ export const SubmissionDetails: React.FC = () => {
   const [submissionConfig, setSubmissionConfig] = useState<any>(null);
   const [submissionMatch, setSubmissionMatch] = useState<any>(null);
   const [workflowRules, setWorkflowRules] = useState<any>(null);
+  const [realSubmission, setRealSubmission] = useState<any>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
 
   const { user } = useAuth();
 
@@ -59,12 +61,20 @@ export const SubmissionDetails: React.FC = () => {
     Promise.all([
       fetchSubmissionMatch(submissionId).catch(() => null),
       fetchWorkflowRulesForSubmission(submissionId).catch(() => null),
-      configApiClient.submissionId.getSubmissionId(submissionId, { format: 'json' }).catch(() => null)
-    ]).then(([match, fetchedRules, configRes]) => {
+      configApiClient.submissionId.getSubmissionId(submissionId, { format: 'json' }).catch(() => null),
+      submissionApiClient.submissions.getSubmission(submissionId).catch(() => null),
+      submissionApiClient.submissions.getDocuments(submissionId).catch(() => null),
+    ]).then(([match, fetchedRules, configRes, realSubRes, docsRes]) => {
       setSubmissionMatch(match);
       setWorkflowRules(fetchedRules);
       if (configRes && (configRes as any).data) {
         setSubmissionConfig((configRes as any).data);
+      }
+      if (realSubRes && (realSubRes as any).data) {
+        setRealSubmission((realSubRes as any).data);
+      }
+      if (docsRes && (docsRes as any).data) {
+        setDocuments((docsRes as any).data);
       }
 
       if (match && fetchedRules) {
@@ -128,15 +138,17 @@ export const SubmissionDetails: React.FC = () => {
 
   // Combine real API data with mock data as a fallback
   const reviewAvailable = mockSubmission ? Boolean(mockSubmission.review) : false;
-  const documentAvailable = mockSubmission ? Boolean(mockSubmission.documentUrl) : false;
+  const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
-  // Resolve status based on matching
+  // Resolve status based on realSubmission or matching
   let status = 'Created';
-  if (submissionMatch && submissionMatch.status === 'MATCHED') {
+  if (realSubmission && realSubmission.status) {
+    status = realSubmission.status;
+  } else if (submissionMatch && submissionMatch.status === 'MATCHED') {
     status = isAssignmentsPage ? 'Assigned' : 'Matched';
   }
-  const reviewMode = submissionConfig?.reviewProcessType || mockSubmission?.reviewMode || 'unknown';
+  const reviewType = submissionConfig?.reviewProcessType || mockSubmission?.reviewType || 'unknown';
 
   if (!submissionConfig?.createdAt) {
     throw new Error('Missing real creation date from backend.');
@@ -213,10 +225,113 @@ export const SubmissionDetails: React.FC = () => {
     });
   }
 
-  const historyToDisplay = dynamicHistory.length > 0 ? dynamicHistory : (mockSubmission?.history ? [...mockSubmission.history] : []);
+  const historyToDisplay = [...dynamicHistory];
+  if (realSubmission && realSubmission.submittedAt) {
+    historyToDisplay.push({
+      id: 'event-submitted',
+      label: 'Submission Finalized',
+      changedAt: realSubmission.submittedAt,
+      description: 'The author finalized the document submission.'
+    });
+  }
+  if (historyToDisplay.length === 0 && mockSubmission?.history) {
+    historyToDisplay.push(...mockSubmission.history);
+  }
 
   // Sort descending (latest first)
   historyToDisplay.sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
+
+  // Upload/Submit Handlers
+  const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const firstDoc = documents.length > 0 ? documents[0] : null;
+
+  const handleDownload = async (docId: string) => {
+    if (!submissionId) return;
+    setDownloading(true);
+    try {
+      const res = await submissionApiClient.submissions.getPresignedDownloadUrl(submissionId, docId);
+      if (res.data && res.data.uploadUrl) {
+        window.open(res.data.uploadUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (e) {
+      console.error('Failed to get download URL', e);
+      alert('Failed to download file.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!submissionId || !event.target.files || event.target.files.length === 0) return;
+    const file = event.target.files[0];
+    if (file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // 1. Get presigned upload URL
+      const urlRes = await submissionApiClient.submissions.getPresignedUploadUrl(submissionId, {
+        fileName: file.name,
+        contentType: file.type,
+      });
+
+      const { uploadUrl } = urlRes.data;
+      if (!uploadUrl) throw new Error('No upload URL returned');
+
+      // 2. Perform S3 PUT request
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+        },
+        body: file,
+      });
+
+      if (!putRes.ok) {
+        throw new Error('S3 upload failed');
+      }
+
+      // 3. Reload documents list
+      const docsRes = await submissionApiClient.submissions.getDocuments(submissionId);
+      setDocuments(docsRes.data || []);
+      
+      // 4. Reload submission details
+      const subRes = await submissionApiClient.submissions.getSubmission(submissionId);
+      setRealSubmission(subRes.data);
+
+      alert('File uploaded successfully!');
+    } catch (e) {
+      console.error('Failed to upload file', e);
+      alert('Failed to upload file.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!submissionId) return;
+    if (window.confirm('Are you sure you want to finalize and submit? You will not be able to upload any more files.')) {
+      setSubmitting(true);
+      try {
+        const res = await submissionApiClient.submissions.submitSubmission(submissionId);
+        setRealSubmission(res.data);
+        alert('Submission finalized successfully!');
+      } catch (e) {
+        console.error('Failed to submit', e);
+        alert('Failed to finalize submission. Please ensure you have uploaded at least one document.');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+  };
+
+  const isDraftOrWaiting = status === 'DRAFT' || status === 'Wartet auf Abgabe';
+  const showUploadArea = isAuthor && isDraftOrWaiting;
 
   return (
     <Box sx={{ display: 'flex', height: '100%', width: '100%' }}>
@@ -271,7 +386,7 @@ export const SubmissionDetails: React.FC = () => {
                     Review Mode
                   </Typography>
                   <Typography sx={{ textTransform: 'capitalize' }}>
-                    {plugins.find(p => p.name === reviewMode)?.title || reviewMode}
+                      {types.find(p => p.name === reviewType)?.title || reviewType}
                   </Typography>
                 </Box>
 
@@ -297,12 +412,10 @@ export const SubmissionDetails: React.FC = () => {
                 size="large"
                 fullWidth
                 startIcon={<PictureAsPdf />}
-                href={mockSubmission?.documentUrl || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                disabled={!documentAvailable}
+                onClick={() => firstDoc && handleDownload(firstDoc.documentId)}
+                disabled={!documentAvailable || downloading}
               >
-                View Uploaded PDF
+                {downloading ? 'Loading PDF...' : 'View Uploaded PDF'}
               </Button>
 
               <Button
@@ -331,6 +444,42 @@ export const SubmissionDetails: React.FC = () => {
                     </Button>
                   </span>
               </Tooltip>
+
+              {showUploadArea && (
+                <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2, borderRadius: 1, textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ mb: 1.5, wordBreak: 'break-all' }}>
+                    {firstDoc ? `Current file: ${firstDoc.fileName}` : 'No PDF uploaded yet.'}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    size="small"
+                    fullWidth
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Uploading...' : firstDoc ? 'Replace PDF' : 'Upload PDF'}
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      hidden
+                      onChange={handleUpload}
+                    />
+                  </Button>
+                </Box>
+              )}
+
+              {showUploadArea && firstDoc && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="large"
+                  fullWidth
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? 'Submitting...' : 'Finalize & Submit'}
+                </Button>
+              )}
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                 {reviewAvailable

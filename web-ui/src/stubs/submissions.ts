@@ -1,4 +1,4 @@
-export type SubmissionReviewMode = string;
+export type SubmissionReviewType = string;
 
 export type SubmissionStatus =
   | 'Draft'
@@ -29,7 +29,7 @@ export interface SubmissionDetail {
   createdAt: string;
   documentName: string;
   documentUrl?: string;
-  reviewMode: SubmissionReviewMode;
+  reviewType: SubmissionReviewType;
   status: SubmissionStatus;
   authorId?: string;
   authorName?: string;

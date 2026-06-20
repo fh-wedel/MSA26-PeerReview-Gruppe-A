@@ -37,13 +37,16 @@
     <modules>
         <module>workflow-api</module>
         <module>workflow-core</module>
-        <module>workflow-plugin-individual-work</module>
-        <module>workflow-plugin-bachelor-thesis</module>
-        <module>workflow-plugin-group-work</module>
+        <module>workflow-type-single-blind</module>
+        <module>workflow-template-individual-work</module>
+        <module>workflow-type-open-review</module>
+        <module>workflow-template-bachelor-thesis</module>
+        <module>workflow-type-double-blind</module>
+        <module>workflow-template-group-work</module>
     </modules>
 
     <properties>
-        <java.version>25</java.version>
+        <java.version>21</java.version>
         <lombok.version>1.18.38</lombok.version>
         <openapi-generator.version>7.14.0</openapi-generator.version>
         <aws.sdk.version>2.31.51</aws.sdk.version>

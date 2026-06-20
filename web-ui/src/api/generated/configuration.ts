@@ -10,6 +10,19 @@
  * ---------------------------------------------------------------
  */
 
+export interface CreateConfigurationRequest {
+  title: string;
+  reviewProcessType: string;
+  authorIds: string[];
+  /** @min 1 */
+  numberOfExaminers?: number;
+  /** @format date-time */
+  submissionDeadline?: string;
+  /** @format date-time */
+  reviewDeadline?: string;
+  reviewTemplateType: string;
+}
+
 export interface Configuration {
   title: string;
   reviewProcessType: string;
@@ -20,10 +33,9 @@ export interface Configuration {
   submissionDeadline?: string;
   /** @format date-time */
   reviewDeadline?: string;
-  evaluationCriteria?: string[];
-  criteriaVisibleToAuthor?: boolean;
   /** @format date-time */
   createdAt?: string;
+  reviewTemplateType: string;
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -296,7 +308,7 @@ export class Api<
    * @summary Create a new submission configuration
    * @request POST:/
    */
-  postRoot = (data: Configuration, params: RequestParams = {}) =>
+  postRoot = (data: CreateConfigurationRequest, params: RequestParams = {}) =>
     this.request<void, void>({
       path: `/`,
       method: "POST",
@@ -313,43 +325,13 @@ export class Api<
    * @request GET:/
    */
   getRoot = (params: RequestParams = {}) =>
-      this.request<Configuration[], any>({
+    this.request<Configuration[], any>({
       path: `/`,
       method: "GET",
-        format: "json",
+      format: "json",
       ...params,
     });
 
-  status = {
-    /**
-     * No description
-     *
-     * @name StatusList
-     * @summary Returns the current status of the API
-     * @request GET:/status
-     */
-    statusList: (params: RequestParams = {}) =>
-      this.request<string, any>({
-        path: `/status`,
-        method: "GET",
-        ...params,
-      }),
-  };
-  time = {
-    /**
-     * No description
-     *
-     * @name TimeList
-     * @summary Returns the current server time
-     * @request GET:/time
-     */
-    timeList: (params: RequestParams = {}) =>
-      this.request<string, any>({
-        path: `/time`,
-        method: "GET",
-        ...params,
-      }),
-  };
   submissionId = {
     /**
      * No description
@@ -359,10 +341,10 @@ export class Api<
      * @request GET:/{submissionId}
      */
     getSubmissionId: (submissionId: string, params: RequestParams = {}) =>
-        this.request<Configuration, void>({
+      this.request<Configuration, void>({
         path: `/${submissionId}`,
         method: "GET",
-          format: "json",
+        format: "json",
         ...params,
       }),
   };
@@ -375,10 +357,10 @@ export class Api<
      * @request GET:/author/{authorId}
      */
     authorDetail: (authorId: string, params: RequestParams = {}) =>
-        this.request<Configuration[], any>({
+      this.request<Configuration[], any>({
         path: `/author/${authorId}`,
         method: "GET",
-          format: "json",
+        format: "json",
         ...params,
       }),
   };

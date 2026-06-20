@@ -44,8 +44,9 @@ public class ConfigurationService {
      * a MatchingRequestEvent to the matching-request SQS queue.
      */
     public SubmissionConfiguration createConfiguration(String title, String reviewProcessType,
-                                                       List<String> authorIds, String creatorId, String creatorRole,
-                                                       int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
+                                                       String reviewTemplateType, int numberOfExaminers,
+                                                       Instant submissionDeadline, Instant reviewDeadline,
+                                                       List<String> authorIds, String creatorId, String creatorRole) {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
@@ -54,9 +55,11 @@ public class ConfigurationService {
         String submissionId = UUID.randomUUID().toString();
         log.info("Creating submission configuration: id={}, title={}, creatorId={}", submissionId, title, creatorId);
 
+
+
         // 1. Instantiate metadata record
         SubmissionConfiguration config = new SubmissionConfiguration(
-                submissionId, title, reviewProcessType, authorIds, creatorId, creatorRole,
+                submissionId, title, reviewProcessType, reviewTemplateType, authorIds, creatorId, creatorRole,
                 numberOfExaminers, submissionDeadline, reviewDeadline
         );
 

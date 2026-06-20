@@ -18,23 +18,6 @@ export interface WorkflowRulesDto {
   reviewerAnonymous: boolean;
   /** Whether direct chat between author and reviewer is allowed */
   authorReviewerChatAllowed: boolean;
-  defaultNumberOfReviewers: number;
-  defaultNumberOfAuthors: number;
-}
-
-/** A registered workflow plugin with its metadata and rules */
-export interface WorkflowPluginDto {
-  /** Human-readable title of the workflow plugin */
-  title: string;
-  /** Unique name of the workflow plugin */
-  name: string;
-  /** Human-readable description of the workflow plugin */
-  description: string;
-  /** The anonymity and communication rules of a workflow plugin */
-  rules: WorkflowRulesDto;
-  defaultNumberOfReviewers: number;
-  defaultNumberOfAuthors: number;
-  feedbackFormTemplate: ReviewQuestionDto[];
 }
 
 export interface ReviewQuestionDto {
@@ -83,6 +66,22 @@ export interface SubmittedReviewDto {
   submittedAt: string;
 }
 
+export interface ReviewTypeDto {
+  title: string;
+  name: string;
+  description: string;
+  /** The anonymity and communication rules of a workflow plugin */
+  rules: WorkflowRulesDto;
+}
+
+export interface ReviewTemplateDto {
+  title: string;
+  name: string;
+  description: string;
+  evaluationCriteriaVisibleToAuthors: boolean;
+  feedbackFormTemplate: ReviewQuestionDto[];
+}
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
@@ -106,21 +105,21 @@ export interface FullRequestParams extends Omit<RequestInit, "body"> {
 }
 
 export type RequestParams = Omit<
-    FullRequestParams,
-    "body" | "method" | "query" | "path"
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
 >;
 
 export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
   baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
   securityWorker?: (
-      securityData: SecurityDataType | null,
+    securityData: SecurityDataType | null,
   ) => Promise<RequestParams | void> | RequestParams | void;
   customFetch?: typeof fetch;
 }
 
 export interface HttpResponse<D extends unknown, E extends unknown = unknown>
-    extends Response {
+  extends Response {
   data: D;
   error: E;
 }
@@ -141,7 +140,7 @@ export class HttpClient<SecurityDataType = unknown> {
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private abortControllers = new Map<CancelToken, AbortController>();
   private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
-      fetch(...fetchParams);
+    fetch(...fetchParams);
 
   private baseApiParams: RequestParams = {
     credentials: "same-origin",
@@ -175,15 +174,15 @@ export class HttpClient<SecurityDataType = unknown> {
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
     const keys = Object.keys(query).filter(
-        (key) => "undefined" !== typeof query[key],
+      (key) => "undefined" !== typeof query[key],
     );
     return keys
-        .map((key) =>
-            Array.isArray(query[key])
-                ? this.addArrayQueryParam(query, key)
-                : this.addQueryParam(query, key),
-        )
-        .join("&");
+      .map((key) =>
+        Array.isArray(query[key])
+          ? this.addArrayQueryParam(query, key)
+          : this.addQueryParam(query, key),
+      )
+      .join("&");
   }
 
   protected addQueryParams(rawQuery?: QueryParamsType): string {
@@ -193,17 +192,17 @@ export class HttpClient<SecurityDataType = unknown> {
 
   private contentFormatters: Record<ContentType, (input: any) => any> = {
     [ContentType.Json]: (input: any) =>
-        input !== null && (typeof input === "object" || typeof input === "string")
-            ? JSON.stringify(input)
-            : input,
+      input !== null && (typeof input === "object" || typeof input === "string")
+        ? JSON.stringify(input)
+        : input,
     [ContentType.JsonApi]: (input: any) =>
-        input !== null && (typeof input === "object" || typeof input === "string")
-            ? JSON.stringify(input)
-            : input,
+      input !== null && (typeof input === "object" || typeof input === "string")
+        ? JSON.stringify(input)
+        : input,
     [ContentType.Text]: (input: any) =>
-        input !== null && typeof input !== "string"
-            ? JSON.stringify(input)
-            : input,
+      input !== null && typeof input !== "string"
+        ? JSON.stringify(input)
+        : input,
     [ContentType.FormData]: (input: any) => {
       if (input instanceof FormData) {
         return input;
@@ -212,12 +211,12 @@ export class HttpClient<SecurityDataType = unknown> {
       return Object.keys(input || {}).reduce((formData, key) => {
         const property = input[key];
         formData.append(
-            key,
-            property instanceof Blob
-                ? property
-                : typeof property === "object" && property !== null
-                    ? JSON.stringify(property)
-                    : `${property}`,
+          key,
+          property instanceof Blob
+            ? property
+            : typeof property === "object" && property !== null
+              ? JSON.stringify(property)
+              : `${property}`,
         );
         return formData;
       }, new FormData());
@@ -226,8 +225,8 @@ export class HttpClient<SecurityDataType = unknown> {
   };
 
   protected mergeRequestParams(
-      params1: RequestParams,
-      params2?: RequestParams,
+    params1: RequestParams,
+    params2?: RequestParams,
   ): RequestParams {
     return {
       ...this.baseApiParams,
@@ -242,7 +241,7 @@ export class HttpClient<SecurityDataType = unknown> {
   }
 
   protected createAbortSignal = (
-      cancelToken: CancelToken,
+    cancelToken: CancelToken,
   ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
@@ -267,45 +266,45 @@ export class HttpClient<SecurityDataType = unknown> {
   };
 
   public request = async <T = any, E = any>({
-                                              body,
-                                              secure,
-                                              path,
-                                              type,
-                                              query,
-                                              format,
-                                              baseUrl,
-                                              cancelToken,
-                                              ...params
-                                            }: FullRequestParams): Promise<HttpResponse<T, E>> => {
+    body,
+    secure,
+    path,
+    type,
+    query,
+    format,
+    baseUrl,
+    cancelToken,
+    ...params
+  }: FullRequestParams): Promise<HttpResponse<T, E>> => {
     const secureParams =
-        ((typeof secure === "boolean" ? secure : this.baseApiParams.secure) &&
-            this.securityWorker &&
-            (await this.securityWorker(this.securityData))) ||
-        {};
+      ((typeof secure === "boolean" ? secure : this.baseApiParams.secure) &&
+        this.securityWorker &&
+        (await this.securityWorker(this.securityData))) ||
+      {};
     const requestParams = this.mergeRequestParams(params, secureParams);
     const queryString = query && this.toQueryString(query);
     const payloadFormatter = this.contentFormatters[type || ContentType.Json];
     const responseFormat = format || requestParams.format;
 
     return this.customFetch(
-        `${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`,
-        {
-          ...requestParams,
-          headers: {
-            ...(requestParams.headers || {}),
-            ...(type && type !== ContentType.FormData
-                ? {"Content-Type": type}
-                : {}),
-          },
-          signal:
-              (cancelToken
-                  ? this.createAbortSignal(cancelToken)
-                  : requestParams.signal) || null,
-          body:
-              typeof body === "undefined" || body === null
-                  ? null
-                  : payloadFormatter(body),
+      `${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`,
+      {
+        ...requestParams,
+        headers: {
+          ...(requestParams.headers || {}),
+          ...(type && type !== ContentType.FormData
+            ? { "Content-Type": type }
+            : {}),
         },
+        signal:
+          (cancelToken
+            ? this.createAbortSignal(cancelToken)
+            : requestParams.signal) || null,
+        body:
+          typeof body === "undefined" || body === null
+            ? null
+            : payloadFormatter(body),
+      },
     ).then(async (response) => {
       const r = response as HttpResponse<T, E>;
       r.data = null as unknown as T;
@@ -313,20 +312,20 @@ export class HttpClient<SecurityDataType = unknown> {
 
       const responseToParse = responseFormat ? response.clone() : response;
       const data = !responseFormat
-          ? r
-          : await responseToParse[responseFormat]()
-              .then((data) => {
-                if (r.ok) {
-                  r.data = data;
-                } else {
-                  r.error = data;
-                }
-                return r;
-              })
-              .catch((e) => {
-                r.error = e;
-                return r;
-              });
+        ? r
+        : await responseToParse[responseFormat]()
+            .then((data) => {
+              if (r.ok) {
+                r.data = data;
+              } else {
+                r.error = data;
+              }
+              return r;
+            })
+            .catch((e) => {
+              r.error = e;
+              return r;
+            });
 
       if (cancelToken) {
         this.abortControllers.delete(cancelToken);
@@ -346,57 +345,8 @@ export class HttpClient<SecurityDataType = unknown> {
  * REST API for the Workflow Service – exposes available review workflow plugins and their rules.
  */
 export class Api<
-    SecurityDataType extends unknown,
+  SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
-  plugins = {
-    /**
-     * @description Returns an array of all registered workflow plugins with their metadata and rules.
-     *
-     * @tags Workflow Plugins
-     * @name ListPlugins
-     * @summary List all available workflow plugins
-     * @request GET:/plugins
-     */
-    listPlugins: (params: RequestParams = {}) =>
-        this.request<WorkflowPluginDto[], any>({
-          path: `/plugins`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
-
-    /**
-     * @description Returns the metadata and rules for the workflow plugin identified by its name.
-     *
-     * @tags Workflow Plugins
-     * @name GetPlugin
-     * @summary Get details of a specific workflow plugin
-     * @request GET:/plugins/{pluginName}
-     */
-    getPlugin: (pluginName: string, params: RequestParams = {}) =>
-        this.request<WorkflowPluginDto, void>({
-          path: `/plugins/${pluginName}`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
-
-    /**
-     * @description Returns the anonymity and communication rules for the workflow plugin identified by its name.
-     *
-     * @tags Workflow Plugins
-     * @name GetPluginRules
-     * @summary Get the rules of a specific workflow plugin
-     * @request GET:/plugins/{pluginName}/rules
-     */
-    getPluginRules: (pluginName: string, params: RequestParams = {}) =>
-        this.request<WorkflowRulesDto, void>({
-          path: `/plugins/${pluginName}/rules`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
-  };
   submissions = {
     /**
      * @description Returns the anonymity and communication rules for the workflow plugin associated with the given submission ID.
@@ -407,12 +357,12 @@ export class Api<
      * @request GET:/submissions/{submissionId}/rules
      */
     getRulesForSubmission: (submissionId: string, params: RequestParams = {}) =>
-        this.request<WorkflowRulesDto, void>({
-          path: `/submissions/${submissionId}/rules`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
+      this.request<WorkflowRulesDto, void>({
+        path: `/submissions/${submissionId}/rules`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
 
     /**
      * No description
@@ -423,15 +373,15 @@ export class Api<
      * @request GET:/submissions/{submissionId}/feedback-form
      */
     getFeedbackFormForSubmission: (
-        submissionId: string,
-        params: RequestParams = {},
+      submissionId: string,
+      params: RequestParams = {},
     ) =>
-        this.request<ReviewQuestionDto[], any>({
-          path: `/submissions/${submissionId}/feedback-form`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
+      this.request<ReviewQuestionDto[], any>({
+        path: `/submissions/${submissionId}/feedback-form`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
 
     /**
      * No description
@@ -442,18 +392,18 @@ export class Api<
      * @request POST:/submissions/{submissionId}/reviews
      */
     submitReview: (
-        submissionId: string,
-        data: SubmitReviewRequest,
-        params: RequestParams = {},
+      submissionId: string,
+      data: SubmitReviewRequest,
+      params: RequestParams = {},
     ) =>
-        this.request<SubmitReviewResponseDto, any>({
-          path: `/submissions/${submissionId}/reviews`,
-          method: "POST",
-          body: data,
-          type: ContentType.Json,
-          format: "json",
-          ...params,
-        }),
+      this.request<SubmitReviewResponseDto, any>({
+        path: `/submissions/${submissionId}/reviews`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
 
     /**
      * No description
@@ -464,15 +414,15 @@ export class Api<
      * @request GET:/submissions/{submissionId}/reviews
      */
     getReviewsForSubmission: (
-        submissionId: string,
-        params: RequestParams = {},
+      submissionId: string,
+      params: RequestParams = {},
     ) =>
-        this.request<SubmittedReviewDto[], any>({
-          path: `/submissions/${submissionId}/reviews`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
+      this.request<SubmittedReviewDto[], any>({
+        path: `/submissions/${submissionId}/reviews`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
 
     /**
      * No description
@@ -483,11 +433,93 @@ export class Api<
      * @request GET:/submissions/{submissionId}/reviews/status
      */
     getReviewStatus: (submissionId: string, params: RequestParams = {}) =>
-        this.request<ReviewStatusDto, any>({
-          path: `/submissions/${submissionId}/reviews/status`,
-          method: "GET",
-          format: "json",
-          ...params,
-        }),
+      this.request<ReviewStatusDto, any>({
+        path: `/submissions/${submissionId}/reviews/status`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+  };
+  reviewTypes = {
+    /**
+     * @description Returns an array of all registered workflow plugins with their metadata and rules.
+     *
+     * @tags Workflow Review Types
+     * @name ListReviewTypes
+     * @summary List all available review types
+     * @request GET:/review-types
+     */
+    listReviewTypes: (params: RequestParams = {}) =>
+      this.request<ReviewTypeDto[], any>({
+        path: `/review-types`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Returns the metadata and rules for the workflow plugin identified by its name.
+     *
+     * @tags Workflow Review Types
+     * @name GetReviewType
+     * @summary Get details of a specific review type
+     * @request GET:/review-types/{typeName}
+     */
+    getReviewType: (typeName: string, params: RequestParams = {}) =>
+      this.request<ReviewTypeDto, void>({
+        path: `/review-types/${typeName}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Returns the anonymity and communication rules for the workflow plugin identified by its name.
+     *
+     * @tags Workflow Review Types
+     * @name GetReviewTypeRules
+     * @summary Get the rules of a specific workflow plugin
+     * @request GET:/review-types/{typeName}/rules
+     */
+    getReviewTypeRules: (typeName: string, params: RequestParams = {}) =>
+      this.request<WorkflowRulesDto, void>({
+        path: `/review-types/${typeName}/rules`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+  };
+  reviewTemplates = {
+    /**
+     * No description
+     *
+     * @tags Workflow Templates
+     * @name ListReviewTemplates
+     * @summary List all available review templates
+     * @request GET:/review-templates
+     */
+    listReviewTemplates: (params: RequestParams = {}) =>
+      this.request<ReviewTemplateDto[], any>({
+        path: `/review-templates`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Workflow Templates
+     * @name GetReviewTemplate
+     * @summary Get details of a specific review template
+     * @request GET:/review-templates/{templateName}
+     */
+    getReviewTemplate: (templateName: string, params: RequestParams = {}) =>
+      this.request<ReviewTemplateDto, void>({
+        path: `/review-templates/${templateName}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
   };
 }

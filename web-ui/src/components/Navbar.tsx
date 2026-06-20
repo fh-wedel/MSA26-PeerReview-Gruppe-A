@@ -67,6 +67,7 @@ export const Navbar: React.FC = () => {
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
+      if (!isAuthenticated) return;
     searchUsers('')
       .then(users => {
         const map: Record<string, string> = {};

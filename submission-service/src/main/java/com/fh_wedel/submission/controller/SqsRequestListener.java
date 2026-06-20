@@ -3,6 +3,9 @@ package com.fh_wedel.submission.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.submission.model.Submission;
+import com.fh_wedel.submission.model.SubmissionConfiguration;
+import com.fh_wedel.submission.model.SubmissionStatus;
+import com.fh_wedel.submission.service.ConfigurationServiceClient;
 import com.fh_wedel.submission.repository.SubmissionRepository;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +19,14 @@ public class SqsRequestListener {
 
     private final SubmissionRepository repository;
     private final ObjectMapper objectMapper;
+    private final ConfigurationServiceClient configurationServiceClient;
 
-    public SqsRequestListener(SubmissionRepository repository, ObjectMapper objectMapper) {
+    public SqsRequestListener(SubmissionRepository repository,
+                              ObjectMapper objectMapper,
+                              ConfigurationServiceClient configurationServiceClient) {
         this.repository = repository;
         this.objectMapper = objectMapper;
+        this.configurationServiceClient = configurationServiceClient;
     }
 
     @SqsListener("${aws.sqs.request.queue-name}")
@@ -36,11 +43,31 @@ public class SqsRequestListener {
                 return;
             }
 
+            if (!"MATCHED".equalsIgnoreCase(status)) {
+                log.warn("Received event status '{}' for submission {}, but expected 'MATCHED'. Ignoring.", status, submissionId);
+                return;
+            }
+
             Submission submission = repository.findSubmissionById(submissionId);
-            if (submission != null) {
-                log.info("Updating submission {} status based on event: {}", submissionId, status);
+            if (submission == null) {
+                log.info("Submission {} not found in database. Fetching configuration from configuration-service.", submissionId);
+                SubmissionConfiguration config = configurationServiceClient.getConfiguration(submissionId);
+                if (config != null) {
+                    String authorId = (config.getAuthorIds() != null && !config.getAuthorIds().isEmpty())
+                            ? config.getAuthorIds().get(0)
+                            : "unknown";
+                    
+                    submission = new Submission(submissionId, submissionId, authorId, config.getTitle());
+                    submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                    repository.saveSubmission(submission);
+                    log.info("Created new submission {} with status '{}'", submissionId, submission.getStatus());
+                } else {
+                    log.error("Failed to retrieve configuration for submission {} from configuration-service", submissionId);
+                }
             } else {
-                log.warn("Received event for unknown submission {}", submissionId);
+                log.info("Updating existing submission {} status from {} to '{}'", submissionId, submission.getStatus(), SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                repository.saveSubmission(submission);
             }
         } catch (Exception e) {
             log.error("Failed to process SQS message", e);

@@ -1,47 +1,27 @@
 import {useEffect, useState} from 'react';
-
-export interface WorkflowRules {
-  authorAnonymous: boolean;
-  reviewerAnonymous: boolean;
-  authorReviewerChatAllowed: boolean;
-}
-
-export interface WorkflowPlugin {
-  name: string;
-  title: string;
-  description: string;
-  rules: WorkflowRules;
-}
+import {workflowApiClient} from '../api/clients';
+import type { ReviewTypeDto, ReviewTemplateDto } from '../api/generated/workflow';
 
 export const useWorkflowPlugins = () => {
-  const [plugins, setPlugins] = useState<WorkflowPlugin[]>([]);
+  const [types, setTypes] = useState<ReviewTypeDto[]>([]);
+  const [templates, setTemplates] = useState<ReviewTemplateDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchPlugins = async () => {
       try {
-        const token = sessionStorage.getItem('access_token');
-        const headers: HeadersInit = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+        const [typesRes, templatesRes] = await Promise.all([
+          workflowApiClient.reviewTypes.listReviewTypes(),
+          workflowApiClient.reviewTemplates.listReviewTemplates()
+        ]);
+        
+        if (!typesRes.ok || !templatesRes.ok) {
+          throw new Error(`Failed to fetch plugins`);
         }
 
-        const response = await fetch('/api/workflow/plugins', {
-          headers
-        });
-        if (!response.ok) {
-          let errMsg = `Failed to fetch plugins: ${response.statusText}`;
-          try {
-            const errData = await response.json();
-            if (errData.message) errMsg = errData.message;
-            else if (errData.error) errMsg = errData.error;
-            else if (typeof errData === 'string') errMsg = errData;
-          } catch (e) {}
-          throw new Error(errMsg);
-        }
-        const data = await response.json();
-        setPlugins(data);
+        setTypes(typesRes.data);
+        setTemplates(templatesRes.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
       } finally {
@@ -52,5 +32,5 @@ export const useWorkflowPlugins = () => {
     fetchPlugins();
   }, []);
 
-  return { plugins, loading, error };
+  return { types, templates, loading, error };
 };

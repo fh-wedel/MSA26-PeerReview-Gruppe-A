@@ -8,10 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -23,21 +21,6 @@ public class SubmissionController {
 
     public SubmissionController(SubmissionService submissionService) {
         this.submissionService = submissionService;
-    }
-
-    @GetMapping("/status")
-    public String getStatus() {
-        return submissionService.getServiceStatus();
-    }
-
-    @GetMapping("/time")
-    public String getCurrentTime(Authentication authentication) {
-        String username = authentication != null ? authentication.getName() : "Guest";
-        String groups = authentication != null ? authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList()
-                .toString() : "None";
-        return String.format("time=%s, username=%s, groups=%s", Instant.now(), username, groups);
     }
 
     @PostMapping("/submissions")
@@ -66,6 +49,12 @@ public class SubmissionController {
         log.info("Request received: POST /submissions/{}/presigned-url (fileName={})", id, request.getFileName());
 
         String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(id);
+            if (submission != null) {
+                authorId = submission.getAuthorId();
+            }
+        }
         PresignedUrlResponse response = submissionService.generatePresignedUploadUrl(
                 id, authorId, request.getFileName(), request.getContentType());
 
@@ -82,6 +71,12 @@ public class SubmissionController {
         log.info("Request received: PUT /submissions/{}", id);
 
         String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(id);
+            if (submission != null) {
+                authorId = submission.getAuthorId();
+            }
+        }
         Submission submission = submissionService.updateSubmission(id, authorId, request);
 
         if (submission == null) {
@@ -99,6 +94,12 @@ public class SubmissionController {
         log.info("Request received: POST /submissions/{}/submit", id);
 
         String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(id);
+            if (submission != null) {
+                authorId = submission.getAuthorId();
+            }
+        }
         Submission submission = submissionService.submitSubmission(id, authorId);
 
         if (submission == null) {
@@ -153,6 +154,30 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getDocuments(id));
     }
 
+    @GetMapping("/submissions/{id}/documents/{documentId}/download")
+    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
+    public ResponseEntity<PresignedUrlResponse> getPresignedDownloadUrl(
+            @PathVariable String id,
+            @PathVariable String documentId,
+            Authentication authentication) {
+
+        log.info("Request received: GET /submissions/{}/documents/{}/download", id, documentId);
+
+        Submission submission = submissionService.getSubmission(id);
+        if (submission == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String callerSub = extractSubFromDetails(authentication);
+        if (isOnlyAuthor(authentication) && !submission.getAuthorId().equals(callerSub)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        String downloadUrl = submissionService.getPresignedDownloadUrl(id, documentId);
+        PresignedUrlResponse response = new PresignedUrlResponse(downloadUrl, documentId, null);
+        return ResponseEntity.ok(response);
+    }
+
     private boolean isOnlyAuthor(Authentication auth) {
         if (auth == null || auth.getAuthorities() == null) return false;
         boolean hasAuthor = auth.getAuthorities().stream()
@@ -163,6 +188,13 @@ public class SubmissionController {
                         || a.getAuthority().equals("ROLE_Teacher")
                         || a.getAuthority().equals("ROLE_Reviewer"));
         return hasAuthor && !hasHigherRole;
+    }
+
+    private boolean isAdminOrOfficer(Authentication auth) {
+        if (auth == null || auth.getAuthorities() == null) return false;
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
+                        || a.getAuthority().equals("ROLE_ExaminationOfficer"));
     }
 
     private String extractSubFromDetails(Authentication auth) {

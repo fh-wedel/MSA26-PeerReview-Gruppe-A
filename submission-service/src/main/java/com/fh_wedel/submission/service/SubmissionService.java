@@ -62,8 +62,10 @@ public class SubmissionService {
             throw new IllegalStateException("Not the owner of this submission");
         }
 
-        if (!SubmissionStatus.DRAFT.name().equals(submission.getStatus())) {
-            throw new IllegalStateException("Can only update submissions in DRAFT status");
+        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
+        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
+        if (!isDraft && !isWaiting) {
+            throw new IllegalStateException("Can only update submissions in DRAFT or WAITING_FOR_SUBMISSION status");
         }
 
         if (request.getTitle() != null) {
@@ -85,8 +87,18 @@ public class SubmissionService {
             throw new IllegalStateException("Not the owner of this submission");
         }
 
-        if (!SubmissionStatus.DRAFT.name().equals(submission.getStatus())) {
-            throw new IllegalStateException("Can only upload documents for submissions in DRAFT status");
+        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
+        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
+        if (!isDraft && !isWaiting) {
+            throw new IllegalStateException("Can only upload documents for submissions in DRAFT or WAITING_FOR_SUBMISSION status");
+        }
+
+        if (contentType == null || !"application/pdf".equalsIgnoreCase(contentType)) {
+            throw new IllegalArgumentException("Only PDF uploads are allowed. Unsupported content type: " + contentType);
+        }
+
+        if (fileName == null || !fileName.toLowerCase().endsWith(".pdf")) {
+            throw new IllegalArgumentException("Only PDF uploads are allowed. File name must end with .pdf");
         }
 
         String documentId = UUID.randomUUID().toString();
@@ -111,8 +123,10 @@ public class SubmissionService {
             throw new IllegalStateException("Not the owner of this submission");
         }
 
-        if (!SubmissionStatus.DRAFT.name().equals(submission.getStatus())) {
-            throw new IllegalStateException("Can only submit submissions in DRAFT status");
+        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
+        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
+        if (!isDraft && !isWaiting) {
+            throw new IllegalStateException("Can only submit submissions in DRAFT or WAITING_FOR_SUBMISSION status");
         }
 
         List<DocumentRecord> documents = repository.findDocuments(submissionId);
@@ -120,7 +134,7 @@ public class SubmissionService {
             throw new IllegalStateException("Cannot submit without at least one document");
         }
 
-        submission.setStatus(SubmissionStatus.SUBMITTED.name());
+        submission.setStatus(SubmissionStatus.SUBMITTED.getDbValue());
         submission.setSubmittedAt(Instant.now());
         submission.setUpdatedAt(Instant.now());
         repository.saveSubmission(submission);
@@ -134,8 +148,12 @@ public class SubmissionService {
         return repository.findDocuments(submissionId);
     }
 
-    public String getServiceStatus() {
-        return "Submission Service is up and running!";
+    public String getPresignedDownloadUrl(String submissionId, String documentId) {
+        DocumentRecord document = repository.findDocument(submissionId, documentId);
+        if (document == null) {
+            throw new IllegalStateException("Document not found");
+        }
+        return s3Service.generatePresignedGetUrl(document.getS3Key());
     }
 
     private void sendSubmissionReadyEvent(Submission submission) {

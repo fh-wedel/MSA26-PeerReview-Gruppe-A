@@ -1,8 +1,6 @@
 package com.fh_wedel.workflow.api.model;
 
-import com.fh_wedel.workflow.api.ReviewWorkflowPlugin;
-
-import java.util.List;
+import com.fh_wedel.workflow.api.ReviewTypePlugin;
 
 /**
  * Immutable snapshot of a plugin's complete configuration:
@@ -11,19 +9,13 @@ import java.util.List;
 public record WorkflowRules(
     boolean authorAnonymous,
     boolean reviewerAnonymous,
-    boolean authorReviewerChatAllowed,
-    int defaultNumberOfReviewers,
-    int defaultNumberOfAuthors,
-    List<ReviewQuestion> feedbackFormTemplate
+    boolean authorReviewerChatAllowed
 ) {
-    public static WorkflowRules fromPlugin(ReviewWorkflowPlugin plugin) {
+    public static WorkflowRules fromPlugin(ReviewTypePlugin plugin) {
         return new WorkflowRules(
-            plugin.isAuthorAnonymous(),
-            plugin.isReviewerAnonymous(),
-                plugin.isAuthorReviewerChatAllowed(),
-                plugin.getDefaultNumberOfReviewers(),
-                plugin.getDefaultNumberOfAuthors(),
-                plugin.getFeedbackFormTemplate()
+                plugin.isAuthorAnonymous(),
+                plugin.isReviewerAnonymous(),
+                plugin.isAuthorReviewerChatAllowed()
         );
     }
 }

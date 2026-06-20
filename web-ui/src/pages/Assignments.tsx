@@ -60,7 +60,7 @@ export const Assignments: React.FC = () => {
     );
   }
 
-  const {plugins} = useWorkflowPlugins();
+  const {types} = useWorkflowPlugins();
   const [enrichedAssignments, setEnrichedAssignments] = React.useState<any[]>([]);
   const [enriching, setEnriching] = React.useState(true);
 
@@ -120,7 +120,7 @@ export const Assignments: React.FC = () => {
   const finalAssignments = sortByStatus(filterByStatus(enrichedAssignments, selectedStatuses));
 
   const formatSubheading = (assignment: any) => {
-    const plugin = plugins.find(p => p.name === assignment.reviewProcessType);
+    const plugin = types.find(p => p.name === assignment.reviewProcessType);
     const type = plugin ? plugin.title : (assignment.reviewProcessType || 'Unknown');
     const datetime = formatDateTime(assignment.updateTime, 'PPPp');
     return (

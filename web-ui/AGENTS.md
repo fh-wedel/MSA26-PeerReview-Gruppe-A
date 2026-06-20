@@ -20,3 +20,10 @@
   `AuthContext.tsx`. They are mapped to lowercase strings (e.g., `'admin'`) and used for frontend access control.
 - **API Generation Script Maintenance:** When consuming a new backend service API, you must manually add its OpenAPI
   JSON path to a new `generate:api:<service>` script in `package.json` to include it in the generation process.
+- **API Client Interceptors:** OpenAPI generated clients (`swagger-typescript-api`) accept a `customFetch` option in
+  their `ApiConfig`. Use this to inject global HTTP logic like JWT token refresh interceptors.
+- **Frontend Fetch Standards:** Exclusively use the OpenAPI generated API clients. Refactor any legacy raw `fetch()`
+  calls in hooks/components to use the corresponding generated API client.
+- **Silent 403s on Refresh:** When refreshing Cognito tokens on a 403 error, explicitly update `sessionStorage` with the
+  new tokens and retry the request within the interceptor. Decouple this from `AuthContext` to prevent circular
+  dependencies.

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import {useEffect, useState} from 'react';
+import {useAuth} from '../contexts/AuthContext';
+import {matchingApiClient} from '../api/clients';
 
 export interface Assignment {
   submissionId: string;
@@ -23,30 +24,23 @@ export const useAssignments = () => {
       }
 
       try {
-        const token = sessionStorage.getItem('access_token');
-        const headers: HeadersInit = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
+        const response = await matchingApiClient.matches.getMatchesByExaminer(user.username);
 
-        const response = await fetch(`/api/matching/matches/examiners/${user.username}`, {
-          headers
-        });
-        
-        if (response.status === 404) {
-          // No assignments found
-          setAssignments([]);
-          return;
-        }
-        
         if (!response.ok) {
+          if (response.status === 404) {
+            setAssignments([]);
+            return;
+          }
           throw new Error(`Failed to fetch assignments: ${response.statusText}`);
         }
-        
-        const data = await response.json();
-        setAssignments(data.assignments || []);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Unknown error'));
+
+        setAssignments(response.data.assignments || []);
+      } catch (err: any) {
+        if (err.status === 404) {
+          setAssignments([]);
+        } else {
+          setError(err instanceof Error ? err : new Error('Unknown error'));
+        }
       } finally {
         setLoading(false);
       }
