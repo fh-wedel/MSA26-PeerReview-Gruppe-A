@@ -9,76 +9,212 @@
     },
     "policies": [
         {
-            "id": "AdminStatusAccess",
+            "id": "AdminCreateSubmission",
             "groupName": "Admin",
-            "actionId": "get /api/submission/status",
-            "description": "Allow Admin to access submission status"
+            "actionId": "post /api/submission/submissions",
+            "description": "Allow Admin to create submissions"
         },
         {
-            "id": "GuestTimeAccess",
-            "groupName": "Guest",
-            "actionId": "get /api/submission/time",
-            "description": "Allow Guest to access submission time"
+            "id": "AdminUploadUrl",
+            "groupName": "Admin",
+            "actionId": "post /api/submission/submissions/{id}/presigned-url",
+            "description": "Allow Admin to request upload URL"
         },
         {
-            "id": "ReviewerCreateConfig",
-            "groupName": "Reviewer",
-            "actionId": "post /api/submission/configurations",
-            "description": "Allow Reviewer to create submission configurations"
+            "id": "AdminUpdateSubmission",
+            "groupName": "Admin",
+            "actionId": "put /api/submission/submissions/{id}",
+            "description": "Allow Admin to update submission details"
         },
         {
-            "id": "ExamOfficeCreateConfig",
-            "groupName": "ExamOffice",
-            "actionId": "post /api/submission/configurations",
-            "description": "Allow ExamOffice to create submission configurations"
+            "id": "AdminSubmitWork",
+            "groupName": "Admin",
+            "actionId": "post /api/submission/submissions/{id}/submit",
+            "description": "Allow Admin to finalize submission"
         },
         {
-            "id": "AuthorCreateConfig",
-            "groupName": "Author",
-            "actionId": "post /api/submission/configurations",
-            "description": "Allow Author to create submission configurations"
+            "id": "AdminGetSubmission",
+            "groupName": "Admin",
+            "actionId": "get /api/submission/submissions/{id}",
+            "description": "Allow Admin to view submission"
         },
+        {
+            "id": "AdminListSubmissions",
+            "groupName": "Admin",
+            "actionId": "get /api/submission/submissions",
+            "description": "Allow Admin to list submissions"
+        },
+        {
+            "id": "AdminGetDocuments",
+            "groupName": "Admin",
+            "actionId": "get /api/submission/submissions/{id}/documents",
+            "description": "Allow Admin to get documents"
+        },
+        {
+            "id": "AdminDownloadDocument",
+            "groupName": "Admin",
+            "actionId": "get /api/submission/submissions/{id}/documents/{documentId}/download",
+            "description": "Allow Admin to download document"
+        },
+
+        {
+            "id": "OfficerCreateSubmission",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/submission/submissions",
+            "description": "Allow ExaminationOfficer to create submissions"
+        },
+        {
+            "id": "OfficerUploadUrl",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/submission/submissions/{id}/presigned-url",
+            "description": "Allow ExaminationOfficer to request upload URL"
+        },
+        {
+            "id": "OfficerUpdateSubmission",
+            "groupName": "ExaminationOfficer",
+            "actionId": "put /api/submission/submissions/{id}",
+            "description": "Allow ExaminationOfficer to update submission details"
+        },
+        {
+            "id": "OfficerSubmitWork",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/submission/submissions/{id}/submit",
+            "description": "Allow ExaminationOfficer to finalize submission"
+        },
+        {
+            "id": "OfficerGetSubmission",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/submission/submissions/{id}",
+            "description": "Allow ExaminationOfficer to view submission"
+        },
+        {
+            "id": "OfficerListSubmissions",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/submission/submissions",
+            "description": "Allow ExaminationOfficer to list submissions"
+        },
+        {
+            "id": "OfficerGetDocuments",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/submission/submissions/{id}/documents",
+            "description": "Allow ExaminationOfficer to get documents"
+        },
+        {
+            "id": "OfficerDownloadDocument",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/submission/submissions/{id}/documents/{documentId}/download",
+            "description": "Allow ExaminationOfficer to download document"
+        },
+
         {
             "id": "AuthorCreateSubmission",
             "groupName": "Author",
             "actionId": "post /api/submission/submissions",
-            "description": "Allow Author to initiate submissions"
+            "description": "Allow Author to create submissions"
         },
         {
             "id": "AuthorUploadUrl",
             "groupName": "Author",
-            "actionId": "post /api/submission/submissions/*/presigned-url",
-            "description": "Allow Author to request presigned S3 upload URLs"
+            "actionId": "post /api/submission/submissions/{id}/presigned-url",
+            "description": "Allow Author to request upload URL"
         },
         {
             "id": "AuthorUpdateSubmission",
             "groupName": "Author",
-            "actionId": "put /api/submission/submissions/*",
+            "actionId": "put /api/submission/submissions/{id}",
             "description": "Allow Author to update submission details"
         },
         {
             "id": "AuthorSubmitWork",
             "groupName": "Author",
-            "actionId": "post /api/submission/submissions/*/submit",
-            "description": "Allow Author to finalize work"
+            "actionId": "post /api/submission/submissions/{id}/submit",
+            "description": "Allow Author to finalize submission"
         },
         {
-            "id": "AuthorViewRubric",
+            "id": "AuthorGetSubmission",
             "groupName": "Author",
-            "actionId": "get /api/submission/configurations/*/grading-form",
-            "description": "Allow Author to fetch grading criteria"
+            "actionId": "get /api/submission/submissions/{id}",
+            "description": "Allow Author to view submission"
         },
         {
-            "id": "ReviewerViewRubric",
+            "id": "AuthorListSubmissions",
+            "groupName": "Author",
+            "actionId": "get /api/submission/submissions",
+            "description": "Allow Author to list submissions"
+        },
+        {
+            "id": "AuthorGetDocuments",
+            "groupName": "Author",
+            "actionId": "get /api/submission/submissions/{id}/documents",
+            "description": "Allow Author to get documents"
+        },
+        {
+            "id": "AuthorDownloadDocument",
+            "groupName": "Author",
+            "actionId": "get /api/submission/submissions/{id}/documents/{documentId}/download",
+            "description": "Allow Author to download document"
+        },
+
+        {
+            "id": "TeacherCreateSubmission",
+            "groupName": "Teacher",
+            "actionId": "post /api/submission/submissions",
+            "description": "Allow Teacher to create submissions"
+        },
+        {
+            "id": "TeacherGetSubmission",
+            "groupName": "Teacher",
+            "actionId": "get /api/submission/submissions/{id}",
+            "description": "Allow Teacher to view submission"
+        },
+        {
+            "id": "TeacherListSubmissions",
+            "groupName": "Teacher",
+            "actionId": "get /api/submission/submissions",
+            "description": "Allow Teacher to list submissions"
+        },
+        {
+            "id": "TeacherGetDocuments",
+            "groupName": "Teacher",
+            "actionId": "get /api/submission/submissions/{id}/documents",
+            "description": "Allow Teacher to get documents"
+        },
+        {
+            "id": "TeacherDownloadDocument",
+            "groupName": "Teacher",
+            "actionId": "get /api/submission/submissions/{id}/documents/{documentId}/download",
+            "description": "Allow Teacher to download document"
+        },
+
+        {
+            "id": "ReviewerCreateSubmission",
             "groupName": "Reviewer",
-            "actionId": "get /api/submission/configurations/*/grading-form",
-            "description": "Allow Reviewer to fetch grading criteria"
+            "actionId": "post /api/submission/submissions",
+            "description": "Allow Reviewer to create submissions"
         },
         {
-            "id": "ExamOfficeViewRubric",
-            "groupName": "ExamOffice",
-            "actionId": "get /api/submission/configurations/*/grading-form",
-            "description": "Allow ExamOffice to fetch grading criteria"
+            "id": "ReviewerGetSubmission",
+            "groupName": "Reviewer",
+            "actionId": "get /api/submission/submissions/{id}",
+            "description": "Allow Reviewer to view submission"
+        },
+        {
+            "id": "ReviewerListSubmissions",
+            "groupName": "Reviewer",
+            "actionId": "get /api/submission/submissions",
+            "description": "Allow Reviewer to list submissions"
+        },
+        {
+            "id": "ReviewerGetDocuments",
+            "groupName": "Reviewer",
+            "actionId": "get /api/submission/submissions/{id}/documents",
+            "description": "Allow Reviewer to get documents"
+        },
+        {
+            "id": "ReviewerDownloadDocument",
+            "groupName": "Reviewer",
+            "actionId": "get /api/submission/submissions/{id}/documents/{documentId}/download",
+            "description": "Allow Reviewer to download document"
         }
     ]
 }

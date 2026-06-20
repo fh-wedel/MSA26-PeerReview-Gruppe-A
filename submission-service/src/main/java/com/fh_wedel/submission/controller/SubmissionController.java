@@ -49,6 +49,12 @@ public class SubmissionController {
         log.info("Request received: POST /submissions/{}/presigned-url (fileName={})", id, request.getFileName());
 
         String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(id);
+            if (submission != null) {
+                authorId = submission.getAuthorId();
+            }
+        }
         PresignedUrlResponse response = submissionService.generatePresignedUploadUrl(
                 id, authorId, request.getFileName(), request.getContentType());
 
@@ -65,6 +71,12 @@ public class SubmissionController {
         log.info("Request received: PUT /submissions/{}", id);
 
         String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(id);
+            if (submission != null) {
+                authorId = submission.getAuthorId();
+            }
+        }
         Submission submission = submissionService.updateSubmission(id, authorId, request);
 
         if (submission == null) {
@@ -82,6 +94,12 @@ public class SubmissionController {
         log.info("Request received: POST /submissions/{}/submit", id);
 
         String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(id);
+            if (submission != null) {
+                authorId = submission.getAuthorId();
+            }
+        }
         Submission submission = submissionService.submitSubmission(id, authorId);
 
         if (submission == null) {
@@ -170,6 +188,13 @@ public class SubmissionController {
                         || a.getAuthority().equals("ROLE_Teacher")
                         || a.getAuthority().equals("ROLE_Reviewer"));
         return hasAuthor && !hasHigherRole;
+    }
+
+    private boolean isAdminOrOfficer(Authentication auth) {
+        if (auth == null || auth.getAuthorities() == null) return false;
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
+                        || a.getAuthority().equals("ROLE_ExaminationOfficer"));
     }
 
     private String extractSubFromDetails(Authentication auth) {
