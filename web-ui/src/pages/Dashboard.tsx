@@ -240,7 +240,7 @@ export const Dashboard: React.FC = () => {
                                       label={task.type}
                                       size="small"
                                       color={task.type === "Submission" ? "primary" : "secondary"}
-                                      variant="outlined"
+
                                   />
                                 </Box>
                               }
