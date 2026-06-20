@@ -100,14 +100,20 @@ class SqsRequestListenerTest {
     }
 
     @Test
-    @DisplayName("Should ignore event if status is not MATCHED")
-    void handleMessage_statusNotMatched_ignored() {
+    @DisplayName("Should apply the event status when it is not MATCHED")
+    void handleMessage_statusNotMatched_updatesStatus() {
         String submissionId = "sub-789";
-        String message = String.format("{\"submissionId\":\"%s\",\"status\":\"FAILED\"}", submissionId);
+        String message = String.format("{\"submissionId\":\"%s\",\"status\":\"IN_REVIEW\"}", submissionId);
+
+        Submission existing = new Submission(submissionId, submissionId, List.of("author-uuid"));
+        existing.setStatus(SubmissionStatus.SUBMITTED.getDbValue());
+
+        when(repository.findSubmissionById(submissionId)).thenReturn(existing);
 
         sqsRequestListener.handleMessage(message);
 
-        verifyNoInteractions(repository);
+        verify(repository).saveSubmission(existing);
+        assertThat(existing.getStatus()).isEqualTo("IN_REVIEW");
         verifyNoInteractions(configurationServiceClient);
     }
 
