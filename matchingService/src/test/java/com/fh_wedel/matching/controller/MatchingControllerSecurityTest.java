@@ -134,10 +134,13 @@ class MatchingControllerSecurityTest {
         String examinerUsername = "reviewer-username";
         String examinerSub = "reviewer-uuid";
 
-        UserProfile mockProfile = new UserProfile();
-        mockProfile.setSub(examinerSub);
+        com.fh_wedel.user.client.model.UserSearchResponse mockSearchResponse = new com.fh_wedel.user.client.model.UserSearchResponse();
+        UserSummary mockSummary = new UserSummary();
+        mockSummary.setUsername(examinerUsername);
+        mockSummary.setSub(examinerSub);
+        mockSearchResponse.setUsers(List.of(mockSummary));
         try {
-            when(groupsApi.getUserDetails(examinerUsername)).thenReturn(mockProfile);
+            when(usersApi.searchUsers(examinerUsername)).thenReturn(mockSearchResponse);
         } catch(Exception e) {}
         when(matchingService.getMatchesByExaminer(examinerSub)).thenReturn(Collections.emptyList());
 
@@ -153,10 +156,13 @@ class MatchingControllerSecurityTest {
         String otherExaminerUsername = "other-username";
         String otherExaminerSub = "other-uuid";
 
-        UserProfile mockProfile = new UserProfile();
-        mockProfile.setSub(otherExaminerSub);
+        com.fh_wedel.user.client.model.UserSearchResponse mockSearchResponse = new com.fh_wedel.user.client.model.UserSearchResponse();
+        UserSummary mockSummary = new UserSummary();
+        mockSummary.setUsername(otherExaminerUsername);
+        mockSummary.setSub(otherExaminerSub);
+        mockSearchResponse.setUsers(List.of(mockSummary));
         try {
-            when(groupsApi.getUserDetails(otherExaminerUsername)).thenReturn(mockProfile);
+            when(usersApi.searchUsers(otherExaminerUsername)).thenReturn(mockSearchResponse);
         } catch(Exception e) {}
 
         Authentication auth = createAuth("Reviewer", "reviewer-username", "reviewer-uuid");

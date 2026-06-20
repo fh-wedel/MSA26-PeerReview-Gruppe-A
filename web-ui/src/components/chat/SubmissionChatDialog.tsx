@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, CircularProgress, Alert, Autocomplete } from '@mui/material';
 import { fetchWorkflowRulesForSubmission } from '../../api/communication';
-import { configApiClient, submissionApiClient } from '../../api/clients';
+import { configApiClient } from '../../api/clients';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAssignments } from '../../hooks/useAssignments';
 
@@ -132,15 +132,6 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
               label="Submission"
               variant="outlined"
               helperText="Select an assignment or your submission from the list."
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <React.Fragment>
-                    {optionsLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                    {params.InputProps.endAdornment}
-                  </React.Fragment>
-                ),
-              }}
             />
           )}
           renderOption={(props, option) => (

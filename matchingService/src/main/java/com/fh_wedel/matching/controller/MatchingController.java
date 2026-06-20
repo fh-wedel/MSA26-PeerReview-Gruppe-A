@@ -149,17 +149,23 @@ public class MatchingController {
 
         log.info("Request received: GET /matches/examiners/{} (username)", examinerUsername);
 
-        String examinerSub;
+        String examinerSub = null;
         try {
-            UserProfile examinerUser = groupsApi.getUserDetails(examinerUsername);
-            examinerSub = examinerUser.getSub();
+            com.fh_wedel.user.client.model.UserSearchResponse searchResponse = usersApi.searchUsers(examinerUsername);
+            if (searchResponse != null && searchResponse.getUsers() != null) {
+                examinerSub = searchResponse.getUsers().stream()
+                        .filter(u -> examinerUsername.equals(u.getUsername()))
+                        .map(com.fh_wedel.user.client.model.UserSummary::getSub)
+                        .findFirst()
+                        .orElse(null);
+            }
             if (examinerSub == null) {
-                log.warn("Cognito user '{}' (username) has no 'sub' attribute", examinerUsername);
+                log.warn("Examiner username '{}' not found in Cognito", examinerUsername);
                 return ResponseEntity.notFound().build();
             }
             log.debug("Resolved examiner username '{}' → sub UUID '{}'", examinerUsername, examinerSub);
         } catch (Exception e) {
-            log.warn("Examiner username '{}' not found in Cognito", examinerUsername);
+            log.warn("Error looking up examiner username '{}'", examinerUsername, e);
             return ResponseEntity.notFound().build();
         }
 
