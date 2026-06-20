@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, CircularProgress, Alert, Autocomplete } from '@mui/material';
 import { fetchWorkflowRulesForSubmission } from '../../api/communication';
-import { configApiClient } from '../../api/clients';
+import { configApiClient, submissionApiClient } from '../../api/clients';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAssignments } from '../../hooks/useAssignments';
+
+interface SubmissionOption {
+  id: string;
+  title: string;
+  allowed: boolean;
+  reason?: string;
+}
 
 interface SubmissionChatDialogProps {
   open: boolean;
@@ -12,27 +19,71 @@ interface SubmissionChatDialogProps {
 }
 
 export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open, onClose, onStartSubmissionChat }) => {
-  const [submissionId, setSubmissionId] = useState('');
+  const [submissionOption, setSubmissionOption] = useState<SubmissionOption | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authorSubmissions, setAuthorSubmissions] = useState<string[]>([]);
+  
+  const [options, setOptions] = useState<SubmissionOption[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  
   const { user } = useAuth();
   const { assignments } = useAssignments();
 
   useEffect(() => {
-    if (user?.id && open) {
-      configApiClient.author.authorDetail(user.id, { format: 'json' })
-        .then(res => {
-          const configs = (res.data as unknown as Array<Record<string, unknown>>) || [];
-          setAuthorSubmissions(configs.map(c => (c.id || c.submissionId) as string));
-        })
-        .catch(console.error);
+    if (!open) {
+      setSubmissionOption(null);
+      setError(null);
+      setOptions([]);
+      return;
     }
-  }, [user?.id, open]);
+
+    if (user?.id) {
+      setOptionsLoading(true);
+      configApiClient.author.authorDetail(user.id, { format: 'json' })
+        .then(async res => {
+          const configs = (res.data as unknown as Array<Record<string, unknown>>) || [];
+          const authorIds = configs.map(c => (c.id || c.submissionId) as string);
+          
+          const allIds = Array.from(new Set([...assignments.map(a => a.submissionId), ...authorIds]));
+          
+          const newOptions: SubmissionOption[] = [];
+          for (const id of allIds) {
+            if (!id) continue;
+            try {
+              const [subRes, rules] = await Promise.all([
+                configApiClient.submissionId.getSubmissionId(id).catch(() => null),
+                fetchWorkflowRulesForSubmission(id).catch(() => null)
+              ]);
+              
+              const title = subRes?.data?.title || id;
+              const allowed = rules ? !!rules.authorReviewerChatAllowed : false;
+              
+              newOptions.push({
+                id,
+                title,
+                allowed,
+                reason: allowed ? undefined : 'Communication not allowed in the current review phase (e.g. Double Blind)'
+              });
+            } catch (e) {
+              console.error(`Failed to load details for submission ${id}`, e);
+            }
+          }
+          
+          setOptions(newOptions);
+        })
+        .catch(err => {
+          console.error(err);
+          setError('Failed to load submissions.');
+        })
+        .finally(() => {
+          setOptionsLoading(false);
+        });
+    }
+  }, [user?.id, open, assignments]);
 
   const handleCreate = async () => {
-    if (!submissionId.trim()) {
-      setError('Submission ID is required');
+    if (!submissionOption) {
+      setError('Submission is required');
       return;
     }
 
@@ -40,15 +91,11 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
     setError(null);
 
     try {
-      // Validate workflow rules — chat must be allowed for this review type
-      const rules = await fetchWorkflowRulesForSubmission(submissionId);
-      if (!rules.authorReviewerChatAllowed) {
-        throw new Error('Chat is not allowed for this review type (Double Blind).');
+      if (!submissionOption.allowed) {
+        throw new Error('Chat is not allowed for this review type.');
       }
 
-      // All good — start the group chat. The backend will resolve all participants
-      // from the Matching Service when the first message is sent.
-      onStartSubmissionChat(submissionId);
+      onStartSubmissionChat(submissionOption.id);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');
@@ -60,30 +107,60 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>New Submission Chat</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      <DialogContent sx={{ overflowY: 'visible' }}>
+        {error && <Alert severity="error" sx={{ mb: 2, mt: 1 }}>{error}</Alert>}
         <Autocomplete
-          freeSolo
-          options={Array.from(new Set([...assignments.map(a => a.submissionId), ...authorSubmissions]))}
-          value={submissionId}
-          onInputChange={(_, newValue) => setSubmissionId(newValue)}
+          options={options}
+          loading={optionsLoading}
+          getOptionLabel={(option) => typeof option === 'string' ? option : `${option.title} (${option.id.slice(0, 8)}...)`}
+          getOptionDisabled={(option) => !option.allowed}
+          value={submissionOption}
+          onChange={(_, newValue) => {
+             if (typeof newValue === 'string') {
+               setSubmissionOption({ id: newValue, title: newValue, allowed: true });
+             } else {
+               setSubmissionOption(newValue);
+             }
+          }}
+          isOptionEqualToValue={(option, value) => option.id === value?.id}
           disabled={loading}
           renderInput={(params) => (
             <TextField
               {...params}
               autoFocus
               margin="dense"
-              label="Submission ID"
+              label="Submission"
               variant="outlined"
-              helperText="Select an assignment from the list, or manually enter the full Submission ID."
+              helperText="Select an assignment or your submission from the list."
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <React.Fragment>
+                    {optionsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </React.Fragment>
+                ),
+              }}
             />
+          )}
+          renderOption={(props, option) => (
+            <li {...props}>
+              <div>
+                <strong>{option.title}</strong>
+                <br/>
+                <small style={{ color: 'gray' }}>ID: {option.id}</small>
+                {!option.allowed && (
+                  <div style={{ color: 'red', fontSize: '0.8em' }}>{option.reason}</div>
+                )}
+              </div>
+            </li>
           )}
         />
         {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>Cancel</Button>
-        <Button onClick={handleCreate} disabled={loading || !submissionId.trim()} color="primary" variant="contained">
+        <Button onClick={handleCreate} disabled={loading || !submissionOption} color="primary" variant="contained">
           Start Chat
         </Button>
       </DialogActions>
