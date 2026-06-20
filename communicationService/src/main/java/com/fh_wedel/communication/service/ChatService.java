@@ -414,8 +414,8 @@ public class ChatService {
     /** Builds a deduplicated participant list from the Matching Service response. */
     private List<String> buildParticipantList(com.fh_wedel.matching.client.model.SubmissionMatchResponse match) {
         List<String> participants = new ArrayList<>();
-        if (match.getSubmitterId() != null) {
-            participants.add(match.getSubmitterId());
+        if (match.getSubmitterIds() != null) {
+            participants.addAll(match.getSubmitterIds());
         }
         if (match.getMatches() != null) {
             for (com.fh_wedel.matching.client.model.MatchEntry entry : match.getMatches()) {
