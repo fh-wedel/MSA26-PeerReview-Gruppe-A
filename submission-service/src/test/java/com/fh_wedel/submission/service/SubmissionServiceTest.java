@@ -38,13 +38,14 @@ class SubmissionServiceTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private String submissionReadyQueueName = "test-submission-ready-queue";
+    private String notificationQueueName = "test-notification-queue";
 
     private SubmissionService submissionService;
 
     @BeforeEach
     void setUp() {
         submissionService = new SubmissionService(
-                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, submissionReadyQueueName);
+                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, submissionReadyQueueName, notificationQueueName);
     }
 
     @Test

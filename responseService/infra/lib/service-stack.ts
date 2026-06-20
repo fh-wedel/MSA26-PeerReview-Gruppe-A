@@ -75,6 +75,10 @@ export class ResponseServiceStack extends cdk.Stack {
     const imageName = EcsInfra.getDefaultImageNameIpv6(props.serviceName, props.imageVersion);
     const containerPort = props.containerPort;
 
+    // Internal service discovery namespace (internal.services AAAA records).
+    // Used both for this service's own record and to build ECS-to-ECS target URLs.
+    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
+
     taskDefinition.addContainer('AppContainer', {
       containerName: props.serviceName,
       image: ecs.ContainerImage.fromRegistry(imageName),
@@ -88,6 +92,12 @@ export class ResponseServiceStack extends cdk.Stack {
         'AWS_REGION': AWSConstants.AWS_REGION,
         'S3_BUCKET_NAME': props.s3BucketName,
         'DYNAMODB_TABLE_NAME': props.dynamoDbTableName,
+        // ECS-to-ECS targets via internal.services AAAA records (NOT sc.internal).
+        // Used to enrich review results: grading schema (workflow), examiner
+        // (matching) and review deadline / end date (configuration).
+        'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
+        'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
+        'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8081`,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -105,7 +115,6 @@ export class ResponseServiceStack extends cdk.Stack {
     const lambdaSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LambdaSg', lambdaSgId);
     ecsSecurityGroup.addIngressRule(lambdaSg, ec2.Port.tcp(containerPort), 'Allow incoming from API Gateway Lambda');
 
-    const cloudMapNamespace = ImportedRessources.getCloudMapNamespace(this);
     const sdService = EcsInfra.createServiceDiscoveryAAAARecord(this, props.serviceName, cloudMapNamespace);
 
     const ecsService = new ecs.FargateService(this, 'FargateService', {

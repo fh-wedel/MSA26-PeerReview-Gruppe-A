@@ -1,9 +1,16 @@
 package com.fh_wedel.response.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fh_wedel.configuration.client.api.DefaultApi;
+import com.fh_wedel.configuration.client.model.ModelConfiguration;
+import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.matching.client.model.MatchEntry;
+import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.ReviewResult;
 import com.fh_wedel.response.model.ReviewResultDto;
 import com.fh_wedel.response.repository.ReviewResultRepository;
+import com.fh_wedel.workflow.client.api.WorkflowReviewsApi;
+import com.fh_wedel.workflow.client.model.ReviewQuestionDto;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,9 +44,19 @@ class ResultServiceTest {
     @Mock
     private SqsTemplate sqsTemplate;
 
+    @Mock
+    private WorkflowReviewsApi workflowReviewsApi;
+
+    @Mock
+    private MatchesApi matchesApi;
+
+    @Mock
+    private DefaultApi configurationApi;
+
     private ResultService buildService(String notificationQueue) {
         return new ResultService(repository, documentStorageService,
-                sqsTemplate, new ObjectMapper(), notificationQueue);
+                sqsTemplate, new ObjectMapper(), notificationQueue,
+                workflowReviewsApi, matchesApi, configurationApi);
     }
 
     @Test
@@ -54,6 +73,62 @@ class ResultServiceTest {
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(sqsTemplate).send(eq("notification-request-queue"), body.capture());
         assertThat(body.getValue()).contains("Review Result Available").contains("IN_APP").contains("author-1");
+    }
+
+    @Test
+    void enrichesResultFromNeighbouringServicesOnSave() throws Exception {
+        ResultService service = buildService("");
+
+        when(workflowReviewsApi.getFeedbackFormForSubmission("sub-9")).thenReturn(List.of(
+                new ReviewQuestionDto().id("q1").text("Originality").maxPoints(10).required(true)));
+        when(matchesApi.getMatchesBySubmission("sub-9")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerUsername("examiner-x"))));
+        OffsetDateTime deadline = OffsetDateTime.of(2026, 6, 30, 12, 0, 0, 0, ZoneOffset.UTC);
+        when(configurationApi.submissionIdGet("sub-9")).thenReturn(
+                new ModelConfiguration().reviewDeadline(deadline));
+        when(repository.save(any(ReviewResult.class))).thenAnswer(i -> i.getArgument(0));
+
+        ReviewResult result = ReviewResult.builder()
+                .submissionId("sub-9").authorId("author-1").reviewerId("rev-1")
+                .completedAt(Instant.now()).build();
+
+        service.save(result);
+
+        ArgumentCaptor<ReviewResult> captor = ArgumentCaptor.forClass(ReviewResult.class);
+        verify(repository).save(captor.capture());
+        ReviewResult saved = captor.getValue();
+        assertThat(saved.getGradingSchema()).hasSize(1);
+        assertThat(saved.getGradingSchema().getFirst().getText()).isEqualTo("Originality");
+        assertThat(saved.getGradingSchema().getFirst().getMaxPoints()).isEqualTo(10);
+        assertThat(saved.getExaminerUsernames()).containsExactly("examiner-x");
+        assertThat(saved.getReviewDeadline()).isEqualTo(deadline.toInstant());
+    }
+
+    @Test
+    void savesResultEvenWhenEnrichmentCallsFail() throws Exception {
+        ResultService service = buildService("");
+
+        when(workflowReviewsApi.getFeedbackFormForSubmission("sub-9"))
+                .thenThrow(new com.fh_wedel.workflow.client.ApiException("workflow down"));
+        when(matchesApi.getMatchesBySubmission("sub-9"))
+                .thenThrow(new com.fh_wedel.matching.client.ApiException("matching down"));
+        when(configurationApi.submissionIdGet("sub-9"))
+                .thenThrow(new com.fh_wedel.configuration.client.ApiException("configuration down"));
+        when(repository.save(any(ReviewResult.class))).thenAnswer(i -> i.getArgument(0));
+
+        ReviewResult result = ReviewResult.builder()
+                .submissionId("sub-9").authorId("author-1").reviewerId("rev-1")
+                .completedAt(Instant.now()).build();
+
+        service.save(result);
+
+        ArgumentCaptor<ReviewResult> captor = ArgumentCaptor.forClass(ReviewResult.class);
+        verify(repository).save(captor.capture());
+        ReviewResult saved = captor.getValue();
+        assertThat(saved.getGradingSchema()).isNull();
+        assertThat(saved.getExaminerUsernames()).isNull();
+        assertThat(saved.getReviewDeadline()).isNull();
     }
 
     @Test
