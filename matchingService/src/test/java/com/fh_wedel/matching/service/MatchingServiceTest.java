@@ -49,7 +49,8 @@ class MatchingServiceTest {
 
     @BeforeEach
     void setUp() {
-        matchingService = new MatchingService(groupsApi, matchRepository, sqsTemplate, objectMapper, "test-response-queue");
+        matchingService = new MatchingService(groupsApi, matchRepository, sqsTemplate, objectMapper,
+                "test-response-queue", "notification-request-queue");
     }
 
     @Test
@@ -60,13 +61,13 @@ class MatchingServiceTest {
         List<UserProfile> reviewers = List.of(
                 createUser("reviewer-a"),
                 createUser("reviewer-b"),
-                createUser("reviewer-c")
-        );
+                createUser("reviewer-c"));
         UserProfileListResponse response = new UserProfileListResponse();
         response.setUsers(reviewers);
         try {
             when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
-        } catch(Exception e) {}
+        } catch (Exception e) {
+        }
 
         matchingService.processMatchingRequest(event);
 
@@ -85,13 +86,13 @@ class MatchingServiceTest {
 
         List<UserProfile> reviewers = List.of(
                 createUser("reviewer-a"),
-                createUser("reviewer-b")
-        );
+                createUser("reviewer-b"));
         UserProfileListResponse response = new UserProfileListResponse();
         response.setUsers(reviewers);
         try {
             when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
-        } catch(Exception e) {}
+        } catch (Exception e) {
+        }
 
         matchingService.processMatchingRequest(event);
 
@@ -100,7 +101,8 @@ class MatchingServiceTest {
         assertThat(statusCaptor.getValue().getStatus()).isEqualTo(MatchStatus.FAILED.name());
         assertThat(statusCaptor.getValue().getReason()).contains("Not enough eligible reviewers");
 
-        verify(sqsTemplate, never()).send(anyString(), anyString());
+        // No SQS response event should be sent to the response queue
+        verify(sqsTemplate, never()).send(eq("test-response-queue"), anyString());
     }
 
     @Test
@@ -110,13 +112,13 @@ class MatchingServiceTest {
 
         List<UserProfile> reviewers = List.of(
                 createUser("submitter-user"),
-                createUser("reviewer-x")
-        );
+                createUser("reviewer-x"));
         UserProfileListResponse response = new UserProfileListResponse();
         response.setUsers(reviewers);
         try {
             when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
-        } catch(Exception e) {}
+        } catch (Exception e) {
+        }
 
         matchingService.processMatchingRequest(event);
 
@@ -132,13 +134,13 @@ class MatchingServiceTest {
         MatchingRequestEvent event = createEvent("sub-4", "only-user", 1);
 
         List<UserProfile> reviewers = List.of(
-                createUser("only-user")
-        );
+                createUser("only-user"));
         UserProfileListResponse response = new UserProfileListResponse();
         response.setUsers(reviewers);
         try {
             when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
-        } catch(Exception e) {}
+        } catch (Exception e) {
+        }
 
         matchingService.processMatchingRequest(event);
 
@@ -152,14 +154,69 @@ class MatchingServiceTest {
     void selectRandomReviewers_correctCount() {
         List<UserProfile> pool = List.of(
                 createUser("a"), createUser("b"), createUser("c"),
-                createUser("d"), createUser("e")
-        );
+                createUser("d"), createUser("e"));
 
         List<UserProfile> selected = matchingService.selectRandomReviewers(pool, 3);
 
         assertThat(selected).hasSize(3);
         selected.forEach(user -> assertThat(pool).contains(user));
     }
+
+    @Test
+    @DisplayName("Should send in-app notifications to assigned reviewers on success")
+    void sendsInAppNotificationsToAssignedReviewers() throws Exception {
+        // Arrange: enough reviewers for a successful match
+        MatchingRequestEvent event = createEvent("sub-1", "submitter-1", 2);
+
+        List<UserProfile> reviewers = List.of(
+                createUser("reviewer-a"),
+                createUser("reviewer-b"),
+                createUser("reviewer-c"));
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
+
+        // Act
+        matchingService.processMatchingRequest(event);
+
+        // Assert: one notification per assigned reviewer to the notification queue
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(sqsTemplate, atLeastOnce()).send(eq("notification-request-queue"), body.capture());
+        assertThat(body.getAllValues()).anyMatch(b -> b.contains("Review Assigned") && b.contains("IN_APP"));
+    }
+
+    @Test
+    @DisplayName("Should send in-app notification to author on matching failure")
+    void sendsInAppNotificationOnMatchingFailure() throws Exception {
+        // Arrange: too few eligible reviewers → FAILED branch
+        MatchingRequestEvent event = createEvent("sub-2", "submitter-2", 5);
+
+        List<UserProfile> reviewers = List.of(
+                createUser("reviewer-a"),
+                createUser("reviewer-b"));
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(reviewers);
+        try {
+            when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+        } catch (Exception e) {
+        }
+
+        // Act
+        matchingService.processMatchingRequest(event);
+
+        // Assert: exactly one send to the notification queue with "Matching Failed"
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(sqsTemplate, atLeastOnce()).send(eq("notification-request-queue"), body.capture());
+        assertThat(body.getAllValues())
+                .anyMatch(b -> b.contains("Matching Failed") && b.contains("IN_APP") && b.contains("submitter-2"));
+    }
+
+    // ========================
+    // Helper methods
+    // ========================
 
     private MatchingRequestEvent createEvent(String submissionId, String submitterId, int numberOfExaminers) {
         MatchingRequestEvent event = new MatchingRequestEvent();

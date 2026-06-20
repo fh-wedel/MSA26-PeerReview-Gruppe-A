@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import com.fh_wedel.configuration.model.NotificationEvent;
 
 @Service
 @Slf4j
@@ -23,15 +25,18 @@ public class ConfigurationService {
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String matchingQueueName;
+    private final String notificationQueueName;
 
     public ConfigurationService(ConfigurationRepository repository,
                                 SqsTemplate sqsTemplate,
                                 ObjectMapper objectMapper,
-                                @Value("${aws.sqs.matching-request-queue-name}") String matchingQueueName) {
+                                @Value("${aws.sqs.matching-request-queue-name}") String matchingQueueName,
+                                @Value("${aws.sqs.notification-queue-name}") String notificationQueueName) {
         this.repository = repository;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
         this.matchingQueueName = matchingQueueName;
+        this.notificationQueueName = notificationQueueName;
     }
 
     /**
@@ -66,6 +71,9 @@ public class ConfigurationService {
         // 3. Persist to database
         repository.saveConfiguration(config, mappings);
 
+        // Notify the author that their submission was created.
+        sendSubmissionCreatedNotification(submissionId, authorIds.get(0), title);
+
         // 4. Publish SQS matching request event
         sendMatchingRequest(submissionId, authorIds.get(0), numberOfExaminers);
 
@@ -91,6 +99,33 @@ public class ConfigurationService {
      */
     public List<SubmissionConfiguration> getAllConfigurations() {
         return repository.findAllConfigurations();
+    }
+
+    /**
+     * Returns service status.
+     */
+    public String getServiceStatus() {
+        return "Configuration Service is up and running!";
+    }
+
+    private void sendSubmissionCreatedNotification(String submissionId, String authorSub, String title) {
+        if (notificationQueueName == null || notificationQueueName.isBlank()) {
+            log.warn("No notification queue configured. Skipping submission-created notification for {}", submissionId);
+            return;
+        }
+        NotificationEvent event = new NotificationEvent(
+                "SUBMISSION_CREATED",
+                List.of("IN_APP"),
+                authorSub,
+                "Submission Created",
+                "Your submission '" + title + "' was submitted.",
+                Map.of("submissionId", submissionId));
+        try {
+            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+            log.info("Sent submission-created notification to '{}' for submission {}", authorSub, submissionId);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize submission-created notification for {}", submissionId, e);
+        }
     }
 
     /**

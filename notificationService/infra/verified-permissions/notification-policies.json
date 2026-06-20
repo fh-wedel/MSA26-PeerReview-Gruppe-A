@@ -1,0 +1,44 @@
+{
+    "namespace": "PeerReview",
+    "resourceId": "PeerReview",
+    "entityTypeNames": {
+        "user": "User",
+        "group": "UserGroup",
+        "application": "Application",
+        "action": "Action"
+    },
+    "policies": [
+        {
+            "id": "AdminNotificationSend",
+            "groupName": "Admin",
+            "actionId": "post /api/notification/send",
+            "description": "Allow Admin to send notifications"
+        },
+        {
+            "id": "AuthorNotificationSend",
+            "groupName": "Author",
+            "actionId": "post /api/notification/send",
+            "description": "Allow Author to send notifications"
+        },
+
+        { "id": "AdminInboxList",            "groupName": "Admin",              "actionId": "get /api/notification/me",            "description": "Allow Admin to list own in-app notifications" },
+        { "id": "AuthorInboxList",           "groupName": "Author",             "actionId": "get /api/notification/me",            "description": "Allow Author to list own in-app notifications" },
+        { "id": "ReviewerInboxList",         "groupName": "Reviewer",           "actionId": "get /api/notification/me",            "description": "Allow Reviewer to list own in-app notifications" },
+        { "id": "ExaminerInboxList",         "groupName": "ExaminationOfficer", "actionId": "get /api/notification/me",            "description": "Allow ExaminationOfficer to list own in-app notifications" },
+
+        { "id": "AdminInboxStream",          "groupName": "Admin",              "actionId": "get /api/notification/me/stream",     "description": "Allow Admin to stream in-app notifications" },
+        { "id": "AuthorInboxStream",         "groupName": "Author",             "actionId": "get /api/notification/me/stream",     "description": "Allow Author to stream in-app notifications" },
+        { "id": "ReviewerInboxStream",       "groupName": "Reviewer",           "actionId": "get /api/notification/me/stream",     "description": "Allow Reviewer to stream in-app notifications" },
+        { "id": "ExaminerInboxStream",       "groupName": "ExaminationOfficer", "actionId": "get /api/notification/me/stream",     "description": "Allow ExaminationOfficer to stream in-app notifications" },
+
+        { "id": "AdminInboxReadAll",         "groupName": "Admin",              "actionId": "post /api/notification/me/read-all",  "description": "Allow Admin to mark all read" },
+        { "id": "AuthorInboxReadAll",        "groupName": "Author",             "actionId": "post /api/notification/me/read-all",  "description": "Allow Author to mark all read" },
+        { "id": "ReviewerInboxReadAll",      "groupName": "Reviewer",           "actionId": "post /api/notification/me/read-all",  "description": "Allow Reviewer to mark all read" },
+        { "id": "ExaminerInboxReadAll",      "groupName": "ExaminationOfficer", "actionId": "post /api/notification/me/read-all",  "description": "Allow ExaminationOfficer to mark all read" },
+
+        { "id": "AdminInboxReadOne",         "groupName": "Admin",              "actionId": "patch /api/notification/{id}/read",   "description": "Allow Admin to mark one read" },
+        { "id": "AuthorInboxReadOne",        "groupName": "Author",             "actionId": "patch /api/notification/{id}/read",   "description": "Allow Author to mark one read" },
+        { "id": "ReviewerInboxReadOne",      "groupName": "Reviewer",           "actionId": "patch /api/notification/{id}/read",   "description": "Allow Reviewer to mark one read" },
+        { "id": "ExaminerInboxReadOne",      "groupName": "ExaminationOfficer", "actionId": "patch /api/notification/{id}/read",   "description": "Allow ExaminationOfficer to mark one read" }
+    ]
+}

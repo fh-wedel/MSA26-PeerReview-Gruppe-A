@@ -1,0 +1,98 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Notification API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/notification",
+      "description": "Basepath for the Notification API"
+    }
+  ],
+  "paths": {
+    "/send": {
+      "post": {
+        "summary": "Send a notification via one or more channels",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["channels", "recipients", "subject", "body"],
+                "properties": {
+                  "channels": {
+                    "type": "array",
+                    "items": { "type": "string", "enum": ["DISCORD", "EMAIL", "SLACK", "IN_APP"] }
+                  },
+                  "recipients": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "subject": { "type": "string" },
+                  "body": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications dispatched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notificationIds": { "type": "array", "items": { "type": "string" } },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "summary": "List the caller's in-app notifications",
+        "responses": {
+          "200": {
+            "description": "List of notifications",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/stream": {
+      "get": {
+        "summary": "SSE stream of new in-app notifications for the caller",
+        "responses": { "200": { "description": "text/event-stream" } }
+      }
+    },
+    "/me/read-all": {
+      "post": {
+        "summary": "Mark all of the caller's notifications as read",
+        "responses": { "204": { "description": "Marked all read" } }
+      }
+    },
+    "/{id}/read": {
+      "patch": {
+        "summary": "Mark a single notification as read",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Marked read" },
+          "404": { "description": "Not found or not owned" }
+        }
+      }
+    }
+  }
+}

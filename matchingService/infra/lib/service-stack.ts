@@ -102,6 +102,7 @@ export class ServiceStack extends cdk.Stack {
                 'SQS_REQUEST_QUEUE': props.requestQueueName ?? '',
                 'SQS_RESPONSE_QUEUE': props.responseQueueName ?? '',
                 'SQS_NEXT_REQUEST_QUEUE': props.requestQueueNameNextService ?? '',
+                'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
                 'SERVER_PORT': containerPort.toString(),
                 'AWS_REGION': AWSConstants.AWS_REGION,
                 'DYNAMODB_TABLE_NAME': dynamoTableName,
@@ -182,6 +183,16 @@ export class ServiceStack extends cdk.Stack {
             );
         }
 
+
+        // Grant SQS SendMessage permissions to the notification request queue
+        ecsService.taskDefinition.taskRole.addToPrincipalPolicy(
+            new iam.PolicyStatement({
+                actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
+                resources: [
+                    `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:notification-request-queue`,
+                ],
+            }),
+        );
 
         // =============================================
         // Auto Scaling

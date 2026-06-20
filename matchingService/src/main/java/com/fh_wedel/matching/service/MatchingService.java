@@ -17,19 +17,22 @@ import com.fh_wedel.user.client.api.GroupsApi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import com.fh_wedel.matching.model.events.NotificationEvent;
 
 /**
  * Core business logic for matching submissions with reviewers.
  * <p>
  * Workflow:
  * <ol>
- *   <li>Receive a matching request (from SQS or triggered programmatically)</li>
- *   <li>Fetch all users in the Cognito 'Reviewer' group</li>
- *   <li>Exclude the submitter from the pool (self-review prevention)</li>
- *   <li>Randomly select the requested number of reviewers</li>
- *   <li>Persist match records + status in DynamoDB</li>
- *   <li>On success: send a confirmation SQS event to the Submission Service</li>
- *   <li>On failure (insufficient reviewers): persist FAILED status, no SQS event</li>
+ * <li>Receive a matching request (from SQS or triggered programmatically)</li>
+ * <li>Fetch all users in the Cognito 'Reviewer' group</li>
+ * <li>Exclude the submitter from the pool (self-review prevention)</li>
+ * <li>Randomly select the requested number of reviewers</li>
+ * <li>Persist match records + status in DynamoDB</li>
+ * <li>On success: send a confirmation SQS event to the Submission Service</li>
+ * <li>On failure (insufficient reviewers): persist FAILED status, no SQS
+ * event</li>
  * </ol>
  */
 @Service
@@ -41,23 +44,27 @@ public class MatchingService {
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String responseQueueName;
+    private final String notificationQueueName;
 
     public MatchingService(GroupsApi groupsApi,
-                           MatchRepository matchRepository,
-                           SqsTemplate sqsTemplate,
-                           ObjectMapper objectMapper,
-                           @Value("${aws.sqs.next.request.queue-name}") String responseQueueName) {
+            MatchRepository matchRepository,
+            SqsTemplate sqsTemplate,
+            ObjectMapper objectMapper,
+            @Value("${aws.sqs.next.request.queue-name}") String responseQueueName,
+            @Value("${aws.sqs.notification.queue-name}") String notificationQueueName) {
         this.groupsApi = groupsApi;
         this.matchRepository = matchRepository;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
         this.responseQueueName = responseQueueName;
+        this.notificationQueueName = notificationQueueName;
     }
 
     /**
      * Processes a matching request: assigns reviewers to a submission.
      *
-     * @param event the matching request event containing submissionId, submitterId, numberOfExaminers
+     * @param event the matching request event containing submissionId, submitterId,
+     *              numberOfExaminers
      */
     public void processMatchingRequest(MatchingRequestEvent event) {
         String submissionId = event.getSubmissionId();
@@ -101,6 +108,9 @@ public class MatchingService {
                     submissionId, submitterId, MatchStatus.FAILED, numberOfExaminers, reason);
             matchRepository.saveStatus(failedStatus);
 
+            sendInAppNotification(submitterId, "Matching Failed",
+                    "Matching failed for your submission: " + reason, submissionId);
+
             return; // No SQS event on failure
         }
 
@@ -124,6 +134,13 @@ public class MatchingService {
 
         // 7. Send success event to SQS
         sendSuccessEvent(submissionId);
+
+        for (MatchRecord match : matchRecords) {
+            sendInAppNotification(match.getExaminerId(),
+                    "Review Assigned",
+                    "You have been assigned to review submission " + submissionId,
+                    submissionId);
+        }
     }
 
     /**
@@ -161,6 +178,30 @@ public class MatchingService {
         List<UserProfile> shuffled = new ArrayList<>(eligible);
         Collections.shuffle(shuffled);
         return shuffled.subList(0, count);
+    }
+
+    /**
+     * Sends an IN_APP NotificationEvent to the notification request queue.
+     * Skips silently when no notification queue is configured (e.g. local dev).
+     */
+    private void sendInAppNotification(String recipientSub, String subject, String body, String submissionId) {
+        if (notificationQueueName == null || notificationQueueName.isBlank()) {
+            log.warn("No notification queue configured. Skipping in-app notification for {}", recipientSub);
+            return;
+        }
+        NotificationEvent event = new NotificationEvent(
+                "MATCHING",
+                List.of("IN_APP"),
+                recipientSub,
+                subject,
+                body,
+                Map.of("submissionId", submissionId));
+        try {
+            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+            log.info("Sent in-app notification to '{}' for submission {}", recipientSub, submissionId);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize in-app notification for {}", recipientSub, e);
+        }
     }
 
     /**
