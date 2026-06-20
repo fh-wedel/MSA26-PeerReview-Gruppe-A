@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.submission.model.*;
 import com.fh_wedel.submission.repository.SubmissionRepository;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,13 +11,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SubmissionServiceTest {
@@ -61,7 +62,7 @@ class SubmissionServiceTest {
     @DisplayName("Should successfully generate presigned upload URL for PDF and allowed status")
     void generatePresignedUploadUrl_pdf_success() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
         when(s3Service.generatePresignedPutUrl(anyString(), eq("application/pdf"))).thenReturn("http://s3.url");
 
@@ -77,7 +78,7 @@ class SubmissionServiceTest {
     @DisplayName("Should fail generating presigned URL if file is not PDF")
     void generatePresignedUploadUrl_notPdf_throwsException() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
         assertThatThrownBy(() -> submissionService.generatePresignedUploadUrl(
@@ -113,7 +114,7 @@ class SubmissionServiceTest {
     @DisplayName("Should successfully submit when at least one document exists and status is WAITING_FOR_SUBMISSION")
     void submitSubmission_success() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
         SubmissionConfiguration config = new SubmissionConfiguration(
@@ -135,7 +136,7 @@ class SubmissionServiceTest {
     @DisplayName("Should fail submission if no documents are attached")
     void submitSubmission_noDocuments_throwsException() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
         SubmissionConfiguration config = new SubmissionConfiguration(
@@ -153,7 +154,7 @@ class SubmissionServiceTest {
     @DisplayName("Should fail submission if configuration is not found")
     void submitSubmission_configurationNotFound_throwsException() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
         when(configurationServiceClient.getConfiguration("config-1")).thenReturn(null);
 
@@ -166,7 +167,7 @@ class SubmissionServiceTest {
     @DisplayName("Should fail submission if the submission deadline has passed")
     void submitSubmission_deadlinePassed_throwsException() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
         SubmissionConfiguration config = new SubmissionConfiguration(
@@ -182,7 +183,7 @@ class SubmissionServiceTest {
     @DisplayName("Should successfully submit when deadline is null")
     void submitSubmission_noDeadline_success() {
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        submission.setStatus("Wartet auf Abgabe");
+        submission.setStatus("WAITING_FOR_SUBMISSION");
         when(repository.findSubmissionById("sub-1")).thenReturn(submission);
 
         SubmissionConfiguration config = new SubmissionConfiguration(

@@ -21,7 +21,7 @@ import {useAssignments} from '../hooks/useAssignments';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
-import {configApiClient} from '../api/clients';
+import {configApiClient, submissionApiClient} from '../api/clients';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
 export const Assignments: React.FC = () => {
@@ -40,13 +40,6 @@ export const Assignments: React.FC = () => {
   const [sortDir, setSortDir] = React.useState<SortDirection>('desc');
 
   const initialized = React.useRef(false);
-
-  React.useEffect(() => {
-    if (assignments.length > 0 && !initialized.current) {
-      setSelectedStatuses(['Assigned']);
-      initialized.current = true;
-    }
-  }, [assignments]);
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAccess = roles.includes('admin') || roles.includes('reviewer');
@@ -94,6 +87,30 @@ export const Assignments: React.FC = () => {
           let reviewProcessType = 'Unknown';
           let updateTime = assignment.assignedAt;
           let createdAt = new Date().toISOString();
+            let status = 'Assigned';
+            try {
+                const subRes = await submissionApiClient.submissions.getSubmission(assignment.submissionId);
+                if (subRes && (subRes as any).data && (subRes as any).data.status) {
+                    const subData = (subRes as any).data;
+                    if (subData.status === 'SUBMITTED') {
+                        status = 'Submitted';
+                    } else if (subData.status === 'READY_FOR_REVIEW') {
+                        status = 'Ready for Review';
+                    } else if (subData.status === 'WAITING_FOR_SUBMISSION') {
+                        status = 'Waiting for Submission';
+                    }
+                    if (subData.updatedAt) {
+                        const subDate = new Date(subData.updatedAt);
+                        const updateDate = new Date(updateTime);
+                        if (subDate > updateDate) {
+                            updateTime = subData.updatedAt;
+                        }
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+
           try {
             const res = await configApiClient.submissionId.getSubmissionId(assignment.submissionId, {format: 'json'});
             if (res && (res as any).data) {
@@ -118,10 +135,14 @@ export const Assignments: React.FC = () => {
             reviewProcessType,
             updateTime,
             createdAt,
-            status: 'Assigned'
+              status
           };
         }));
         setEnrichedAssignments(enriched);
+        if (!initialized.current && enriched.length > 0) {
+          setSelectedStatuses(Array.from(new Set(enriched.map(a => a.status))));
+          initialized.current = true;
+        }
       } catch (e) {
         console.error(e);
       } finally {

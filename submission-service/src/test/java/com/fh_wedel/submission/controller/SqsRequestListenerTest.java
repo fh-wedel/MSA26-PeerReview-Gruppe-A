@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +38,7 @@ class SqsRequestListenerTest {
     }
 
     @Test
-    @DisplayName("Should create a new submission in status 'Wartet auf Abgabe' when it does not exist")
+    @DisplayName("Should create a new submission in status 'WAITING_FOR_SUBMISSION' when it does not exist")
     void handleMessage_newSubmission_createsRecord() {
         String submissionId = "sub-123";
         String message = String.format("{\"submissionId\":\"%s\",\"status\":\"MATCHED\"}", submissionId);
@@ -83,7 +82,7 @@ class SqsRequestListenerTest {
     }
 
     @Test
-    @DisplayName("Should update an existing submission status to 'Wartet auf Abgabe'")
+    @DisplayName("Should update an existing submission status to 'WAITING_FOR_SUBMISSION'")
     void handleMessage_existingSubmission_updatesStatus() {
         String submissionId = "sub-456";
         String message = String.format("{\"submissionId\":\"%s\",\"status\":\"MATCHED\"}", submissionId);

@@ -318,7 +318,12 @@
           },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "SUBMITTED", "READY_FOR_REVIEW"]
+            "enum": [
+              "DRAFT",
+              "WAITING_FOR_SUBMISSION",
+              "SUBMITTED",
+              "READY_FOR_REVIEW"
+            ]
           },
           "createdAt": {
             "type": "string",

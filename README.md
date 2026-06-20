@@ -70,7 +70,9 @@ Die Services kommunizieren untereinander asynchron über SQS und bieten synchron
    * **Ablauf:** Empfängt SQS-Nachrichten des Creation Services und ordnet Reviews automatisch passenden Reviewern zu (basierend auf Kriterien wie Fachgebiet und Verfügbarkeit). Nach dem erfolgreichen Matching sendet er ein Event an den Submission Service.
 3. **Submission Service:**
    * **Aufgabe:** Entgegennahme der eigentlichen wissenschaftlichen Arbeiten/Dokumente.
-   * **Ablauf:** Der Service konsumiert die eingehende SQS-Nachricht des Matching Services *sofort* und speichert den Status "Wartet auf Abgabe" in seiner eigenen DynamoDB. Er wartet persistent, bis der Autor das Dokument via REST einreicht. Nach erfolgreicher Einreichung triggert er den Workflow Service via SQS.
+   * **Ablauf:** Der Service konsumiert die eingehende SQS-Nachricht des Matching Services *sofort* und speichert den
+     Status "WAITING_FOR_SUBMISSION" in seiner eigenen DynamoDB. Er wartet persistent, bis der Autor das Dokument via
+     REST einreicht. Nach erfolgreicher Einreichung triggert er den Workflow Service via SQS.
 4. **Workflow Service:**
    * **Aufgabe:** Steuert den eigentlichen Gutachter-Prozess.
    * **Ablauf:** Empfängt die SQS-Nachricht des Submission Services. Nutzt eine interne Plugin-Architektur, um flexibel verschiedene Review-Verfahren (z.B. Double-Blind, Open Review) abzubilden. Nach Abschluss der Begutachtung wird ein SQS-Event an den Response Service gesendet.

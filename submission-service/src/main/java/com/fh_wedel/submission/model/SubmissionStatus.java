@@ -2,7 +2,7 @@ package com.fh_wedel.submission.model;
 
 public enum SubmissionStatus {
     DRAFT("DRAFT"),
-    WAITING_FOR_SUBMISSION("Wartet auf Abgabe"),
+    WAITING_FOR_SUBMISSION("WAITING_FOR_SUBMISSION"),
     SUBMITTED("SUBMITTED"),
     READY_FOR_REVIEW("READY_FOR_REVIEW");
 

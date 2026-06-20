@@ -29,7 +29,11 @@ export interface Submission {
   submissionId?: string;
   configurationId?: string;
   authorIds?: string[];
-  status?: "DRAFT" | "SUBMITTED" | "READY_FOR_REVIEW";
+  status?:
+      | "DRAFT"
+      | "WAITING_FOR_SUBMISSION"
+      | "SUBMITTED"
+      | "READY_FOR_REVIEW";
   /** @format date-time */
   createdAt?: string;
   /** @format date-time */
