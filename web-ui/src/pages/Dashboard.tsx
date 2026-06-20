@@ -35,7 +35,7 @@ interface Task {
   submissionId: string;
 }
 
-function ServerDay(props: PickerDayProps<any> & { highlightedDays?: Date[] }) {
+function ServerDay(props: PickerDayProps & { highlightedDays?: Date[] }) {
   const { highlightedDays = [], day, outsideCurrentMonth, ...other } = props;
   const isSelected =
     !outsideCurrentMonth &&
