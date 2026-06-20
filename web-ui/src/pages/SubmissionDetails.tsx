@@ -78,7 +78,7 @@ export const SubmissionDetails: React.FC = () => {
       }
 
       if (match && fetchedRules) {
-        const isAuthor = match.submitterId === user.id;
+        const isAuthor = match.submitterIds?.includes(user.id);
         const isReviewer = match.matches.some((m: any) => m.examinerId === user.id);
         setChatAllowed(fetchedRules.authorReviewerChatAllowed && (isAuthor || isReviewer));
       } else {
@@ -162,7 +162,7 @@ export const SubmissionDetails: React.FC = () => {
   // Determine user context for smart anonymity
   const privilegedRoles = ['Admin', 'Teacher', 'ExaminationOfficer'];
   const isPrivileged = user?.roles?.some(r => privilegedRoles.includes(r)) ?? false;
-  const authorIds: string[] = submissionConfig?.authorIds ?? (submissionMatch?.submitterId ? [submissionMatch.submitterId] : []);
+  const authorIds: string[] = submissionConfig?.authorIds ?? submissionMatch?.submitterIds ?? [];
   const isAuthor = !!user && authorIds.includes(user.id);
 
   const redactedNode = (tooltipText: string) => (
@@ -181,9 +181,13 @@ export const SubmissionDetails: React.FC = () => {
   const displayAuthors: React.ReactNode[] = shouldHideAuthors
       ? [redactedNode('Author is anonymous')]
       : authorIds.map((id: string) => {
-        const name = id === submissionMatch?.submitterId
-            ? (submissionMatch.submitterUsername || resolveUserId(id))
-            : resolveUserId(id);
+        let name = resolveUserId(id);
+        if (submissionMatch?.submitterIds && submissionMatch.submitterUsernames) {
+          const index = submissionMatch.submitterIds.indexOf(id);
+          if (index !== -1 && submissionMatch.submitterUsernames[index]) {
+            name = submissionMatch.submitterUsernames[index];
+          }
+        }
         return <Typography key={id}>{name}</Typography>;
       });
   if (displayAuthors.length === 0) {

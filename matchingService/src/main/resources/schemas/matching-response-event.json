@@ -8,9 +8,12 @@
       "type": "string",
       "description": "Unique identifier of the submission that was successfully matched."
     },
-    "authorId": {
-      "type": "string",
-      "description": "The unique identifier of the submission author."
+    "authorIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The unique identifiers of the submission authors."
     },
     "status": {
       "type": "string",
@@ -18,6 +21,6 @@
       "description": "Status of the matching operation. Only success events are published to SQS."
     }
   },
-  "required": ["submissionId", "authorId", "status"],
+  "required": ["submissionId", "authorIds", "status"],
   "additionalProperties": false
 }

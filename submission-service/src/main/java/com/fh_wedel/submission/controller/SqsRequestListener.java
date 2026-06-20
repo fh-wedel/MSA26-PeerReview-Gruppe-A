@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @Slf4j
 @ConditionalOnExpression("!'${aws.sqs.request.queue-name:}'.isBlank()")
@@ -50,16 +52,29 @@ public class SqsRequestListener {
 
             Submission submission = repository.findSubmissionById(submissionId);
             if (submission == null) {
-                String authorId = node.path("authorId").asText();
-                if (authorId.isBlank()) {
-                    log.info("Submission {} not found in database. authorId not present in SQS message. Fetching configuration from configuration-service.", submissionId);
+                // Read authorIds array if present
+                List<String> authorIds = new java.util.ArrayList<>();
+                if (node.has("authorIds") && node.get("authorIds").isArray()) {
+                    for (JsonNode authorNode : node.get("authorIds")) {
+                        authorIds.add(authorNode.asText());
+                    }
+                }
+                
+                // Fallback to legacy single authorId property
+                if (authorIds.isEmpty() && node.has("authorId")) {
+                    String authorId = node.path("authorId").asText();
+                    if (!authorId.isBlank()) {
+                        authorIds.add(authorId);
+                    }
+                }
+
+                if (authorIds.isEmpty()) {
+                    log.info("Submission {} not found in database. authorIds not present in SQS message. Fetching configuration from configuration-service.", submissionId);
                     SubmissionConfiguration config = configurationServiceClient.getConfiguration(submissionId);
                     if (config != null) {
-                        authorId = (config.getAuthorIds() != null && !config.getAuthorIds().isEmpty())
-                                ? config.getAuthorIds().get(0)
-                                : "unknown";
+                        authorIds = config.getAuthorIds() != null ? config.getAuthorIds() : java.util.Collections.emptyList();
                         
-                        submission = new Submission(submissionId, submissionId, authorId, config.getTitle());
+                        submission = new Submission(submissionId, submissionId, authorIds);
                         submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
                         repository.saveSubmission(submission);
                         log.info("Created new submission {} with status '{}' via configuration-service", submissionId, submission.getStatus());
@@ -67,11 +82,11 @@ public class SqsRequestListener {
                         log.error("Failed to retrieve configuration for submission {} from configuration-service", submissionId);
                     }
                 } else {
-                    log.info("Submission {} not found in database. Creating it using authorId={} from SQS message.", submissionId, authorId);
-                    submission = new Submission(submissionId, submissionId, authorId, null);
+                    log.info("Submission {} not found in database. Creating it using authorIds={} from SQS message.", submissionId, authorIds);
+                    submission = new Submission(submissionId, submissionId, authorIds);
                     submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
                     repository.saveSubmission(submission);
-                    log.info("Created new submission {} with status '{}' and authorId={} directly from SQS message", submissionId, submission.getStatus(), authorId);
+                    log.info("Created new submission {} with status '{}' and authorIds={} directly from SQS message", submissionId, submission.getStatus(), authorIds);
                 }
             } else {
                 log.info("Updating existing submission {} status from {} to '{}'", submissionId, submission.getStatus(), SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());

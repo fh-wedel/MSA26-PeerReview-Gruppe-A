@@ -96,42 +96,6 @@
       }
     },
     "/submissions/{id}": {
-      "put": {
-        "operationId": "updateSubmission",
-        "summary": "Update submission draft details",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSubmissionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Submission updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Submission"
-                }
-              }
-            }
-          }
-        }
-      },
       "get": {
         "operationId": "getSubmission",
         "summary": "Get submission details",
@@ -304,20 +268,9 @@
     "schemas": {
       "CreateSubmissionRequest": {
         "type": "object",
-        "required": ["configurationId", "title"],
+        "required": ["configurationId"],
         "properties": {
           "configurationId": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateSubmissionRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
             "type": "string"
           }
         }
@@ -357,11 +310,11 @@
           "configurationId": {
             "type": "string"
           },
-          "authorId": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
+          "authorIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "status": {
             "type": "string",

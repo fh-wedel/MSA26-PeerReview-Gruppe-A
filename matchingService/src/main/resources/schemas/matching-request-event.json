@@ -8,9 +8,12 @@
       "type": "string",
       "description": "Unique identifier of the submission to be matched with reviewers."
     },
-    "submitterId": {
-      "type": "string",
-      "description": "Cognito sub (UUID) of the user who submitted the paper. Used to exclude self-review."
+    "submitterIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Cognito subs (UUIDs) of the users who submitted the paper. Used to exclude self-review."
     },
     "numberOfExaminers": {
       "type": "integer",
@@ -18,6 +21,6 @@
       "description": "Number of reviewers to assign to this submission."
     }
   },
-  "required": ["submissionId", "submitterId", "numberOfExaminers"],
+  "required": ["submissionId", "submitterIds", "numberOfExaminers"],
   "additionalProperties": false
 }

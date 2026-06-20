@@ -56,17 +56,16 @@ class SqsRequestListenerTest {
 
         Submission saved = captor.getValue();
         assertThat(saved.getSubmissionId()).isEqualTo(submissionId);
-        assertThat(saved.getAuthorId()).isEqualTo("author-uuid");
-        assertThat(saved.getTitle()).isEqualTo("Test Title");
+        assertThat(saved.getAuthorIds()).containsExactly("author-uuid");
         assertThat(saved.getStatus()).isEqualTo(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
     }
 
     @Test
-    @DisplayName("Should create a new submission using authorId from SQS message directly without calling configuration service")
+    @DisplayName("Should create a new submission using authorIds list from SQS message directly without calling configuration service")
     void handleMessage_newSubmissionWithAuthor_createsRecordWithoutConfig() {
         String submissionId = "sub-123";
         String authorId = "author-555";
-        String message = String.format("{\"submissionId\":\"%s\",\"authorId\":\"%s\",\"status\":\"MATCHED\"}", submissionId, authorId);
+        String message = String.format("{\"submissionId\":\"%s\",\"authorIds\":[\"%s\"],\"status\":\"MATCHED\"}", submissionId, authorId);
 
         when(repository.findSubmissionById(submissionId)).thenReturn(null);
 
@@ -77,8 +76,7 @@ class SqsRequestListenerTest {
 
         Submission saved = captor.getValue();
         assertThat(saved.getSubmissionId()).isEqualTo(submissionId);
-        assertThat(saved.getAuthorId()).isEqualTo(authorId);
-        assertThat(saved.getTitle()).isNull();
+        assertThat(saved.getAuthorIds()).containsExactly(authorId);
         assertThat(saved.getStatus()).isEqualTo(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
 
         verifyNoInteractions(configurationServiceClient);
@@ -90,7 +88,7 @@ class SqsRequestListenerTest {
         String submissionId = "sub-456";
         String message = String.format("{\"submissionId\":\"%s\",\"status\":\"MATCHED\"}", submissionId);
 
-        Submission existing = new Submission(submissionId, submissionId, "author-uuid", "Old Title");
+        Submission existing = new Submission(submissionId, submissionId, List.of("author-uuid"));
         existing.setStatus(SubmissionStatus.DRAFT.getDbValue());
 
         when(repository.findSubmissionById(submissionId)).thenReturn(existing);

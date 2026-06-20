@@ -221,7 +221,7 @@ class MatchingServiceTest {
     private MatchingRequestEvent createEvent(String submissionId, String submitterId, int numberOfExaminers) {
         MatchingRequestEvent event = new MatchingRequestEvent();
         event.setSubmissionId(submissionId);
-        event.setSubmitterId(submitterId);
+        event.setSubmitterIds(List.of(submitterId));
         event.setNumberOfExaminers(numberOfExaminers);
         return event;
     }

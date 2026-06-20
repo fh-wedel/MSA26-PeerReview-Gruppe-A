@@ -75,7 +75,7 @@ public class ConfigurationService {
         sendSubmissionCreatedNotification(submissionId, authorIds.get(0), title);
 
         // 4. Publish SQS matching request event
-        sendMatchingRequest(submissionId, authorIds.get(0), numberOfExaminers);
+        sendMatchingRequest(submissionId, authorIds, numberOfExaminers);
 
         return config;
     }
@@ -131,13 +131,13 @@ public class ConfigurationService {
     /**
      * Sends an SQS event to the Matching Service request queue.
      */
-    private void sendMatchingRequest(String submissionId, String submitterId, int numberOfExaminers) {
+    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers) {
         if (matchingQueueName == null || matchingQueueName.isBlank()) {
             log.warn("No Matching SQS request queue name defined. Skipping sending matching request event for submission {}", submissionId);
             return;
         }
 
-        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterId, numberOfExaminers);
+        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers);
 
         try {
             String messageBody = objectMapper.writeValueAsString(event);

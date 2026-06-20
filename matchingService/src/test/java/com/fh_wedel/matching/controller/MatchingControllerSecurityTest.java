@@ -62,7 +62,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("Admin can access any submission")
     void getMatchesBySubmission_admin_success() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "other-user", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("other-user"), MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         UserSummary mockSummary = new UserSummary();
@@ -81,7 +81,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("ExaminationOfficer can access any submission")
     void getMatchesBySubmission_examOfficer_success() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "other-user", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("other-user"), MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         UserSummary mockSummary = new UserSummary();
@@ -100,7 +100,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("Author can access their own submission")
     void getMatchesBySubmission_authorOwn_success() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "author-uuid", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("author-uuid"), MatchStatus.MATCHED, 1, null));
         when(matchingService.getMatchesBySubmission("sub-1"))
                 .thenReturn(Collections.emptyList());
         UserSummary mockSummary = new UserSummary();
@@ -119,7 +119,7 @@ class MatchingControllerSecurityTest {
     @DisplayName("Author CANNOT access someone else's submission")
     void getMatchesBySubmission_authorOther_forbidden() {
         when(matchingService.getStatusBySubmission("sub-1"))
-                .thenReturn(new SubmissionStatusRecord("sub-1", "other-uuid", MatchStatus.MATCHED, 1, null));
+                .thenReturn(new SubmissionStatusRecord("sub-1", List.of("other-uuid"), MatchStatus.MATCHED, 1, null));
 
         Authentication auth = createAuth("Author", "author-user", "author-uuid");
 

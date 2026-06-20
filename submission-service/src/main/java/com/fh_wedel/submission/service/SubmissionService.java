@@ -35,11 +35,11 @@ public class SubmissionService {
         this.workflowQueueName = workflowQueueName;
     }
 
-    public Submission createSubmission(String configurationId, String authorId, String title) {
+    public Submission createSubmission(String configurationId, List<String> authorIds) {
         String submissionId = UUID.randomUUID().toString();
-        log.info("Creating submission: id={}, configId={}, authorId={}", submissionId, configurationId, authorId);
+        log.info("Creating submission: id={}, configId={}, authorIds={}", submissionId, configurationId, authorIds);
 
-        Submission submission = new Submission(submissionId, configurationId, authorId, title);
+        Submission submission = new Submission(submissionId, configurationId, authorIds);
         repository.saveSubmission(submission);
         return submission;
     }
@@ -52,30 +52,6 @@ public class SubmissionService {
         return repository.findSubmissionsByAuthor(authorId);
     }
 
-    public Submission updateSubmission(String submissionId, String authorId, UpdateSubmissionRequest request) {
-        Submission submission = repository.findSubmissionById(submissionId);
-        if (submission == null) {
-            return null;
-        }
-
-        if (!submission.getAuthorId().equals(authorId)) {
-            throw new IllegalStateException("Not the owner of this submission");
-        }
-
-        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
-        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
-        if (!isDraft && !isWaiting) {
-            throw new IllegalStateException("Can only update submissions in DRAFT or WAITING_FOR_SUBMISSION status");
-        }
-
-        if (request.getTitle() != null) {
-            submission.setTitle(request.getTitle());
-        }
-        submission.setUpdatedAt(Instant.now());
-        repository.saveSubmission(submission);
-        return submission;
-    }
-
     public PresignedUrlResponse generatePresignedUploadUrl(String submissionId, String authorId,
                                                            String fileName, String contentType) {
         Submission submission = repository.findSubmissionById(submissionId);
@@ -83,7 +59,7 @@ public class SubmissionService {
             throw new IllegalStateException("Submission not found");
         }
 
-        if (!submission.getAuthorId().equals(authorId)) {
+        if (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(authorId)) {
             throw new IllegalStateException("Not the owner of this submission");
         }
 
@@ -119,7 +95,7 @@ public class SubmissionService {
             return null;
         }
 
-        if (!submission.getAuthorId().equals(authorId)) {
+        if (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(authorId)) {
             throw new IllegalStateException("Not the owner of this submission");
         }
 

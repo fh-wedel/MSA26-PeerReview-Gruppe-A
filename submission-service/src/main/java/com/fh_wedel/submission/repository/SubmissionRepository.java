@@ -1,5 +1,6 @@
 package com.fh_wedel.submission.repository;
 
+import com.fh_wedel.submission.model.AuthorMapping;
 import com.fh_wedel.submission.model.DocumentRecord;
 import com.fh_wedel.submission.model.Submission;
 import lombok.extern.slf4j.Slf4j;
@@ -20,18 +21,28 @@ public class SubmissionRepository {
 
     private final DynamoDbTable<Submission> submissionTable;
     private final DynamoDbTable<DocumentRecord> documentTable;
-    private final DynamoDbIndex<Submission> authorIndex;
+    private final DynamoDbTable<AuthorMapping> authorMappingTable;
+    private final DynamoDbIndex<AuthorMapping> authorIndex;
 
     public SubmissionRepository(DynamoDbEnhancedClient enhancedClient,
                                 @Value("${aws.dynamodb.table-name}") String tableName) {
         this.submissionTable = enhancedClient.table(tableName, TableSchema.fromBean(Submission.class));
         this.documentTable = enhancedClient.table(tableName, TableSchema.fromBean(DocumentRecord.class));
-        this.authorIndex = submissionTable.index("AuthorIndex");
+        this.authorMappingTable = enhancedClient.table(tableName, TableSchema.fromBean(AuthorMapping.class));
+        this.authorIndex = authorMappingTable.index("AuthorIndex");
     }
 
     public void saveSubmission(Submission submission) {
         log.info("Saving submission {}", submission.getSubmissionId());
         submissionTable.putItem(submission);
+
+        if (submission.getAuthorIds() != null) {
+            for (String authorId : submission.getAuthorIds()) {
+                AuthorMapping mapping = new AuthorMapping(
+                        submission.getSubmissionId(), authorId, submission.getCreatedAt());
+                authorMappingTable.putItem(mapping);
+            }
+        }
     }
 
     public Submission findSubmissionById(String submissionId) {
@@ -51,13 +62,22 @@ public class SubmissionRepository {
 
     public List<Submission> findSubmissionsByAuthor(String authorId) {
         log.info("Finding submissions for author {}", authorId);
-        return authorIndex.query(r -> r.queryConditional(
+        List<AuthorMapping> mappings = authorIndex.query(r -> r.queryConditional(
                 QueryConditional.keyEqualTo(
                         Key.builder().partitionValue(authorId).build()
                 )
         )).stream()
                 .flatMap(page -> page.items().stream())
                 .toList();
+
+        List<Submission> submissions = new java.util.ArrayList<>();
+        for (AuthorMapping mapping : mappings) {
+            Submission sub = findSubmissionById(mapping.getSubmissionId());
+            if (sub != null) {
+                submissions.add(sub);
+            }
+        }
+        return submissions;
     }
 
     public void saveDocument(DocumentRecord document) {
