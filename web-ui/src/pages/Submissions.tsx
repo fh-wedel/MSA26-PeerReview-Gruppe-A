@@ -17,7 +17,9 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import {configApiClient, matchingApiClient} from '../api/clients';
-import {filterByStatus, sortByStatus, StatusFilter} from '../components/StatusFilter';
+import {filterByStatus, StatusFilter} from '../components/StatusFilter';
+import type {SortDirection, SortOption} from '../components/SortControl';
+import {SortControl, sortItems} from '../components/SortControl';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 import {formatDateTime} from '../utils/date';
 
@@ -27,6 +29,17 @@ export const Submissions: React.FC = () => {
   const [mySelectedStatuses, setMySelectedStatuses] = useState<string[]>([]);
   const [allSelectedStatuses, setAllSelectedStatuses] = useState<string[]>([]);
   const {types} = useWorkflowPlugins();
+
+  const sortOptions: SortOption[] = [
+    {label: 'Last Updated', value: 'updateTime'},
+    {label: 'Creation Date', value: 'createdAt'},
+    {label: 'Status', value: 'status'},
+    {label: 'Title', value: 'title'},
+  ];
+  const [mySortBy, setMySortBy] = useState<string>('updateTime');
+  const [mySortDir, setMySortDir] = useState<SortDirection>('desc');
+  const [allSortBy, setAllSortBy] = useState<string>('updateTime');
+  const [allSortDir, setAllSortDir] = useState<SortDirection>('desc');
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAccess = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('author');
@@ -77,10 +90,15 @@ export const Submissions: React.FC = () => {
           try {
             const matchRes = await matchingApiClient.matches.getMatchesBySubmission(id);
             const matchData: any = (matchRes as any).data;
-            if (matchData && matchData.status === 'MATCHED') {
-              status = 'Matched';
-              reviewerId = matchData.matches?.[0]?.examinerId;
-              matchedAt = matchData.matchedAt;
+            if (matchData) {
+              if (matchData.status === 'MATCHED') {
+                status = 'Matched';
+                reviewerId = matchData.matches?.[0]?.examinerId;
+                matchedAt = matchData.matchedAt;
+              } else if (matchData.status === 'FAILED') {
+                status = 'Failed';
+                matchedAt = matchData.matchedAt;
+              }
             }
           } catch (e) {
             // Not matched yet or 404
@@ -133,8 +151,11 @@ export const Submissions: React.FC = () => {
   const availableMyStatuses = Array.from(new Set(mySubmissions.map(s => s.status))).sort();
   const availableAllStatuses = Array.from(new Set(allSubmissions.map(s => s.status))).sort();
 
-  const finalMySubmissions = sortByStatus(filterByStatus(mySubmissions, mySelectedStatuses));
-  const finalAllSubmissions = sortByStatus(filterByStatus(allSubmissions, allSelectedStatuses));
+  const filteredMySubmissions = filterByStatus(mySubmissions, mySelectedStatuses);
+  const finalMySubmissions = sortItems(filteredMySubmissions, mySortBy, mySortDir);
+
+  const filteredAllSubmissions = filterByStatus(allSubmissions, allSelectedStatuses);
+  const finalAllSubmissions = sortItems(filteredAllSubmissions, allSortBy, allSortDir);
 
   const formatSubheading = (submission: any) => {
     const plugin = types.find(p => p.name === submission.reviewProcessType);
@@ -171,11 +192,24 @@ export const Submissions: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           My Submissions
         </Typography>
-        <StatusFilter 
-          availableStatuses={availableMyStatuses}
-          selectedStatuses={mySelectedStatuses}
-          onChange={setMySelectedStatuses}
-        />
+        <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start'}}>
+          <Box sx={{flexGrow: 1}}>
+            <StatusFilter
+                availableStatuses={availableMyStatuses}
+                selectedStatuses={mySelectedStatuses}
+                onChange={setMySelectedStatuses}
+            />
+          </Box>
+          <Box sx={{ml: 'auto', mb: 2}}>
+            <SortControl
+                options={sortOptions}
+                value={mySortBy}
+                onChange={setMySortBy}
+                direction={mySortDir}
+                onDirectionChange={setMySortDir}
+            />
+          </Box>
+        </Box>
         <Paper>
           {loading ? renderSkeleton() : finalMySubmissions.length === 0 ? (
             <Box sx={{ p: 3 }}>
@@ -217,7 +251,7 @@ export const Submissions: React.FC = () => {
                       />
                       <Chip
                         label={submission.status}
-                        color={submission.status === 'Published' ? 'success' : submission.status === 'Under Review' ? 'warning' : 'default'}
+                        color={submission.status === 'Failed' ? 'error' : submission.status === 'Published' ? 'success' : submission.status === 'Under Review' ? 'warning' : 'default'}
                         size="small"
                       />
                     </Box>
@@ -236,12 +270,25 @@ export const Submissions: React.FC = () => {
               Submissions Overview
             </Typography>
           </Box>
-          
-          <StatusFilter 
-            availableStatuses={availableAllStatuses}
-            selectedStatuses={allSelectedStatuses}
-            onChange={setAllSelectedStatuses}
-          />
+
+          <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            <Box sx={{flexGrow: 1}}>
+              <StatusFilter
+                  availableStatuses={availableAllStatuses}
+                  selectedStatuses={allSelectedStatuses}
+                  onChange={setAllSelectedStatuses}
+              />
+            </Box>
+            <Box sx={{ml: 'auto', mb: 2}}>
+              <SortControl
+                  options={sortOptions}
+                  value={allSortBy}
+                  onChange={setAllSortBy}
+                  direction={allSortDir}
+                  onDirectionChange={setAllSortDir}
+              />
+            </Box>
+          </Box>
 
           <Paper>
             {loading ? renderSkeleton() : finalAllSubmissions.length === 0 ? (
@@ -286,7 +333,7 @@ export const Submissions: React.FC = () => {
                           )}
                           <Chip
                             label={submission.status}
-                            color={submission.status === 'Published' ? 'success' : submission.status === 'Under Review' ? 'warning' : 'default'}
+                            color={submission.status === 'Failed' ? 'error' : submission.status === 'Published' ? 'success' : submission.status === 'Under Review' ? 'warning' : 'default'}
                             size="small"
                           />
                         </Box>

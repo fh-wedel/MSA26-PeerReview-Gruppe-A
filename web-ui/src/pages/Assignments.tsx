@@ -18,7 +18,9 @@ import {useNavigate} from 'react-router-dom';
 import {formatDateTime} from '../utils/date';
 import {useAuth} from '../contexts/AuthContext';
 import {useAssignments} from '../hooks/useAssignments';
-import {filterByStatus, sortByStatus, StatusFilter} from '../components/StatusFilter';
+import {filterByStatus, StatusFilter} from '../components/StatusFilter';
+import type {SortDirection, SortOption} from '../components/SortControl';
+import {SortControl, sortItems} from '../components/SortControl';
 import {configApiClient} from '../api/clients';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
@@ -27,6 +29,16 @@ export const Assignments: React.FC = () => {
   const { assignments, loading, error } = useAssignments();
   const { user } = useAuth();
   const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
+
+  const sortOptions: SortOption[] = [
+    {label: 'Last Updated', value: 'updateTime'},
+    {label: 'Creation Date', value: 'createdAt'},
+    {label: 'Status', value: 'status'},
+    {label: 'Title', value: 'title'},
+  ];
+  const [sortBy, setSortBy] = React.useState<string>('updateTime');
+  const [sortDir, setSortDir] = React.useState<SortDirection>('desc');
+
   const initialized = React.useRef(false);
 
   React.useEffect(() => {
@@ -81,6 +93,7 @@ export const Assignments: React.FC = () => {
           let title = `Submission ID: ${assignment.submissionId}`;
           let reviewProcessType = 'Unknown';
           let updateTime = assignment.assignedAt;
+          let createdAt = new Date().toISOString();
           try {
             const res = await configApiClient.submissionId.getSubmissionId(assignment.submissionId, {format: 'json'});
             if (res && (res as any).data) {
@@ -88,6 +101,7 @@ export const Assignments: React.FC = () => {
               title = data.title || title;
               reviewProcessType = data.reviewProcessType || reviewProcessType;
               if (data.createdAt) {
+                createdAt = data.createdAt;
                 const configDate = new Date(data.createdAt);
                 const updateDate = new Date(updateTime);
                 if (configDate > updateDate) {
@@ -103,6 +117,7 @@ export const Assignments: React.FC = () => {
             title,
             reviewProcessType,
             updateTime,
+            createdAt,
             status: 'Assigned'
           };
         }));
@@ -117,7 +132,8 @@ export const Assignments: React.FC = () => {
   }, [assignments, loading]);
 
   const availableStatuses = Array.from(new Set(enrichedAssignments.map(a => a.status))).sort();
-  const finalAssignments = sortByStatus(filterByStatus(enrichedAssignments, selectedStatuses));
+  const filteredAssignments = filterByStatus(enrichedAssignments, selectedStatuses);
+  const finalAssignments = sortItems(filteredAssignments, sortBy, sortDir);
 
   const formatSubheading = (assignment: any) => {
     const plugin = types.find(p => p.name === assignment.reviewProcessType);
@@ -154,11 +170,24 @@ export const Assignments: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           My Assignments
         </Typography>
-        <StatusFilter
-            availableStatuses={availableStatuses}
-            selectedStatuses={selectedStatuses}
-            onChange={setSelectedStatuses}
-        />
+        <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start'}}>
+          <Box sx={{flexGrow: 1}}>
+            <StatusFilter
+                availableStatuses={availableStatuses}
+                selectedStatuses={selectedStatuses}
+                onChange={setSelectedStatuses}
+            />
+          </Box>
+          <Box sx={{ml: 'auto', mb: 2}}>
+            <SortControl
+                options={sortOptions}
+                value={sortBy}
+                onChange={setSortBy}
+                direction={sortDir}
+                onDirectionChange={setSortDir}
+            />
+          </Box>
+        </Box>
         <Paper>
           {(loading || enriching) ? renderSkeleton() : finalAssignments.length === 0 ? (
               <Box sx={{p: 3}}>
