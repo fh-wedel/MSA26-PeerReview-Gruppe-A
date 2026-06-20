@@ -5,7 +5,7 @@
 default: build
 
 build:
-	docker build --no-cache -t typst-projekt .
+	docker build -t typst-projekt .
 	docker run --rm -v "$$(pwd):/data" typst-projekt
 
 clean:
