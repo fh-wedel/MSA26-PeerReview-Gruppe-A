@@ -41,13 +41,6 @@ export const Assignments: React.FC = () => {
 
   const initialized = React.useRef(false);
 
-  React.useEffect(() => {
-    if (assignments.length > 0 && !initialized.current) {
-      setSelectedStatuses(['Assigned']);
-      initialized.current = true;
-    }
-  }, [assignments]);
-
   const roles = (user?.roles || []).map(r => r.toLowerCase());
   const hasAccess = roles.includes('admin') || roles.includes('reviewer');
 
@@ -146,6 +139,10 @@ export const Assignments: React.FC = () => {
           };
         }));
         setEnrichedAssignments(enriched);
+        if (!initialized.current && enriched.length > 0) {
+          setSelectedStatuses(Array.from(new Set(enriched.map(a => a.status))));
+          initialized.current = true;
+        }
       } catch (e) {
         console.error(e);
       } finally {
