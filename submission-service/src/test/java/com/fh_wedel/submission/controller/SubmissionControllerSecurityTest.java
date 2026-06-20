@@ -179,4 +179,73 @@ class SubmissionControllerSecurityTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNull();
     }
+
+    @Test
+    @DisplayName("Admin can update submission owned by another author")
+    void updateSubmission_adminBypass_success() {
+        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        UpdateSubmissionRequest request = new UpdateSubmissionRequest();
+        request.setTitle("New Title");
+
+        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
+        when(submissionService.updateSubmission("sub-1", "author-1", request)).thenReturn(submission);
+
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<Submission> response = controller.updateSubmission("sub-1", request, auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(submission);
+    }
+
+    @Test
+    @DisplayName("ExaminationOfficer can update submission owned by another author")
+    void updateSubmission_officerBypass_success() {
+        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        UpdateSubmissionRequest request = new UpdateSubmissionRequest();
+        request.setTitle("New Title");
+
+        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
+        when(submissionService.updateSubmission("sub-1", "author-1", request)).thenReturn(submission);
+
+        Authentication auth = createAuth("ExaminationOfficer", "officer-user", "officer-uuid");
+        ResponseEntity<Submission> response = controller.updateSubmission("sub-1", request, auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(submission);
+    }
+
+    @Test
+    @DisplayName("Admin can get upload URL for submission owned by another author")
+    void getPresignedUploadUrl_adminBypass_success() {
+        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+        PresignedUrlRequest request = new PresignedUrlRequest();
+        request.setFileName("file.pdf");
+        request.setContentType("application/pdf");
+
+        PresignedUrlResponse expectedResponse = new PresignedUrlResponse("http://s3.url", "doc-1", "key");
+
+        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
+        when(submissionService.generatePresignedUploadUrl("sub-1", "author-1", "file.pdf", "application/pdf")).thenReturn(expectedResponse);
+
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<PresignedUrlResponse> response = controller.getPresignedUploadUrl("sub-1", request, auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(expectedResponse);
+    }
+
+    @Test
+    @DisplayName("Admin can finalize submission owned by another author")
+    void submitSubmission_adminBypass_success() {
+        Submission submission = new Submission("sub-1", "config-1", "author-1", "My Thesis");
+
+        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
+        when(submissionService.submitSubmission("sub-1", "author-1")).thenReturn(submission);
+
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<Submission> response = controller.submitSubmission("sub-1", auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(submission);
+    }
 }
