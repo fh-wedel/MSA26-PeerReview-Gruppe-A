@@ -33,13 +33,14 @@ class SubmissionServiceTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private String workflowQueueName = "test-workflow-queue";
+    private String notificationQueueName = "test-notification-queue";
 
     private SubmissionService submissionService;
 
     @BeforeEach
     void setUp() {
         submissionService = new SubmissionService(
-                repository, s3Service, sqsTemplate, objectMapper, workflowQueueName);
+                repository, s3Service, sqsTemplate, objectMapper, workflowQueueName, notificationQueueName);
     }
 
     @Test
