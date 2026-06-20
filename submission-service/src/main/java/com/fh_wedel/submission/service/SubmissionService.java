@@ -142,18 +142,22 @@ public class SubmissionService {
             log.warn("No notification queue configured. Skipping submitted notification for {}", submission.getSubmissionId());
             return;
         }
-        NotificationEvent event = new NotificationEvent(
-                "SUBMISSION_SUBMITTED",
-                List.of("IN_APP"),
-                submission.getAuthorId(),
-                "Submission Submitted",
-                "Your submission '" + submission.getTitle() + "' was successfully submitted and is now under review.",
-                Map.of("submissionId", submission.getSubmissionId()));
-        try {
-            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
-            log.info("Sent submitted notification to '{}' for submission {}", submission.getAuthorId(), submission.getSubmissionId());
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize submitted notification for {}", submission.getSubmissionId(), e);
+        List<String> authorIds = submission.getAuthorIds();
+        if (authorIds == null || authorIds.isEmpty()) return;
+        for (String authorId : authorIds) {
+            NotificationEvent event = new NotificationEvent(
+                    "SUBMISSION_SUBMITTED",
+                    List.of("IN_APP"),
+                    authorId,
+                    "Submission Submitted",
+                    "Your submission was successfully submitted and is now under review.",
+                    Map.of("submissionId", submission.getSubmissionId()));
+            try {
+                sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+                log.info("Sent submitted notification to '{}' for submission {}", authorId, submission.getSubmissionId());
+            } catch (JsonProcessingException e) {
+                log.error("Failed to serialize submitted notification for {}", submission.getSubmissionId(), e);
+            }
         }
     }
 
