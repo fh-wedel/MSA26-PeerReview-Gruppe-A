@@ -131,6 +131,106 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "getSubmission",
+        "summary": "Get submission details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submissions/{id}/documents": {
+      "get": {
+        "operationId": "getDocuments",
+        "summary": "Get list of uploaded documents",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "documentId": { "type": "string" },
+                      "fileName": { "type": "string" },
+                      "s3Key": { "type": "string" },
+                      "contentType": { "type": "string" },
+                      "fileSize": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submissions/{id}/documents/{documentId}/download": {
+      "get": {
+        "operationId": "getPresignedDownloadUrl",
+        "summary": "Generate presigned S3 download URL for a document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presigned URL generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignedUrlResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/submissions/{id}/presigned-url": {

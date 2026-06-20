@@ -44,4 +44,17 @@ public class ConfigurationServiceClient {
                 .retrieve()
                 .body(String.class);
     }
+
+    public com.fh_wedel.submission.model.SubmissionConfiguration getConfiguration(String submissionId) {
+        log.info("Fetching configuration for submission {} from configuration-service", submissionId);
+        try {
+            return restClient.get()
+                    .uri(configurationServiceUrl + "/api/configuration/" + submissionId)
+                    .retrieve()
+                    .body(com.fh_wedel.submission.model.SubmissionConfiguration.class);
+        } catch (Exception e) {
+            log.error("Failed to fetch configuration for submission {}", submissionId, e);
+            return null;
+        }
+    }
 }
