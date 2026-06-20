@@ -62,6 +62,29 @@ class SqsRequestListenerTest {
     }
 
     @Test
+    @DisplayName("Should create a new submission using authorId from SQS message directly without calling configuration service")
+    void handleMessage_newSubmissionWithAuthor_createsRecordWithoutConfig() {
+        String submissionId = "sub-123";
+        String authorId = "author-555";
+        String message = String.format("{\"submissionId\":\"%s\",\"authorId\":\"%s\",\"status\":\"MATCHED\"}", submissionId, authorId);
+
+        when(repository.findSubmissionById(submissionId)).thenReturn(null);
+
+        sqsRequestListener.handleMessage(message);
+
+        ArgumentCaptor<Submission> captor = ArgumentCaptor.forClass(Submission.class);
+        verify(repository).saveSubmission(captor.capture());
+
+        Submission saved = captor.getValue();
+        assertThat(saved.getSubmissionId()).isEqualTo(submissionId);
+        assertThat(saved.getAuthorId()).isEqualTo(authorId);
+        assertThat(saved.getTitle()).isNull();
+        assertThat(saved.getStatus()).isEqualTo(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+
+        verifyNoInteractions(configurationServiceClient);
+    }
+
+    @Test
     @DisplayName("Should update an existing submission status to 'Wartet auf Abgabe'")
     void handleMessage_existingSubmission_updatesStatus() {
         String submissionId = "sub-456";

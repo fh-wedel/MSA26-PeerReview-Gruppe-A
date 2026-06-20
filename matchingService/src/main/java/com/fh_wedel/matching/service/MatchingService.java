@@ -133,7 +133,7 @@ public class MatchingService {
         log.info("Successfully matched submission {} with {} reviewers", submissionId, numberOfExaminers);
 
         // 7. Send success event to SQS
-        sendSuccessEvent(submissionId);
+        sendSuccessEvent(submissionId, submitterId);
 
         for (MatchRecord match : matchRecords) {
             sendInAppNotification(match.getExaminerId(),
@@ -207,7 +207,7 @@ public class MatchingService {
     /**
      * Sends a success SQS event to the Submission Service response queue.
      */
-    private void sendSuccessEvent(String submissionId) {
+    private void sendSuccessEvent(String submissionId, String authorId) {
         if (responseQueueName == null || responseQueueName.isBlank()) {
             log.warn("No SQS response queue defined. Skipping sending success event for submission {}", submissionId);
             return;
@@ -215,6 +215,7 @@ public class MatchingService {
 
         MatchingResponseEvent responseEvent = new MatchingResponseEvent();
         responseEvent.setSubmissionId(submissionId);
+        responseEvent.setAuthorId(authorId);
         responseEvent.setStatus(MatchingResponseEvent.Status.MATCHED);
 
         try {

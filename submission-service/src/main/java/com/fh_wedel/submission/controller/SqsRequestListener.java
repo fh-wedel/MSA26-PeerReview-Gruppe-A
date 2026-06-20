@@ -50,19 +50,28 @@ public class SqsRequestListener {
 
             Submission submission = repository.findSubmissionById(submissionId);
             if (submission == null) {
-                log.info("Submission {} not found in database. Fetching configuration from configuration-service.", submissionId);
-                SubmissionConfiguration config = configurationServiceClient.getConfiguration(submissionId);
-                if (config != null) {
-                    String authorId = (config.getAuthorIds() != null && !config.getAuthorIds().isEmpty())
-                            ? config.getAuthorIds().get(0)
-                            : "unknown";
-                    
-                    submission = new Submission(submissionId, submissionId, authorId, config.getTitle());
+                String authorId = node.path("authorId").asText();
+                if (authorId.isBlank()) {
+                    log.info("Submission {} not found in database. authorId not present in SQS message. Fetching configuration from configuration-service.", submissionId);
+                    SubmissionConfiguration config = configurationServiceClient.getConfiguration(submissionId);
+                    if (config != null) {
+                        authorId = (config.getAuthorIds() != null && !config.getAuthorIds().isEmpty())
+                                ? config.getAuthorIds().get(0)
+                                : "unknown";
+                        
+                        submission = new Submission(submissionId, submissionId, authorId, config.getTitle());
+                        submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
+                        repository.saveSubmission(submission);
+                        log.info("Created new submission {} with status '{}' via configuration-service", submissionId, submission.getStatus());
+                    } else {
+                        log.error("Failed to retrieve configuration for submission {} from configuration-service", submissionId);
+                    }
+                } else {
+                    log.info("Submission {} not found in database. Creating it using authorId={} from SQS message.", submissionId, authorId);
+                    submission = new Submission(submissionId, submissionId, authorId, null);
                     submission.setStatus(SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
                     repository.saveSubmission(submission);
-                    log.info("Created new submission {} with status '{}'", submissionId, submission.getStatus());
-                } else {
-                    log.error("Failed to retrieve configuration for submission {} from configuration-service", submissionId);
+                    log.info("Created new submission {} with status '{}' and authorId={} directly from SQS message", submissionId, submission.getStatus(), authorId);
                 }
             } else {
                 log.info("Updating existing submission {} status from {} to '{}'", submissionId, submission.getStatus(), SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue());
