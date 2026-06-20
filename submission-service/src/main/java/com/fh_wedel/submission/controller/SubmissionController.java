@@ -68,7 +68,7 @@ public class SubmissionController {
             @RequestBody UpdateSubmissionRequest request,
             Authentication authentication) {
 
-        log.info("Request received: PUT /submissions/{}", id);
+        log.info("Request received: PUT /submissions/{} by user {}", id, authentication != null ? authentication.getName() : "unknown");
 
         String authorId = extractSubFromDetails(authentication);
         if (isAdminOrOfficer(authentication)) {
@@ -80,6 +80,7 @@ public class SubmissionController {
         Submission submission = submissionService.updateSubmission(id, authorId, request);
 
         if (submission == null) {
+            log.warn("Update failed: Submission {} not found in database", id);
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(submission);
@@ -91,7 +92,7 @@ public class SubmissionController {
             @PathVariable String id,
             Authentication authentication) {
 
-        log.info("Request received: POST /submissions/{}/submit", id);
+        log.info("Request received: POST /submissions/{}/submit by user {}", id, authentication != null ? authentication.getName() : "unknown");
 
         String authorId = extractSubFromDetails(authentication);
         if (isAdminOrOfficer(authentication)) {
@@ -103,6 +104,7 @@ public class SubmissionController {
         Submission submission = submissionService.submitSubmission(id, authorId);
 
         if (submission == null) {
+            log.warn("Submission finalization failed: Submission {} not found in database", id);
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(submission);
@@ -114,13 +116,17 @@ public class SubmissionController {
             @PathVariable String id,
             Authentication authentication) {
 
+        String callerSub = extractSubFromDetails(authentication);
+        log.info("Request received: GET /submissions/{} (callerSub={})", id, callerSub);
+
         Submission submission = submissionService.getSubmission(id);
         if (submission == null) {
+            log.warn("Submission {} not found in database", id);
             return ResponseEntity.notFound().build();
         }
 
-        String callerSub = extractSubFromDetails(authentication);
         if (isOnlyAuthor(authentication) && !submission.getAuthorId().equals(callerSub)) {
+            log.warn("Access Denied: Author '{}' tried to access other author's submission {}", callerSub, id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -131,6 +137,7 @@ public class SubmissionController {
     @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author')")
     public ResponseEntity<List<Submission>> listSubmissions(Authentication authentication) {
         String callerSub = extractSubFromDetails(authentication);
+        log.info("Request received: GET /submissions (callerSub={})", callerSub);
         List<Submission> submissions = submissionService.getSubmissionsByAuthor(callerSub);
         return ResponseEntity.ok(submissions);
     }
@@ -141,13 +148,17 @@ public class SubmissionController {
             @PathVariable String id,
             Authentication authentication) {
 
+        String callerSub = extractSubFromDetails(authentication);
+        log.info("Request received: GET /submissions/{}/documents (callerSub={})", id, callerSub);
+
         Submission submission = submissionService.getSubmission(id);
         if (submission == null) {
+            log.warn("Submission {} not found in database", id);
             return ResponseEntity.notFound().build();
         }
 
-        String callerSub = extractSubFromDetails(authentication);
         if (isOnlyAuthor(authentication) && !submission.getAuthorId().equals(callerSub)) {
+            log.warn("Access Denied: Author '{}' tried to access documents for other author's submission {}", callerSub, id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -161,15 +172,17 @@ public class SubmissionController {
             @PathVariable String documentId,
             Authentication authentication) {
 
-        log.info("Request received: GET /submissions/{}/documents/{}/download", id, documentId);
+        String callerSub = extractSubFromDetails(authentication);
+        log.info("Request received: GET /submissions/{}/documents/{}/download (callerSub={})", id, documentId, callerSub);
 
         Submission submission = submissionService.getSubmission(id);
         if (submission == null) {
+            log.warn("Submission {} not found in database", id);
             return ResponseEntity.notFound().build();
         }
 
-        String callerSub = extractSubFromDetails(authentication);
         if (isOnlyAuthor(authentication) && !submission.getAuthorId().equals(callerSub)) {
+            log.warn("Access Denied: Author '{}' tried to download document for other author's submission {}", callerSub, id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 

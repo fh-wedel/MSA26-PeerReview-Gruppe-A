@@ -39,7 +39,14 @@ public class SubmissionRepository {
                 .partitionValue(Submission.PK_PREFIX + submissionId)
                 .sortValue(Submission.SK_VALUE)
                 .build();
-        return submissionTable.getItem(key);
+        log.info("Querying DynamoDB for submissionId={} (PK={})", submissionId, Submission.PK_PREFIX + submissionId);
+        Submission submission = submissionTable.getItem(key);
+        if (submission == null) {
+            log.warn("Submission {} not found in DynamoDB", submissionId);
+        } else {
+            log.info("Successfully retrieved submission {} from DynamoDB: status={}", submissionId, submission.getStatus());
+        }
+        return submission;
     }
 
     public List<Submission> findSubmissionsByAuthor(String authorId) {
