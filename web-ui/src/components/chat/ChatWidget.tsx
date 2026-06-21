@@ -92,7 +92,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   }, [messagesStream, chatId, markChatAsRead, userMap]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const handleSend = async () => {
