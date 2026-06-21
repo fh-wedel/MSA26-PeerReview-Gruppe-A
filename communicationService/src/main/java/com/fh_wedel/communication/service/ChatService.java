@@ -106,7 +106,7 @@ public class ChatService {
 
         for (SseEmitter emitter : emitters) {
             try {
-                emitter.send(SseEmitter.event().name("message").data(payload));
+                emitter.send(SseEmitter.event().name("message").data(payload, org.springframework.http.MediaType.APPLICATION_JSON));
                 // Complete the emitter immediately after sending so the Lambda proxy's
                 // `await response.text()` resolves and returns the event data to the
                 // browser before the 29s API Gateway timeout. The client reconnects

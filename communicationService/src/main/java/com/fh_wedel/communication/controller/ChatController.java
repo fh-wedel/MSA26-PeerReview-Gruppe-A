@@ -39,12 +39,16 @@ public class ChatController implements ChatsApi {
 
     @Override
     public ResponseEntity<ChatDetailResponse> getChat(String chatId, String nextToken, Integer limit) {
-        return ResponseEntity.ok(chatService.getChat(getUserId(), chatId, nextToken, limit));
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .body(chatService.getChat(getUserId(), chatId, nextToken, limit));
     }
 
     @Override
     public ResponseEntity<ChatListResponse> listChats() {
-        return ResponseEntity.ok(chatService.listChats(getUserId()));
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .body(chatService.listChats(getUserId()));
     }
 
     @Override
@@ -53,7 +57,9 @@ public class ChatController implements ChatsApi {
     }
 
     @GetMapping(value = "/chats/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamChats() {
-        return chatService.subscribe(getUserId());
+    public ResponseEntity<SseEmitter> streamChats() {
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .body(chatService.subscribe(getUserId()));
     }
 }

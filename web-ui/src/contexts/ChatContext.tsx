@@ -93,19 +93,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const abortController = new AbortController();
 
-    fetchEventSource('/api/communication/chats/stream', {
+    fetchEventSource(`/api/communication/chats/stream?t=${Date.now()}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
+        'Cache-Control': 'no-cache',
       },
       signal: abortController.signal,
       async onmessage(ev) {
         if (!ev.event || ev.event === 'message') {
+          console.log('[SSE] Received event:', ev.event, 'Data:', ev.data);
           try {
             const data = JSON.parse(ev.data);
             const newMsg = data.message as Message;
             const chatId = data.chatId;
+
+            console.log(`[SSE] Parsed message from senderId=${newMsg?.senderId} for chatId=${chatId} (currentUser=${user?.id})`);
 
             // Only propagate to the chat widget if this message is from the *other* user.
             // Our own messages are already handled optimistically in ChatWidget.
@@ -116,7 +120,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Refresh the chat list so lastMessageAt and unread count are updated.
             setTimeout(refreshChats, 500);
           } catch (err) {
-            console.error('Error parsing SSE message', err);
+            console.error('[SSE] Error parsing SSE message! Raw data was:', ev.data, err);
           }
         }
       },
