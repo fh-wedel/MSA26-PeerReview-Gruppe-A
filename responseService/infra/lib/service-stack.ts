@@ -133,6 +133,8 @@ export class ResponseServiceStack extends cdk.Stack {
     const cfnService = ecsService.node.defaultChild as ecs.CfnService;
     cfnService.serviceRegistries = [{ registryArn: sdService.attrArn }];
 
+    EcsInfra.addAutoScalingToService(ecsService, props.minTaskCount, props.maxTaskCount, 75);
+
     EcsInfra.grantDefaultTaskRolePermissions(taskDefinition);
 
     // DynamoDB permissions
