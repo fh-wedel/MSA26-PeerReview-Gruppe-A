@@ -29,7 +29,7 @@
    ```
 
 3. **Services deployen:**
-   Die einzelnen Microservices (z.B. `workflow-service`, `matchingService`, `web-ui`) werden primär über die GitHub Actions CI/CD Pipeline deployt. 
+   Die einzelnen Microservices (z.B. `configuration-service`, `matchingService`, `web-ui`) werden primär über die GitHub Actions CI/CD Pipeline deployt. 
    
    Für ein manuelles Deployment eines Services:
    1. Docker-Image bauen und in das ECR pushen.
@@ -59,7 +59,7 @@ Die Gesamtanwendung basiert auf einer cloud-nativen Microservice-Architektur in 
 
 ## 3. Service-Struktur
 
-### Workflow-Services (Haupt-Framework)
+### Core-Services
 Die Services kommunizieren untereinander asynchron über SQS und bieten synchrone REST-Schnittstellen für das Frontend an.
 
 1. **Creation Service:**
@@ -72,16 +72,16 @@ Die Services kommunizieren untereinander asynchron über SQS und bieten synchron
    * **Aufgabe:** Entgegennahme der eigentlichen wissenschaftlichen Arbeiten/Dokumente.
    * **Ablauf:** Der Service konsumiert die eingehende SQS-Nachricht des Matching Services *sofort* und speichert den
      Status "WAITING_FOR_SUBMISSION" in seiner eigenen DynamoDB. Er wartet persistent, bis der Autor das Dokument via
-     REST einreicht. Nach erfolgreicher Einreichung triggert er den Workflow Service via SQS.
-4. **Workflow Service:**
-   * **Aufgabe:** Steuert den eigentlichen Gutachter-Prozess.
-   * **Ablauf:** Empfängt die SQS-Nachricht des Submission Services. Nutzt eine interne Plugin-Architektur, um flexibel verschiedene Review-Verfahren (z.B. Double-Blind, Open Review) abzubilden. Nach Abschluss der Begutachtung wird ein SQS-Event an den Response Service gesendet.
+    Nach erfolgreicher Einreichung triggert er den Configuration Service via SQS.
+4. **Configuration Service:**
+   * **Aufgabe:** Konfiguriert und steuert den eigentlichen Gutachter-Prozess.
+   * **Ablauf:** Empfängt die SQS-Nachricht des Submission Services. Nutzt interne Konfigurationen, um flexibel verschiedene Review-Verfahren abzubilden. Nach Abschluss der Begutachtung wird ein SQS-Event an den Response Service gesendet.
 5. **Response Service:**
    * **Aufgabe:** Ablage und Kommunikation der Ergebnisse.
-   * **Ablauf:** Konsumiert das Event des Workflow Services, speichert die finalen Review-Ergebnisse und stellt diese den Autoren über REST-Endpunkte bereit.
+   * **Ablauf:** Konsumiert das Event des Configuration Services, speichert die finalen Review-Ergebnisse und stellt diese den Autoren über REST-Endpunkte bereit.
 
 ### Zusätzliche Services
-* **Web UI (Frontend):** Ein Service, der über REST mit allen Workflow-Services kommuniziert, um Status und Daten zu aggregieren und darzustellen. Die Datenhoheit liegt bei den jeweiligen Backend-Services, das Frontend fungiert als reiner Konsument.
+* **Web UI (Frontend):** Ein Service, der über REST mit allen Core-Services kommuniziert, um Status und Daten zu aggregieren und darzustellen. Die Datenhoheit liegt bei den jeweiligen Backend-Services, das Frontend fungiert als reiner Konsument.
 * **Analytics Service (Zukünftig / Non-MVP):** Aggregiert asynchron (via SQS) Daten aus allen Services, bereitet diese für statistische Analysen auf und stellt sie über REST-Endpunkte für das Prüfungsamt (Gesamtübersicht) bereit.
 
 ---
@@ -94,9 +94,9 @@ Die Zugriffssteuerung ist strikt nach dem Least-Privilege-Prinzip implementiert.
 | :--- | :--- |
 | **Admin** | Systemadministrator mit uneingeschränktem Vollzugriff auf alle Ressourcen und Endpunkte. |
 | **ExaminationOfficer** <br>*(Prüfungsamt)* | **Matching Service:** Schreib-/Lesezugriff zur Prüferverwaltung (Anlegen, Bearbeiten, Löschen) sowie Lesezugriff auf zugewiesene Prüfer pro Abgabe.<br>**Analytics Service:** Voller Zugriff für statistische Auswertungen.<br>**Sonstige:** Kein Zugriff auf laufende Reviews, Abgaben oder Ergebnisse. |
-| **Reviewer** <br>*(Gutachter)* | **Matching Service:** Lesezugriff, um zugewiesene Arbeiten zu sehen.<br>**Submission Service:** Lesezugriff auf zugewiesene Dokumente.<br>**Workflow Service:** Lese-/Schreibzugriff zur Durchführung der Begutachtung.<br>**Response Service:** Lesezugriff auf finale Ergebnisse.<br>**Sonstige:** Kein Zugriff auf Analytics oder Creation. |
-| **Author** <br>*(Verfasser)* | **Creation Service:** Schreibzugriff zur Erstellung *eigener* Reviews.<br>**Matching Service:** Lesezugriff auf zugewiesene Prüfer (nur eigene Reviews).<br>**Submission Service:** Schreib-/Lesezugriff für *eigene* Abgaben.<br>**Workflow/Response Service:** Lesezugriff auf Status und Ergebnisse der *eigenen* Arbeiten. |
-| **Teacher** <br>*(Dozent - Non-MVP)* | **Creation Service:** Schreibzugriff, um stellvertretend Abgaben für Studierende anzulegen.<br>Agiert im weiteren Verlauf des Workflows automatisch in der Rolle des **Reviewers** für diese spezifischen Prüfungen. Daher muss er immer die Rolle **Reviewer** innehaben. |
+| **Reviewer** <br>*(Gutachter)* | **Matching Service:** Lesezugriff, um zugewiesene Arbeiten zu sehen.<br>**Submission Service:** Lesezugriff auf zugewiesene Dokumente.<br>**Configuration Service:** Lese-/Schreibzugriff zur Durchführung der Begutachtung.<br>**Response Service:** Lesezugriff auf finale Ergebnisse.<br>**Sonstige:** Kein Zugriff auf Analytics oder Creation. |
+| **Author** <br>*(Verfasser)* | **Creation Service:** Schreibzugriff zur Erstellung *eigener* Reviews.<br>**Matching Service:** Lesezugriff auf zugewiesene Prüfer (nur eigene Reviews).<br>**Submission Service:** Schreib-/Lesezugriff für *eigene* Abgaben.<br>**Configuration/Response Service:** Lesezugriff auf Status und Ergebnisse der *eigenen* Arbeiten. |
+| **Teacher** <br>*(Dozent - Non-MVP)* | **Creation Service:** Schreibzugriff, um stellvertretend Abgaben für Studierende anzulegen.<br>Agiert im weiteren Verlauf automatisch in der Rolle des **Reviewers** für diese spezifischen Prüfungen. Daher muss er immer die Rolle **Reviewer** innehaben. |
 
 ---
 

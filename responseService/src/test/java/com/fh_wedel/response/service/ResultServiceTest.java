@@ -1,7 +1,7 @@
 package com.fh_wedel.response.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fh_wedel.configuration.client.api.DefaultApi;
+import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
 import com.fh_wedel.matching.client.model.MatchEntry;
@@ -9,8 +9,8 @@ import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.ReviewResult;
 import com.fh_wedel.response.model.ReviewResultDto;
 import com.fh_wedel.response.repository.ReviewResultRepository;
-import com.fh_wedel.workflow.client.api.WorkflowReviewsApi;
-import com.fh_wedel.workflow.client.model.ReviewQuestionDto;
+import com.fh_wedel.configuration.client.api.SubmissionReviewsApi;
+import com.fh_wedel.configuration.client.model.ReviewQuestionDto;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,18 +45,18 @@ class ResultServiceTest {
     private SqsTemplate sqsTemplate;
 
     @Mock
-    private WorkflowReviewsApi workflowReviewsApi;
+    private SubmissionReviewsApi submissionReviewsApi;
 
     @Mock
     private MatchesApi matchesApi;
 
     @Mock
-    private DefaultApi configurationApi;
+    private SubmissionsApi submissionsApi;
 
     private ResultService buildService(String notificationQueue) {
         return new ResultService(repository, documentStorageService,
                 sqsTemplate, new ObjectMapper(), notificationQueue,
-                workflowReviewsApi, matchesApi, configurationApi);
+                submissionReviewsApi, matchesApi, submissionsApi);
     }
 
     @Test
@@ -79,13 +79,13 @@ class ResultServiceTest {
     void enrichesResultFromNeighbouringServicesOnSave() throws Exception {
         ResultService service = buildService("");
 
-        when(workflowReviewsApi.getFeedbackFormForSubmission("sub-9")).thenReturn(List.of(
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-9")).thenReturn(List.of(
                 new ReviewQuestionDto().id("q1").text("Originality").maxPoints(10).required(true)));
         when(matchesApi.getMatchesBySubmission("sub-9")).thenReturn(
                 new SubmissionMatchResponse().matches(List.of(
                         new MatchEntry().examinerUsername("examiner-x"))));
         OffsetDateTime deadline = OffsetDateTime.of(2026, 6, 30, 12, 0, 0, 0, ZoneOffset.UTC);
-        when(configurationApi.submissionIdGet("sub-9")).thenReturn(
+        when(submissionsApi.submissionsSubmissionIdGet("sub-9")).thenReturn(
                 new ModelConfiguration().reviewDeadline(deadline));
         when(repository.save(any(ReviewResult.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -109,11 +109,11 @@ class ResultServiceTest {
     void savesResultEvenWhenEnrichmentCallsFail() throws Exception {
         ResultService service = buildService("");
 
-        when(workflowReviewsApi.getFeedbackFormForSubmission("sub-9"))
-                .thenThrow(new com.fh_wedel.workflow.client.ApiException("workflow down"));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-9"))
+                .thenThrow(new com.fh_wedel.configuration.client.ApiException("configuration down"));
         when(matchesApi.getMatchesBySubmission("sub-9"))
                 .thenThrow(new com.fh_wedel.matching.client.ApiException("matching down"));
-        when(configurationApi.submissionIdGet("sub-9"))
+        when(submissionsApi.submissionsSubmissionIdGet("sub-9"))
                 .thenThrow(new com.fh_wedel.configuration.client.ApiException("configuration down"));
         when(repository.save(any(ReviewResult.class))).thenAnswer(i -> i.getArgument(0));
 

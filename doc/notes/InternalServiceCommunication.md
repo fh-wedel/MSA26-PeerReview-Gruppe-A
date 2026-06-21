@@ -24,7 +24,7 @@ DNS records** and connecting over IPv6 — the same mechanism the API Gateway pr
 │                                                                │
 │  CloudMap: internal.services                                   │
 │  ┌─────────────────────────────────────────────────────────┐  │
-│  │  workflow-service  AAAA → [IPv6 task address]           │  │
+│  │  configuration-service  AAAA → [IPv6 task address]           │  │
 │  │  matching          AAAA → [IPv6 task address]           │  │
 │  └─────────────────────────────────────────────────────────┘  │
 │          ▲                         ▲                           │
@@ -32,7 +32,7 @@ DNS records** and connecting over IPv6 — the same mechanism the API Gateway pr
 │   (API Gateway → ECS)         (ECS → ECS, same mechanism)     │
 │                                                                │
 │  ┌──────────────────┐   HTTP over IPv6   ┌──────────────────┐ │
-│  │  Matching Service│ ─────────────────▶ │  Workflow Service│ │
+│  │  Matching Service│ ─────────────────▶ │  Configuration Service│ │
 │  │  resolves AAAA   │                    │  SG allows :8081 │ │
 │  └──────────────────┘                    │  from anyIpv6    │ │
 │                                          └──────────────────┘ │
@@ -40,7 +40,7 @@ DNS records** and connecting over IPv6 — the same mechanism the API Gateway pr
 ```
 
 **Resolution flow:**
-1. Caller resolves `workflow-service.internal.services` → gets the task's `AAAA` IPv6 address
+1. Caller resolves `configuration-service.internal.services` → gets the task's `AAAA` IPv6 address
 2. Caller opens a TCP connection to `[IPv6]:8081` over the IPv6-only subnet
 3. The callee's security group allows the traffic (`anyIpv6` on the container port)
 
@@ -113,7 +113,7 @@ In the **caller's** `service-stack.ts`, pass the target URL using `cloudMapNames
 environment: {
   // ECS-to-ECS uses the AAAA record in internal.services (same as Lambda→ECS).
   // Do NOT use scNamespace — that namespace is IPv4 Service Connect only.
-  'WORKFLOW_SERVICE_URL':
+  'CONFIGURATION_SERVICE_URL':
     `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
 },
 ```
@@ -121,8 +121,8 @@ environment: {
 ### Step 2 — Read the URL in Spring Boot
 
 ```java
-@Value("${aws.workflow-service.url:http://workflow.internal.services:8081}")
-private String workflowServiceUrl;
+@Value("${aws.configuration-service.url:http://workflow.internal.services:8081}")
+private String configurationServiceUrl;
 ```
 
 ### Step 3 — HTTP call with Generated OpenAPI Client
@@ -133,16 +133,16 @@ Register the generated API client as a bean in a `ServiceClientsConfig` class:
 @Configuration
 public class ServiceClientsConfig {
     @Bean
-    public ApiClient workflowApiClient(@Value("${aws.workflow-service.url}") String workflowServiceUrl) {
+    public ApiClient configurationApiClient(@Value("${aws.configuration-service.url}") String configurationServiceUrl) {
         ApiClient client = new ApiClient();
-        client.updateBaseUri(workflowServiceUrl);
+        client.updateBaseUri(configurationServiceUrl);
         // Add authentication interceptor here
         return client;
     }
 
     @Bean
-    public WorkflowRulesApi workflowRulesApi(ApiClient workflowApiClient) {
-        return new WorkflowRulesApi(workflowApiClient);
+    public ConfigurationApi configurationApi(ApiClient configurationApiClient) {
+        return new ConfigurationApi(configurationApiClient);
     }
 }
 ```
@@ -150,13 +150,13 @@ public class ServiceClientsConfig {
 Inject and call the strongly-typed method:
 
 ```java
-public MyService(WorkflowRulesApi workflowRulesApi) {
-    this.workflowRulesApi = workflowRulesApi;
+public MyService(ConfigurationApi configurationApi) {
+    this.configurationApi = configurationApi;
 }
 
-public WorkflowRulesDto fetchWorkflowRules(String submissionId) {
+public ConfigurationDto fetchWorkflowRules(String submissionId) {
     try {
-        return workflowRulesApi.getRulesForSubmission(submissionId);
+        return configurationApi.getRulesForSubmission(submissionId);
     } catch (Exception e) {
         log.warn("Failed to call workflow service for submission {}", submissionId, e);
         return null;
@@ -166,10 +166,10 @@ public WorkflowRulesDto fetchWorkflowRules(String submissionId) {
 
 ### Real-world example
 
-The **Matching Service** calls the **Workflow Service** to check if examiner anonymity
+The **Matching Service** calls the **Configuration Service** to check if examiner anonymity
 is enforced:
 
-- CDK env var: [`matchingService/infra/lib/service-stack.ts`](../../matchingService/infra/lib/service-stack.ts) — `WORKFLOW_SERVICE_URL`
+- CDK env var: [`matchingService/infra/lib/service-stack.ts`](../../matchingService/infra/lib/service-stack.ts) — `CONFIGURATION_SERVICE_URL`
 - Spring `@Value` injection: [`MatchingController.java` L55](../../matchingService/src/main/java/com/fh_wedel/matching/controller/MatchingController.java)
 - HTTP call with fallback: [`MatchingController.java` L99–L109](../../matchingService/src/main/java/com/fh_wedel/matching/controller/MatchingController.java)
 
@@ -205,13 +205,13 @@ is enforced:
 
 | Service | AAAA DNS name (actual traffic) |
 |---------|-------------------------------|
-| `workflow-service` | `workflow.internal.services` |
+| `configuration-service` | `workflow.internal.services` |
 | `matching` | `matching.internal.services` |
 | `user` | `user.internal.services` |
 | `<your-service>` | `<your-service>.internal.services` |
 
 Port: whatever `containerPort` is declared in the service's CDK stack
-(e.g. `workflow-service` → `8081`, `matching` → `8081`).
+(e.g. `configuration-service` → `8081`, `matching` → `8081`).
 
 ---
 

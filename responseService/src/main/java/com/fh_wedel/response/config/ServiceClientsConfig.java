@@ -31,13 +31,11 @@ import java.util.function.Consumer;
 @Configuration
 public class ServiceClientsConfig {
 
-    @Value("${aws.workflow-service.url:http://workflow.internal.services:8081}")
-    private String workflowServiceUrl;
 
     @Value("${aws.matching-service.url:http://matching.internal.services:8081}")
     private String matchingServiceUrl;
 
-    @Value("${aws.configuration-service.url:http://configuration.internal.services:8081}")
+    @Value("${aws.configuration-service.url:http://configuration.internal.services:8080}")
     private String configurationServiceUrl;
 
     private Consumer<HttpRequest.Builder> createAuthInterceptor() {
@@ -66,20 +64,12 @@ public class ServiceClientsConfig {
         };
     }
 
-    // ── Workflow client (grading schema / feedback form) ──────────────────
+    // ── Configuration client (grading schema / feedback form) ──────────────────
 
     @Bean
-    public com.fh_wedel.workflow.client.ApiClient workflowApiClient() {
-        com.fh_wedel.workflow.client.ApiClient apiClient = new com.fh_wedel.workflow.client.ApiClient();
-        apiClient.updateBaseUri(workflowServiceUrl + "/api/workflow");
-        apiClient.setRequestInterceptor(createAuthInterceptor());
-        return apiClient;
-    }
-
-    @Bean
-    public com.fh_wedel.workflow.client.api.WorkflowReviewsApi workflowReviewsApi(
-            com.fh_wedel.workflow.client.ApiClient workflowApiClient) {
-        return new com.fh_wedel.workflow.client.api.WorkflowReviewsApi(workflowApiClient);
+    public com.fh_wedel.configuration.client.api.SubmissionReviewsApi submissionReviewsApi(
+            com.fh_wedel.configuration.client.ApiClient configurationApiClient) {
+        return new com.fh_wedel.configuration.client.api.SubmissionReviewsApi(configurationApiClient);
     }
 
     // ── Matching client (examiner) ────────────────────────────────────────
@@ -103,14 +93,14 @@ public class ServiceClientsConfig {
     @Bean
     public com.fh_wedel.configuration.client.ApiClient configurationApiClient() {
         com.fh_wedel.configuration.client.ApiClient apiClient = new com.fh_wedel.configuration.client.ApiClient();
-        apiClient.updateBaseUri(configurationServiceUrl + "/api/configuration/submissions");
+        apiClient.updateBaseUri(configurationServiceUrl + "/api/configuration");
         apiClient.setRequestInterceptor(createAuthInterceptor());
         return apiClient;
     }
 
     @Bean
-    public com.fh_wedel.configuration.client.api.DefaultApi configurationApi(
+    public com.fh_wedel.configuration.client.api.SubmissionsApi submissionsApi(
             com.fh_wedel.configuration.client.ApiClient configurationApiClient) {
-        return new com.fh_wedel.configuration.client.api.DefaultApi(configurationApiClient);
+        return new com.fh_wedel.configuration.client.api.SubmissionsApi(configurationApiClient);
     }
 }

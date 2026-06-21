@@ -29,7 +29,7 @@ Based on the high-level architecture, the system consists of a Web UI and severa
 - **Databases:** JDBC-based SQL databases per service (with potential NoSQL for the Communication Service) and AWS S3 for files.
 - **Asynchronous Messaging:** Amazon SQS (and potentially SNS).
 - **Infrastructure as Code (IaC):** AWS CDK v2 (TypeScript)
-- **Compute:** Amazon ECS with AWS Fargate
+- **Compute:** Amazon ECS with AWS Fargate (ARM64 / AWS Graviton)
 - **Container Registry:** Amazon ECR
 - **Networking:** VPC with Public IPv4 and Private IPv6 subnets
 
@@ -58,7 +58,11 @@ When a new microservice is fully structured, integrate it into `.github/workflow
 
 *Note: Deployment currently uses the AWS CLI configured via SSO.*
 
-## 6. Coding Conventions and Guidelines
+## 6. Architecture Highlights & Infrastructure Best Practices
+- **ARM64 / Graviton Architecture:** All ECS services are configured to run on `ARM64` architecture (AWS Graviton) for better cost-performance ratio. When creating Dockerfiles, ensure that dependencies or base images support `linux/arm64`.
+- **Scheduled Scaling:** To minimize costs, services are subject to Scheduled Application Auto Scaling. They automatically scale up at 08:00 UTC and scale down to 0 at 18:00 UTC on weekdays. On weekends and outside these hours, the backend services are offline.
+
+## 7. Coding Conventions and Guidelines
 - **Backend Code:** Follow Spring Boot best practices. For the Workflow Service, leverage interfaces and dependency injection (or established Java plugin frameworks) to keep review processes pluggable.
 - **Frontend Code:** Use functional React components and hooks.
 - **AWS CDK:** 
@@ -66,7 +70,7 @@ When a new microservice is fully structured, integrate it into `.github/workflow
   - Use `cdk.Fn.importValue` to consume outputs from the `infrabaseline` stack.
   - Keep stack definitions modular and pass configurations via `StackProps`.
 
-## 7. Important Notes for AI Agents
+## 8. Important Notes for AI Agents
 - **Extensibility & Plugins:** Always design the Workflow Service features with the plugin system in mind. Avoid hardcoding review logic (like masking names for double-blind) into the core service. Instead, abstract this into configurable plugin strategies.
 - **Data Isolation & Communication:** If a service needs data from another, it must fetch it via a REST API call or, preferably, react to an asynchronous SQS event. 
 - **Avoid hardcoding:** Values like Account IDs, Regions, and VPC CIDRs are managed in `infrabaseline/lib/constants.ts`.

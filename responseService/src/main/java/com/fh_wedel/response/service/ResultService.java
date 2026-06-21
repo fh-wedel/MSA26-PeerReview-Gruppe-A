@@ -5,7 +5,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fh_wedel.configuration.client.api.DefaultApi;
+import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
@@ -14,8 +14,8 @@ import com.fh_wedel.response.model.NotificationEvent;
 import com.fh_wedel.response.model.ReviewResult;
 import com.fh_wedel.response.model.ReviewResultDto;
 import com.fh_wedel.response.repository.ReviewResultRepository;
-import com.fh_wedel.workflow.client.api.WorkflowReviewsApi;
-import com.fh_wedel.workflow.client.model.ReviewQuestionDto;
+import com.fh_wedel.configuration.client.api.SubmissionReviewsApi;
+import com.fh_wedel.configuration.client.model.ReviewQuestionDto;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,26 +34,26 @@ public class ResultService {
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String notificationQueueName;
-    private final WorkflowReviewsApi workflowReviewsApi;
+    private final SubmissionReviewsApi submissionReviewsApi;
     private final MatchesApi matchesApi;
-    private final DefaultApi configurationApi;
+    private final SubmissionsApi submissionsApi;
 
     public ResultService(ReviewResultRepository repository,
                          DocumentStorageService documentStorageService,
                          SqsTemplate sqsTemplate,
                          ObjectMapper objectMapper,
                          @Value("${aws.sqs.notification.queue-name}") String notificationQueueName,
-                         WorkflowReviewsApi workflowReviewsApi,
+                         SubmissionReviewsApi submissionReviewsApi,
                          MatchesApi matchesApi,
-                         DefaultApi configurationApi) {
+                         SubmissionsApi submissionsApi) {
         this.repository = repository;
         this.documentStorageService = documentStorageService;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
         this.notificationQueueName = notificationQueueName;
-        this.workflowReviewsApi = workflowReviewsApi;
+        this.submissionReviewsApi = submissionReviewsApi;
         this.matchesApi = matchesApi;
-        this.configurationApi = configurationApi;
+        this.submissionsApi = submissionsApi;
     }
 
     public ReviewResult save(ReviewResult result) {
@@ -80,7 +80,7 @@ public class ResultService {
 
         // Fetch schema to merge with answers
         try {
-            List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(request.getSubmissionId());
+            List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(request.getSubmissionId());
             if (form != null) {
                 List<GradingCriterion> criteria = form.stream().map(q -> {
                     GradingCriterion c = toGradingCriterion(q);
@@ -100,7 +100,7 @@ public class ResultService {
 
         // Fetch author
         try {
-            ModelConfiguration config = configurationApi.submissionIdGet(request.getSubmissionId());
+            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(request.getSubmissionId());
             if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
                 result.setAuthorId(config.getAuthorIds().get(0));
             }
@@ -133,10 +133,10 @@ public class ResultService {
     private void enrichFromNeighbouringServices(ReviewResult result) {
         String submissionId = result.getSubmissionId();
 
-        // Grading schema (what the submission was reviewed by) — workflow service.
+        // Grading schema (what the submission was reviewed by) — configuration service.
         if (result.getGradingSchema() == null || result.getGradingSchema().isEmpty()) {
             try {
-                List<ReviewQuestionDto> form = workflowReviewsApi.getFeedbackFormForSubmission(submissionId);
+                List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(submissionId);
                 if (form != null) {
                     result.setGradingSchema(form.stream().map(this::toGradingCriterion).toList());
                 }
@@ -160,7 +160,7 @@ public class ResultService {
 
         // Review deadline / end date — configuration service.
         try {
-            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
             if (config != null && config.getReviewDeadline() != null) {
                 result.setReviewDeadline(config.getReviewDeadline().toInstant());
             }
@@ -213,7 +213,7 @@ public class ResultService {
                 .map(r -> {
                     if (r.getAuthorId() == null || r.getAuthorId().isBlank()) {
                         try {
-                            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+                            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
                             if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
                                 r.setAuthorId(config.getAuthorIds().get(0));
                                 repository.save(r); // Persist the fix for future reads
@@ -243,7 +243,7 @@ public class ResultService {
     public boolean isAuthorOfSubmission(String submissionId, String callerSub) {
         if (callerSub == null) return false;
         try {
-            ModelConfiguration config = configurationApi.submissionIdGet(submissionId);
+            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
             return config != null && config.getAuthorIds() != null && config.getAuthorIds().contains(callerSub);
         } catch (Exception e) {
             log.warn("Could not check authors for submission {}: {}", submissionId, e.getMessage());
