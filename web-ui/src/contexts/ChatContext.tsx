@@ -10,7 +10,7 @@ interface ChatContextType {
   unreadCount: number;
   refreshChats: () => Promise<void>;
   markChatAsRead: (chatId: string) => void;
-  messagesStream: Message | null;
+  messagesStream: { message: Message; chatId: string } | null;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -28,7 +28,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { showError } = useNotification();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [messagesStream, setMessagesStream] = useState<Message | null>(null);
+  const [messagesStream, setMessagesStream] = useState<{ message: Message; chatId: string } | null>(null);
 
   const [readTimestamps, setReadTimestamps] = useState<Record<string, string>>(() => {
     const saved = localStorage.getItem('chat_read_timestamps');
@@ -110,7 +110,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Only propagate to the chat widget if this message is from the *other* user.
             // Our own messages are already handled optimistically in ChatWidget.
             if (newMsg.senderId !== user?.id) {
-              setMessagesStream({ ...newMsg, messageId: newMsg.messageId + '-' + chatId });
+              setMessagesStream({ message: newMsg, chatId });
             }
 
             // Refresh the chat list so lastMessageAt and unread count are updated.
