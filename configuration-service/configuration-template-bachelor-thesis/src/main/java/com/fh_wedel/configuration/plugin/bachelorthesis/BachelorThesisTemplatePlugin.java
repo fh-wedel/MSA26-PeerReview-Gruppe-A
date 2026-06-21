@@ -34,7 +34,7 @@ public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
         return List.of(
                 ReviewQuestion.rating("abstract_introduction", "Abstract & Introduction", 10),
                 ReviewQuestion.rating("theoretical_background", "Theoretical Background", 10),
-                ReviewQuestion.rating("methodology_implementation", "Methodology & Implementation", 20),
+                ReviewQuestion.rating("methodology_implementation", "Methodology & Implementation", 10),
                 ReviewQuestion.rating("evaluation_results", "Evaluation & Results", 10),
                 ReviewQuestion.rating("structure_academic_writing", "Structure & Academic Writing", 10),
                 ReviewQuestion.text("conclusion_future_work", "Conclusion & Future Work", 0),
@@ -46,7 +46,7 @@ public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
     @Override
     public ReviewGrade calculateGrade(List<ReviewResponse> responses) {
         int totalPoints = 0;
-        int maxPoints = 60;
+        int maxPoints = 50;
 
         for (ReviewResponse response : responses) {
             switch (response.questionId()) {

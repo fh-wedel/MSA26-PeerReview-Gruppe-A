@@ -91,7 +91,8 @@ public class ChatService {
         return emitter;
     }
 
-    private void notifyUser(String userId, String chatId, Message message) {
+    private void notifyUser(String rawUserId, String chatId, Message message) {
+        String userId = normalizeUserId(rawUserId);
         log.info("notifyUser: userId='{}' chatId='{}' activeEmitterKeys={}", userId, chatId, activeEmitters.keySet());
         CopyOnWriteArrayList<SseEmitter> emitters = activeEmitters.get(userId);
         if (emitters == null || emitters.isEmpty()) {

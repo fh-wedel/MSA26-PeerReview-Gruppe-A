@@ -101,7 +101,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       signal: abortController.signal,
       async onmessage(ev) {
-        if (ev.event === 'message') {
+        if (!ev.event || ev.event === 'message') {
           try {
             const data = JSON.parse(ev.data);
             const newMsg = data.message as Message;

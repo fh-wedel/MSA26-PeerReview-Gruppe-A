@@ -30,6 +30,7 @@ import {getMockSubmissionById} from '../stubs/submissions';
 import {formatDateTime} from '../utils/date';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 import {useUserResolver} from '../hooks/useUserResolver';
+import {useNotification} from '../contexts/NotificationContext';
 
 export const SubmissionDetails: React.FC = () => {
   const theme = useTheme();
@@ -60,6 +61,7 @@ export const SubmissionDetails: React.FC = () => {
   const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
 
   const { user } = useAuth();
+  const { showError, showSuccess } = useNotification();
 
   const mockSubmission = submissionId ? getMockSubmissionById(submissionId) : undefined;
 
@@ -285,6 +287,14 @@ export const SubmissionDetails: React.FC = () => {
       description: 'The author finalized the document submission.'
     });
   }
+  if (reviewResult && (reviewResult.completedAt || reviewResult.createdAt)) {
+    historyToDisplay.push({
+      id: 'event-reviewed',
+      label: 'Finished Review',
+      changedAt: reviewResult.completedAt || reviewResult.createdAt,
+      description: 'The review for this submission has been completed.'
+    });
+  }
   if (historyToDisplay.length === 0 && mockSubmission?.history) {
     historyToDisplay.push(...mockSubmission.history);
   }
@@ -306,7 +316,7 @@ export const SubmissionDetails: React.FC = () => {
       }
     } catch (e) {
       console.error('Failed to get download URL', e);
-      alert('Failed to download file.');
+      showError('Failed to download file.');
     } finally {
       setDownloading(false);
     }
@@ -316,7 +326,7 @@ export const SubmissionDetails: React.FC = () => {
     if (!submissionId || !event.target.files || event.target.files.length === 0) return;
     const file = event.target.files[0];
     if (file.type !== 'application/pdf') {
-      alert('Only PDF files are allowed.');
+      showError('Only PDF files are allowed.');
       return;
     }
 
@@ -352,10 +362,10 @@ export const SubmissionDetails: React.FC = () => {
       const subRes = await submissionApiClient.submissions.getSubmission(submissionId);
       setRealSubmission(subRes.data);
 
-      alert('File uploaded successfully!');
+      showSuccess('File uploaded successfully!');
     } catch (e) {
       console.error('Failed to upload file', e);
-      alert('Failed to upload file.');
+      showError('Failed to upload file.');
     } finally {
       setUploading(false);
     }
@@ -368,10 +378,10 @@ export const SubmissionDetails: React.FC = () => {
       try {
         const res = await submissionApiClient.submissions.submitSubmission(submissionId);
         setRealSubmission(res.data);
-        alert('Submission finalized successfully!');
+        showSuccess('Submission finalized successfully!');
       } catch (e) {
         console.error('Failed to submit', e);
-        alert('Failed to finalize submission. Please ensure you have uploaded at least one document.');
+        showError('Failed to finalize submission. Please ensure you have uploaded at least one document.');
       } finally {
         setSubmitting(false);
       }
@@ -726,7 +736,7 @@ export const SubmissionDetails: React.FC = () => {
           onClose={() => setReviewFormOpen(false)}
           submissionId={submissionId}
           onSubmitted={() => {
-            alert("Review submitted successfully!");
+            showSuccess("Review submitted successfully!");
             setReviewFormOpen(false);
             // Optionally reload the review data
             responseApiClient.results.resultsDetail(submissionId).then(res => {
