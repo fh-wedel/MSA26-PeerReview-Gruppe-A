@@ -10,7 +10,7 @@ interface ChatContextType {
   unreadCount: number;
   refreshChats: () => Promise<void>;
   markChatAsRead: (chatId: string) => void;
-  messagesStream: Message | null;
+  messagesStream: { message: Message; chatId: string } | null;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -28,7 +28,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { showError } = useNotification();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [messagesStream, setMessagesStream] = useState<Message | null>(null);
+  const [messagesStream, setMessagesStream] = useState<{ message: Message; chatId: string } | null>(null);
 
   const [readTimestamps, setReadTimestamps] = useState<Record<string, string>>(() => {
     const saved = localStorage.getItem('chat_read_timestamps');
@@ -93,15 +93,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const abortController = new AbortController();
 
-    fetchEventSource('/api/communication/chats/stream', {
+    fetchEventSource(`/api/communication/chats/stream?t=${Date.now()}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
+        'Cache-Control': 'no-cache',
       },
       signal: abortController.signal,
+      openWhenHidden: true, // Prevents disconnection when the tab loses focus
       async onmessage(ev) {
-        if (ev.event === 'message') {
+        if (!ev.event || ev.event === 'message') {
           try {
             const data = JSON.parse(ev.data);
             const newMsg = data.message as Message;
@@ -110,13 +112,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Only propagate to the chat widget if this message is from the *other* user.
             // Our own messages are already handled optimistically in ChatWidget.
             if (newMsg.senderId !== user?.id) {
-              setMessagesStream({ ...newMsg, messageId: newMsg.messageId + '-' + chatId });
+              setMessagesStream({ message: newMsg, chatId });
             }
 
             // Refresh the chat list so lastMessageAt and unread count are updated.
             setTimeout(refreshChats, 500);
           } catch (err) {
-            console.error('Error parsing SSE message', err);
+            console.error('[SSE] Error parsing SSE message! Raw data was:', ev.data, err);
           }
         }
       },

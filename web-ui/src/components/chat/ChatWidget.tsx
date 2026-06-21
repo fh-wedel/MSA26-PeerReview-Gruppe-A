@@ -68,18 +68,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   // Listen to SSE updates
   useEffect(() => {
     if (messagesStream && chatId) {
-      if (messagesStream.messageId.endsWith('-' + chatId)) {
-        // Remove the chatId part from messageId
-        const cleanMsg = { ...messagesStream, messageId: messagesStream.messageId.replace('-' + chatId, '') };
+      // Only handle messages for this chat
+      if (messagesStream.chatId === chatId) {
+        const newMsg = messagesStream.message;
         setMessages(prev => {
-          if (prev.find(m => m.messageId === cleanMsg.messageId)) return prev;
-          return [...prev, cleanMsg];
+          if (prev.find(m => m.messageId === newMsg.messageId)) return prev;
+          return [...prev, newMsg];
         });
         markChatAsRead(chatId);
 
         // Resolve username if not present
-        if (!userMap[cleanMsg.senderId]) {
-          usersApiClient.bulk.bulkResolveUsers({ subs: [cleanMsg.senderId] })
+        if (!userMap[newMsg.senderId]) {
+          usersApiClient.bulk.bulkResolveUsers({ subs: [newMsg.senderId] })
             .then(res => {
               if (res.data.users) {
                 setUserMap(prev => ({...prev, ...res.data.users}));
@@ -92,7 +92,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   }, [messagesStream, chatId, markChatAsRead, userMap]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const handleSend = async () => {

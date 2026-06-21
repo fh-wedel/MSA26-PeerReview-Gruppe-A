@@ -195,7 +195,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>generate-workflow-client</id>
+                        <id>generate-configuration-client</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>

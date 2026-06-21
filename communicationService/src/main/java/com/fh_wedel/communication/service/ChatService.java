@@ -91,7 +91,8 @@ public class ChatService {
         return emitter;
     }
 
-    private void notifyUser(String userId, String chatId, Message message) {
+    private void notifyUser(String rawUserId, String chatId, Message message) {
+        String userId = normalizeUserId(rawUserId);
         log.info("notifyUser: userId='{}' chatId='{}' activeEmitterKeys={}", userId, chatId, activeEmitters.keySet());
         CopyOnWriteArrayList<SseEmitter> emitters = activeEmitters.get(userId);
         if (emitters == null || emitters.isEmpty()) {
@@ -105,7 +106,7 @@ public class ChatService {
 
         for (SseEmitter emitter : emitters) {
             try {
-                emitter.send(SseEmitter.event().name("message").data(payload));
+                emitter.send(SseEmitter.event().name("message").data(payload, org.springframework.http.MediaType.APPLICATION_JSON));
                 // Complete the emitter immediately after sending so the Lambda proxy's
                 // `await response.text()` resolves and returns the event data to the
                 // browser before the 29s API Gateway timeout. The client reconnects
@@ -310,16 +311,13 @@ public class ChatService {
             chatRepository.addMessage(messageItem, link1, link2);
         }
 
-        Message m = new Message();
-        m.setMessageId(messageId);
-        m.setSenderId(senderId);
-        m.setBody(request.getBody());
-        m.setSentAt(OffsetDateTime.parse(now));
+        ChatDetailResponse response = getChat(senderId, chatId, null, 1);
+        Message actualMessage = response.getMessages().get(0);
 
         // Only notify the recipient — the sender already has an optimistic UI update
-        notifyUser(recipientId, chatId, m);
+        notifyUser(recipientId, chatId, actualMessage);
 
-        return getChat(senderId, chatId, null, 1);
+        return response;
     }
 
     // ── SUBMISSION group chat ────────────────────────────────────────────────
@@ -394,28 +392,29 @@ public class ChatService {
             chatRepository.addGroupMessage(messageItem, links);
         }
 
-        Message m = new Message();
-        m.setMessageId(messageId);
-        m.setSenderId(senderId);
-        m.setBody(request.getBody());
-        m.setSentAt(OffsetDateTime.parse(now));
+        ChatDetailResponse response = getChat(senderId, chatId, null, 1);
+        Message actualMessage = response.getMessages().get(0);
 
         // Notify ALL other participants via SSE
-        notifyUsers(allParticipants, senderId, chatId, m);
+        notifyUsers(allParticipants, senderId, chatId, actualMessage);
 
-        return getChat(senderId, chatId, null, 1);
+        return response;
     }
 
-    /** Builds a deduplicated participant list from the Matching Service response. */
+    /** Builds a deduplicated normalized participant list from the Matching Service response. */
     private List<String> buildParticipantList(com.fh_wedel.matching.client.model.SubmissionMatchResponse match) {
         List<String> participants = new ArrayList<>();
         if (match.getSubmitterIds() != null) {
-            participants.addAll(match.getSubmitterIds());
+            for (String rawId : match.getSubmitterIds()) {
+                String id = normalizeUserId(rawId);
+                if (!participants.contains(id)) participants.add(id);
+            }
         }
         if (match.getMatches() != null) {
             for (com.fh_wedel.matching.client.model.MatchEntry entry : match.getMatches()) {
-                if (entry.getExaminerId() != null && !participants.contains(entry.getExaminerId())) {
-                    participants.add(entry.getExaminerId());
+                if (entry.getExaminerId() != null) {
+                    String id = normalizeUserId(entry.getExaminerId());
+                    if (!participants.contains(id)) participants.add(id);
                 }
             }
         }

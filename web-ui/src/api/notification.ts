@@ -56,6 +56,7 @@ export const streamNotifications = (
       Accept: 'text/event-stream',
     },
     signal: abortController.signal,
+    openWhenHidden: true,
     async onmessage(ev) {
       if (ev.event === 'notification') {
         try {
