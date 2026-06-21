@@ -2,6 +2,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as cdk from 'aws-cdk-lib/core';
 import * as flyod from 'cdk-iam-floyd';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as appscaling from 'aws-cdk-lib/aws-applicationautoscaling';
 import { Construct } from 'constructs';
 import pino from 'pino';
 import { AWSConstants } from '../../infrabaseline/lib/constants';
@@ -123,6 +124,38 @@ export class EcsInfra {
 
         scalableTarget.scaleOnCpuUtilization('CpuScaling', {
             targetUtilizationPercent: cpuTargetUtilizationPercent,
+        });
+
+        const timeZone = cdk.TimeZone.EUROPE_BERLIN
+
+        // Weekdays: 0:00 - 1:00 && 15:00 - 0:00
+        scalableTarget.scaleOnSchedule('ScaleDownWeekdaysMorning', {
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '1', weekDay: 'MON-FRI' }),
+            minCapacity: 0,
+            maxCapacity: 0,
+            timeZone: timeZone,
+        });
+
+        scalableTarget.scaleOnSchedule('ScaleUpWeekdaysAfternoon', {
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '15', weekDay: 'MON-FRI' }),
+            minCapacity: minTaskCount,
+            maxCapacity: maxTaskCount,
+            timeZone: timeZone,
+        });
+
+        // Weekends: 0:00 - 2:00 && 10:00 - 0:00
+        scalableTarget.scaleOnSchedule('ScaleDownWeekendMorning', {
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '2', weekDay: 'SAT,SUN' }),
+            minCapacity: 0,
+            maxCapacity: 0,
+            timeZone: timeZone,
+        });
+
+        scalableTarget.scaleOnSchedule('ScaleUpWeekendMorning', {
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '10', weekDay: 'SAT,SUN' }),
+            minCapacity: minTaskCount,
+            maxCapacity: maxTaskCount,
+            timeZone: timeZone,
         });
     }
 }

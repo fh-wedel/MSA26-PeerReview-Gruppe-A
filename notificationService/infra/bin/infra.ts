@@ -56,7 +56,7 @@ const serviceStack = new NotificationServiceStack(app, 'NotificationServiceStack
   secretsName: 'msa26/notification/credentials',
   dynamoDbTableName: 'notification-service-notifications',
   minTaskCount: 1,
-  maxTaskCount: 1,
+  maxTaskCount: 2,
   memory: 512,
   cpu: 256,
 });
