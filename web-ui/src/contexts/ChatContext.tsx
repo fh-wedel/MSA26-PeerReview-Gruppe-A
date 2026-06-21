@@ -93,6 +93,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const abortController = new AbortController();
 
+    console.log('[SSE] Starting SSE connection loop. URL:', `/api/communication/chats/stream?t=${Date.now()}`);
+    
     fetchEventSource(`/api/communication/chats/stream?t=${Date.now()}`, {
       method: 'GET',
       headers: {
@@ -101,6 +103,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'Cache-Control': 'no-cache',
       },
       signal: abortController.signal,
+      async onopen(response) {
+        console.log(`[SSE] Connection opened! Status: ${response.status} ${response.statusText}`);
+        if (response.status >= 400 && response.status < 600) {
+          console.error(`[SSE] Error response from server: ${response.status}`);
+          // Throwing an error here triggers onerror() and then it retries.
+          throw new Error(`Server returned status: ${response.status}`);
+        }
+      },
       async onmessage(ev) {
         if (!ev.event || ev.event === 'message') {
           console.log('[SSE] Received event:', ev.event, 'Data:', ev.data);
@@ -115,6 +125,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Our own messages are already handled optimistically in ChatWidget.
             if (newMsg.senderId !== user?.id) {
               setMessagesStream({ message: newMsg, chatId });
+            } else {
+              console.log(`[SSE] Ignored message from self.`);
             }
 
             // Refresh the chat list so lastMessageAt and unread count are updated.
@@ -122,23 +134,27 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (err) {
             console.error('[SSE] Error parsing SSE message! Raw data was:', ev.data, err);
           }
+        } else {
+          console.log('[SSE] Received non-message event:', ev.event, 'Data:', ev.data);
         }
       },
       onclose() {
+        console.log('[SSE] Connection closed cleanly by server (200 OK EOF). fetchEventSource will retry automatically.');
         // The backend closes the emitter after each event (required for Lambda proxy compatibility).
         // fetchEventSource treats a clean 200 close as "done" and stops retrying.
         // Throwing here routes through onerror which returns without throwing → library reconnects.
         throw new Error('SSE stream closed by server — reconnecting');
       },
       onerror(err) {
-        console.warn('SSE connection error, will reconnect automatically.', err);
+        console.warn('[SSE] Connection error! Will reconnect automatically in 1s.', err);
         // Return nothing — fetchEventSource retries on its own
       },
-    }).catch(() => {
-      // Aborted or permanently failed — ignore
+    }).catch((err) => {
+      console.error('[SSE] fetchEventSource permanently aborted or failed fatally:', err);
     });
 
     return () => {
+      console.log('[SSE] Aborting connection due to component unmount or dependencies change.');
       abortController.abort();
     };
   }, [isAuthenticated, user, refreshChats]);
