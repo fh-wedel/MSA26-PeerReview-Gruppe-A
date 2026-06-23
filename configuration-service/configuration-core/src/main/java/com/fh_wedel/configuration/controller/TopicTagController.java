@@ -1,8 +1,8 @@
 package com.fh_wedel.configuration.controller;
 
-import com.fh_wedel.configuration.api.TopicTagsApi;
-import com.fh_wedel.configuration.api.model.CreateTopicTagRequest;
-import com.fh_wedel.configuration.api.model.TopicTagDto;
+import com.fh_wedel.configuration.api.generated.TopicTagsApi;
+import com.fh_wedel.configuration.model.api.CreateTopicTagRequest;
+import com.fh_wedel.configuration.model.api.TopicTagDto;
 import com.fh_wedel.configuration.service.TopicTagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

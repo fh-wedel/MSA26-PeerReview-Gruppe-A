@@ -1,7 +1,7 @@
 package com.fh_wedel.configuration.service;
 
-import com.fh_wedel.configuration.api.model.CreateTopicTagRequest;
-import com.fh_wedel.configuration.api.model.TopicTagDto;
+import com.fh_wedel.configuration.model.api.CreateTopicTagRequest;
+import com.fh_wedel.configuration.model.api.TopicTagDto;
 import com.fh_wedel.configuration.model.TopicTag;
 import com.fh_wedel.configuration.repository.TopicTagRepository;
 import lombok.RequiredArgsConstructor;
