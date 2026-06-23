@@ -323,22 +323,30 @@ export const UserManagement: React.FC = () => {
             onInputChange={(_, value) => handleSearch(value)}
             onChange={(_, value) => setSelectedUser(value)}
             loading={searching}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Search User"
-                fullWidth
-                InputProps={{
-                  ...params.InputProps,
-                  endAdornment: (
-                    <React.Fragment>
-                      {searching ? <CircularProgress color="inherit" size={20} /> : null}
-                      {params.InputProps?.endAdornment}
-                    </React.Fragment>
-                  ),
-                }}
-              />
-            )}
+            renderInput={(params) => {
+              // Backward/forward compatibility for MUI versions
+              const inputProps = (params as any).slotProps?.input || (params as any).InputProps;
+              
+              return (
+                <TextField
+                  {...params}
+                  label="Search User"
+                  fullWidth
+                  slotProps={{
+                    ...(params as any).slotProps,
+                    input: {
+                      ...inputProps,
+                      endAdornment: (
+                        <React.Fragment>
+                          {searching ? <CircularProgress color="inherit" size={20} /> : null}
+                          {inputProps?.endAdornment}
+                        </React.Fragment>
+                      ),
+                    },
+                  }}
+                />
+              );
+            }}
           />
 
           {currentGroup === 'Reviewer' && (
