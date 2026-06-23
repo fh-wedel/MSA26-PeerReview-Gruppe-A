@@ -22,6 +22,8 @@ import {useUserResolver} from "../hooks/useUserResolver";
 
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 
+import {useTopicTags} from "../hooks/useTopicTags";
+
 type ReviewType = string;
 
 interface SubmissionModalProps {
@@ -34,10 +36,11 @@ interface SubmissionModalProps {
     reviewTemplateType: string,
     numberOfReviewers: number,
     submissionDeadline: Date,
-    reviewDeadline: Date
+    reviewDeadline: Date,
+    topicTag: string
   ) => Promise<void>;
   authorName: string;
-    currentUserId: string;
+  currentUserId: string;
 }
 
 export const SubmissionModal: React.FC<SubmissionModalProps> = ({
@@ -62,6 +65,9 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
     const [validationError, setValidationError] = useState("");
 
+  const [topicTag, setTopicTag] = useState<string>("");
+  const { topicTags, loading: tagsLoading } = useTopicTags();
+
   React.useEffect(() => {
     if (error) {
       setErrorOpen(true);
@@ -73,9 +79,10 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
       setValidationError("");
     try {
         const authorIds = selectedAuthors.map(u => u.id);
-        await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline);
+        await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline, topicTag);
       setTitle("");
       setReviewType("SINGLE_BLIND");
+      setTopicTag("");
         setSelectedAuthors([{ id: currentUserId, username: authorName }]);
       onClose();
     } catch (err) {
@@ -177,6 +184,23 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               </Select>
             </FormControl>
 
+            <FormControl fullWidth>
+                <InputLabel id="topic-tag-label">Topic Tag</InputLabel>
+              <Select
+                  labelId="topic-tag-label"
+                  value={topicTag}
+                  label="Topic Tag"
+                  onChange={(e) => setTopicTag(e.target.value as string)}
+                disabled={tagsLoading || submitting}
+              >
+                {topicTags.map((tag) => (
+                  <MenuItem key={tag.tagName} value={tag.tagName || ""}>
+                    {tag.tagName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <TextField
               label="Number of Reviewers"
               type="number"
@@ -220,7 +244,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
             variant="contained"
             color="primary"
             onClick={handleSubmit}
-            disabled={!title || submitting}
+            disabled={!title || !topicTag || submitting}
           >
             {submitting ? "Creating..." : "Create"}
           </Button>

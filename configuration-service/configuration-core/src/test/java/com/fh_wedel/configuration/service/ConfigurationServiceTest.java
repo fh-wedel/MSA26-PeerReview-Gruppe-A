@@ -27,10 +27,14 @@ class ConfigurationServiceTest {
     @Mock
     private SqsTemplate sqsTemplate;
 
+    @Mock
+    private TopicTagService topicTagService;
+
     @Test
     void sendsSubmissionCreatedNotificationToAuthor() throws Exception {
         ConfigurationService service = new ConfigurationService(
                 repository,
+                topicTagService,
                 sqsTemplate,
                 new ObjectMapper(),
                 "matching-request-queue",
@@ -48,7 +52,8 @@ class ConfigurationServiceTest {
                 Instant.now().plusSeconds(7200),
                 List.of("author-sub"),
                 "creator-sub",
-                "Author");
+                "Author",
+                "Java");
 
         // Verify: at least one send to the notification queue with expected content
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);

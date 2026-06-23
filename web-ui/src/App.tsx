@@ -14,6 +14,7 @@ import {SubmissionDetails} from './pages/SubmissionDetails';
 import {ChatProvider} from './contexts/ChatContext';
 import {ChatPage} from './pages/ChatPage';
 import {Admin} from './pages/Admin';
+import {UserManagement} from './pages/UserManagement';
 import {NotificationProvider} from './contexts/NotificationContext';
 
 export const App: React.FC = () => {
@@ -38,6 +39,7 @@ export const App: React.FC = () => {
                 <Route path="/submissions/:submissionId" element={<SubmissionDetails />} />
                 <Route path="/chats" element={<ChatPage />} />
                   <Route path="/admin" element={<Admin/>}/>
+                  <Route path="/users" element={<UserManagement/>}/>
               </Route>
             </Routes>
           </ChatProvider>

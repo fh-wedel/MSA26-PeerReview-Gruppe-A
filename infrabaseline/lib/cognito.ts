@@ -71,6 +71,10 @@ export class CognitoStack extends cdk.Stack {
             standardAttributes: {
                 email: { required: true, mutable: false },
             },
+            customAttributes: {
+                isActive: new cognito.StringAttribute({ mutable: true }),
+                topicTags: new cognito.StringAttribute({ mutable: true, maxLen: 2048 }),
+            },
             signInAliases: {
                 username: true,
                 email: true

@@ -11,6 +11,89 @@
     }
   ],
   "paths": {
+    "/topic-tags": {
+      "get": {
+        "operationId": "listTopicTags",
+        "summary": "List all topic tags",
+        "tags": ["Topic Tags"],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of topic tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopicTagDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addTopicTag",
+        "summary": "Add a new topic tag",
+        "tags": ["Topic Tags"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTopicTagRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Topic tag created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicTagDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or tag already exists"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/topic-tags/{tagName}": {
+      "delete": {
+        "operationId": "deleteTopicTag",
+        "summary": "Delete a topic tag",
+        "tags": ["Topic Tags"],
+        "parameters": [
+          {
+            "name": "tagName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Topic tag deleted"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
     "/submissions": {
       "post": {
         "summary": "Create a new submission configuration",
@@ -429,7 +512,8 @@
           "title",
           "reviewProcessType",
           "reviewTemplateType",
-          "authorIds"
+          "authorIds",
+          "topicTag"
         ],
         "properties": {
           "title": {
@@ -458,6 +542,9 @@
           },
           "reviewTemplateType": {
             "type": "string"
+          },
+          "topicTag": {
+            "type": "string"
           }
         }
       },
@@ -468,7 +555,8 @@
           "reviewProcessType",
           "reviewTemplateType",
           "authorIds",
-          "numberOfExaminers"
+          "numberOfExaminers",
+          "topicTag"
         ],
         "properties": {
           "title": {
@@ -500,6 +588,9 @@
             "format": "date-time"
           },
           "reviewTemplateType": {
+            "type": "string"
+          },
+          "topicTag": {
             "type": "string"
           }
         }
@@ -618,6 +709,30 @@
           "reviewerAnonymous",
           "authorReviewerChatAllowed"
         ]
+      },
+      "TopicTagDto": {
+        "type": "object",
+        "properties": {
+          "tagName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["tagName"]
+      },
+      "CreateTopicTagRequest": {
+        "type": "object",
+        "properties": {
+          "tagName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": ["tagName"]
       }
     }
   }

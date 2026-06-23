@@ -19,8 +19,12 @@
       "type": "integer",
       "minimum": 1,
       "description": "Number of reviewers to assign to this submission."
+    },
+    "topicTag": {
+      "type": "string",
+      "description": "The topic tag associated with the submission for reviewer matching."
     }
   },
-  "required": ["submissionId", "submitterIds", "numberOfExaminers"],
+  "required": ["submissionId", "submitterIds", "numberOfExaminers", "topicTag"],
   "additionalProperties": false
 }

@@ -13,4 +13,5 @@ public class MatchingRequestEvent {
     private String submissionId;
     private List<String> submitterIds;
     private int numberOfExaminers;
+    private String topicTag;
 }

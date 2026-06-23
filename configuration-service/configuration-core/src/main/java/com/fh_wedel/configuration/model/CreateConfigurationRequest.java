@@ -23,5 +23,6 @@ public class CreateConfigurationRequest {
     private Instant submissionDeadline;
     private Instant reviewDeadline;
     private String reviewTemplateType;
+    private String topicTag;
 
 }
