@@ -379,6 +379,60 @@
             "groupName": "Author",
             "actionId": "get /api/configuration/submissions/{submissionId}/rules",
             "description": "Allow Author to GetSubmissionRules"
+        },
+        {
+            "id": "AdminListTopicTags",
+            "groupName": "Admin",
+            "actionId": "get /api/configuration/topic-tags",
+            "description": "Allow Admin to list topic tags"
+        },
+        {
+            "id": "AdminCreateTopicTag",
+            "groupName": "Admin",
+            "actionId": "post /api/configuration/topic-tags",
+            "description": "Allow Admin to create topic tags"
+        },
+        {
+            "id": "AdminDeleteTopicTag",
+            "groupName": "Admin",
+            "actionId": "delete /api/configuration/topic-tags/{tagName}",
+            "description": "Allow Admin to delete topic tags"
+        },
+        {
+            "id": "ExaminationOfficerListTopicTags",
+            "groupName": "ExaminationOfficer",
+            "actionId": "get /api/configuration/topic-tags",
+            "description": "Allow Examination Officer to list topic tags"
+        },
+        {
+            "id": "ExaminationOfficerCreateTopicTag",
+            "groupName": "ExaminationOfficer",
+            "actionId": "post /api/configuration/topic-tags",
+            "description": "Allow Examination Officer to create topic tags"
+        },
+        {
+            "id": "ExaminationOfficerDeleteTopicTag",
+            "groupName": "ExaminationOfficer",
+            "actionId": "delete /api/configuration/topic-tags/{tagName}",
+            "description": "Allow Examination Officer to delete topic tags"
+        },
+        {
+            "id": "TeacherListTopicTags",
+            "groupName": "Teacher",
+            "actionId": "get /api/configuration/topic-tags",
+            "description": "Allow Teacher to list topic tags"
+        },
+        {
+            "id": "ReviewerListTopicTags",
+            "groupName": "Reviewer",
+            "actionId": "get /api/configuration/topic-tags",
+            "description": "Allow Reviewer to list topic tags"
+        },
+        {
+            "id": "AuthorListTopicTags",
+            "groupName": "Author",
+            "actionId": "get /api/configuration/topic-tags",
+            "description": "Allow Author to list topic tags"
         }
     ]
 }
