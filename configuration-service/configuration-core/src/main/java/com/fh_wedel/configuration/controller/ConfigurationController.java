@@ -63,7 +63,8 @@ public class ConfigurationController {
                     request.getReviewDeadline(),
                     request.getAuthorIds(),
                     callerSub,
-                    callerRole
+                    callerRole,
+                    request.getTopicTag()
             );
         } catch (IllegalArgumentException e) {
             log.error("Invalid configuration request", e);

@@ -177,7 +177,8 @@ export const Dashboard: React.FC = () => {
     reviewTemplateType: string,
     numberOfExaminers: number,
     submissionDeadline: Date,
-    reviewDeadline: Date
+    reviewDeadline: Date,
+    topicTag: string
   ) => {
     try {
         const response = await configApiClient.submissions.submissionsCreate({
@@ -188,6 +189,7 @@ export const Dashboard: React.FC = () => {
         numberOfExaminers,
         submissionDeadline: submissionDeadline.toISOString(),
         reviewDeadline: reviewDeadline.toISOString(),
+        topicTag,
       });
 
       if (!response.ok) {

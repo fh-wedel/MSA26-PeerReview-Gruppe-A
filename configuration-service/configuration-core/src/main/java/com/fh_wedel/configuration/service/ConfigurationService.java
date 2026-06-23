@@ -22,17 +22,20 @@ import java.util.UUID;
 public class ConfigurationService {
 
     private final ConfigurationRepository repository;
+    private final TopicTagService topicTagService;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final String matchingQueueName;
     private final String notificationQueueName;
 
     public ConfigurationService(ConfigurationRepository repository,
+                                TopicTagService topicTagService,
                                 SqsTemplate sqsTemplate,
                                 ObjectMapper objectMapper,
                                 @Value("${aws.sqs.matching-request-queue-name}") String matchingQueueName,
                                 @Value("${aws.sqs.notification-queue-name}") String notificationQueueName) {
         this.repository = repository;
+        this.topicTagService = topicTagService;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
         this.matchingQueueName = matchingQueueName;
@@ -46,11 +49,14 @@ public class ConfigurationService {
     public SubmissionConfiguration createConfiguration(String title, String reviewProcessType,
                                                        String reviewTemplateType, int numberOfExaminers,
                                                        Instant submissionDeadline, Instant reviewDeadline,
-                                                       List<String> authorIds, String creatorId, String creatorRole) {
+                                                       List<String> authorIds, String creatorId, String creatorRole,
+                                                       String topicTag) {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
         }
+        
+        topicTagService.validateTag(topicTag);
 
         String submissionId = UUID.randomUUID().toString();
         log.info("Creating submission configuration: id={}, title={}, creatorId={}", submissionId, title, creatorId);
@@ -60,7 +66,7 @@ public class ConfigurationService {
         // 1. Instantiate metadata record
         SubmissionConfiguration config = new SubmissionConfiguration(
                 submissionId, title, reviewProcessType, reviewTemplateType, authorIds, creatorId, creatorRole,
-                numberOfExaminers, submissionDeadline, reviewDeadline
+                numberOfExaminers, submissionDeadline, reviewDeadline, topicTag
         );
 
         // 2. Instantiate author mappings (one for each author ID for indexed query lookup)
@@ -75,7 +81,7 @@ public class ConfigurationService {
         sendSubmissionCreatedNotification(submissionId, authorIds.get(0), title);
 
         // 4. Publish SQS matching request event
-        sendMatchingRequest(submissionId, authorIds, numberOfExaminers);
+        sendMatchingRequest(submissionId, authorIds, numberOfExaminers, topicTag);
 
         return config;
     }
@@ -131,13 +137,13 @@ public class ConfigurationService {
     /**
      * Sends an SQS event to the Matching Service request queue.
      */
-    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers) {
+    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers, String topicTag) {
         if (matchingQueueName == null || matchingQueueName.isBlank()) {
             log.warn("No Matching SQS request queue name defined. Skipping sending matching request event for submission {}", submissionId);
             return;
         }
 
-        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers);
+        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers, topicTag);
 
         try {
             String messageBody = objectMapper.writeValueAsString(event);

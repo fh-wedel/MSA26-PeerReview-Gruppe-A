@@ -130,8 +130,17 @@ public class CognitoService {
                 .build();
         cognitoClient.adminAddUserToGroup(request);
 
-        if (customAttributes != null && !customAttributes.isEmpty()) {
-            updateUserAttributes(username, customAttributes);
+        Map<String, String> attrsToUpdate = new HashMap<>();
+        if (customAttributes != null) {
+            attrsToUpdate.putAll(customAttributes);
+        }
+
+        if ("Reviewer".equalsIgnoreCase(groupName) && !attrsToUpdate.containsKey("isActive")) {
+            attrsToUpdate.put("isActive", "true");
+        }
+
+        if (!attrsToUpdate.isEmpty()) {
+            updateUserAttributes(username, attrsToUpdate);
         }
     }
 

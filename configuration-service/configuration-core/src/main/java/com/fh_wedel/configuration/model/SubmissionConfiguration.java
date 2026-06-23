@@ -42,13 +42,15 @@ public class SubmissionConfiguration {
     private String status; // e.g. CREATED, MATCHED
     @Getter
     private Instant createdAt;
+    @Getter
+    private String topicTag;
 
     public SubmissionConfiguration() {
     }
 
     public SubmissionConfiguration(String submissionId, String title, String reviewProcessType,
                                    String reviewTemplateType, List<String> authorIds, String creatorId, String creatorRole,
-                                   int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline) {
+                                   int numberOfExaminers, Instant submissionDeadline, Instant reviewDeadline, String topicTag) {
         this.pk = PK_PREFIX + submissionId;
         this.sk = SK_VALUE;
         this.submissionId = submissionId;
@@ -63,6 +65,7 @@ public class SubmissionConfiguration {
         this.reviewDeadline = reviewDeadline;
         this.status = "CREATED";
         this.createdAt = Instant.now();
+        this.topicTag = topicTag;
     }
 
     @DynamoDbPartitionKey

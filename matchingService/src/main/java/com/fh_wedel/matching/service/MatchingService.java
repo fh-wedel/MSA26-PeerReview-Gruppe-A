@@ -71,8 +71,10 @@ public class MatchingService {
         List<String> submitterIds = event.getSubmitterIds();
         int numberOfExaminers = event.getNumberOfExaminers();
 
-        log.info("Processing matching request: submissionId={}, submitterIds={}, numberOfExaminers={}",
-                submissionId, submitterIds, numberOfExaminers);
+        String requiredTopic = event.getTopicTag();
+
+        log.info("Processing matching request: submissionId={}, submitterIds={}, numberOfExaminers={}, topicTag={}",
+                submissionId, submitterIds, numberOfExaminers, requiredTopic);
 
         // 1. Fetch all reviewers from User Service
         List<UserProfile> allReviewers = java.util.Collections.emptyList();
@@ -85,11 +87,32 @@ public class MatchingService {
             log.error("Failed to list reviewers via GroupsApi", e);
         }
 
-        // 2. Filter out the submitters (self-review prevention)
+        // 2. Filter out the submitters, inactive reviewers, and those without the required topic tag
         List<UserProfile> eligibleReviewers = allReviewers.stream()
                 .filter(user -> {
                     String sub = user.getSub();
-                    return sub != null && !submitterIds.contains(sub);
+                    if (sub == null || submitterIds.contains(sub)) {
+                        return false;
+                    }
+
+                    Map<String, String> customAttrs = user.getCustomAttributes();
+                    if (customAttrs == null) {
+                        return false;
+                    }
+
+                    String isActiveStr = customAttrs.get("isActive");
+                    boolean isActive = Boolean.parseBoolean(isActiveStr);
+                    if (!isActive) {
+                        return false;
+                    }
+
+                    String topicTagsStr = customAttrs.get("topicTags");
+                    if (topicTagsStr == null || requiredTopic == null) {
+                        return false;
+                    }
+
+                    List<String> tags = java.util.Arrays.asList(topicTagsStr.split("\\s*,\\s*"));
+                    return tags.contains(requiredTopic);
                 })
                 .toList();
 
