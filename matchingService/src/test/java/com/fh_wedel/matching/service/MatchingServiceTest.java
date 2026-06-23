@@ -223,6 +223,7 @@ class MatchingServiceTest {
         event.setSubmissionId(submissionId);
         event.setSubmitterIds(List.of(submitterId));
         event.setNumberOfExaminers(numberOfExaminers);
+        event.setTopicTag("Java");
         return event;
     }
 
@@ -232,6 +233,10 @@ class MatchingServiceTest {
         profile.setSub(sub);
         profile.setEmail(sub + "@test.com");
         profile.setEnabled(true);
+        profile.setCustomAttributes(java.util.Map.of(
+            "isActive", "true",
+            "topicTags", "Java, Spring"
+        ));
         return profile;
     }
 }
