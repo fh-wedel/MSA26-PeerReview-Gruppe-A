@@ -111,8 +111,11 @@ public class MatchingService {
                         return false;
                     }
 
-                    List<String> tags = java.util.Arrays.asList(topicTagsStr.split("\\s*,\\s*"));
-                    return tags.contains(requiredTopic);
+                    String cleanTopicTags = topicTagsStr.replace("[", "").replace("]", "").replace("\"", "");
+                    String cleanRequired = requiredTopic.replace("[", "").replace("]", "").replace("\"", "").trim();
+
+                    List<String> tags = java.util.Arrays.asList(cleanTopicTags.split("\\s*,\\s*"));
+                    return tags.stream().anyMatch(t -> t.trim().equalsIgnoreCase(cleanRequired));
                 })
                 .toList();
 

@@ -133,6 +133,7 @@ export const Navbar: React.FC = () => {
     { label: 'Home', path: '/dashboard', show: true },
     { label: 'Assignments', path: '/assignments', show: hasAdminOrReviewerRole },
     { label: 'Submissions', path: '/submissions', show: hasSubmissionsAccess },
+    { label: 'Users', path: '/users', show: userRoles.includes('admin') || userRoles.includes('examinationofficer') },
     { label: 'Admin', path: '/admin', show: userRoles.includes('admin') },
   ];
 
