@@ -66,6 +66,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const { users: userOptions, loading: usersLoading } = useUserResolver();
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [validationError, setValidationError] = useState("");
 
   const [topicTag, setTopicTag] = useState<string>("");
@@ -121,10 +122,15 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const canEditAuthors = isAdminOrTeacher || (!isFixedAuthors);
 
   const handleSubmit = async () => {
-    if (selectedAuthors.length === 0) {
-      setValidationError("At least one author must be selected.");
+    setHasAttemptedSubmit(true);
+    
+    if (isSubmitDisabled) {
+      if (selectedAuthors.length === 0) {
+        setValidationError("At least one author must be selected.");
+      }
       return;
     }
+    
     if (activeTemplate && activeTemplate.maxAuthors !== undefined && activeTemplate.maxAuthors !== null && selectedAuthors.length > activeTemplate.maxAuthors) {
       setValidationError(`At most ${activeTemplate.maxAuthors} author(s) allowed for this template.`);
       return;
@@ -144,6 +150,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
       setTopicTag("");
       setSelectedAuthors([{ id: currentUserId, username: authorName }]);
       setReviewTemplateType("INDIVIDUAL_WORK");
+      setHasAttemptedSubmit(false);
       onClose();
     } catch (err) {
       console.error("Submission failed:", err);
@@ -169,9 +176,12 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               variant="outlined"
               fullWidth
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (hasAttemptedSubmit) setHasAttemptedSubmit(false);
+              }}
               disabled={submitting}
-              error={!title}
+              error={hasAttemptedSubmit && !title}
               helperText={!title ? "Title is mandatory" : ""}
             />
             
@@ -237,7 +247,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                         label="Authors *"
                         variant="outlined"
                         fullWidth
-                        error={!!validationError}
+                        error={hasAttemptedSubmit && !!validationError}
                         helperText={
                           validationError || 
                           (!canEditAuthors 
@@ -273,13 +283,16 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               </Select>
             </FormControl>
 
-            <FormControl fullWidth error={!topicTag}>
+            <FormControl fullWidth error={hasAttemptedSubmit && !topicTag}>
               <InputLabel id="topic-tag-label">Topic Tag *</InputLabel>
               <Select
                 labelId="topic-tag-label"
                 value={topicTag}
                 label="Topic Tag *"
-                onChange={(e) => setTopicTag(e.target.value as string)}
+                onChange={(e) => {
+                  setTopicTag(e.target.value as string);
+                  if (hasAttemptedSubmit) setHasAttemptedSubmit(false);
+                }}
                 disabled={tagsLoading || submitting}
               >
                 {topicTags.map((tag) => (
@@ -337,13 +350,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               variant="contained"
               color="primary"
               onClick={handleSubmit}
-              disabled={isSubmitDisabled}
+              disabled={submitting}
             >
               {submitting ? "Creating..." : "Create"}
             </Button>
-            {isSubmitDisabled && !submitting && (
+            {hasAttemptedSubmit && isSubmitDisabled && !submitting && (
               <Typography variant="caption" color="error" sx={{ position: 'absolute', bottom: -20, right: 0, width: 'max-content' }}>
-                Please fill mandatory fields
+                Please fill mandatory fields correctly
               </Typography>
             )}
           </Box>
