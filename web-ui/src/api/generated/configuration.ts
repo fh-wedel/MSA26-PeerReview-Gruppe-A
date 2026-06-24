@@ -63,6 +63,12 @@ export interface ReviewTemplateDto {
   description: string;
   evaluationCriteriaVisibleToAuthors: boolean;
   feedbackFormTemplate: ReviewQuestionDto[];
+  minAuthors?: number;
+  maxAuthors?: number;
+  minReviewers?: number;
+  maxReviewers?: number;
+  submissionDurationDays?: number;
+  reviewDurationDays?: number;
 }
 
 /** The anonymity and communication rules of a workflow plugin */

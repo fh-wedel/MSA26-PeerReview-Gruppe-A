@@ -677,6 +677,24 @@
             "items": {
               "$ref": "#/components/schemas/ReviewQuestionDto"
             }
+          },
+          "minAuthors": {
+            "type": "integer"
+          },
+          "maxAuthors": {
+            "type": "integer"
+          },
+          "minReviewers": {
+            "type": "integer"
+          },
+          "maxReviewers": {
+            "type": "integer"
+          },
+          "submissionDurationDays": {
+            "type": "integer"
+          },
+          "reviewDurationDays": {
+            "type": "integer"
           }
         },
         "required": [

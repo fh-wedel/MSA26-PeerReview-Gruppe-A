@@ -1,4 +1,4 @@
-package com.fh_wedel.configuration.plugin.bachelorthesis;
+package com.fh_wedel.configuration.plugin.masterthesis;
 
 import com.fh_wedel.configuration.api.ReviewTemplatePlugin;
 import com.fh_wedel.configuration.api.model.ReviewGrade;
@@ -7,21 +7,21 @@ import com.fh_wedel.configuration.api.model.ReviewResponse;
 
 import java.util.List;
 
-public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
+public class MasterThesisTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public String getTitle() {
-        return "Bachelor Thesis";
+        return "Master Thesis";
     }
 
     @Override
     public String getName() {
-        return "BACHELOR_THESIS";
+        return "MASTER_THESIS";
     }
 
     @Override
     public String getDescription() {
-        return "Review template tailored for bachelor theses.";
+        return "Review template tailored for master theses.";
     }
 
     @Override
@@ -51,12 +51,12 @@ public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public Integer getSubmissionDurationDays() {
-        return 90;
+        return 180;
     }
 
     @Override
     public Integer getReviewDurationDays() {
-        return 60;
+        return 90;
     }
 
     @Override
@@ -93,6 +93,6 @@ public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
             }
         }
 
-        return ReviewGrade.of(totalPoints, maxPoints, "Bachelor Thesis Evaluation");
+        return ReviewGrade.of(totalPoints, maxPoints, "Master Thesis Evaluation");
     }
 }

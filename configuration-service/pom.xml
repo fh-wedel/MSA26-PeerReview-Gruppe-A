@@ -30,5 +30,7 @@
         <module>configuration-template-individual-work</module>
         <module>configuration-template-group-work</module>
         <module>configuration-template-bachelor-thesis</module>
+        <module>configuration-template-master-thesis</module>
+        <module>configuration-template-seminar</module>
     </modules>
 </project>

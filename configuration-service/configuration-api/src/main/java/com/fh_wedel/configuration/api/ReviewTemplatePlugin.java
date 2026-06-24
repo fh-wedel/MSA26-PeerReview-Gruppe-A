@@ -23,6 +23,15 @@ public interface ReviewTemplatePlugin {
 
     boolean isEvaluationCriteriaVisibleToAuthors();
 
+    // ── Constraints ───────────────────────────────────────────────────
+
+    Integer getMinAuthors();
+    Integer getMaxAuthors();
+    Integer getMinReviewers();
+    Integer getMaxReviewers();
+    Integer getSubmissionDurationDays();
+    Integer getReviewDurationDays();
+
     // ── Feedback form ─────────────────────────────────────────────────
 
     List<ReviewQuestion> getFeedbackFormTemplate();

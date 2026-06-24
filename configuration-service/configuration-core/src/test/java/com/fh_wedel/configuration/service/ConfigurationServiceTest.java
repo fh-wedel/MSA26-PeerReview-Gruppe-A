@@ -17,12 +17,18 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import com.fh_wedel.configuration.api.ReviewTemplatePlugin;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigurationServiceTest {
 
     @Mock
     private ConfigurationRepository repository;
+
+    @Mock
+    private PluginService pluginService;
 
     @Mock
     private SqsTemplate sqsTemplate;
@@ -34,6 +40,7 @@ class ConfigurationServiceTest {
     void sendsSubmissionCreatedNotificationToAuthor() throws Exception {
         ConfigurationService service = new ConfigurationService(
                 repository,
+                pluginService,
                 topicTagService,
                 sqsTemplate,
                 new ObjectMapper(),
@@ -42,6 +49,13 @@ class ConfigurationServiceTest {
 
         // saveConfiguration does nothing in our mock (void method)
         doNothing().when(repository).saveConfiguration(any(), any());
+
+        ReviewTemplatePlugin mockPlugin = org.mockito.Mockito.mock(ReviewTemplatePlugin.class);
+        when(mockPlugin.getMinAuthors()).thenReturn(1);
+        when(mockPlugin.getMaxAuthors()).thenReturn(5);
+        when(mockPlugin.getMinReviewers()).thenReturn(1);
+        when(mockPlugin.getMaxReviewers()).thenReturn(5);
+        when(pluginService.getReviewTemplate("STANDARD")).thenReturn(Optional.of(mockPlugin));
 
         service.createConfiguration(
                 "My Thesis",
