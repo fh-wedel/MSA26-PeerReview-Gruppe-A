@@ -66,7 +66,7 @@ export const Dashboard: React.FC = () => {
 
   const roles = (user?.roles || []).map((r) => r.toLowerCase());
   const hasAuthorOrAdminRole =
-    roles.includes("admin") || roles.includes("author");
+    roles.includes("admin") || roles.includes("author") || roles.includes("teacher") || roles.includes("examinationofficer");
 
   const fetchTasks = async () => {
     if (!user) return;
@@ -178,7 +178,8 @@ export const Dashboard: React.FC = () => {
     numberOfExaminers: number,
     submissionDeadline: Date,
     reviewDeadline: Date,
-    topicTag: string
+    topicTag: string,
+    customReviewerIds: string[]
   ) => {
     try {
         const response = await configApiClient.submissions.submissionsCreate({
@@ -190,6 +191,7 @@ export const Dashboard: React.FC = () => {
         submissionDeadline: submissionDeadline.toISOString(),
         reviewDeadline: reviewDeadline.toISOString(),
         topicTag,
+        customReviewerIds,
       });
 
       if (!response.ok) {

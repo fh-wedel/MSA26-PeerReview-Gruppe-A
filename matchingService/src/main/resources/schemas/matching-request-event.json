@@ -23,6 +23,13 @@
     "topicTag": {
       "type": "string",
       "description": "The topic tag associated with the submission for reviewer matching."
+    },
+    "customReviewerIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of specific reviewer IDs to assign, bypassing the automatic matching process."
     }
   },
   "required": ["submissionId", "submitterIds", "numberOfExaminers", "topicTag"],

@@ -55,7 +55,7 @@ public class ConfigurationService {
                                                        String reviewTemplateType, int numberOfExaminers,
                                                        Instant submissionDeadline, Instant reviewDeadline,
                                                        List<String> authorIds, String creatorId, String creatorRole,
-                                                       String topicTag) {
+                                                       String topicTag, List<String> customReviewerIds) {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
@@ -71,6 +71,13 @@ public class ConfigurationService {
         }
         if (plugin.getMaxAuthors() != null && authorIds.size() > plugin.getMaxAuthors()) {
             throw new IllegalArgumentException("Template allows at most " + plugin.getMaxAuthors() + " author(s).");
+        }
+
+        if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
+            boolean isTeacherOrAdmin = "Teacher".equals(creatorRole) || "Admin".equals(creatorRole) || "ExaminationOfficer".equals(creatorRole);
+            if (!isTeacherOrAdmin && !plugin.isAllowAuthorCustomReviewer()) {
+                throw new IllegalArgumentException("Authors are not allowed to specify custom reviewers for this template type.");
+            }
         }
 
         if (plugin.getMinReviewers() != null && numberOfExaminers < plugin.getMinReviewers()) {
@@ -113,7 +120,7 @@ public class ConfigurationService {
         sendSubmissionCreatedNotification(submissionId, authorIds.get(0), title);
 
         // 4. Publish SQS matching request event
-        sendMatchingRequest(submissionId, authorIds, numberOfExaminers, topicTag);
+        sendMatchingRequest(submissionId, authorIds, numberOfExaminers, topicTag, customReviewerIds);
 
         return config;
     }
@@ -169,13 +176,13 @@ public class ConfigurationService {
     /**
      * Sends an SQS event to the Matching Service request queue.
      */
-    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers, String topicTag) {
+    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers, String topicTag, List<String> customReviewerIds) {
         if (matchingQueueName == null || matchingQueueName.isBlank()) {
             log.warn("No Matching SQS request queue name defined. Skipping sending matching request event for submission {}", submissionId);
             return;
         }
 
-        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers, topicTag);
+        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers, topicTag, customReviewerIds);
 
         try {
             String messageBody = objectMapper.writeValueAsString(event);

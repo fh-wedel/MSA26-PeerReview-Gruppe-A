@@ -107,4 +107,9 @@ public class IndividualWorkTemplatePlugin implements ReviewTemplatePlugin {
 
         return ReviewGrade.of(totalPoints, maxPoints, "Calculated grade based on Double-Blind rubric");
     }
+
+    @Override
+    public boolean isAllowAuthorCustomReviewer() {
+        return true;
+    }
 }

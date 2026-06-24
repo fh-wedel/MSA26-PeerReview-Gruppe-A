@@ -125,7 +125,7 @@ export const Navbar: React.FC = () => {
   };
 
   const userRoles = (user?.roles || []).map(r => r.toLowerCase());
-  const hasSubmissionsAccess = userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('author');
+  const hasSubmissionsAccess = userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('teacher') || userRoles.includes('author');
   const hasAdminOrReviewerRole = userRoles.includes('admin') || userRoles.includes('reviewer');
 
   // Build navigation items for reuse in both desktop and drawer
@@ -133,7 +133,7 @@ export const Navbar: React.FC = () => {
     { label: 'Home', path: '/dashboard', show: true },
     { label: 'Assignments', path: '/assignments', show: hasAdminOrReviewerRole },
     { label: 'Submissions', path: '/submissions', show: hasSubmissionsAccess },
-    { label: 'Users', path: '/users', show: userRoles.includes('admin') || userRoles.includes('examinationofficer') },
+    { label: 'Users', path: '/users', show: userRoles.includes('admin') || userRoles.includes('examinationofficer') || userRoles.includes('teacher') },
     { label: 'Admin', path: '/admin', show: userRoles.includes('admin') },
   ];
 

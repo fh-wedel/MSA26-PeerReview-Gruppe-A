@@ -76,73 +76,97 @@ public class MatchingService {
         log.info("Processing matching request: submissionId={}, submitterIds={}, numberOfExaminers={}, topicTag={}",
                 submissionId, submitterIds, numberOfExaminers, requiredTopic);
 
-        // 1. Fetch all reviewers from User Service
+        List<String> customReviewerIds = event.getCustomReviewerIds();
+        boolean bypassMatching = customReviewerIds != null && !customReviewerIds.isEmpty();
+
+        // 1. Fetch all reviewers from User Service (only if we need to match)
         List<UserProfile> allReviewers = java.util.Collections.emptyList();
-        try {
-            var response = groupsApi.listGroupMembers("Reviewer");
-            if (response != null && response.getUsers() != null) {
-                allReviewers = response.getUsers();
+        if (!bypassMatching) {
+            try {
+                var response = groupsApi.listGroupMembers("Reviewer");
+                if (response != null && response.getUsers() != null) {
+                    allReviewers = response.getUsers();
+                }
+            } catch (Exception e) {
+                log.error("Failed to list reviewers via GroupsApi", e);
             }
-        } catch (Exception e) {
-            log.error("Failed to list reviewers via GroupsApi", e);
         }
 
         // 2. Filter out the submitters, inactive reviewers, and those without the required topic tag
-        List<UserProfile> eligibleReviewers = allReviewers.stream()
-                .filter(user -> {
-                    String sub = user.getSub();
-                    if (sub == null || submitterIds.contains(sub)) {
-                        return false;
-                    }
+        List<UserProfile> eligibleReviewers = java.util.Collections.emptyList();
+        
+        if (!bypassMatching) {
+            eligibleReviewers = allReviewers.stream()
+                    .filter(user -> {
+                        String sub = user.getSub();
+                        if (sub == null || submitterIds.contains(sub)) {
+                            return false;
+                        }
 
-                    Map<String, String> customAttrs = user.getCustomAttributes();
-                    if (customAttrs == null) {
-                        return false;
-                    }
+                        Map<String, String> customAttrs = user.getCustomAttributes();
+                        if (customAttrs == null) {
+                            return false;
+                        }
 
-                    String isActiveStr = customAttrs.get("isActive");
-                    boolean isActive = Boolean.parseBoolean(isActiveStr);
-                    if (!isActive) {
-                        return false;
-                    }
+                        String isActiveStr = customAttrs.get("isActive");
+                        boolean isActive = Boolean.parseBoolean(isActiveStr);
+                        if (!isActive) {
+                            return false;
+                        }
 
-                    String topicTagsStr = customAttrs.get("topicTags");
-                    if (topicTagsStr == null || requiredTopic == null) {
-                        return false;
-                    }
+                        String topicTagsStr = customAttrs.get("topicTags");
+                        if (topicTagsStr == null || requiredTopic == null) {
+                            return false;
+                        }
 
-                    String cleanTopicTags = topicTagsStr.replace("[", "").replace("]", "").replace("\"", "");
-                    String cleanRequired = requiredTopic.replace("[", "").replace("]", "").replace("\"", "").trim();
+                        String cleanTopicTags = topicTagsStr.replace("[", "").replace("]", "").replace("\"", "");
+                        String cleanRequired = requiredTopic.replace("[", "").replace("]", "").replace("\"", "").trim();
 
-                    List<String> tags = java.util.Arrays.asList(cleanTopicTags.split("\\s*,\\s*"));
-                    return tags.stream().anyMatch(t -> t.trim().equalsIgnoreCase(cleanRequired));
-                })
-                .toList();
+                        List<String> tags = java.util.Arrays.asList(cleanTopicTags.split("\\s*,\\s*"));
+                        return tags.stream().anyMatch(t -> t.trim().equalsIgnoreCase(cleanRequired));
+                    })
+                    .toList();
 
-        log.info("Found {} total reviewers, {} eligible (after excluding submitters {})",
-                allReviewers.size(), eligibleReviewers.size(), submitterIds);
+            log.info("Found {} total reviewers, {} eligible (after excluding submitters {})",
+                    allReviewers.size(), eligibleReviewers.size(), submitterIds);
 
-        // 3. Check if we have enough eligible reviewers
-        if (eligibleReviewers.size() < numberOfExaminers) {
-            String reason = String.format(
-                    "Not enough eligible reviewers. Required: %d, available: %d (total: %d, excluded submitters: %s)",
-                    numberOfExaminers, eligibleReviewers.size(), allReviewers.size(), submitterIds);
+            // 3. Check if we have enough eligible reviewers
+            if (eligibleReviewers.size() < numberOfExaminers) {
+                String reason = String.format(
+                        "Not enough eligible reviewers. Required: %d, available: %d (total: %d, excluded submitters: %s)",
+                        numberOfExaminers, eligibleReviewers.size(), allReviewers.size(), submitterIds);
 
-            log.warn("Matching FAILED for submission {}: {}", submissionId, reason);
+                log.warn("Matching FAILED for submission {}: {}", submissionId, reason);
 
-            SubmissionStatusRecord failedStatus = new SubmissionStatusRecord(
-                    submissionId, submitterIds, MatchStatus.FAILED, numberOfExaminers, reason);
-            matchRepository.saveStatus(failedStatus);
+                SubmissionStatusRecord failedStatus = new SubmissionStatusRecord(
+                        submissionId, submitterIds, MatchStatus.FAILED, numberOfExaminers, reason);
+                matchRepository.saveStatus(failedStatus);
 
-            for (String sId : submitterIds) {
-                sendInAppNotification(sId, "Matching Failed",
-                        "Matching failed for your submission: " + reason, submissionId);
+                for (String sId : submitterIds) {
+                    sendInAppNotification(sId, "Matching Failed",
+                            "Matching failed for your submission: " + reason, submissionId);
+                }
+                return; // No SQS event on failure
             }
-            return; // No SQS event on failure
         }
 
-        // 4. Randomly select the required number of reviewers
-        List<UserProfile> selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
+        // 4. Randomly select the required number of reviewers (or use custom reviewers if provided)
+        List<String> customReviewerIds = event.getCustomReviewerIds();
+        List<UserProfile> selectedReviewers = new ArrayList<>();
+        
+        if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
+            log.info("Bypassing random matching because custom reviewers were provided: {}", customReviewerIds);
+            for (String customId : customReviewerIds) {
+                UserProfile dummyProfile = new UserProfile();
+                dummyProfile.setSub(customId);
+                dummyProfile.setUsername("CustomReviewer");
+                selectedReviewers.add(dummyProfile);
+            }
+            // Update numberOfExaminers to match the provided list
+            numberOfExaminers = customReviewerIds.size();
+        } else {
+            selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
+        }
 
         // 5. Create match records
         List<MatchRecord> matchRecords = new ArrayList<>();

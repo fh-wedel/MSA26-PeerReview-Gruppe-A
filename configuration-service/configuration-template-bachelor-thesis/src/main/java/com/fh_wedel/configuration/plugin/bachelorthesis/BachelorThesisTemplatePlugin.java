@@ -93,6 +93,11 @@ public class BachelorThesisTemplatePlugin implements ReviewTemplatePlugin {
             }
         }
 
-        return ReviewGrade.of(totalPoints, maxPoints, "Bachelor Thesis Evaluation");
+        return ReviewGrade.of(totalPoints, maxPoints, "Calculated grade based on Bachelor Thesis rubric");
+    }
+
+    @Override
+    public boolean isAllowAuthorCustomReviewer() {
+        return true;
     }
 }

@@ -22,6 +22,7 @@ export interface CreateConfigurationRequest {
   reviewDeadline?: string;
   reviewTemplateType: string;
   topicTag: string;
+  customReviewerIds?: string[];
 }
 
 export interface Configuration {
@@ -69,6 +70,7 @@ export interface ReviewTemplateDto {
   maxReviewers?: number;
   submissionDurationDays?: number;
   reviewDurationDays?: number;
+  allowAuthorCustomReviewer: boolean;
 }
 
 /** The anonymity and communication rules of a workflow plugin */

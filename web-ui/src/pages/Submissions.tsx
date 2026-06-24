@@ -42,8 +42,8 @@ export const Submissions: React.FC = () => {
   const [allSortDir, setAllSortDir] = useState<SortDirection>('desc');
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
-  const hasAccess = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('author');
-  const hasOverviewAccess = roles.includes('admin') || roles.includes('examinationofficer');
+  const hasAccess = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('teacher') || roles.includes('author');
+  const hasOverviewAccess = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('teacher');
 
   if (!hasAccess) {
     return (
@@ -52,7 +52,7 @@ export const Submissions: React.FC = () => {
           Submissions
         </Typography>
         <Alert severity="error">
-          You are not authorized to view this page. This area is restricted to Administrators, Examination Officers, and Authors.
+          You are not authorized to view this page. This area is restricted to Administrators, Examination Officers, Teachers, and Authors.
         </Alert>
       </Box>
     );

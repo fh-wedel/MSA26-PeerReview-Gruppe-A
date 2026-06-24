@@ -37,7 +37,8 @@ interface SubmissionModalProps {
     numberOfReviewers: number,
     submissionDeadline: Date,
     reviewDeadline: Date,
-    topicTag: string
+    topicTag: string,
+    customReviewerIds: string[]
   ) => Promise<void>;
   authorName: string;
   currentUserId: string;
@@ -57,6 +58,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const [title, setTitle] = useState("");
   const [reviewType, setReviewType] = useState<ReviewType>("SINGLE_BLIND");
   const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ id: currentUserId, username: authorName }]);
+  const [selectedCustomReviewers, setSelectedCustomReviewers] = useState<UserSummary[]>([]);
   const { types, templates, loading, error } = useWorkflowPlugins();
   const [reviewTemplateType, setReviewTemplateType] = useState<string>("INDIVIDUAL_WORK");
   const [numberOfReviewers, setNumberOfReviewers] = useState<number>(1);
@@ -117,9 +119,10 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const isFixedDeadlines = activeTemplate ? (activeTemplate.submissionDurationDays !== undefined && activeTemplate.submissionDurationDays !== null) : false;
 
   const roles = (user?.roles || []).map(r => r.toLowerCase());
-  const isAdminOrTeacher = roles.includes('admin') || roles.includes('examinationofficer');
+  const isAdminOrTeacher = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('teacher');
   
   const canEditAuthors = isAdminOrTeacher || (!isFixedAuthors);
+  const canAddCustomReviewer = isAdminOrTeacher || (activeTemplate?.allowAuthorCustomReviewer ?? false);
 
   const handleSubmit = async () => {
     setHasAttemptedSubmit(true);
@@ -144,11 +147,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     setValidationError("");
     try {
       const authorIds = selectedAuthors.map(u => u.id);
-      await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline, topicTag);
+      const customReviewerIds = selectedCustomReviewers.map(u => u.id);
+      await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline, topicTag, customReviewerIds);
       setTitle("");
       setReviewType("SINGLE_BLIND");
       setTopicTag("");
       setSelectedAuthors([{ id: currentUserId, username: authorName }]);
+      setSelectedCustomReviewers([]);
       setReviewTemplateType("INDIVIDUAL_WORK");
       setHasAttemptedSubmit(false);
       onClose();
@@ -257,6 +262,30 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                     />
                 )}
             />
+
+            {canAddCustomReviewer && (
+              <Autocomplete
+                  multiple
+                  options={userOptions}
+                  getOptionLabel={(option) => option.username}
+                  value={selectedCustomReviewers}
+                  onChange={(_, newValue) => {
+                      setSelectedCustomReviewers(newValue);
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  disabled={submitting}
+                  loading={usersLoading}
+                  renderInput={(params) => (
+                      <TextField
+                          {...params}
+                          label="Custom Reviewers (Optional)"
+                          variant="outlined"
+                          fullWidth
+                          helperText="Select specific reviewers to bypass the automatic matching process."
+                      />
+                  )}
+              />
+            )}
             
             <FormControl fullWidth>
               <InputLabel id="review-type-label">Review Type</InputLabel>

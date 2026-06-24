@@ -39,4 +39,14 @@ public interface ReviewTemplatePlugin {
     // ── Grading logic ─────────────────────────────────────────────────
 
     ReviewGrade calculateGrade(List<ReviewResponse> responses);
+    
+    // ── Custom Reviewer ───────────────────────────────────────────────
+
+    /**
+     * @return true if the author is allowed to select custom reviewers for this template.
+     * Teacher/Admin can always select custom reviewers regardless of this setting.
+     */
+    default boolean isAllowAuthorCustomReviewer() {
+        return false;
+    }
 }

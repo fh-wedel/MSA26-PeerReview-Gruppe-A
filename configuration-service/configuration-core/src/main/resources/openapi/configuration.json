@@ -545,6 +545,12 @@
           },
           "topicTag": {
             "type": "string"
+          },
+          "customReviewerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -695,6 +701,9 @@
           },
           "reviewDurationDays": {
             "type": "integer"
+          },
+          "allowAuthorCustomReviewer": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -702,7 +711,8 @@
           "title",
           "description",
           "evaluationCriteriaVisibleToAuthors",
-          "feedbackFormTemplate"
+          "feedbackFormTemplate",
+          "allowAuthorCustomReviewer"
         ]
       },
       "ReviewRulesDto": {

@@ -93,6 +93,11 @@ public class MasterThesisTemplatePlugin implements ReviewTemplatePlugin {
             }
         }
 
-        return ReviewGrade.of(totalPoints, maxPoints, "Master Thesis Evaluation");
+        return ReviewGrade.of(totalPoints, maxPoints, "Calculated grade based on Master Thesis rubric");
+    }
+
+    @Override
+    public boolean isAllowAuthorCustomReviewer() {
+        return true;
     }
 }
