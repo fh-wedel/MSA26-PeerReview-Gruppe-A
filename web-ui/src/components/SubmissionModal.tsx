@@ -19,7 +19,6 @@ import {
   Typography,
 } from "@mui/material";
 import type {UserSummary} from "../api/communication";
-import {useUserResolver} from "../hooks/useUserResolver";
 import {useGroupMembers} from "../hooks/useGroupMembers";
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 import {useTopicTags} from "../hooks/useTopicTags";
@@ -66,8 +65,6 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const [numberOfReviewers, setNumberOfReviewers] = useState<number>(1);
   const [submissionDeadline, setSubmissionDeadline] = useState<Date>(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
   const [reviewDeadline, setReviewDeadline] = useState<Date>(new Date(Date.now() + 28 * 24 * 60 * 60 * 1000));
-  
-  const { users: userOptions, loading: usersLoading } = useUserResolver();
   const { members: authorOptions, loading: authorsLoading } = useGroupMembers('Author');
   const { members: reviewerOptions, loading: reviewersLoading } = useGroupMembers('Reviewer');
   const [errorOpen, setErrorOpen] = useState(false);
