@@ -135,6 +135,9 @@ export class ApiStack extends cdk.Stack {
             ipv6AllowedForDualStack: true,
             securityGroups: [lambdaSg],
             logGroup: logGroup,
+            currentVersionOptions: {
+                provisionedConcurrentExecutions: 5,
+            },
         });
 
         proxyLambda.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
@@ -171,6 +174,9 @@ export class ApiStack extends cdk.Stack {
                 timeout: cdk.Duration.seconds(10),
                 memorySize: 256,
                 logGroup: authorizerLogGroup,
+                currentVersionOptions: {
+                    provisionedConcurrentExecutions: 5,
+                },
             });
 
             authorizerLambdaObj.addToRolePolicy(
@@ -180,11 +186,11 @@ export class ApiStack extends cdk.Stack {
                 }),
             );
 
-            authorizerLambdaArn = authorizerLambdaObj.functionArn;
+            authorizerLambdaArn = authorizerLambdaObj.currentVersion.functionArn;
         }
 
         if (props.openApiSpecPath) {
-            api = this.createApiFromOpenApiSpec(props.apiName, props.openApiSpecPath, props.description, proxyLambda.functionArn, authorizerConfig, authorizerLambdaArn);
+            api = this.createApiFromOpenApiSpec(props.apiName, props.openApiSpecPath, props.description, proxyLambda.currentVersion.functionArn, authorizerConfig, authorizerLambdaArn);
         } else {
             api = new apigateway.RestApi(this, 'RestApi', {
                 restApiName: props.apiName,
@@ -201,7 +207,7 @@ export class ApiStack extends cdk.Stack {
         let authorizer: apigateway.RequestAuthorizer | undefined;
         if (authorizerConfig && authorizerLambdaObj) {
             authorizer = new apigateway.RequestAuthorizer(this, 'VerifiedPermissionsAuthorizer', {
-                handler: authorizerLambdaObj,
+                handler: authorizerLambdaObj.currentVersion,
                 identitySources: [apigateway.IdentitySource.header('Authorization')],
                 resultsCacheTtl: cdk.Duration.seconds(authorizerConfig.cacheTtlSeconds ?? 0),
             });
@@ -213,7 +219,7 @@ export class ApiStack extends cdk.Stack {
             });
         }
 
-        const integration = new apigateway.LambdaIntegration(proxyLambda, {
+        const integration = new apigateway.LambdaIntegration(proxyLambda.currentVersion, {
             proxy: true,
         });
 

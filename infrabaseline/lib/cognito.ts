@@ -62,6 +62,9 @@ export class CognitoStack extends cdk.Stack {
                     return event;
                 };
             `),
+            currentVersionOptions: {
+                provisionedConcurrentExecutions: 5,
+            },
         });
 
         const userPool = new cognito.UserPool(this, 'UserPool', {
@@ -90,7 +93,7 @@ export class CognitoStack extends cdk.Stack {
                 emailStyle: cognito.VerificationEmailStyle.LINK,
             },
             lambdaTriggers: {
-                customMessage: customMessageLambda,
+                customMessage: customMessageLambda.currentVersion,
             },
         });
 
