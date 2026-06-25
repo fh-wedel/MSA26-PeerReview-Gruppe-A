@@ -44,7 +44,7 @@
 
 #statutory-declaration((
   (name: "Matthias Matthies"),
-  (name: "Max Mustermann"),
+  (name: "Marcel Ossig"),
   (name: "Erika Musterfrau"),
   (name: "John Doe"),
 ))
