@@ -90,7 +90,7 @@ public class UserController {
      * List members of a specific group. Admin/ExaminationOfficer only.
      */
     @GetMapping("/groups/{groupName}/members")
-    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer')")
+    @PreAuthorize("hasAnyRole('Admin', 'ExaminationOfficer', 'Teacher', 'Author')")
     public ResponseEntity<UserProfileListResponse> listGroupMembers(@PathVariable("groupName") String groupName) {
         log.info("Request received: GET /groups/{}/members", groupName);
         List<UserType> users = userService.listGroupMembers(groupName);

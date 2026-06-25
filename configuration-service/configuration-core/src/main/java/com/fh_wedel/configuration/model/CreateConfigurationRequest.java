@@ -24,5 +24,6 @@ public class CreateConfigurationRequest {
     private Instant reviewDeadline;
     private String reviewTemplateType;
     private String topicTag;
+    private List<String> customReviewerIds;
 
 }

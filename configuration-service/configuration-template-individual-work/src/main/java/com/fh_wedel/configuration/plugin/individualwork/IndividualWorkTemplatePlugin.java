@@ -30,6 +30,36 @@ public class IndividualWorkTemplatePlugin implements ReviewTemplatePlugin {
     }
 
     @Override
+    public Integer getMinAuthors() {
+        return 1;
+    }
+
+    @Override
+    public Integer getMaxAuthors() {
+        return 1;
+    }
+
+    @Override
+    public Integer getMinReviewers() {
+        return 1;
+    }
+
+    @Override
+    public Integer getMaxReviewers() {
+        return null;
+    }
+
+    @Override
+    public Integer getSubmissionDurationDays() {
+        return null;
+    }
+
+    @Override
+    public Integer getReviewDurationDays() {
+        return null;
+    }
+
+    @Override
     public List<ReviewQuestion> getFeedbackFormTemplate() {
         return List.of(
                 ReviewQuestion.rating("originality", "Originality", 10),
@@ -76,5 +106,10 @@ public class IndividualWorkTemplatePlugin implements ReviewTemplatePlugin {
         }
 
         return ReviewGrade.of(totalPoints, maxPoints, "Calculated grade based on Double-Blind rubric");
+    }
+
+    @Override
+    public boolean isAllowAuthorCustomReviewer() {
+        return true;
     }
 }

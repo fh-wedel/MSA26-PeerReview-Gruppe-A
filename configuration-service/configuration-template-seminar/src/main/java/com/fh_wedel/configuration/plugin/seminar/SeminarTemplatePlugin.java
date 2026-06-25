@@ -1,4 +1,4 @@
-package com.fh_wedel.configuration.plugin.groupwork;
+package com.fh_wedel.configuration.plugin.seminar;
 
 import com.fh_wedel.configuration.api.ReviewTemplatePlugin;
 import com.fh_wedel.configuration.api.model.ReviewGrade;
@@ -7,21 +7,21 @@ import com.fh_wedel.configuration.api.model.ReviewResponse;
 
 import java.util.List;
 
-public class GroupWorkTemplatePlugin implements ReviewTemplatePlugin {
+public class SeminarTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public String getTitle() {
-        return "Group Work";
+        return "Seminar";
     }
 
     @Override
     public String getName() {
-        return "GROUP_WORK";
+        return "SEMINAR";
     }
 
     @Override
     public String getDescription() {
-        return "Review template tailored for collaborative papers and group projects.";
+        return "Review template tailored for seminars.";
     }
 
     @Override
@@ -36,7 +36,7 @@ public class GroupWorkTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public Integer getMaxAuthors() {
-        return null;
+        return 1;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class GroupWorkTemplatePlugin implements ReviewTemplatePlugin {
 
     @Override
     public Integer getMaxReviewers() {
-        return null;
+        return 1;
     }
 
     @Override
@@ -62,38 +62,30 @@ public class GroupWorkTemplatePlugin implements ReviewTemplatePlugin {
     @Override
     public List<ReviewQuestion> getFeedbackFormTemplate() {
         return List.of(
-                ReviewQuestion.rating("content_argumentation", "Content & Argumentation", 10),
-                ReviewQuestion.rating("structure_organization", "Structure & Organization", 10),
-                ReviewQuestion.rating("clarity_writing", "Clarity & Writing", 10),
-                ReviewQuestion.text("teamwork_assessment", "Teamwork Assessment", 5),
-                ReviewQuestion.text("strengths", "Strengths", 0),
-                ReviewQuestion.text("improvements", "Improvements", 0)
+                ReviewQuestion.rating("content_structure", "Content & Structure", 20),
+                ReviewQuestion.rating("presentation", "Presentation", 20),
+                ReviewQuestion.rating("discussion", "Discussion & Q&A", 10),
+                ReviewQuestion.text("overall_feedback", "Overall Feedback", 0)
         );
     }
 
     @Override
     public ReviewGrade calculateGrade(List<ReviewResponse> responses) {
         int totalPoints = 0;
-        int maxPoints = 35;
+        int maxPoints = 50;
 
         for (ReviewResponse response : responses) {
             switch (response.questionId()) {
-                case "content_argumentation":
-                case "structure_organization":
-                case "clarity_writing":
+                case "content_structure":
+                case "presentation":
+                case "discussion":
                     if (response.numericValue() != null) {
                         totalPoints += response.numericValue();
                     }
                     break;
-                case "teamwork_assessment":
-                    if (response.textValue() != null && !response.textValue().isBlank()) {
-                        totalPoints += 5; // Fixed points if filled out
-                    }
-                    break;
-                // strengths and improvements contribute 0 points
             }
         }
 
-        return ReviewGrade.of(totalPoints, maxPoints, "Group Project Evaluation");
+        return ReviewGrade.of(totalPoints, maxPoints, "Seminar Evaluation");
     }
 }

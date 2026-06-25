@@ -39,6 +39,11 @@
         { "id": "AdminInboxReadOne",         "groupName": "Admin",              "actionId": "patch /api/notification/{id}/read",   "description": "Allow Admin to mark one read" },
         { "id": "AuthorInboxReadOne",        "groupName": "Author",             "actionId": "patch /api/notification/{id}/read",   "description": "Allow Author to mark one read" },
         { "id": "ReviewerInboxReadOne",      "groupName": "Reviewer",           "actionId": "patch /api/notification/{id}/read",   "description": "Allow Reviewer to mark one read" },
-        { "id": "ExaminerInboxReadOne",      "groupName": "ExaminationOfficer", "actionId": "patch /api/notification/{id}/read",   "description": "Allow ExaminationOfficer to mark one read" }
+        { "id": "ExaminerInboxReadOne",      "groupName": "ExaminationOfficer", "actionId": "patch /api/notification/{id}/read",   "description": "Allow ExaminationOfficer to mark one read" },
+
+        { "id": "TeacherInboxList",          "groupName": "Teacher",            "actionId": "get /api/notification/me",            "description": "Allow Teacher to list own in-app notifications" },
+        { "id": "TeacherInboxStream",        "groupName": "Teacher",            "actionId": "get /api/notification/me/stream",     "description": "Allow Teacher to stream in-app notifications" },
+        { "id": "TeacherInboxReadAll",       "groupName": "Teacher",            "actionId": "post /api/notification/me/read-all",  "description": "Allow Teacher to mark all read" },
+        { "id": "TeacherInboxReadOne",       "groupName": "Teacher",            "actionId": "patch /api/notification/{id}/read",   "description": "Allow Teacher to mark one read" }
     ]
 }

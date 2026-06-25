@@ -43,6 +43,12 @@ public class ReviewTemplatesController implements ReviewTemplatesApi {
                     dto.setDescription(plugin.getDescription());
                     dto.setEvaluationCriteriaVisibleToAuthors(plugin.isEvaluationCriteriaVisibleToAuthors());
                     dto.setFeedbackFormTemplate(questions);
+                    dto.setMinAuthors(plugin.getMinAuthors());
+                    dto.setMaxAuthors(plugin.getMaxAuthors());
+                    dto.setMinReviewers(plugin.getMinReviewers());
+                    dto.setMaxReviewers(plugin.getMaxReviewers());
+                    dto.setSubmissionDurationDays(plugin.getSubmissionDurationDays());
+                    dto.setReviewDurationDays(plugin.getReviewDurationDays());
                     return ResponseEntity.ok(dto);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -71,6 +77,12 @@ public class ReviewTemplatesController implements ReviewTemplatesApi {
                     dto.setDescription(plugin.getDescription());
                     dto.setEvaluationCriteriaVisibleToAuthors(plugin.isEvaluationCriteriaVisibleToAuthors());
                     dto.setFeedbackFormTemplate(questions);
+                    dto.setMinAuthors(plugin.getMinAuthors());
+                    dto.setMaxAuthors(plugin.getMaxAuthors());
+                    dto.setMinReviewers(plugin.getMinReviewers());
+                    dto.setMaxReviewers(plugin.getMaxReviewers());
+                    dto.setSubmissionDurationDays(plugin.getSubmissionDurationDays());
+                    dto.setReviewDurationDays(plugin.getReviewDurationDays());
                     return dto;
                 })
                 .toList();

@@ -7,12 +7,14 @@ import com.fh_wedel.configuration.model.MatchingRequestEvent;
 import com.fh_wedel.configuration.model.NotificationEvent;
 import com.fh_wedel.configuration.model.SubmissionConfiguration;
 import com.fh_wedel.configuration.repository.ConfigurationRepository;
+import com.fh_wedel.configuration.api.ReviewTemplatePlugin;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,6 +24,7 @@ import java.util.UUID;
 public class ConfigurationService {
 
     private final ConfigurationRepository repository;
+    private final PluginService pluginService;
     private final TopicTagService topicTagService;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
@@ -29,12 +32,14 @@ public class ConfigurationService {
     private final String notificationQueueName;
 
     public ConfigurationService(ConfigurationRepository repository,
+                                PluginService pluginService,
                                 TopicTagService topicTagService,
                                 SqsTemplate sqsTemplate,
                                 ObjectMapper objectMapper,
                                 @Value("${aws.sqs.matching-request-queue-name}") String matchingQueueName,
                                 @Value("${aws.sqs.notification-queue-name}") String notificationQueueName) {
         this.repository = repository;
+        this.pluginService = pluginService;
         this.topicTagService = topicTagService;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
@@ -50,13 +55,47 @@ public class ConfigurationService {
                                                        String reviewTemplateType, int numberOfExaminers,
                                                        Instant submissionDeadline, Instant reviewDeadline,
                                                        List<String> authorIds, String creatorId, String creatorRole,
-                                                       String topicTag) {
+                                                       String topicTag, List<String> customReviewerIds) {
 
         if (authorIds == null || authorIds.isEmpty()) {
             throw new IllegalArgumentException("At least one author must be specified.");
         }
         
         topicTagService.validateTag(topicTag);
+
+        ReviewTemplatePlugin plugin = pluginService.getReviewTemplate(reviewTemplateType)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown review template type: " + reviewTemplateType));
+
+        if (plugin.getMinAuthors() != null && authorIds.size() < plugin.getMinAuthors()) {
+            throw new IllegalArgumentException("Template requires at least " + plugin.getMinAuthors() + " author(s).");
+        }
+        if (plugin.getMaxAuthors() != null && authorIds.size() > plugin.getMaxAuthors()) {
+            throw new IllegalArgumentException("Template allows at most " + plugin.getMaxAuthors() + " author(s).");
+        }
+
+        if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
+            boolean isTeacherOrAdmin = "Teacher".equals(creatorRole) || "Admin".equals(creatorRole) || "ExaminationOfficer".equals(creatorRole);
+            if (!isTeacherOrAdmin && !plugin.isAllowAuthorCustomReviewer()) {
+                throw new IllegalArgumentException("Authors are not allowed to specify custom reviewers for this template type.");
+            }
+        }
+
+        if (plugin.getMinReviewers() != null && numberOfExaminers < plugin.getMinReviewers()) {
+            throw new IllegalArgumentException("Template requires at least " + plugin.getMinReviewers() + " reviewer(s).");
+        }
+        if (plugin.getMaxReviewers() != null && numberOfExaminers > plugin.getMaxReviewers()) {
+            throw new IllegalArgumentException("Template allows at most " + plugin.getMaxReviewers() + " reviewer(s).");
+        }
+
+        Instant actualSubmissionDeadline = submissionDeadline;
+        Instant actualReviewDeadline = reviewDeadline;
+
+        if (plugin.getSubmissionDurationDays() != null) {
+            actualSubmissionDeadline = Instant.now().plus(plugin.getSubmissionDurationDays(), ChronoUnit.DAYS);
+        }
+        if (plugin.getReviewDurationDays() != null) {
+            actualReviewDeadline = actualSubmissionDeadline.plus(plugin.getReviewDurationDays(), ChronoUnit.DAYS);
+        }
 
         String submissionId = UUID.randomUUID().toString();
         log.info("Creating submission configuration: id={}, title={}, creatorId={}", submissionId, title, creatorId);
@@ -66,7 +105,7 @@ public class ConfigurationService {
         // 1. Instantiate metadata record
         SubmissionConfiguration config = new SubmissionConfiguration(
                 submissionId, title, reviewProcessType, reviewTemplateType, authorIds, creatorId, creatorRole,
-                numberOfExaminers, submissionDeadline, reviewDeadline, topicTag
+                numberOfExaminers, actualSubmissionDeadline, actualReviewDeadline, topicTag
         );
 
         // 2. Instantiate author mappings (one for each author ID for indexed query lookup)
@@ -81,7 +120,7 @@ public class ConfigurationService {
         sendSubmissionCreatedNotification(submissionId, authorIds.get(0), title);
 
         // 4. Publish SQS matching request event
-        sendMatchingRequest(submissionId, authorIds, numberOfExaminers, topicTag);
+        sendMatchingRequest(submissionId, authorIds, numberOfExaminers, topicTag, customReviewerIds);
 
         return config;
     }
@@ -137,13 +176,13 @@ public class ConfigurationService {
     /**
      * Sends an SQS event to the Matching Service request queue.
      */
-    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers, String topicTag) {
+    private void sendMatchingRequest(String submissionId, List<String> submitterIds, int numberOfExaminers, String topicTag, List<String> customReviewerIds) {
         if (matchingQueueName == null || matchingQueueName.isBlank()) {
             log.warn("No Matching SQS request queue name defined. Skipping sending matching request event for submission {}", submissionId);
             return;
         }
 
-        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers, topicTag);
+        MatchingRequestEvent event = new MatchingRequestEvent(submissionId, submitterIds, numberOfExaminers, topicTag, customReviewerIds);
 
         try {
             String messageBody = objectMapper.writeValueAsString(event);

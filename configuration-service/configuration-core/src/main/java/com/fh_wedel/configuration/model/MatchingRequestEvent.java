@@ -14,4 +14,5 @@ public class MatchingRequestEvent {
     private List<String> submitterIds;
     private int numberOfExaminers;
     private String topicTag;
+    private List<String> customReviewerIds;
 }

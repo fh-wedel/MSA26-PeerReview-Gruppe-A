@@ -30,6 +30,12 @@
         { "id": "ExamOfficerListChats", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/chats", "description": "Allow ExamOfficer" },
         { "id": "ExamOfficerGetChat", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/chats/{chatId}", "description": "Allow ExamOfficer" },
         { "id": "ExamOfficerGetStream", "groupName": "ExaminationOfficer", "actionId": "get /api/communication/chats/stream", "description": "Allow ExamOfficer" },
-        { "id": "ExamOfficerSendMessage", "groupName": "ExaminationOfficer", "actionId": "post /api/communication/chats/messages", "description": "Allow ExamOfficer" }
+        { "id": "ExamOfficerSendMessage", "groupName": "ExaminationOfficer", "actionId": "post /api/communication/chats/messages", "description": "Allow ExamOfficer" },
+
+        { "id": "TeacherListUsers", "groupName": "Teacher", "actionId": "get /api/communication/users", "description": "Allow Teacher" },
+        { "id": "TeacherListChats", "groupName": "Teacher", "actionId": "get /api/communication/chats", "description": "Allow Teacher" },
+        { "id": "TeacherGetChat", "groupName": "Teacher", "actionId": "get /api/communication/chats/{chatId}", "description": "Allow Teacher" },
+        { "id": "TeacherGetStream", "groupName": "Teacher", "actionId": "get /api/communication/chats/stream", "description": "Allow Teacher" },
+        { "id": "TeacherSendMessage", "groupName": "Teacher", "actionId": "post /api/communication/chats/messages", "description": "Allow Teacher" }
     ]
 }

@@ -38,6 +38,12 @@
             "actionId": "get /api/users/search",
             "description": "Allow Student to search users"
         },
+        {
+            "id": "TeacherSearchUsers",
+            "groupName": "Teacher",
+            "actionId": "get /api/users/search",
+            "description": "Allow Teacher to search users"
+        },
 
         {
             "id": "AdminGetUserBySub",
@@ -68,6 +74,12 @@
             "groupName": "Student",
             "actionId": "get /api/users/{sub}",
             "description": "Allow Student to get user by sub"
+        },
+        {
+            "id": "TeacherGetUserBySub",
+            "groupName": "Teacher",
+            "actionId": "get /api/users/{sub}",
+            "description": "Allow Teacher to get user by sub"
         },
 
         {
@@ -100,7 +112,12 @@
             "actionId": "post /api/users/bulk",
             "description": "Allow Student to bulk resolve users"
         },
-
+        {
+            "id": "TeacherBulkResolve",
+            "groupName": "Teacher",
+            "actionId": "post /api/users/bulk",
+            "description": "Allow Teacher to bulk resolve users"
+        },
 
         {
             "id": "AdminListGroupMembers",
@@ -113,6 +130,18 @@
             "groupName": "ExaminationOfficer",
             "actionId": "get /api/users/groups/{groupName}/members",
             "description": "Allow ExaminationOfficer to list group members"
+        },
+        {
+            "id": "TeacherListGroupMembers",
+            "groupName": "Teacher",
+            "actionId": "get /api/users/groups/{groupName}/members",
+            "description": "Allow Teacher to list group members"
+        },
+        {
+            "id": "AuthorListGroupMembers",
+            "groupName": "Author",
+            "actionId": "get /api/users/groups/{groupName}/members",
+            "description": "Allow Author to list group members"
         },
 
         {

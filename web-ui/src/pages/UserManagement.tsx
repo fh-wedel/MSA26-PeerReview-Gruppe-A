@@ -128,7 +128,7 @@ export const UserManagement: React.FC = () => {
       }
 
       const newUser = await addGroupMember(currentGroup, selectedUser.username, customAttrs);
-      setMembers(prev => [...prev, newUser]);
+      setMembers(prev => prev.some(m => m.username === newUser.username) ? prev : [...prev, newUser]);
       setAddDialogOpen(false);
       setSelectedUser(null);
       setIsActive(true);
@@ -318,7 +318,7 @@ export const UserManagement: React.FC = () => {
         <DialogTitle>Add {currentGroup}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <Autocomplete
-            options={searchOptions}
+            options={searchOptions.filter(option => !members.some(m => m.username === option.username))}
             getOptionLabel={(option) => option.username}
             onInputChange={(_, value) => handleSearch(value)}
             onChange={(_, value) => setSelectedUser(value)}

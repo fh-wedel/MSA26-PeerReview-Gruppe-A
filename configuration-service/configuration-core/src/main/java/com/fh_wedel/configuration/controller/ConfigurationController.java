@@ -64,7 +64,8 @@ public class ConfigurationController {
                     request.getAuthorIds(),
                     callerSub,
                     callerRole,
-                    request.getTopicTag()
+                    request.getTopicTag(),
+                    request.getCustomReviewerIds()
             );
         } catch (IllegalArgumentException e) {
             log.error("Invalid configuration request", e);
