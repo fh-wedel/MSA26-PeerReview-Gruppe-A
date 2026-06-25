@@ -131,6 +131,18 @@
             "actionId": "get /api/users/groups/{groupName}/members",
             "description": "Allow ExaminationOfficer to list group members"
         },
+        {
+            "id": "TeacherListGroupMembers",
+            "groupName": "Teacher",
+            "actionId": "get /api/users/groups/{groupName}/members",
+            "description": "Allow Teacher to list group members"
+        },
+        {
+            "id": "AuthorListGroupMembers",
+            "groupName": "Author",
+            "actionId": "get /api/users/groups/{groupName}/members",
+            "description": "Allow Author to list group members"
+        },
 
         {
             "id": "AdminAddGroupMember",

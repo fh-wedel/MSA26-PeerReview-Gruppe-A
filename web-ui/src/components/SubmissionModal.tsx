@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import type {UserSummary} from "../api/communication";
 import {useUserResolver} from "../hooks/useUserResolver";
+import {useGroupMembers} from "../hooks/useGroupMembers";
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 import {useTopicTags} from "../hooks/useTopicTags";
 import {useAuth} from "../contexts/AuthContext";
@@ -67,6 +68,8 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const [reviewDeadline, setReviewDeadline] = useState<Date>(new Date(Date.now() + 28 * 24 * 60 * 60 * 1000));
   
   const { users: userOptions, loading: usersLoading } = useUserResolver();
+  const { members: authorOptions, loading: authorsLoading } = useGroupMembers('Author');
+  const { members: reviewerOptions, loading: reviewersLoading } = useGroupMembers('Reviewer');
   const [errorOpen, setErrorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
@@ -222,7 +225,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
 
             <Autocomplete
                 multiple
-                options={userOptions}
+                options={authorOptions}
                 getOptionLabel={(option) => option.username}
                 value={selectedAuthors}
                 onChange={(_, newValue) => {
@@ -248,7 +251,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                 }}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 disabled={!canEditAuthors || submitting}
-                loading={usersLoading}
+                loading={authorsLoading}
                 renderInput={(params) => (
                     <TextField
                         {...params}
@@ -269,7 +272,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
             {canAddCustomReviewer && (
               <Autocomplete
                   multiple
-                  options={userOptions}
+                  options={reviewerOptions}
                   getOptionLabel={(option) => option.username}
                   value={selectedCustomReviewers}
                   onChange={(_, newValue) => {
@@ -277,7 +280,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                   }}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
                   disabled={submitting}
-                  loading={usersLoading}
+                  loading={reviewersLoading}
                   renderInput={(params) => (
                       <TextField
                           {...params}
