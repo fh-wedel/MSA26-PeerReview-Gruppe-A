@@ -67,7 +67,8 @@ class ConfigurationServiceTest {
                 List.of("author-sub"),
                 "creator-sub",
                 "Author",
-                "Java");
+                "Java",
+                null);
 
         // Verify: at least one send to the notification queue with expected content
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);

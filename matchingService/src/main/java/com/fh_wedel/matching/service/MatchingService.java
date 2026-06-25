@@ -151,7 +151,6 @@ public class MatchingService {
         }
 
         // 4. Randomly select the required number of reviewers (or use custom reviewers if provided)
-        List<String> customReviewerIds = event.getCustomReviewerIds();
         List<UserProfile> selectedReviewers = new ArrayList<>();
         
         if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
