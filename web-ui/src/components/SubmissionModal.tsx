@@ -54,10 +54,11 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
+  const isTeacherOrAdminInit = (user?.roles || []).map(r => r.toLowerCase()).some(r => ['admin', 'examinationofficer', 'teacher'].includes(r));
   
   const [title, setTitle] = useState("");
   const [reviewType, setReviewType] = useState<ReviewType>("SINGLE_BLIND");
-  const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>([{ id: currentUserId, username: authorName }]);
+  const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>(isTeacherOrAdminInit ? [] : [{ id: currentUserId, username: authorName }]);
   const [selectedCustomReviewers, setSelectedCustomReviewers] = useState<UserSummary[]>([]);
   const { types, templates, loading, error } = useWorkflowPlugins();
   const [reviewTemplateType, setReviewTemplateType] = useState<string>("INDIVIDUAL_WORK");
@@ -108,11 +109,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
 
     // Default authors: if the template enforces exactly 1 author, reset selected authors
     if (activeTemplate.minAuthors === 1 && activeTemplate.maxAuthors === 1) {
-      if (selectedAuthors.length !== 1) {
+      if (!isTeacherOrAdminInit && selectedAuthors.length !== 1) {
         setSelectedAuthors([{ id: currentUserId, username: authorName }]);
+      } else if (isTeacherOrAdminInit && selectedAuthors.length > 1) {
+        setSelectedAuthors([]);
       }
     }
-  }, [reviewTemplateType, currentUserId, authorName, activeTemplate]);
+  }, [reviewTemplateType, currentUserId, authorName, activeTemplate, isTeacherOrAdminInit, selectedAuthors.length]);
 
   const isFixedAuthors = activeTemplate ? (activeTemplate.minAuthors === activeTemplate.maxAuthors && activeTemplate.minAuthors !== undefined && activeTemplate.minAuthors !== null) : false;
   const isFixedReviewers = activeTemplate ? (activeTemplate.minReviewers === activeTemplate.maxReviewers && activeTemplate.minReviewers !== undefined && activeTemplate.minReviewers !== null) : false;
@@ -152,7 +155,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
       setTitle("");
       setReviewType("SINGLE_BLIND");
       setTopicTag("");
-      setSelectedAuthors([{ id: currentUserId, username: authorName }]);
+      setSelectedAuthors(isTeacherOrAdminInit ? [] : [{ id: currentUserId, username: authorName }]);
       setSelectedCustomReviewers([]);
       setReviewTemplateType("INDIVIDUAL_WORK");
       setHasAttemptedSubmit(false);
