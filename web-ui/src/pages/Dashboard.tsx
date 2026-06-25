@@ -99,28 +99,30 @@ export const Dashboard: React.FC = () => {
       }
 
       // 2. Fetch assignments
-      try {
-        const assignmentsResponse = await matchingApiClient.matches.getMatchesByExaminer(user.username);
-        if (assignmentsResponse.data && assignmentsResponse.data.assignments) {
-          for (const assignment of assignmentsResponse.data.assignments) {
-            try {
-                const configResponse = await configApiClient.submissions.submissionsDetail(assignment.submissionId);
-              if (configResponse.data && configResponse.data.reviewDeadline) {
-                fetchedTasks.push({
-                  id: `ass-${assignment.submissionId}`,
-                  title: configResponse.data.title,
-                  type: "Assignment",
-                  dueDate: new Date(configResponse.data.reviewDeadline),
-                  submissionId: assignment.submissionId,
-                });
+      if (roles.includes("reviewer")) {
+        try {
+          const assignmentsResponse = await matchingApiClient.matches.getMatchesByExaminer(user.username);
+          if (assignmentsResponse.data && assignmentsResponse.data.assignments) {
+            for (const assignment of assignmentsResponse.data.assignments) {
+              try {
+                  const configResponse = await configApiClient.submissions.submissionsDetail(assignment.submissionId);
+                if (configResponse.data && configResponse.data.reviewDeadline) {
+                  fetchedTasks.push({
+                    id: `ass-${assignment.submissionId}`,
+                    title: configResponse.data.title,
+                    type: "Assignment",
+                    dueDate: new Date(configResponse.data.reviewDeadline),
+                    submissionId: assignment.submissionId,
+                  });
+                }
+              } catch (err) {
+                console.error(`Failed to fetch config for assignment ${assignment.submissionId}`, err);
               }
-            } catch (err) {
-              console.error(`Failed to fetch config for assignment ${assignment.submissionId}`, err);
             }
           }
+        } catch (e) {
+          console.error("Failed to fetch assignments", e);
         }
-      } catch (e) {
-        console.error("Failed to fetch assignments", e);
       }
 
       // Filter out completed tasks
@@ -226,7 +228,7 @@ export const Dashboard: React.FC = () => {
             size="large"
             onClick={() => setModalOpen(true)}
           >
-            Create Submission
+            {roles.includes('teacher') ? 'Create submission for someone else' : 'Create Submission'}
           </Button>
         )}
       </Box>

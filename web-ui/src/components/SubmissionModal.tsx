@@ -130,10 +130,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const handleSubmit = async () => {
     setHasAttemptedSubmit(true);
     
-    if (isSubmitDisabled) {
-      if (selectedAuthors.length === 0) {
-        setValidationError("At least one author must be selected.");
-      }
+    if (selectedAuthors.length === 0) {
+      setValidationError("At least one author must be specified.");
+      return;
+    }
+
+    if (selectedCustomReviewers.length > 0 && selectedCustomReviewers.length !== numberOfReviewers) {
+      setValidationError(`You selected manual reviewers. Please select exactly ${numberOfReviewers} reviewer(s).`);
       return;
     }
     
@@ -143,6 +146,10 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     }
     if (activeTemplate && activeTemplate.minAuthors !== undefined && activeTemplate.minAuthors !== null && selectedAuthors.length < activeTemplate.minAuthors) {
       setValidationError(`At least ${activeTemplate.minAuthors} author(s) required for this template.`);
+      return;
+    }
+
+    if (isSubmitDisabled) {
       return;
     }
     
@@ -169,6 +176,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   };
 
   const isSubmitDisabled = !title || !topicTag || submitting || selectedAuthors.length === 0 || 
+    (selectedCustomReviewers.length > 0 && selectedCustomReviewers.length !== numberOfReviewers) ||
     (activeTemplate?.maxAuthors !== undefined && activeTemplate?.maxAuthors !== null && selectedAuthors.length > activeTemplate.maxAuthors) ||
     (activeTemplate?.minAuthors !== undefined && activeTemplate?.minAuthors !== null && selectedAuthors.length < activeTemplate.minAuthors);
 
