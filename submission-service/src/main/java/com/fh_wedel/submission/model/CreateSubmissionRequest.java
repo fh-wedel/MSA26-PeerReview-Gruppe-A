@@ -7,8 +7,6 @@ public class CreateSubmissionRequest {
     @NotBlank
     private String configurationId;
 
-    private boolean requestAiReview;
-
     public CreateSubmissionRequest() {
     }
 
@@ -18,13 +16,5 @@ public class CreateSubmissionRequest {
 
     public void setConfigurationId(String configurationId) {
         this.configurationId = configurationId;
-    }
-
-    public boolean isRequestAiReview() {
-        return requestAiReview;
-    }
-
-    public void setRequestAiReview(boolean requestAiReview) {
-        this.requestAiReview = requestAiReview;
     }
 }

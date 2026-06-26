@@ -22,7 +22,6 @@ public class Submission {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant submittedAt;
-    private boolean requestAiReview;
 
     public Submission() {
     }
@@ -110,13 +109,5 @@ public class Submission {
 
     public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
-    }
-
-    public boolean isRequestAiReview() {
-        return requestAiReview;
-    }
-
-    public void setRequestAiReview(boolean requestAiReview) {
-        this.requestAiReview = requestAiReview;
     }
 }

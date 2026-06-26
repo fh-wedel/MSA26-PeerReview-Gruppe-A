@@ -23,7 +23,6 @@ public class SubmissionService {
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
     private final ConfigurationServiceClient configurationServiceClient;
-    private final String submissionReadyQueueName;
     private final String notificationQueueName;
 
     public SubmissionService(SubmissionRepository repository,
@@ -31,28 +30,24 @@ public class SubmissionService {
                              SqsTemplate sqsTemplate,
                              ObjectMapper objectMapper,
                              ConfigurationServiceClient configurationServiceClient,
-                             @Value("${aws.sqs.submission-ready.queue-name}") String submissionReadyQueueName,
                              @Value("${aws.sqs.notification.queue-name:}") String notificationQueueName) {
         this.repository = repository;
         this.s3Service = s3Service;
         this.sqsTemplate = sqsTemplate;
         this.objectMapper = objectMapper;
         this.configurationServiceClient = configurationServiceClient;
-        this.submissionReadyQueueName = submissionReadyQueueName;
         this.notificationQueueName = notificationQueueName;
     }
 
-    public Submission createSubmission(String configurationId, List<String> authorIds, boolean requestAiReview) {
+    public Submission createSubmission(String configurationId, List<String> authorIds) {
         String submissionId = configurationId;
-        log.info("Creating/upserting submission: id={}, configId={}, authorIds={}, requestAiReview={}", submissionId, configurationId, authorIds, requestAiReview);
+        log.info("Creating/upserting submission: id={}, configId={}, authorIds={}", submissionId, configurationId, authorIds);
 
         // Upsert: if the submission was already created (e.g. by the SQS matching listener
-        // arriving before this eager UI call), preserve its current status and only patch
-        // the requestAiReview flag. Otherwise create a fresh DRAFT record.
+        // arriving before this eager UI call), preserve its current status. Otherwise create a fresh DRAFT record.
         Submission existing = repository.findSubmissionById(submissionId);
         if (existing != null) {
-            log.info("Submission {} already exists with status '{}'. Updating requestAiReview flag only.", submissionId, existing.getStatus());
-            existing.setRequestAiReview(requestAiReview);
+            log.info("Submission {} already exists with status '{}'.", submissionId, existing.getStatus());
             existing.setUpdatedAt(Instant.now());
             // Merge authorIds if the existing record has none (created by SQS without authorIds)
             if ((existing.getAuthorIds() == null || existing.getAuthorIds().isEmpty()) && !authorIds.isEmpty()) {
@@ -63,7 +58,6 @@ public class SubmissionService {
         }
 
         Submission submission = new Submission(submissionId, configurationId, authorIds);
-        submission.setRequestAiReview(requestAiReview);
         repository.saveSubmission(submission);
         return submission;
     }
@@ -148,7 +142,6 @@ public class SubmissionService {
         submission.setUpdatedAt(Instant.now());
         repository.saveSubmission(submission);
 
-        sendSubmissionReadyEvent(submission);
         sendSubmissionNotification(submission);
         log.info("Submission {} submitted by author {}", submissionId, authorId);
         return submission;
@@ -214,32 +207,4 @@ public class SubmissionService {
         }
     }
 
-    private void sendSubmissionReadyEvent(Submission submission) {
-        if (submissionReadyQueueName == null || submissionReadyQueueName.isBlank()) {
-            log.warn("No submission-ready queue name defined. Skipping sending event for submission {}", submission.getSubmissionId());
-            return;
-        }
-
-        // Include the S3 key of the first document so the response service can read the PDF
-        // directly from S3 without needing to call back to this service (avoiding auth issues).
-        String documentS3Key = null;
-        List<DocumentRecord> docs = repository.findDocuments(submission.getSubmissionId());
-        if (!docs.isEmpty()) {
-            documentS3Key = docs.get(0).getS3Key();
-        }
-
-        SubmissionReadyEvent event = new SubmissionReadyEvent(
-                submission.getSubmissionId(),
-                submission.isRequestAiReview(),
-                documentS3Key
-        );
-
-        try {
-            String messageBody = objectMapper.writeValueAsString(event);
-            sqsTemplate.send(submissionReadyQueueName, messageBody);
-            log.info("Sent SubmissionReadyEvent to queue '{}' for submission {} (s3Key={})", submissionReadyQueueName, submission.getSubmissionId(), documentS3Key);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize SubmissionReadyEvent for submission {}", submission.getSubmissionId(), e);
-        }
-    }
 }

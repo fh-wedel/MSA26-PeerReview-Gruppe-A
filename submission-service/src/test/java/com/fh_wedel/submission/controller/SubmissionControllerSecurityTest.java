@@ -99,7 +99,8 @@ class SubmissionControllerSecurityTest {
         request.setConfigurationId("config-1");
 
         Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
-        when(submissionService.createSubmission("config-1", List.of("author-1"), false)).thenReturn(submission);
+        when(submissionService.createSubmission(anyString(), anyList()))
+                .thenReturn(submission);
 
         Authentication auth = createAuth("Author", "author-user", "author-1");
         ResponseEntity<Submission> response = controller.createSubmission(request, auth);

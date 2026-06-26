@@ -33,7 +33,7 @@ public class SubmissionController {
 
         String authorId = extractSubFromDetails(authentication);
         Submission submission = submissionService.createSubmission(
-                request.getConfigurationId(), List.of(authorId), request.isRequestAiReview());
+                request.getConfigurationId(), List.of(authorId));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(submission);
     }

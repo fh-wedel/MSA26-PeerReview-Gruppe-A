@@ -12,7 +12,6 @@ const synth = () => {
         requestQueueName: 'response-request-queue',
         s3BucketName: 'msa26-peer-review-response-documents',
         dynamoDbTableName: 'response-service-results',
-        submissionReadyQueueName: 'submission-ready-queue',
         aiReviewQueueName: 'response-ai-review-queue',
         minTaskCount: 1,
         maxTaskCount: 1,

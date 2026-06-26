@@ -12,7 +12,6 @@
 
 export interface CreateSubmissionRequest {
   configurationId: string;
-  requestAiReview?: boolean;
 }
 
 export interface PresignedUrlRequest {

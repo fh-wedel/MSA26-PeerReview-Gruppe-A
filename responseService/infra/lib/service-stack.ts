@@ -20,7 +20,6 @@ export interface ResponseServiceStackProps extends cdk.StackProps {
   minTaskCount: number;
   maxTaskCount: number;
   requestQueueName: string;
-  submissionReadyQueueName: string;
   aiReviewQueueName: string;
   s3BucketName: string;
   dynamoDbTableName: string;
@@ -87,7 +86,6 @@ export class ResponseServiceStack extends cdk.Stack {
       portMappings: [{ containerPort, protocol: ecs.Protocol.TCP }],
       environment: {
         'SQS_REQUEST_QUEUE': props.requestQueueName,
-        'SQS_SUBMISSION_READY_QUEUE': props.submissionReadyQueueName,
         'SQS_AI_REVIEW_QUEUE': props.aiReviewQueueName,
         'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
         'SERVER_PORT': containerPort.toString(),
@@ -149,11 +147,7 @@ export class ResponseServiceStack extends cdk.Stack {
     });
     SqsInfra.grantReadPermissions(requestQueues, ecsService.taskDefinition.taskRole);
 
-    const submissionReadyQueues = SqsInfra.createQueue(this, {
-      queueName: props.submissionReadyQueueName,
-      enableDeadLetterQueue: true,
-    });
-    SqsInfra.grantReadPermissions(submissionReadyQueues, ecsService.taskDefinition.taskRole);
+
 
     const aiReviewQueues = SqsInfra.createQueue(this, {
       queueName: props.aiReviewQueueName,

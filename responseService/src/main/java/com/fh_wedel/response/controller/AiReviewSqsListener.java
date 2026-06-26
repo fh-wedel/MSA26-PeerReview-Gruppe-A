@@ -116,7 +116,7 @@ public class AiReviewSqsListener {
                 Map<String, String> dlMap = authRestTemplate.getForObject(dlUrl, Map.class);
                 String downloadUrl = dlMap != null ? dlMap.get("uploadUrl") : null;
                 if (downloadUrl == null) throw new IllegalStateException("Could not get presigned download URL");
-                pdfBytes = new RestTemplate().getForObject(downloadUrl, byte[].class);
+                pdfBytes = new RestTemplate().getForObject(new java.net.URI(downloadUrl), byte[].class);
             }
             if (pdfBytes == null || pdfBytes.length == 0) {
                 throw new IllegalStateException("Failed to obtain document bytes for submission " + submissionId);

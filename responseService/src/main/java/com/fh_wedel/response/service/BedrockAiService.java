@@ -26,7 +26,9 @@ public class BedrockAiService {
     public BedrockAiService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         // The default client uses the region from the environment/profile
-        this.bedrockClient = BedrockRuntimeClient.builder().build();
+        this.bedrockClient = BedrockRuntimeClient.builder()
+                .dualstackEnabled(true)
+                .build();
     }
 
     /**

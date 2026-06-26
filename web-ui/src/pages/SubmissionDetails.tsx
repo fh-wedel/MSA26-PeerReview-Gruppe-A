@@ -173,15 +173,13 @@ export const SubmissionDetails: React.FC = () => {
     );
   }
 
-  // Combine real API data with mock data as a fallback
-  const isAiRequestedInConfig = realSubmission?.requestAiReview === true;
+
   const aiReviewResults = reviewResults.filter(r => r.isAiGenerated || r.aiStatus != null);
-  const aiEverRequested = isAiRequestedInConfig || aiReviewResults.length > 0;
+  const aiEverRequested = aiReviewResults.length > 0;
   
   const rawStatus = realSubmission?.status;
   
-  const aiProcessing = aiReviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED') || 
-                      (isAiRequestedInConfig && aiReviewResults.length === 0 && (rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW'));
+  const aiProcessing = aiReviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED');
   const aiFailed = aiReviewResults.some(r => r.aiStatus === 'FAILED');
 
   const completedReviews = reviewResults.filter(r => r.aiStatus === 'COMPLETED' || !r.isAiGenerated);
@@ -453,11 +451,8 @@ export const SubmissionDetails: React.FC = () => {
     try {
       await responseApiClient.results.aiReviewCreate(submissionId);
       showSuccess('AI Review requested successfully!');
-      // Refresh results
-      const reviewRes = await responseApiClient.results.resultsDetail(submissionId);
-      if (reviewRes.data) {
-        setReviewResults(reviewRes.data);
-      }
+      // Reload the page to fetch the latest state
+      window.location.reload();
     } catch (e) {
       console.error('Failed to trigger AI review', e);
       showError('Failed to trigger AI review. It may have already been requested.');
