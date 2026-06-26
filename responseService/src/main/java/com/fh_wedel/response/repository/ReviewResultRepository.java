@@ -42,7 +42,7 @@ public class ReviewResultRepository {
             result.setId(UUID.randomUUID());
         }
         result.setPk(ReviewResult.PK_PREFIX + result.getSubmissionId());
-        result.setSk(ReviewResult.SK_VALUE);
+        result.setSk(ReviewResult.SK_VALUE + "#" + result.getReviewerId());
         table.putItem(result);
         return result;
     }
@@ -60,13 +60,17 @@ public class ReviewResultRepository {
     }
 
     /**
-     * Finds the result for a submission via a direct primary-key lookup.
+     * Finds all results for a submission via a primary-key lookup prefix.
      */
-    public Optional<ReviewResult> findBySubmissionId(String submissionId) {
-        Key key = Key.builder()
-                .partitionValue(ReviewResult.PK_PREFIX + submissionId)
-                .sortValue(ReviewResult.SK_VALUE)
-                .build();
-        return Optional.ofNullable(table.getItem(key));
+    public List<ReviewResult> findBySubmissionId(String submissionId) {
+        return table.query(r -> r.queryConditional(
+                        QueryConditional.sortBeginsWith(
+                                Key.builder()
+                                        .partitionValue(ReviewResult.PK_PREFIX + submissionId)
+                                        .sortValue(ReviewResult.SK_VALUE + "#")
+                                        .build())))
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .toList();
     }
 }

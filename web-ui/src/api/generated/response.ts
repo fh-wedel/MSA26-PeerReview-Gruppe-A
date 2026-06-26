@@ -346,7 +346,7 @@ export class Api<
      * @request GET:/results/{submissionId}
      */
     resultsDetail: (submissionId: string, params: RequestParams = {}) =>
-      this.request<ReviewResult, any>({
+      this.request<ReviewResult[], any>({
         path: `/results/${submissionId}`,
         method: "GET",
         format: "json",

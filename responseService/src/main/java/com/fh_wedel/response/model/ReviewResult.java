@@ -22,7 +22,7 @@ import java.util.UUID;
  * Table schema (single-table design):
  * <ul>
  *   <li>PK: {@code SUBMISSION#{submissionId}}</li>
- *   <li>SK: {@code RESULT}</li>
+ *   <li>SK: {@code RESULT#{reviewerId}}</li>
  * </ul>
  * GSI "AuthorIndex" (lists all results that belong to an author):
  * <ul>

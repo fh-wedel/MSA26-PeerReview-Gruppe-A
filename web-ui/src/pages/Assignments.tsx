@@ -113,7 +113,7 @@ export const Assignments: React.FC = () => {
 
             try {
                 const resResult = await responseApiClient.results.resultsDetail(assignment.submissionId);
-                if (resResult && (resResult as any).data) {
+                if (resResult && resResult.data && resResult.data.length > 0) {
                     status = 'Review Completed';
                 }
             } catch (e) {

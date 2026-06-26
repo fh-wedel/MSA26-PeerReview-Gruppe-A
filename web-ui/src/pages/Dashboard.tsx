@@ -143,7 +143,7 @@ export const Dashboard: React.FC = () => {
         } else if (task.type === 'Assignment') {
             try {
                 const resResult = await responseApiClient.results.resultsDetail(task.submissionId);
-                if (resResult && (resResult as any).data) {
+                if (resResult && resResult.data && resResult.data.length > 0) {
                     continue; // Already reviewed
                 }
             } catch (e) {

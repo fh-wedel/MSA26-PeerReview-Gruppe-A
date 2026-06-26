@@ -88,7 +88,9 @@ class ResultControllerTest {
     @Test
     @DisplayName("Author accessing their own submission result succeeds")
     void getResultBySubmission_own_success() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("author-sub"));
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(dtoForAuthor("author-sub")));
+        when(resultService.isAuthorOfSubmission("sub-1", "author-sub")).thenReturn(true);
+        when(resultService.isReviewComplete("sub-1", 1)).thenReturn(true);
 
         var response = controller.getResultBySubmission("sub-1", auth("Author", "author-user", "author-sub"));
 
@@ -96,19 +98,19 @@ class ResultControllerTest {
     }
 
     @Test
-    @DisplayName("Author accessing a foreign submission result gets 404")
-    void getResultBySubmission_foreign_notFound() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("other-sub"));
+    @DisplayName("Author accessing a foreign submission result gets 403")
+    void getResultBySubmission_foreign_forbidden() {
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(dtoForAuthor("other-sub")));
 
         var response = controller.getResultBySubmission("sub-1", auth("Author", "author-user", "author-sub"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
     @DisplayName("Admin may access any submission result")
     void getResultBySubmission_admin_success() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("other-sub"));
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(dtoForAuthor("other-sub")));
 
         var response = controller.getResultBySubmission("sub-1", auth("Admin", "admin-user", "admin-sub"));
 
@@ -118,7 +120,7 @@ class ResultControllerTest {
     @Test
     @DisplayName("Author downloads their own document")
     void getDocumentUrl_own_success() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("author-sub"));
+        when(resultService.isAuthorOfSubmission("sub-1", "author-sub")).thenReturn(true);
         when(resultService.getDocumentDownloadUrl("sub-1")).thenReturn("https://s3.presigned.url");
 
         var response = controller.getDocumentUrl("sub-1", auth("Author", "author-user", "author-sub"));
@@ -128,12 +130,10 @@ class ResultControllerTest {
     }
 
     @Test
-    @DisplayName("Author cannot download a foreign document (404, no presign)")
-    void getDocumentUrl_foreign_notFound() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("other-sub"));
-
+    @DisplayName("Author cannot download a foreign document (403, no presign)")
+    void getDocumentUrl_foreign_forbidden() {
         var response = controller.getDocumentUrl("sub-1", auth("Author", "author-user", "author-sub"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 }

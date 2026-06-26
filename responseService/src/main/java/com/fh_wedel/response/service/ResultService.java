@@ -65,8 +65,9 @@ public class ResultService {
     }
 
     public ReviewResult submitReview(com.fh_wedel.response.model.SubmitReviewRequest request, String reviewerId) {
-        if (repository.findBySubmissionId(request.getSubmissionId()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A review for this submission already exists.");
+        List<ReviewResult> existingResults = repository.findBySubmissionId(request.getSubmissionId());
+        if (existingResults.stream().anyMatch(r -> reviewerId.equals(r.getReviewerId()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A review by this reviewer for this submission already exists.");
         }
 
         ReviewResult result = new ReviewResult();
@@ -208,8 +209,8 @@ public class ResultService {
                 .toList();
     }
 
-    public ReviewResultDto findBySubmission(String submissionId) {
-        return repository.findBySubmissionId(submissionId)
+    public List<ReviewResultDto> findResultsBySubmission(String submissionId) {
+        return repository.findBySubmissionId(submissionId).stream()
                 .map(r -> {
                     if (r.getAuthorId() == null || r.getAuthorId().isBlank()) {
                         try {
@@ -223,21 +224,21 @@ public class ResultService {
                         }
                     }
                     return ReviewResultDto.from(r);
-                })
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No result found for submission: " + submissionId));
+                }).toList();
     }
 
     public String getDocumentDownloadUrl(String submissionId) {
-        var result = repository.findBySubmissionId(submissionId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No result found for submission: " + submissionId));
-
-        if (result.getDocumentS3Key() == null || result.getDocumentS3Key().isBlank()) {
-            throw new IllegalArgumentException("No document attached to submission: " + submissionId);
+        List<ReviewResult> results = repository.findBySubmissionId(submissionId);
+        if (results.isEmpty()) {
+            throw new IllegalArgumentException("No result found for submission: " + submissionId);
         }
 
-        return documentStorageService.generatePresignedDownloadUrl(result.getDocumentS3Key());
+        ReviewResult resultWithDoc = results.stream()
+                .filter(r -> r.getDocumentS3Key() != null && !r.getDocumentS3Key().isBlank())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No document attached to submission: " + submissionId));
+
+        return documentStorageService.generatePresignedDownloadUrl(resultWithDoc.getDocumentS3Key());
     }
 
     public boolean isAuthorOfSubmission(String submissionId, String callerSub) {
@@ -247,6 +248,31 @@ public class ResultService {
             return config != null && config.getAuthorIds() != null && config.getAuthorIds().contains(callerSub);
         } catch (Exception e) {
             log.warn("Could not check authors for submission {}: {}", submissionId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isAssignedReviewer(String submissionId, String callerSub) {
+        if (callerSub == null) return false;
+        try {
+            SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
+            return matches != null && matches.getMatches() != null &&
+                    matches.getMatches().stream().anyMatch(m -> callerSub.equals(m.getExaminerId()));
+        } catch (Exception e) {
+            log.warn("Could not check examiners for submission {}: {}", submissionId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isReviewComplete(String submissionId, int submittedReviewsCount) {
+        try {
+            SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
+            if (matches == null || matches.getMatches() == null) {
+                return false;
+            }
+            return submittedReviewsCount >= matches.getMatches().size();
+        } catch (Exception e) {
+            log.warn("Could not check match count for submission {}: {}", submissionId, e.getMessage());
             return false;
         }
     }

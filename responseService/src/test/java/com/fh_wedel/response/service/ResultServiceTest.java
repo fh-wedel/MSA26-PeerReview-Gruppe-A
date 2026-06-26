@@ -154,14 +154,14 @@ class ResultServiceTest {
     }
 
     @Test
-    void shouldThrowWhenSubmissionNotFound() {
+    void shouldReturnEmptyListWhenSubmissionNotFound() {
         ResultService service = buildService("");
 
-        when(repository.findBySubmissionId("nonexistent")).thenReturn(Optional.empty());
+        when(repository.findBySubmissionId("nonexistent")).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.findBySubmission("nonexistent"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No result found");
+        List<ReviewResultDto> results = service.findResultsBySubmission("nonexistent");
+
+        assertThat(results).isEmpty();
     }
 
     @Test
@@ -176,7 +176,7 @@ class ResultServiceTest {
                 .createdAt(Instant.now())
                 .build();
 
-        when(repository.findBySubmissionId("sub-1")).thenReturn(Optional.of(result));
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(result));
         when(documentStorageService.generatePresignedDownloadUrl("reviews/sub-1/final.pdf"))
                 .thenReturn("https://s3.presigned.url/...");
 

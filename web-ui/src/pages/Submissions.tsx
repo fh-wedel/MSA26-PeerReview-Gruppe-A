@@ -126,7 +126,7 @@ export const Submissions: React.FC = () => {
 
           try {
             const resResult = await responseApiClient.results.resultsDetail(id);
-            if (resResult && (resResult as any).data) {
+            if (resResult && resResult.data && resResult.data.length > 0) {
                 status = 'Review Completed';
             }
           } catch (e) {

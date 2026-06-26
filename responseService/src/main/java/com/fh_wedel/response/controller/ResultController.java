@@ -83,23 +83,33 @@ public class ResultController {
 
     @GetMapping("/results/{submissionId}")
     @PreAuthorize("hasAnyRole('Admin', 'Author', 'Reviewer')")
-    public ResponseEntity<ReviewResultDto> getResultBySubmission(
+    public ResponseEntity<List<ReviewResultDto>> getResultBySubmission(
             @PathVariable String submissionId,
             Authentication authentication) {
 
         log.info("Fetching result for submission: {}", submissionId);
-        ReviewResultDto result = resultService.findBySubmission(submissionId);
+        List<ReviewResultDto> results = resultService.findResultsBySubmission(submissionId);
+        String callerSub = extractSubFromDetails(authentication);
 
-        if (!isAdmin(authentication) 
-            && !isCallerSub(authentication, result.authorId()) 
-            && !isCallerSub(authentication, result.reviewerId())
-            && !resultService.isAuthorOfSubmission(submissionId, extractSubFromDetails(authentication))) {
-            log.warn("Access Denied: caller '{}' (details: '{}') is neither the author '{}' nor reviewer '{}' of submission {}",
-                    authentication.getName(), authentication.getDetails(), result.authorId(), result.reviewerId(), submissionId);
-            return ResponseEntity.notFound().build();
+        if (isAdmin(authentication)) {
+            return ResponseEntity.ok(results);
         }
 
-        return ResponseEntity.ok(result);
+        if (resultService.isAssignedReviewer(submissionId, callerSub)) {
+            return ResponseEntity.ok(results);
+        }
+
+        if (resultService.isAuthorOfSubmission(submissionId, callerSub)) {
+            if (resultService.isReviewComplete(submissionId, results.size())) {
+                return ResponseEntity.ok(results);
+            } else {
+                return ResponseEntity.ok(List.of());
+            }
+        }
+
+        log.warn("Access Denied: caller '{}' (details: '{}') is neither the author nor an assigned reviewer of submission {}",
+                authentication.getName(), authentication.getDetails(), submissionId);
+        return ResponseEntity.status(403).build();
     }
 
     @GetMapping("/results/{submissionId}/document")
@@ -110,15 +120,15 @@ public class ResultController {
 
         log.info("Generating document URL for submission: {}", submissionId);
 
-        // Verify ownership before generating a pre-signed URL.
-        ReviewResultDto result = resultService.findBySubmission(submissionId);
-        if (!isAdmin(authentication) 
-            && !isCallerSub(authentication, result.authorId()) 
-            && !isCallerSub(authentication, result.reviewerId())
-            && !resultService.isAuthorOfSubmission(submissionId, extractSubFromDetails(authentication))) {
-            log.warn("Access Denied: caller '{}' (details: '{}') is neither the author '{}' nor reviewer '{}' of submission {}",
-                    authentication.getName(), authentication.getDetails(), result.authorId(), result.reviewerId(), submissionId);
-            return ResponseEntity.notFound().build();
+        String callerSub = extractSubFromDetails(authentication);
+        boolean hasAccess = isAdmin(authentication) ||
+                resultService.isAssignedReviewer(submissionId, callerSub) ||
+                resultService.isAuthorOfSubmission(submissionId, callerSub);
+
+        if (!hasAccess) {
+            log.warn("Access Denied: caller '{}' (details: '{}') is neither the author nor an assigned reviewer of submission {}",
+                    authentication.getName(), authentication.getDetails(), submissionId);
+            return ResponseEntity.status(403).build();
         }
 
         String url = resultService.getDocumentDownloadUrl(submissionId);
