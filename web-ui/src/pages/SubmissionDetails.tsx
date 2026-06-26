@@ -177,6 +177,9 @@ export const SubmissionDetails: React.FC = () => {
   const aiFailed = reviewResults.some(r => r.aiStatus === 'FAILED');
   const completedReviews = reviewResults.filter(r => r.aiStatus === 'COMPLETED' || !r.isAiGenerated);
   const reviewAvailable = completedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
+  const currentUserHasReviewed = reviewResults.some(r => r.reviewerId === user?.id);
+  const totalExpectedReviews = (submissionMatch?.matches?.length || submissionMatch?.numberOfExaminers || 0) + 
+      (reviewResults.some(r => r.isAiGenerated || r.aiStatus != null) ? 1 : 0);
   const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
@@ -202,8 +205,12 @@ export const SubmissionDetails: React.FC = () => {
     status = 'Failed';
   }
 
-  if (reviewAvailable) {
-    status = 'Review Completed';
+  if (completedReviews.length > 0) {
+    if (totalExpectedReviews > 0 && completedReviews.length < totalExpectedReviews) {
+      status = `${completedReviews.length} / ${totalExpectedReviews} Reviews Completed`;
+    } else {
+      status = completedReviews.length > 1 ? 'All Reviews Completed' : 'Review Completed';
+    }
   } else if (aiProcessing) {
     status = 'AI Review Processing';
   } else if (aiFailed) {
@@ -306,20 +313,21 @@ export const SubmissionDetails: React.FC = () => {
       description: 'The author finalized the document submission.'
     });
   }
-  if (completedReviews.length > 0) {
-    const latestReview = completedReviews.reduce((latest, current) => {
-      const latestDate = new Date(latest.completedAt || latest.createdAt).getTime();
-      const currentDate = new Date(current.completedAt || current.createdAt).getTime();
-      return currentDate > latestDate ? current : latest;
-    }, completedReviews[0]);
+  completedReviews.forEach((review, idx) => {
+    let label = 'Review Submitted';
+    let description = 'A reviewer has submitted their evaluation.';
+    if (review.isAiGenerated) {
+       label = 'AI Review Completed';
+       description = 'The AI reviewer has successfully submitted its evaluation.';
+    }
 
     historyToDisplay.push({
-      id: 'event-reviewed',
-      label: 'Finished Review',
-      changedAt: latestReview.completedAt || latestReview.createdAt,
-      description: 'The review for this submission has been completed.'
+      id: `event-reviewed-${review.id || idx}`,
+      label: label,
+      changedAt: review.completedAt || review.createdAt,
+      description: description
     });
-  }
+  });
   if (aiProcessing) {
     historyToDisplay.push({
       id: 'event-ai-processing',
@@ -524,7 +532,7 @@ export const SubmissionDetails: React.FC = () => {
                 {downloading ? 'Loading PDF...' : 'View Uploaded PDF'}
               </Button>
 
-              {(status === 'Submitted' || status === 'Ready for Review') && isReviewerState && !reviewAvailable && (
+              {(rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW') && isReviewerState && !currentUserHasReviewed && (
                 <Button
                   variant="contained"
                   color="secondary"
@@ -543,7 +551,7 @@ export const SubmissionDetails: React.FC = () => {
                 disabled={!reviewAvailable}
                 onClick={() => setReviewOpen(true)}
               >
-                View Review
+                {completedReviews.length > 1 ? `View ${completedReviews.length} Reviews` : 'View Review'}
               </Button>
 
               <Tooltip
@@ -601,7 +609,9 @@ export const SubmissionDetails: React.FC = () => {
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                 {reviewAvailable
-                  ? 'The completed review is available for this submission.'
+                  ? (completedReviews.length > 1 
+                      ? `${completedReviews.length} completed reviews are available for this submission.` 
+                      : 'The completed review is available for this submission.')
                   : aiProcessing
                   ? 'The AI is currently analyzing the document. Please wait...'
                   : aiFailed
