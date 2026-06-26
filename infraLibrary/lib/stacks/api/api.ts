@@ -206,7 +206,7 @@ export class ApiStack extends cdk.Stack {
 
         let authorizer: apigateway.RequestAuthorizer | undefined;
         if (authorizerConfig && authorizerLambdaObj) {
-            authorizer = new apigateway.RequestAuthorizer(this, 'VerifiedPermissionsAuthorizer', {
+            authorizer = new apigateway.RequestAuthorizer(this, 'VerifiedPermissionsAuthorizerV2', {
                 handler: authorizerLambdaObj.currentVersion,
                 identitySources: [apigateway.IdentitySource.header('Authorization')],
                 resultsCacheTtl: cdk.Duration.seconds(authorizerConfig.cacheTtlSeconds ?? 0),
