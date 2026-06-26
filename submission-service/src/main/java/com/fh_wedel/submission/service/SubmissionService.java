@@ -43,7 +43,7 @@ public class SubmissionService {
     }
 
     public Submission createSubmission(String configurationId, List<String> authorIds, boolean requestAiReview) {
-        String submissionId = UUID.randomUUID().toString();
+        String submissionId = configurationId;
         log.info("Creating submission: id={}, configId={}, authorIds={}, requestAiReview={}", submissionId, configurationId, authorIds, requestAiReview);
 
         Submission submission = new Submission(submissionId, configurationId, authorIds);
