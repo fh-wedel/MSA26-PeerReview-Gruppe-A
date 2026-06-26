@@ -51,7 +51,7 @@ class SubmissionServiceTest {
     @Test
     @DisplayName("Should successfully create a submission draft")
     void createSubmission_success() {
-        Submission submission = submissionService.createSubmission("config-1", List.of("author-1"));
+        Submission submission = submissionService.createSubmission("config-1", List.of("author-1"), false);
 
         assertThat(submission).isNotNull();
         assertThat(submission.getSubmissionId()).isNotNull();
