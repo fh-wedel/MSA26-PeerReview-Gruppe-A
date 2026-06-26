@@ -96,6 +96,33 @@
         }
       }
     },
+    "/results/{submissionId}/ai-review": {
+      "post": {
+        "summary": "Request an AI review for a submission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "AI review request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/results/{submissionId}/document": {
       "get": {
         "summary": "Get pre-signed download URL for the review document",
@@ -201,6 +228,13 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "isAiGenerated": {
+            "type": "boolean"
+          },
+          "aiStatus": {
+            "type": "string",
+            "enum": ["REQUESTED", "PROCESSING", "COMPLETED", "FAILED"]
           }
         }
       }

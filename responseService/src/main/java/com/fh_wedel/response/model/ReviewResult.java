@@ -82,6 +82,10 @@ public class ReviewResult {
     @Builder.Default
     private Instant createdAt = Instant.now();
 
+    private boolean isAiGenerated;
+
+    private String aiStatus;
+
     @DynamoDbPartitionKey
     public String getPk() {
         return pk;

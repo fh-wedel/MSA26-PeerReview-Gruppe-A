@@ -35,9 +35,11 @@ import java.util.Map;
 public class ResultController {
 
     private final ResultService resultService;
+    private final com.fh_wedel.response.service.AiReviewOrchestrator aiReviewOrchestrator;
 
-    public ResultController(ResultService resultService) {
+    public ResultController(ResultService resultService, com.fh_wedel.response.service.AiReviewOrchestrator aiReviewOrchestrator) {
         this.resultService = resultService;
+        this.aiReviewOrchestrator = aiReviewOrchestrator;
     }
 
     @PostMapping("/results")
@@ -57,6 +59,17 @@ public class ResultController {
         log.info("Submitting review for submission: {}", request.getSubmissionId());
         ReviewResult saved = resultService.submitReview(request, callerSub);
         return ResponseEntity.status(201).body(ReviewResultDto.from(saved));
+    }
+
+    @PostMapping("/results/{submissionId}/ai-review")
+    @PreAuthorize("hasAnyRole('Admin', 'Author', 'Reviewer')")
+    public ResponseEntity<ReviewResultDto> requestAiReview(
+            @PathVariable String submissionId,
+            Authentication authentication) {
+        
+        log.info("Manual AI Review requested for submission: {}", submissionId);
+        ReviewResult saved = aiReviewOrchestrator.requestReview(submissionId);
+        return ResponseEntity.status(202).body(ReviewResultDto.from(saved));
     }
 
     @GetMapping("/results")

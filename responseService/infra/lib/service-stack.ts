@@ -21,6 +21,7 @@ export interface ResponseServiceStackProps extends cdk.StackProps {
   maxTaskCount: number;
   requestQueueName: string;
   submissionReadyQueueName: string;
+  aiReviewQueueName: string;
   s3BucketName: string;
   dynamoDbTableName: string;
 }
@@ -87,6 +88,7 @@ export class ResponseServiceStack extends cdk.Stack {
       environment: {
         'SQS_REQUEST_QUEUE': props.requestQueueName,
         'SQS_SUBMISSION_READY_QUEUE': props.submissionReadyQueueName,
+        'SQS_AI_REVIEW_QUEUE': props.aiReviewQueueName,
         'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
@@ -152,6 +154,22 @@ export class ResponseServiceStack extends cdk.Stack {
       enableDeadLetterQueue: true,
     });
     SqsInfra.grantReadPermissions(submissionReadyQueues, ecsService.taskDefinition.taskRole);
+
+    const aiReviewQueues = SqsInfra.createQueue(this, {
+      queueName: props.aiReviewQueueName,
+      enableDeadLetterQueue: true,
+      visibilityTimeout: cdk.Duration.minutes(10), // Bedrock calls can take longer
+    });
+    SqsInfra.grantReadPermissions(aiReviewQueues, ecsService.taskDefinition.taskRole);
+    SqsInfra.grantWritePermissions(aiReviewQueues, ecsService.taskDefinition.taskRole);
+
+    // Grant Bedrock InvokeModel permissions
+    ecsService.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: ['arn:aws:bedrock:*::foundation-model/*'],
+      })
+    );
 
     // Grant S3 read access
     documentBucket.grantRead(ecsService.taskDefinition.taskRole);

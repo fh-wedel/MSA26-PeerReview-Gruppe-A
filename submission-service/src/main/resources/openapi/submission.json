@@ -272,6 +272,9 @@
         "properties": {
           "configurationId": {
             "type": "string"
+          },
+          "requestAiReview": {
+            "type": "boolean"
           }
         }
       },
@@ -336,6 +339,9 @@
           "submittedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "requestAiReview": {
+            "type": "boolean"
           }
         }
       }

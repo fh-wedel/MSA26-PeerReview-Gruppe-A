@@ -42,11 +42,12 @@ public class SubmissionService {
         this.notificationQueueName = notificationQueueName;
     }
 
-    public Submission createSubmission(String configurationId, List<String> authorIds) {
+    public Submission createSubmission(String configurationId, List<String> authorIds, boolean requestAiReview) {
         String submissionId = UUID.randomUUID().toString();
-        log.info("Creating submission: id={}, configId={}, authorIds={}", submissionId, configurationId, authorIds);
+        log.info("Creating submission: id={}, configId={}, authorIds={}, requestAiReview={}", submissionId, configurationId, authorIds, requestAiReview);
 
         Submission submission = new Submission(submissionId, configurationId, authorIds);
+        submission.setRequestAiReview(requestAiReview);
         repository.saveSubmission(submission);
         return submission;
     }
@@ -180,7 +181,8 @@ public class SubmissionService {
         }
 
         SubmissionReadyEvent event = new SubmissionReadyEvent(
-                submission.getSubmissionId()
+                submission.getSubmissionId(),
+                submission.isRequestAiReview()
         );
 
         try {

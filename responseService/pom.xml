@@ -60,6 +60,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3-transfer-manager</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>bedrockruntime</artifactId>
+        </dependency>
         <!-- AWS SDK v2: DynamoDB Enhanced Client -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

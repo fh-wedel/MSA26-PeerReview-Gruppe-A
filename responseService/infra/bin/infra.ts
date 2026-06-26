@@ -54,6 +54,7 @@ const serviceStack = new ResponseServiceStack(app, 'ResponseServiceStack', {
   containerPort,
   requestQueueName: 'response-request-queue',
   submissionReadyQueueName: 'submission-ready-queue',
+  aiReviewQueueName: 'response-ai-review-queue',
   s3BucketName: 'msa26-peer-review-response-documents',
   dynamoDbTableName: 'response-service-results',
   minTaskCount: 1,
