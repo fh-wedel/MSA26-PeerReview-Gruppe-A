@@ -110,6 +110,18 @@ export const SubmissionDetails: React.FC = () => {
       }
       setLoadingContext(false);
     });
+
+    // Polling for review results every 30s to reflect AI processing updates
+    const pollInterval = setInterval(() => {
+      responseApiClient.results.resultsDetail(submissionId).catch(() => null)
+        .then(reviewRes => {
+          if (reviewRes && reviewRes.data) {
+            setReviewResults(reviewRes.data);
+          }
+        });
+    }, 30000);
+
+    return () => clearInterval(pollInterval);
   }, [submissionId, user]);
 
   if (loadingContext) {
@@ -161,7 +173,10 @@ export const SubmissionDetails: React.FC = () => {
   }
 
   // Combine real API data with mock data as a fallback
-  const reviewAvailable = reviewResults.length > 0 ? true : (mockSubmission ? Boolean(mockSubmission.review) : false);
+  const aiProcessing = reviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED');
+  const aiFailed = reviewResults.some(r => r.aiStatus === 'FAILED');
+  const completedReviews = reviewResults.filter(r => r.aiStatus === 'COMPLETED' || !r.isAiGenerated);
+  const reviewAvailable = completedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
   const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
@@ -189,6 +204,10 @@ export const SubmissionDetails: React.FC = () => {
 
   if (reviewAvailable) {
     status = 'Review Completed';
+  } else if (aiProcessing) {
+    status = 'AI Review Processing';
+  } else if (aiFailed) {
+    status = 'AI Review Failed';
   }
   const reviewType = submissionConfig?.reviewProcessType || mockSubmission?.reviewType || 'unknown';
 
@@ -287,18 +306,34 @@ export const SubmissionDetails: React.FC = () => {
       description: 'The author finalized the document submission.'
     });
   }
-  if (reviewResults.length > 0) {
-    const latestReview = reviewResults.reduce((latest, current) => {
+  if (completedReviews.length > 0) {
+    const latestReview = completedReviews.reduce((latest, current) => {
       const latestDate = new Date(latest.completedAt || latest.createdAt).getTime();
       const currentDate = new Date(current.completedAt || current.createdAt).getTime();
       return currentDate > latestDate ? current : latest;
-    }, reviewResults[0]);
+    }, completedReviews[0]);
 
     historyToDisplay.push({
       id: 'event-reviewed',
       label: 'Finished Review',
       changedAt: latestReview.completedAt || latestReview.createdAt,
       description: 'The review for this submission has been completed.'
+    });
+  }
+  if (aiProcessing) {
+    historyToDisplay.push({
+      id: 'event-ai-processing',
+      label: 'AI Review in Progress',
+      changedAt: new Date().toISOString(),
+      description: 'An AI reviewer is currently processing the submission. Results will be available shortly.'
+    });
+  }
+  if (aiFailed) {
+    historyToDisplay.push({
+      id: 'event-ai-failed',
+      label: 'AI Review Failed',
+      changedAt: new Date().toISOString(),
+      description: 'The AI reviewer failed to process the submission.'
     });
   }
   if (historyToDisplay.length === 0 && mockSubmission?.history) {
@@ -567,6 +602,10 @@ export const SubmissionDetails: React.FC = () => {
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                 {reviewAvailable
                   ? 'The completed review is available for this submission.'
+                  : aiProcessing
+                  ? 'The AI is currently analyzing the document. Please wait...'
+                  : aiFailed
+                  ? 'The AI encountered an error while reviewing.'
                   : 'The review is not available yet. It will appear here once the evaluation is complete.'}
               </Typography>
             </Stack>
@@ -599,11 +638,13 @@ export const SubmissionDetails: React.FC = () => {
       <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} fullWidth maxWidth="md">
         <DialogTitle>Reviews</DialogTitle>
         <DialogContent dividers>
-          {reviewResults && reviewResults.length > 0 ? (
+          {completedReviews.length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {reviewResults.map((review: any, idx: number) => (
-                <Box key={review.id || idx} sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 3, borderBottom: idx < reviewResults.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                  <Typography variant="h6">Review {idx + 1}</Typography>
+              {completedReviews.map((review: any, idx: number) => (
+                <Box key={review.id || idx} sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 3, borderBottom: idx < completedReviews.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                  <Typography variant="h6">
+                    Review {idx + 1} {review.isAiGenerated && <Chip label="AI Generated" color="primary" size="small" sx={{ ml: 1 }} />}
+                  </Typography>
                   {review.finalGrade && (
                     <Box>
                       <Typography variant="subtitle2" color="text.secondary">

@@ -34,6 +34,8 @@ export interface ReviewResult {
   completedAt?: string;
   /** @format date-time */
   createdAt?: string;
+  isAiGenerated?: boolean;
+  aiStatus?: "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -349,6 +351,21 @@ export class Api<
       this.request<ReviewResult[], any>({
         path: `/results/${submissionId}`,
         method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name AiReviewCreate
+     * @summary Request an AI review for a submission
+     * @request POST:/results/{submissionId}/ai-review
+     */
+    aiReviewCreate: (submissionId: string, params: RequestParams = {}) =>
+      this.request<ReviewResult, any>({
+        path: `/results/${submissionId}/ai-review`,
+        method: "POST",
         format: "json",
         ...params,
       }),
