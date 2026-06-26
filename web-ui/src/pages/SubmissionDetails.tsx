@@ -47,6 +47,7 @@ export const SubmissionDetails: React.FC = () => {
   const [chatAllowed, setChatAllowed] = useState(true);
   const [loadingContext, setLoadingContext] = useState(true);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewDialogOpenType, setReviewDialogOpenType] = useState<'human' | 'ai'>('human');
   const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [isReviewerState, setIsReviewerState] = useState(false);
   const [submissionConfig, setSubmissionConfig] = useState<any>(null);
@@ -173,22 +174,31 @@ export const SubmissionDetails: React.FC = () => {
   }
 
   // Combine real API data with mock data as a fallback
-  const aiProcessing = reviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED');
-  const aiFailed = reviewResults.some(r => r.aiStatus === 'FAILED');
-  const aiEverRequested = reviewResults.some(r => r.isAiGenerated || r.aiStatus != null);
+  const isAiRequestedInConfig = realSubmission?.requestAiReview === true;
+  const aiReviewResults = reviewResults.filter(r => r.isAiGenerated || r.aiStatus != null);
+  const aiEverRequested = isAiRequestedInConfig || aiReviewResults.length > 0;
+  
+  const rawStatus = realSubmission?.status;
+  
+  const aiProcessing = aiReviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED') || 
+                      (isAiRequestedInConfig && aiReviewResults.length === 0 && (rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW'));
+  const aiFailed = aiReviewResults.some(r => r.aiStatus === 'FAILED');
+
   const completedReviews = reviewResults.filter(r => r.aiStatus === 'COMPLETED' || !r.isAiGenerated);
-  const reviewAvailable = completedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
+  const aiCompletedReviews = completedReviews.filter(r => r.isAiGenerated);
+  const humanReviews = completedReviews.filter(r => !r.isAiGenerated);
+  const aiCompleted = aiCompletedReviews.length > 0;
+
+  const reviewAvailable = humanReviews.length > 0 || aiCompletedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
   const currentUserHasReviewed = reviewResults.some(r => r.reviewerId === user?.id);
   const totalExpectedReviews = (submissionMatch?.matches?.length || submissionMatch?.numberOfExaminers || 0) + 
-      (reviewResults.some(r => r.isAiGenerated || r.aiStatus != null) ? 1 : 0);
+      (aiEverRequested ? 1 : 0);
   const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
   // Resolve status based on realSubmission or matching
   let status = 'Created';
-  let rawStatus = undefined;
   if (realSubmission && realSubmission.status) {
-    rawStatus = realSubmission.status;
     if (rawStatus === 'SUBMITTED') {
       status = 'Submitted';
     } else if (rawStatus === 'WAITING_FOR_SUBMISSION') {
@@ -542,7 +552,7 @@ export const SubmissionDetails: React.FC = () => {
                     <AutoAwesomeIcon fontSize="small" /> AI Review Status
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1 }}>
-                    {aiProcessing ? 'The AI is currently processing this submission.' : aiFailed ? 'The AI review failed.' : 'The AI review has been completed.'}
+                    {aiCompleted ? 'The AI review has been completed.' : aiFailed ? 'The AI review failed.' : 'The AI is currently processing this submission.'}
                   </Typography>
                 </Box>
               )}
@@ -589,11 +599,24 @@ export const SubmissionDetails: React.FC = () => {
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={!reviewAvailable}
-                onClick={() => setReviewOpen(true)}
+                disabled={humanReviews.length === 0 && !(mockSubmission ? Boolean(mockSubmission.review) : false)}
+                onClick={() => { setReviewDialogOpenType('human'); setReviewOpen(true); }}
               >
-                {completedReviews.length > 1 ? `View ${completedReviews.length} Reviews` : 'View Review'}
+                {humanReviews.length > 1 ? `View ${humanReviews.length} Reviews` : 'View Review'}
               </Button>
+
+              {aiCompleted && (
+                <Button
+                  variant="contained"
+                  color="info"
+                  size="large"
+                  fullWidth
+                  onClick={() => { setReviewDialogOpenType('ai'); setReviewOpen(true); }}
+                  startIcon={<AutoAwesomeIcon />}
+                >
+                  View Review from AI
+                </Button>
+              )}
 
               <Tooltip
                   title={!chatAllowed ? (workflowRules?.authorReviewerChatAllowed ? "Only authors and reviewers can access this chat" : "Chat is disabled by the workflow rules") : ""}>
@@ -650,8 +673,8 @@ export const SubmissionDetails: React.FC = () => {
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                 {reviewAvailable
-                  ? (completedReviews.length > 1 
-                      ? `${completedReviews.length} completed reviews are available for this submission.` 
+                  ? (humanReviews.length + aiCompletedReviews.length > 1 
+                      ? `${humanReviews.length + aiCompletedReviews.length} completed reviews are available for this submission.` 
                       : 'The completed review is available for this submission.')
                   : aiProcessing
                   ? 'The AI is currently analyzing the document. Please wait...'
@@ -687,12 +710,12 @@ export const SubmissionDetails: React.FC = () => {
 
       {/* Review Dialog */}
       <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>Reviews</DialogTitle>
+        <DialogTitle>{reviewDialogOpenType === 'ai' ? 'AI Review' : 'Reviews'}</DialogTitle>
         <DialogContent dividers>
-          {completedReviews.length > 0 ? (
+          {(reviewDialogOpenType === 'ai' ? aiCompletedReviews : humanReviews).length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {completedReviews.map((review: any, idx: number) => (
-                <Box key={review.id || idx} sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 3, borderBottom: idx < completedReviews.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
+              {(reviewDialogOpenType === 'ai' ? aiCompletedReviews : humanReviews).map((review: any, idx: number) => (
+                <Box key={review.id || idx} sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 3, borderBottom: idx < (reviewDialogOpenType === 'ai' ? aiCompletedReviews : humanReviews).length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                   <Typography variant="h6">
                     Review {idx + 1} {review.isAiGenerated && <Chip label="AI Generated" color="primary" size="small" sx={{ ml: 1 }} />}
                   </Typography>
@@ -775,7 +798,7 @@ export const SubmissionDetails: React.FC = () => {
                 </Box>
               ))}
             </Box>
-          ) : mockSubmission?.review ? (
+          ) : reviewDialogOpenType === 'human' && mockSubmission?.review ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
