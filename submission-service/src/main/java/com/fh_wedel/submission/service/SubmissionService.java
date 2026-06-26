@@ -44,7 +44,23 @@ public class SubmissionService {
 
     public Submission createSubmission(String configurationId, List<String> authorIds, boolean requestAiReview) {
         String submissionId = configurationId;
-        log.info("Creating submission: id={}, configId={}, authorIds={}, requestAiReview={}", submissionId, configurationId, authorIds, requestAiReview);
+        log.info("Creating/upserting submission: id={}, configId={}, authorIds={}, requestAiReview={}", submissionId, configurationId, authorIds, requestAiReview);
+
+        // Upsert: if the submission was already created (e.g. by the SQS matching listener
+        // arriving before this eager UI call), preserve its current status and only patch
+        // the requestAiReview flag. Otherwise create a fresh DRAFT record.
+        Submission existing = repository.findSubmissionById(submissionId);
+        if (existing != null) {
+            log.info("Submission {} already exists with status '{}'. Updating requestAiReview flag only.", submissionId, existing.getStatus());
+            existing.setRequestAiReview(requestAiReview);
+            existing.setUpdatedAt(Instant.now());
+            // Merge authorIds if the existing record has none (created by SQS without authorIds)
+            if ((existing.getAuthorIds() == null || existing.getAuthorIds().isEmpty()) && !authorIds.isEmpty()) {
+                existing.setAuthorIds(authorIds);
+            }
+            repository.saveSubmission(existing);
+            return existing;
+        }
 
         Submission submission = new Submission(submissionId, configurationId, authorIds);
         submission.setRequestAiReview(requestAiReview);

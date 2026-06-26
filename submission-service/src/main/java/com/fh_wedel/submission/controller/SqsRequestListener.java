@@ -76,6 +76,9 @@ public class SqsRequestListener {
                         
                         submission = new Submission(submissionId, submissionId, authorIds);
                         submission.setStatus(finalStatus);
+                        if (node.has("requestAiReview")) {
+                            submission.setRequestAiReview(node.get("requestAiReview").asBoolean(false));
+                        }
                         repository.saveSubmission(submission);
                         log.info("Created new submission {} with status '{}' via configuration-service", submissionId, submission.getStatus());
                     } else {
@@ -85,6 +88,9 @@ public class SqsRequestListener {
                     log.info("Submission {} not found in database. Creating it using authorIds={} from SQS message.", submissionId, authorIds);
                     submission = new Submission(submissionId, submissionId, authorIds);
                     submission.setStatus(finalStatus);
+                    if (node.has("requestAiReview")) {
+                        submission.setRequestAiReview(node.get("requestAiReview").asBoolean(false));
+                    }
                     repository.saveSubmission(submission);
                     log.info("Created new submission {} with status '{}' and authorIds={} directly from SQS message", submissionId, submission.getStatus(), authorIds);
                 }
