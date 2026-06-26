@@ -22,13 +22,16 @@ public class SqsRequestListener {
     private final SubmissionRepository repository;
     private final ObjectMapper objectMapper;
     private final ConfigurationServiceClient configurationServiceClient;
+    private final com.fh_wedel.submission.service.SubmissionService submissionService;
 
     public SqsRequestListener(SubmissionRepository repository,
                               ObjectMapper objectMapper,
-                              ConfigurationServiceClient configurationServiceClient) {
+                              ConfigurationServiceClient configurationServiceClient,
+                              @org.springframework.context.annotation.Lazy com.fh_wedel.submission.service.SubmissionService submissionService) {
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.configurationServiceClient = configurationServiceClient;
+        this.submissionService = submissionService;
     }
 
     @SqsListener("${aws.sqs.request.queue-name}")
@@ -87,8 +90,13 @@ public class SqsRequestListener {
                 }
             } else {
                 log.info("Updating existing submission {} status from {} to '{}'", submissionId, submission.getStatus(), finalStatus);
+                boolean wasNotCompleted = !SubmissionStatus.REVIEW_COMPLETED.getDbValue().equals(submission.getStatus());
                 submission.setStatus(finalStatus);
                 repository.saveSubmission(submission);
+
+                if (wasNotCompleted && SubmissionStatus.REVIEW_COMPLETED.getDbValue().equals(finalStatus)) {
+                    submissionService.sendReviewCompletedNotification(submission);
+                }
             }
         } catch (Exception e) {
             log.error("Failed to process SQS message", e);

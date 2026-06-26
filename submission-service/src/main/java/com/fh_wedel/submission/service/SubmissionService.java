@@ -174,6 +174,30 @@ public class SubmissionService {
         }
     }
 
+    public void sendReviewCompletedNotification(Submission submission) {
+        if (notificationQueueName == null || notificationQueueName.isBlank()) {
+            log.warn("No notification queue configured. Skipping result-available notification for {}", submission.getSubmissionId());
+            return;
+        }
+        List<String> authorIds = submission.getAuthorIds();
+        if (authorIds == null || authorIds.isEmpty()) return;
+        for (String authorId : authorIds) {
+            NotificationEvent event = new NotificationEvent(
+                    "REVIEW_RESULT_AVAILABLE",
+                    List.of("IN_APP"),
+                    authorId,
+                    "Review Result Available",
+                    "A review result is available for submission " + submission.getSubmissionId() + ".",
+                    Map.of("submissionId", submission.getSubmissionId()));
+            try {
+                sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+                log.info("Sent result-available notification to '{}' for submission {}", authorId, submission.getSubmissionId());
+            } catch (JsonProcessingException e) {
+                log.error("Failed to serialize result-available notification for {}", submission.getSubmissionId(), e);
+            }
+        }
+    }
+
     private void sendSubmissionReadyEvent(Submission submission) {
         if (submissionReadyQueueName == null || submissionReadyQueueName.isBlank()) {
             log.warn("No submission-ready queue name defined. Skipping sending event for submission {}", submission.getSubmissionId());

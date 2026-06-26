@@ -143,8 +143,10 @@ export const Dashboard: React.FC = () => {
         } else if (task.type === 'Assignment') {
             try {
                 const resResult = await responseApiClient.results.resultsDetail(task.submissionId);
-                if (resResult && resResult.data && resResult.data.length > 0) {
-                    continue; // Already reviewed
+                if (resResult && resResult.data && Array.isArray(resResult.data)) {
+                    if (resResult.data.some((r: any) => r.reviewerId === user.id)) {
+                        continue; // Already reviewed by this user
+                    }
                 }
             } catch (e) {
                 // Not reviewed yet
@@ -181,7 +183,8 @@ export const Dashboard: React.FC = () => {
     submissionDeadline: Date,
     reviewDeadline: Date,
     topicTag: string,
-    customReviewerIds: string[]
+    customReviewerIds: string[],
+    requestAiReview: boolean
   ) => {
     try {
         const response = await configApiClient.submissions.submissionsCreate({
@@ -200,6 +203,20 @@ export const Dashboard: React.FC = () => {
         throw new Error(
             `Failed to create configuration: ${response.status} ${response.statusText}`
         );
+      }
+
+      // Explicitly trigger the creation of the submission in the submission-service 
+      // with the AI review flag so that the SqsRequestListener doesn't overwrite it
+      try {
+        const resData = (response as any).data;
+        if (resData && resData.id) {
+          await submissionApiClient.submissions.createSubmission({
+            configurationId: resData.id,
+            requestAiReview
+          });
+        }
+      } catch(subErr) {
+        console.error("Failed to eagerly create submission with AI flag:", subErr);
       }
 
       setSnackbarOpen(true);

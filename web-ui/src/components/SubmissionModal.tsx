@@ -9,6 +9,8 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
+  Checkbox,
   InputLabel,
   MenuItem,
   Select,
@@ -38,7 +40,8 @@ interface SubmissionModalProps {
     submissionDeadline: Date,
     reviewDeadline: Date,
     topicTag: string,
-    customReviewerIds: string[]
+    customReviewerIds: string[],
+    requestAiReview: boolean
   ) => Promise<void>;
   authorName: string;
   currentUserId: string;
@@ -60,6 +63,7 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
   const [reviewType, setReviewType] = useState<ReviewType>("SINGLE_BLIND");
   const [selectedAuthors, setSelectedAuthors] = useState<UserSummary[]>(isTeacherOrAdminInit ? [] : [{ id: currentUserId, username: authorName }]);
   const [selectedCustomReviewers, setSelectedCustomReviewers] = useState<UserSummary[]>([]);
+  const [requestAiReview, setRequestAiReview] = useState(false);
   const { types, templates, loading, error } = useWorkflowPlugins();
   const [reviewTemplateType, setReviewTemplateType] = useState<string>("INDIVIDUAL_WORK");
   const [numberOfReviewers, setNumberOfReviewers] = useState<number>(1);
@@ -158,13 +162,14 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
     try {
       const authorIds = selectedAuthors.map(u => u.id);
       const customReviewerIds = selectedCustomReviewers.map(u => u.id);
-      await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline, topicTag, customReviewerIds);
+      await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline, topicTag, customReviewerIds, requestAiReview);
       setTitle("");
       setReviewType("SINGLE_BLIND");
       setTopicTag("");
       setSelectedAuthors(isTeacherOrAdminInit ? [] : [{ id: currentUserId, username: authorName }]);
       setSelectedCustomReviewers([]);
       setReviewTemplateType("INDIVIDUAL_WORK");
+      setRequestAiReview(false);
       setHasAttemptedSubmit(false);
       onClose();
     } catch (err) {
@@ -377,6 +382,17 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               disabled={isFixedDeadlines || submitting}
               slotProps={{ inputLabel: { shrink: true } }}
               helperText={isFixedDeadlines ? "Review deadline is fixed for this template." : ""}
+            />
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={requestAiReview}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRequestAiReview(e.target.checked)}
+                  disabled={submitting}
+                />
+              }
+              label="Request AI Review (Automatically generate a review once the submission is uploaded)"
             />
 
           </Box>

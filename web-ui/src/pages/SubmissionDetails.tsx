@@ -18,7 +18,7 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
-import {ArrowBack, Chat as ChatIcon, PictureAsPdf} from '@mui/icons-material';
+import {ArrowBack, Chat as ChatIcon, PictureAsPdf, AutoAwesome as AutoAwesomeIcon} from '@mui/icons-material';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 
@@ -175,6 +175,7 @@ export const SubmissionDetails: React.FC = () => {
   // Combine real API data with mock data as a fallback
   const aiProcessing = reviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED');
   const aiFailed = reviewResults.some(r => r.aiStatus === 'FAILED');
+  const aiEverRequested = reviewResults.some(r => r.isAiGenerated || r.aiStatus != null);
   const completedReviews = reviewResults.filter(r => r.aiStatus === 'COMPLETED' || !r.isAiGenerated);
   const reviewAvailable = completedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
   const currentUserHasReviewed = reviewResults.some(r => r.reviewerId === user?.id);
@@ -437,6 +438,22 @@ export const SubmissionDetails: React.FC = () => {
     }
   };
 
+  const handleTriggerAiReview = async () => {
+    if (!submissionId) return;
+    try {
+      await responseApiClient.results.aiReviewCreate(submissionId);
+      showSuccess('AI Review requested successfully!');
+      // Refresh results
+      const reviewRes = await responseApiClient.results.resultsDetail(submissionId);
+      if (reviewRes.data) {
+        setReviewResults(reviewRes.data);
+      }
+    } catch (e) {
+      console.error('Failed to trigger AI review', e);
+      showError('Failed to trigger AI review. It may have already been requested.');
+    }
+  };
+
   const isDraftOrWaiting = rawStatus === 'DRAFT' || rawStatus === 'WAITING_FOR_SUBMISSION';
   const showUploadArea = isAuthor && isDraftOrWaiting;
 
@@ -518,6 +535,17 @@ export const SubmissionDetails: React.FC = () => {
                   {displayReviewers}
                 </Box>
               </Box>
+              
+              {aiEverRequested && (
+                <Box sx={{ mt: 3, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(25, 118, 210, 0.04)', borderRadius: 1, border: '1px solid', borderColor: 'primary.main' }}>
+                  <Typography variant="subtitle2" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AutoAwesomeIcon fontSize="small" /> AI Review Status
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {aiProcessing ? 'The AI is currently processing this submission.' : aiFailed ? 'The AI review failed.' : 'The AI review has been completed.'}
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             <Stack spacing={1.5} sx={{ minWidth: { md: 260 }, width: { xs: '100%', md: 'auto' } }}>
@@ -541,6 +569,19 @@ export const SubmissionDetails: React.FC = () => {
                   onClick={() => setReviewFormOpen(true)}
                 >
                   Start Review
+                </Button>
+              )}
+
+              {(rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW') && !aiEverRequested && (isAuthor || isReviewerState) && (
+                <Button
+                  variant="outlined"
+                  color="info"
+                  size="large"
+                  fullWidth
+                  onClick={handleTriggerAiReview}
+                  startIcon={<AutoAwesomeIcon />}
+                >
+                  Trigger AI Review
                 </Button>
               )}
 

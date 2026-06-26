@@ -60,7 +60,6 @@ public class ResultService {
         log.info("Saving review result for submission: {}", result.getSubmissionId());
         enrichFromNeighbouringServices(result);
         ReviewResult saved = repository.save(result);
-        sendResultAvailableNotification(saved);
         return saved;
     }
 
@@ -181,26 +180,6 @@ public class ResultService {
                 .build();
     }
 
-    private void sendResultAvailableNotification(ReviewResult result) {
-        if (notificationQueueName == null || notificationQueueName.isBlank()) {
-            log.warn("No notification queue configured. Skipping result-available notification for {}",
-                    result.getSubmissionId());
-            return;
-        }
-        NotificationEvent event = new NotificationEvent(
-                "REVIEW_RESULT_AVAILABLE",
-                List.of("IN_APP"),
-                result.getAuthorId(),
-                "Review Result Available",
-                "A review result is available for submission " + result.getSubmissionId() + ".",
-                Map.of("submissionId", result.getSubmissionId()));
-        try {
-            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
-            log.info("Sent result-available notification to '{}' for submission {}",
-                    result.getAuthorId(), result.getSubmissionId());
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize result-available notification for {}", result.getSubmissionId(), e);
-        }
     }
 
     public List<ReviewResultDto> findByAuthor(String authorId) {
