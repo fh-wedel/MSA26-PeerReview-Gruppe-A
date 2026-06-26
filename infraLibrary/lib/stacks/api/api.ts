@@ -140,7 +140,7 @@ export class ApiStack extends cdk.Stack {
             },
         });
 
-        proxyLambda.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
+        proxyLambda.currentVersion.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
         lambdaSg.addEgressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(props.targetPort), 'Allow Lambda to send requests to ECS service over IPv6');
 
         let api;
@@ -213,7 +213,7 @@ export class ApiStack extends cdk.Stack {
             });
             
             // Give API Gateway permission to invoke the lambda for the OpenAPI Spec integration
-            authorizerLambdaObj.addPermission('ApiGatewayInvoke', {
+            authorizerLambdaObj.currentVersion.addPermission('ApiGatewayInvoke', {
                 principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
                 action: 'lambda:InvokeFunction',
             });
