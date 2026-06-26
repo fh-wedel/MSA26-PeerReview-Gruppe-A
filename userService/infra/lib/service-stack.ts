@@ -5,6 +5,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { ImportedRessources } from '../../../infraLibrary/lib/importedRessources';
 import { EcsInfra } from '../../../infraLibrary/lib/ecs';
+import { SqsInfra } from '../../../infraLibrary/lib/sqs';
 import { LogsInfra } from '../../../infraLibrary/lib/logs';
 import pino from 'pino';
 import { AWSConstants } from '../../../infrabaseline/lib/constants';
@@ -23,6 +24,7 @@ export interface ServiceCreationProps extends cdk.StackProps {
   maxTaskCount: number;
   cpuTargetUtilizationPercent?: number;
   enablePublicIpV4?: boolean;
+  requestQueueName?: string;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -71,6 +73,7 @@ export class ServiceStack extends cdk.Stack {
         },
       ],
       environment: {
+        'SQS_REQUEST_QUEUE': props.requestQueueName ?? '',
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'COGNITO_USER_POOL_ID': cognitoUserPoolId,
@@ -148,6 +151,18 @@ export class ServiceStack extends cdk.Stack {
         logger.warn("CPU target utilization percent not provided. Defaulting to 75%.");
       }
       EcsInfra.addAutoScalingToService(ecsService, props.minTaskCount, props.maxTaskCount, props.cpuTargetUtilizationPercent ?? 75);
+    }
+
+    // =============================================
+    // SQS Queues
+    // =============================================
+    if (props.requestQueueName) {
+      const requestQueues = SqsInfra.createQueue(this, {
+        queueName: props.requestQueueName,
+        enableDeadLetterQueue: false,
+      });
+
+      SqsInfra.grantReadPermissions(requestQueues, ecsService.taskDefinition.taskRole);
     }
   }
 }

@@ -38,6 +38,13 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.awspring.cloud</groupId>
+                <artifactId>spring-cloud-aws-dependencies</artifactId>
+                <version>4.0.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
                 <version>${aws.sdk.version}</version>
@@ -98,6 +105,12 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>cognitoidentityprovider</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud AWS SQS -->
+        <dependency>
+            <groupId>io.awspring.cloud</groupId>
+            <artifactId>spring-cloud-aws-starter-sqs</artifactId>
         </dependency>
 
         <!-- Jackson for JSON serialization -->
