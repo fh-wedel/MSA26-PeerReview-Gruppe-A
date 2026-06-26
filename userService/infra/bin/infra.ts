@@ -60,6 +60,7 @@ const serviceStack = new ServiceStack(app, 'UserServiceStack', {
   maxTaskCount: 2,
   memory: 512,
   cpu: 256,
+  requestQueueName: 'user-cache-invalidation-queue',
 });
 
 serviceStack.addDependency(apiStack);
