@@ -92,6 +92,7 @@ export class ServiceStack extends cdk.Stack {
       environment: {
         'SQS_MATCHING_REQUEST_QUEUE': 'matching-request-queue',
         'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
+        'SQS_CACHE_INVALIDATION_QUEUE': 'user-cache-invalidation-queue',
         'DYNAMODB_TABLE_NAME': dynamoTableName,
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
@@ -178,6 +179,17 @@ export class ServiceStack extends cdk.Stack {
         resources: [
           `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:notification-request-queue`,
         ],
+      })
+    );
+
+    // Grant SQS SendMessage permissions to the user cache invalidation queue
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
+        resources: [
+          `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:user-cache-invalidation-queue`
+        ]
       })
     );
 

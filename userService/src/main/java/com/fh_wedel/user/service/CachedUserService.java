@@ -57,8 +57,13 @@ public class CachedUserService {
         cognitoService.removeUserFromGroup(username, groupName);
     }
 
-    @CacheEvict(value = {"users"}, key = "'username:' + #username")
+    @CacheEvict(value = {"users", "groupMembers", "userSearch"}, allEntries = true)
     public void updateUserAttributes(String username, Map<String, String> customAttributes) {
         cognitoService.updateUserAttributes(username, customAttributes);
+    }
+
+    @CacheEvict(value = {"users", "groupMembers", "userSearch"}, allEntries = true)
+    public void invalidateAllCaches() {
+        log.debug("All user caches invalidated.");
     }
 }

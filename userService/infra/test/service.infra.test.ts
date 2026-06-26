@@ -46,7 +46,7 @@ test('Service stack uses IPv6 defaults', () => {
 
     const template = Template.fromStack(stack);
 
-    template.resourceCountIs('AWS::SQS::Queue', 0);
+    template.resourceCountIs('AWS::SQS::Queue', 1);
 
     template.hasResourceProperties('AWS::Logs::LogGroup', {
         LogGroupName: '/ecs/orders',

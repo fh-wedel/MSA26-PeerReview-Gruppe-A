@@ -6,7 +6,9 @@ import com.fh_wedel.configuration.model.TopicTag;
 import com.fh_wedel.configuration.repository.TopicTagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -21,6 +23,10 @@ import java.util.stream.Collectors;
 public class TopicTagService {
 
     private final TopicTagRepository topicTagRepository;
+    private final SqsTemplate sqsTemplate;
+
+    @Value("${aws.sqs.cache-invalidation-queue-name}")
+    private String cacheInvalidationQueueName;
 
     public List<TopicTagDto> getAllTags() {
         return topicTagRepository.findAll().stream()
@@ -48,6 +54,7 @@ public class TopicTagService {
 
         topicTagRepository.save(tag);
         log.info("Created new topic tag: {}", tagName);
+        sendCacheInvalidationEvent();
         return mapToDto(tag);
     }
 
@@ -57,6 +64,7 @@ public class TopicTagService {
         }
         topicTagRepository.delete(tagName);
         log.info("Deleted topic tag: {}", tagName);
+        sendCacheInvalidationEvent();
     }
 
     public void validateTag(String tagName) {
@@ -74,5 +82,16 @@ public class TopicTagService {
         dto.setCreatedAt(tag.getCreatedAt() != null ? 
             OffsetDateTime.ofInstant(tag.getCreatedAt(), ZoneOffset.UTC) : null);
         return dto;
+    }
+
+    private void sendCacheInvalidationEvent() {
+        if (cacheInvalidationQueueName != null && !cacheInvalidationQueueName.isEmpty()) {
+            try {
+                sqsTemplate.send(cacheInvalidationQueueName, "{\"type\": \"TOPIC_CACHE_INVALIDATION\"}");
+                log.info("Sent cache invalidation event to SQS queue: {}", cacheInvalidationQueueName);
+            } catch (Exception e) {
+                log.error("Failed to send cache invalidation event to SQS", e);
+            }
+        }
     }
 }
