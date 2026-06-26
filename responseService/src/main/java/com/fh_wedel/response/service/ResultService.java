@@ -179,9 +179,6 @@ public class ResultService {
                 .options(q.getOptions())
                 .build();
     }
-
-    }
-
     public List<ReviewResultDto> findByAuthor(String authorId) {
         return repository.findByAuthorId(authorId).stream()
                 .map(ReviewResultDto::from)

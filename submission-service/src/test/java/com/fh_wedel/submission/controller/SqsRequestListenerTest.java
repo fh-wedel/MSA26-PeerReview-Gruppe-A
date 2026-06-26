@@ -28,13 +28,16 @@ class SqsRequestListenerTest {
     @Mock
     private ConfigurationServiceClient configurationServiceClient;
 
+    @Mock
+    private com.fh_wedel.submission.service.SubmissionService submissionService;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private SqsRequestListener sqsRequestListener;
 
     @BeforeEach
     void setUp() {
-        sqsRequestListener = new SqsRequestListener(repository, objectMapper, configurationServiceClient);
+        sqsRequestListener = new SqsRequestListener(repository, objectMapper, configurationServiceClient, submissionService);
     }
 
     @Test

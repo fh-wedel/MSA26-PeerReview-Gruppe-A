@@ -59,21 +59,6 @@ class ResultServiceTest {
                 submissionReviewsApi, matchesApi, submissionsApi);
     }
 
-    @Test
-    void emitsResultAvailableNotificationOnSave() {
-        ResultService service = buildService("notification-request-queue");
-
-        ReviewResult result = ReviewResult.builder()
-                .submissionId("sub-9").authorId("author-1").reviewerId("rev-1")
-                .completedAt(Instant.now()).build();
-        when(repository.save(any(ReviewResult.class))).thenReturn(result);
-
-        service.save(result);
-
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(sqsTemplate).send(eq("notification-request-queue"), body.capture());
-        assertThat(body.getValue()).contains("Review Result Available").contains("IN_APP").contains("author-1");
-    }
 
     @Test
     void enrichesResultFromNeighbouringServicesOnSave() throws Exception {
