@@ -38,7 +38,7 @@ public class AiReviewOrchestrator {
      * Requests an AI Review for a given submission.
      * Throws an exception if an AI review already exists (even if processing).
      */
-    public ReviewResult requestReview(String submissionId) {
+    public ReviewResult requestReview(String submissionId, String documentS3Key) {
         if (aiReviewQueueName == null || aiReviewQueueName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "AI Review queue is not configured.");
         }
@@ -62,7 +62,7 @@ public class AiReviewOrchestrator {
 
         ReviewResult saved = repository.save(result);
 
-        AiReviewTask task = new AiReviewTask(submissionId, saved.getId().toString());
+        AiReviewTask task = new AiReviewTask(submissionId, saved.getId().toString(), documentS3Key);
         try {
             sqsTemplate.send(aiReviewQueueName, objectMapper.writeValueAsString(task));
             log.info("Sent AiReviewTask to queue {} for submission {}", aiReviewQueueName, submissionId);

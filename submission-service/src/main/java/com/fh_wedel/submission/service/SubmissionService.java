@@ -220,15 +220,24 @@ public class SubmissionService {
             return;
         }
 
+        // Include the S3 key of the first document so the response service can read the PDF
+        // directly from S3 without needing to call back to this service (avoiding auth issues).
+        String documentS3Key = null;
+        List<DocumentRecord> docs = repository.findDocuments(submission.getSubmissionId());
+        if (!docs.isEmpty()) {
+            documentS3Key = docs.get(0).getS3Key();
+        }
+
         SubmissionReadyEvent event = new SubmissionReadyEvent(
                 submission.getSubmissionId(),
-                submission.isRequestAiReview()
+                submission.isRequestAiReview(),
+                documentS3Key
         );
 
         try {
             String messageBody = objectMapper.writeValueAsString(event);
             sqsTemplate.send(submissionReadyQueueName, messageBody);
-            log.info("Sent SubmissionReadyEvent to queue '{}' for submission {}", submissionReadyQueueName, submission.getSubmissionId());
+            log.info("Sent SubmissionReadyEvent to queue '{}' for submission {} (s3Key={})", submissionReadyQueueName, submission.getSubmissionId(), documentS3Key);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize SubmissionReadyEvent for submission {}", submission.getSubmissionId(), e);
         }

@@ -27,7 +27,7 @@ public class SqsSubmissionReadyListener {
         if (event.isRequestAiReview()) {
             try {
                 logger.info("Submission {} requested AI review, triggering it.", event.getSubmissionId());
-                aiReviewOrchestrator.requestReview(event.getSubmissionId());
+                aiReviewOrchestrator.requestReview(event.getSubmissionId(), event.getDocumentS3Key());
             } catch (Exception e) {
                 logger.error("Failed to automatically trigger AI Review for submission {}", event.getSubmissionId(), e);
             }

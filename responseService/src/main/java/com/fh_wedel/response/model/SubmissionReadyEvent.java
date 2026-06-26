@@ -4,6 +4,7 @@ public class SubmissionReadyEvent {
 
     private String submissionId;
     private boolean requestAiReview;
+    private String documentS3Key;
 
     public SubmissionReadyEvent() {
     }
@@ -11,6 +12,12 @@ public class SubmissionReadyEvent {
     public SubmissionReadyEvent(String submissionId, boolean requestAiReview) {
         this.submissionId = submissionId;
         this.requestAiReview = requestAiReview;
+    }
+
+    public SubmissionReadyEvent(String submissionId, boolean requestAiReview, String documentS3Key) {
+        this.submissionId = submissionId;
+        this.requestAiReview = requestAiReview;
+        this.documentS3Key = documentS3Key;
     }
 
     public String getSubmissionId() {
@@ -27,5 +34,13 @@ public class SubmissionReadyEvent {
 
     public void setRequestAiReview(boolean requestAiReview) {
         this.requestAiReview = requestAiReview;
+    }
+
+    public String getDocumentS3Key() {
+        return documentS3Key;
+    }
+
+    public void setDocumentS3Key(String documentS3Key) {
+        this.documentS3Key = documentS3Key;
     }
 }

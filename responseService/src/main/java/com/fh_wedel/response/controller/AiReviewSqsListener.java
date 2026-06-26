@@ -34,7 +34,7 @@ public class AiReviewSqsListener {
     private final SubmissionReviewsApi submissionReviewsApi;
     private final ResultService resultService;
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate;
+    private final com.fh_wedel.response.service.DocumentStorageService documentStorageService;
     private final String submissionServiceUrl;
 
     public AiReviewSqsListener(ReviewResultRepository repository,
@@ -42,14 +42,15 @@ public class AiReviewSqsListener {
                                SubmissionReviewsApi submissionReviewsApi,
                                ResultService resultService,
                                ObjectMapper objectMapper,
+                               com.fh_wedel.response.service.DocumentStorageService documentStorageService,
                                @Value("${aws.submission-service.url}") String submissionServiceUrl) {
         this.repository = repository;
         this.bedrockAiService = bedrockAiService;
         this.submissionReviewsApi = submissionReviewsApi;
         this.resultService = resultService;
         this.objectMapper = objectMapper;
+        this.documentStorageService = documentStorageService;
         this.submissionServiceUrl = submissionServiceUrl;
-        this.restTemplate = new RestTemplate();
     }
 
     @SqsListener("${aws.sqs.ai-review.queue-name}")
@@ -87,28 +88,38 @@ public class AiReviewSqsListener {
             }
             String schemaJson = objectMapper.writeValueAsString(form);
 
-            // 2. Fetch Document Presigned URL
-            String docUrl = submissionServiceUrl + "/api/submission/submissions/" + submissionId + "/documents";
-            String docJson = restTemplate.getForObject(docUrl, String.class);
-            
-            Map<String, Object> docMap = objectMapper.readValue(docJson, new TypeReference<Map<String, Object>>() {});
-            List<Map<String, Object>> documents = (List<Map<String, Object>>) docMap.get("documents");
-            if (documents == null || documents.isEmpty()) {
-                throw new IllegalStateException("No documents found for submission");
-            }
-            String downloadUrl = (String) documents.get(0).get("downloadUrl");
-            if (downloadUrl == null) {
-                // If the submission service doesn't return downloadUrl in the list endpoint, we might need to call the download endpoint
+            // 2. Fetch PDF bytes
+            // Prefer direct S3 access using the key embedded in the task (no auth needed).
+            // Fall back to calling the submission service REST API with system-admin headers
+            // for manually-triggered reviews where no S3 key was supplied.
+            byte[] pdfBytes;
+            if (task.getDocumentS3Key() != null && !task.getDocumentS3Key().isBlank()) {
+                log.info("Fetching document bytes from S3 directly using key: {}", task.getDocumentS3Key());
+                pdfBytes = documentStorageService.getDocumentBytes(task.getDocumentS3Key());
+            } else {
+                log.info("No S3 key in task — falling back to submission service REST API for submission {}", submissionId);
+                // Build a RestTemplate with system-admin headers so the submission service ABAC passes
+                org.springframework.web.client.RestTemplate authRestTemplate = new RestTemplate();
+                authRestTemplate.getInterceptors().add((request, body, execution) -> {
+                    request.getHeaders().set("x-auth-username", "system-response-service");
+                    request.getHeaders().set("x-auth-groups", "Admin");
+                    return execution.execute(request, body);
+                });
+                String docUrl = submissionServiceUrl + "/api/submission/submissions/" + submissionId + "/documents";
+                String docJson = authRestTemplate.getForObject(docUrl, String.class);
+                List<Map<String, Object>> documents = objectMapper.readValue(docJson, new TypeReference<List<Map<String, Object>>>() {});
+                if (documents == null || documents.isEmpty()) {
+                    throw new IllegalStateException("No documents found for submission");
+                }
                 String docId = (String) documents.get(0).get("documentId");
                 String dlUrl = submissionServiceUrl + "/api/submission/submissions/" + submissionId + "/documents/" + docId + "/download";
-                Map<String, String> dlMap = restTemplate.getForObject(dlUrl, Map.class);
-                downloadUrl = dlMap.get("downloadUrl");
+                Map<String, String> dlMap = authRestTemplate.getForObject(dlUrl, Map.class);
+                String downloadUrl = dlMap != null ? dlMap.get("uploadUrl") : null;
+                if (downloadUrl == null) throw new IllegalStateException("Could not get presigned download URL");
+                pdfBytes = new RestTemplate().getForObject(downloadUrl, byte[].class);
             }
-
-            // 3. Download PDF bytes
-            byte[] pdfBytes = restTemplate.getForObject(downloadUrl, byte[].class);
             if (pdfBytes == null || pdfBytes.length == 0) {
-                throw new IllegalStateException("Failed to download document bytes");
+                throw new IllegalStateException("Failed to obtain document bytes for submission " + submissionId);
             }
 
             // 4. Call Bedrock

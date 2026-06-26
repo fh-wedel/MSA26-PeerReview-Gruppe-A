@@ -68,7 +68,8 @@ public class ResultController {
             Authentication authentication) {
         
         log.info("Manual AI Review requested for submission: {}", submissionId);
-        ReviewResult saved = aiReviewOrchestrator.requestReview(submissionId);
+        // Manual trigger has no S3 key; the listener will fetch it via the submission service API
+        ReviewResult saved = aiReviewOrchestrator.requestReview(submissionId, null);
         return ResponseEntity.status(202).body(ReviewResultDto.from(saved));
     }
 

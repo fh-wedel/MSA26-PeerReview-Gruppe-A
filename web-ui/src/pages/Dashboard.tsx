@@ -205,15 +205,19 @@ export const Dashboard: React.FC = () => {
         );
       }
 
-      // Explicitly trigger the creation of the submission in the submission-service 
-      // with the AI review flag so that the SqsRequestListener doesn't overwrite it
+      // Explicitly create the submission in the submission-service with the AI review flag.
+      // This ensures requestAiReview=true is persisted even if the SQS matching event
+      // arrives first (the upsert in createSubmission preserves the flag either way).
       try {
-        const resData = (response as any).data;
-        if (resData && resData.id) {
+        const resData = (response as any).data as import('../api/generated/configuration').Configuration;
+        const configId = resData?.submissionId;
+        if (configId) {
           await submissionApiClient.submissions.createSubmission({
-            configurationId: resData.id,
+            configurationId: configId,
             requestAiReview
           });
+        } else {
+          console.warn("Could not extract submissionId from config response — AI flag may not be persisted", resData);
         }
       } catch(subErr) {
         console.error("Failed to eagerly create submission with AI flag:", subErr);

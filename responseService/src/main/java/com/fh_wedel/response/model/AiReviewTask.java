@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class AiReviewTask {
     private String submissionId;
     private String reviewResultId;
+    private String documentS3Key;
 }
