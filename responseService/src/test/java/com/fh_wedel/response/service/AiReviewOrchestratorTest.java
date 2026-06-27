@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -72,7 +73,13 @@ class AiReviewOrchestratorTest {
     @DisplayName("creates placeholder and sends AI review task")
     void requestReview_sendsQueueTask() {
         when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
-        when(repository.saveIfAbsent(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.saveIfAbsent(any())).thenAnswer(invocation -> {
+            ReviewResult result = invocation.getArgument(0);
+            if (result.getId() == null) {
+                result.setId(UUID.randomUUID());
+            }
+            return result;
+        });
 
         ReviewResult saved = orchestrator.requestReview("sub-1", "docs/sub-1.pdf");
 
