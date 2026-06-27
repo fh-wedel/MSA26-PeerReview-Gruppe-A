@@ -130,14 +130,14 @@ export class EcsInfra {
 
         // Weekdays: 0:00 - 1:00 && 15:00 - 0:00
         scalableTarget.scaleOnSchedule('ScaleDownWeekdaysMorning', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '1', weekDay: 'MON-FRI' }),
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '22', weekDay: 'MON-FRI' }),
             minCapacity: 0,
             maxCapacity: 0,
             timeZone: timeZone,
         });
 
         scalableTarget.scaleOnSchedule('ScaleUpWeekdaysAfternoon', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '15', weekDay: 'MON-FRI' }),
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '17', weekDay: 'MON-FRI' }),
             minCapacity: minTaskCount,
             maxCapacity: maxTaskCount,
             timeZone: timeZone,
@@ -145,14 +145,14 @@ export class EcsInfra {
 
         // Weekends: 0:00 - 2:00 && 10:00 - 0:00
         scalableTarget.scaleOnSchedule('ScaleDownWeekendMorning', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '2', weekDay: 'SAT,SUN' }),
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '23', weekDay: 'SAT,SUN' }),
             minCapacity: 0,
             maxCapacity: 0,
             timeZone: timeZone,
         });
 
         scalableTarget.scaleOnSchedule('ScaleUpWeekendMorning', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '10', weekDay: 'SAT,SUN' }),
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '11', weekDay: 'SAT,SUN' }),
             minCapacity: minTaskCount,
             maxCapacity: maxTaskCount,
             timeZone: timeZone,
