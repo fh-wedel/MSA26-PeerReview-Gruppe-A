@@ -25,6 +25,7 @@ export interface ResponseServiceStackProps extends cdk.StackProps {
   aiReviewQueueName: string;
   s3BucketName: string;
   dynamoDbTableName: string;
+  bedrockModelId: string;
 }
 
 export class ResponseServiceStack extends cdk.Stack {
@@ -72,6 +73,7 @@ export class ResponseServiceStack extends cdk.Stack {
       'SubmissionDocumentsBucket',
       `peerreview-submissions-${AWSConstants.AWS_ACCOUNT_ID}`,
     );
+    const bedrockModelId = props.bedrockModelId;
 
     const bedrockProxyLambda = new lambda.Function(this, 'BedrockProxyLambda', {
       functionName: `${props.serviceName}-bedrock-proxy`,
@@ -83,7 +85,8 @@ export class ResponseServiceStack extends cdk.Stack {
       environment: {
         RESPONSE_DOCUMENTS_BUCKET: props.s3BucketName,
         SUBMISSION_DOCUMENTS_BUCKET: submissionDocumentsBucket.bucketName,
-        BEDROCK_MODEL_ID: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+        // Can be either a foundation model ID or an inference profile ID/ARN.
+        BEDROCK_MODEL_ID: bedrockModelId,
       },
     });
 
@@ -92,7 +95,11 @@ export class ResponseServiceStack extends cdk.Stack {
     bedrockProxyLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['bedrock:InvokeModel'],
-        resources: ['arn:aws:bedrock:*::foundation-model/*'],
+        resources: [
+          'arn:aws:bedrock:*::foundation-model/*',
+          'arn:aws:bedrock:*:*:inference-profile/*',
+          'arn:aws:bedrock:*:*:application-inference-profile/*',
+        ],
       }),
     );
 

@@ -17,6 +17,7 @@ const synth = () => {
         maxTaskCount: 1,
         memory: 512,
         cpu: 256,
+        bedrockModelId: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0',
     });
     return Template.fromStack(stack);
 };
@@ -76,7 +77,11 @@ test('Response stack grants Bedrock invoke to proxy Lambda and Lambda invoke to 
                 Match.objectLike({
                     Action: 'bedrock:InvokeModel',
                     Effect: 'Allow',
-                    Resource: 'arn:aws:bedrock:*::foundation-model/*',
+                    Resource: Match.arrayWith([
+                        'arn:aws:bedrock:*::foundation-model/*',
+                        'arn:aws:bedrock:*:*:inference-profile/*',
+                        'arn:aws:bedrock:*:*:application-inference-profile/*',
+                    ]),
                 }),
             ]),
         },

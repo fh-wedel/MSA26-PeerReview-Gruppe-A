@@ -13,7 +13,7 @@ LOGGER.setLevel(logging.INFO)
 S3_CLIENT = boto3.client("s3")
 BEDROCK_CLIENT = boto3.client("bedrock-runtime")
 
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-sonnet-4-5-20250929-v1:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "eu.anthropic.claude-sonnet-4-5-20250929-v1:0")
 PRIMARY_BUCKET_NAME = os.environ["RESPONSE_DOCUMENTS_BUCKET"]
 FALLBACK_BUCKET_NAME = os.environ.get("SUBMISSION_DOCUMENTS_BUCKET")
 
@@ -66,9 +66,10 @@ def handler(event, _context):
         raise ValueError("criteriaJson is required")
 
     LOGGER.info(
-        "Processing Bedrock proxy request for submission=%s reviewResultId=%s",
+        "Processing Bedrock proxy request for submission=%s reviewResultId=%s using modelOrProfileId=%s",
         submission_id,
         review_result_id,
+        MODEL_ID,
     )
 
     pdf_bytes = _load_document_bytes(document_s3_key)
