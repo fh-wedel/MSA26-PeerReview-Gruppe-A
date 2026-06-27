@@ -143,7 +143,20 @@ public class AiReviewSqsListener {
 
     private List<ReviewAnswer> mapAndValidateAnswers(Map<String, Object> parsedReview, List<ReviewQuestionDto> form) {
         Object rawAnswers = parsedReview.get("answers");
-        if (!(rawAnswers instanceof List<?> answersList) || answersList.isEmpty()) {
+        List<?> answersList;
+        if (rawAnswers instanceof List<?> list) {
+            answersList = list;
+        } else if (rawAnswers instanceof Map<?, ?> answerMap) {
+            answersList = answerMap.entrySet().stream()
+                    .map(entry -> Map.of(
+                            "questionId", String.valueOf(entry.getKey()),
+                            "answer", entry.getValue() != null ? String.valueOf(entry.getValue()) : ""
+                    ))
+                    .toList();
+        } else {
+            throw new IllegalStateException("AI response does not contain a supported answers structure.");
+        }
+        if (answersList.isEmpty()) {
             throw new IllegalStateException("AI response does not contain a non-empty answers array.");
         }
 
@@ -161,14 +174,35 @@ public class AiReviewSqsListener {
             }
 
             Object questionIdRaw = answerMap.get("questionId");
+            if (!(questionIdRaw instanceof String) || ((String) questionIdRaw).isBlank()) {
+                questionIdRaw = answerMap.get("question_id");
+            }
+            if (!(questionIdRaw instanceof String) || ((String) questionIdRaw).isBlank()) {
+                questionIdRaw = answerMap.get("id");
+            }
+
             Object answerRaw = answerMap.get("answer");
+            if (answerRaw == null) {
+                answerRaw = answerMap.get("value");
+            }
+            if (answerRaw == null) {
+                answerRaw = answerMap.get("grade");
+            }
+            if (answerRaw == null) {
+                answerRaw = answerMap.get("score");
+            }
+            if (answerRaw == null) {
+                answerRaw = answerMap.get("comment");
+            }
+
             if (!(questionIdRaw instanceof String questionId) || questionId.isBlank()) {
                 throw new IllegalStateException("AI response contains an answer without questionId.");
             }
             if (!validQuestionIds.contains(questionId)) {
                 throw new IllegalStateException("AI response contains unknown questionId: " + questionId);
             }
-            if (!(answerRaw instanceof String answerText) || answerText.isBlank()) {
+            String answerText = answerRaw instanceof String s ? s : (answerRaw != null ? String.valueOf(answerRaw) : null);
+            if (answerText == null || answerText.isBlank()) {
                 throw new IllegalStateException("AI response contains an empty answer for questionId: " + questionId);
             }
 

@@ -129,4 +129,52 @@ class AiReviewSqsListenerTest {
         assertThat(failedCaptor.getAllValues().getLast().getAiStatus()).isEqualTo("FAILED");
         verify(resultService, never()).save(any());
     }
+
+    @Test
+    @DisplayName("accepts answers object map and alternate answer field names")
+    void receiveAiReviewTask_acceptsAlternateAnswerShapes() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = ReviewResult.builder()
+                .id(reviewId)
+                .submissionId("sub-2")
+                .reviewerId("AI-Reviewer")
+                .isAiGenerated(true)
+                .aiStatus("REQUESTED")
+                .createdAt(Instant.now())
+                .build();
+
+        when(repository.findBySubmissionId("sub-2")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-2")).thenReturn(List.of(
+                new ReviewQuestionDto().id("q1").text("Originality").required(true),
+                new ReviewQuestionDto().id("q2").text("Structure").required(false)
+        ));
+        when(bedrockProxyClientService.generateReview(any(), any(), any(), any())).thenReturn("""
+                {
+                  "finalGrade": "2.3",
+                  "reviewComments": "Works with alternate payloads.",
+                  "answers": {
+                    "q1": 9,
+                    "q2": "clear structure"
+                  }
+                }
+                """);
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(
+                repository,
+                bedrockProxyClientService,
+                submissionReviewsApi,
+                resultService,
+                objectMapper,
+                "http://submission.internal.services:8081"
+        );
+
+        listener.receiveAiReviewTask("""
+                {"submissionId":"sub-2","reviewResultId":"%s","documentS3Key":"docs/sub-2.pdf"}
+                """.formatted(reviewId));
+
+        ArgumentCaptor<ReviewResult> savedCaptor = ArgumentCaptor.forClass(ReviewResult.class);
+        verify(resultService).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getAiStatus()).isEqualTo("COMPLETED");
+        assertThat(savedCaptor.getValue().getAnswers()).hasSize(2);
+    }
 }
