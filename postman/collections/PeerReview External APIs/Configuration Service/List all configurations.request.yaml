@@ -1,0 +1,6 @@
+$kind: http-request
+name: 'List all configurations'
+description: 'Summary: List all configurations'
+url: '{{base_url}}/api/configuration/submissions'
+method: GET
+order: 6000

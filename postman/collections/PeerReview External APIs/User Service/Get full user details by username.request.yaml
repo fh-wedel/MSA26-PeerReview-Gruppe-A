@@ -1,0 +1,14 @@
+$kind: http-request
+name: 'Get full user details by username'
+description: |-
+  Summary: Get full user details by username
+  
+  Returns the full UserProfile (including custom attributes and group memberships)
+  for a user identified by their Cognito username.
+  Replaces GET /api/matching/examiners/{examinerUsername}.
+  Restricted to Admin and ExaminationOfficer.
+  
+  operationId: getUserDetails
+url: '{{base_url}}/api/users/details/{{username}}'
+method: GET
+order: 2000

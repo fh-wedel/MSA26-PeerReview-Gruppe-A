@@ -1,0 +1,18 @@
+$kind: http-request
+name: 'Generate presigned S3 upload URL for a document'
+description: |-
+  Summary: Generate presigned S3 upload URL for a document
+  
+  operationId: getPresignedUploadUrl
+url: '{{base_url}}/api/submission/submissions/{{id}}/presigned-url'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "contentType": "sample-contentType",
+      "fileName": "sample-fileName"
+    }
+order: 7000

@@ -1,0 +1,23 @@
+# Use this workspace to collaborate
+workspace:
+  id: 12de2cf1-43c0-4e97-8f71-10f718d26040
+
+localResources:
+  specs:
+    - ../infraLibrary/test/fixtures/openapi.json
+    - ../communicationService/src/main/resources/openapi/communication.json
+    - ../matchingService/src/main/resources/openapi/matching.json
+    - ../notificationService/src/main/resources/openapi/notification.json
+    - ../responseService/src/main/resources/openapi/response.json
+    - ../submission-service/src/main/resources/openapi/submission.json
+    - ../templateEcsService/src/main/resources/openapi/template.json
+    - ../userService/src/main/resources/openapi/template.json
+    - ../userService/src/main/resources/openapi/user.json
+    - ../communicationService/src/main/resources/openapi/client/configuration.json
+    - ../communicationService/src/main/resources/openapi/client/matching.json
+    - ../communicationService/src/main/resources/openapi/client/user.json
+    - ../configuration-service/configuration-core/src/main/resources/openapi/configuration.json
+    - ../matchingService/src/main/resources/openapi/client/configuration.json
+    - ../matchingService/src/main/resources/openapi/client/user.json
+    - ../responseService/src/main/resources/openapi/client/configuration.json
+    - ../responseService/src/main/resources/openapi/client/matching.json

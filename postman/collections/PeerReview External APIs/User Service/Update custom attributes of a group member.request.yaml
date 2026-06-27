@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'Update custom attributes of a group member'
+description: |-
+  Summary: Update custom attributes of a group member
+  
+  Updates the custom Cognito attributes (e.g. specialty, availability) for a user.
+  The user must be a member of the specified group.
+  Replaces PATCH /api/matching/examiners/{examinerUsername}.
+  Restricted to Admin and ExaminationOfficer.
+  
+  operationId: updateUserAttributes
+url: '{{base_url}}/api/users/groups/{{groupName}}/members/{{username}}/attributes'
+method: PATCH
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "customAttributes": {}
+    }
+order: 6000

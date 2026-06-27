@@ -1,0 +1,26 @@
+$kind: http-request
+name: 'Create a new submission configuration'
+description: 'Summary: Create a new submission configuration'
+url: '{{base_url}}/api/configuration/submissions'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "authorIds": [
+        "sample-authorIds"
+      ],
+      "reviewProcessType": "sample-reviewProcessType",
+      "reviewTemplateType": "sample-reviewTemplateType",
+      "title": "sample-title",
+      "topicTag": "sample-topicTag",
+      "customReviewerIds": [
+        "sample-customReviewerIds"
+      ],
+      "numberOfExaminers": 1,
+      "reviewDeadline": "2026-01-01T00:00:00Z",
+      "submissionDeadline": "2026-01-01T00:00:00Z"
+    }
+order: 7000

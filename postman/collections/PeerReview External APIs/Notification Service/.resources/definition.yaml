@@ -1,0 +1,3 @@
+$kind: collection
+description: 'Requests generated from `notificationService/src/main/resources/openapi/notification.json`.'
+order: 7000

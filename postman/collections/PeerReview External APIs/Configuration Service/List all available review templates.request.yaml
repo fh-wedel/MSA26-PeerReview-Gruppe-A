@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'List all available review templates'
+description: |-
+  Summary: List all available review templates
+  
+  operationId: listReviewTemplates
+url: '{{base_url}}/api/configuration/review-templates'
+method: GET
+order: 1000

@@ -1,0 +1,3 @@
+$kind: collection
+description: 'Authenticate with AWS Cognito before calling service APIs.'
+order: 1000

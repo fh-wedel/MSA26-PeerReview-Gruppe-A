@@ -1,0 +1,54 @@
+name: default
+values:
+  - key: ClientId
+    value: ''
+  - key: base_url
+    value: 'https://www.msa26-peer-review.fh-wedel.dev'
+  - key: access_token
+    value: ''
+  - key: id_token
+    value: ''
+  - key: refresh_token
+    value: ''
+  - key: token_expires_at
+    value: ''
+  - key: current_user_sub
+    value: ''
+  - key: sub
+    value: 00000000-0000-4000-8000-000000000000
+  - key: current_username
+    value: ''
+  - key: username
+    value: sample-user
+  - key: current_user_groups
+    value: ''
+  - key: submissionId
+    value: submission-123
+  - key: documentId
+    value: document-123
+  - key: chatId
+    value: chat-123
+  - key: groupName
+    value: Reviewer
+  - key: tagName
+    value: SampleTag
+  - key: typeName
+    value: SIMPLE
+  - key: templateName
+    value: default-template
+  - key: notificationId
+    value: notification-123
+  - key: authorId
+    value: 00000000-0000-4000-8000-000000000000
+  - key: recipientId
+    value: 00000000-0000-4000-8000-000000000000
+  - key: nextToken
+    value: ''
+  - key: limit
+    value: '50'
+  - key: examinerUsername
+    value: ''
+  - key: id
+    value: ''
+  - key: q
+    value: ''

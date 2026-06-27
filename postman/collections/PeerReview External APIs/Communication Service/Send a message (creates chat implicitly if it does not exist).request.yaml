@@ -1,0 +1,30 @@
+$kind: http-request
+name: 'Send a message (creates chat implicitly if it does not exist)'
+description: |-
+  Summary: Send a message (creates chat implicitly if it does not exist)
+  
+  Sends a message within a given chat context (GENERAL or SUBMISSION-specific).
+  For GENERAL chats, recipientId is required and identifies the other participant.
+  For SUBMISSION chats, recipientId is not needed — the chat is a group chat
+  shared by all participants of the submission.
+  The backend derives a deterministic chatId from the context.
+  The senderId is always taken from the x-auth-principal-id header, never
+  from the request body, preventing impersonation.
+  
+  operationId: sendMessage
+url: '{{base_url}}/api/communication/chats/messages'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "body": "sample-body",
+      "chatContext": {
+        "type": "GENERAL",
+        "submissionId": "{{submissionId}}"
+      },
+      "recipientId": "{{recipientId}}"
+    }
+order: 2000

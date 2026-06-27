@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Remove a user from a Cognito group'
+description: |-
+  Summary: Remove a user from a Cognito group
+  
+  Removes the specified user from the Cognito group.
+  Replaces DELETE /api/matching/examiners/{examinerUsername}.
+  Restricted to Admin and ExaminationOfficer.
+  
+  operationId: removeGroupMember
+url: '{{base_url}}/api/users/groups/{{groupName}}/members/{{username}}'
+method: DELETE
+order: 5000

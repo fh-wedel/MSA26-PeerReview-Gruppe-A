@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Get the feedback form for a submission'
+description: |-
+  Summary: Get the feedback form for a submission
+  
+  operationId: getFeedbackFormForSubmission
+url: '{{base_url}}/api/configuration/submissions/{{submissionId}}/feedback-form'
+method: GET
+order: 10000

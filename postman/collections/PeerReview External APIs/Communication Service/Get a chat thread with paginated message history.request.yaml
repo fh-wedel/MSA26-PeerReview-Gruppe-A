@@ -1,0 +1,24 @@
+$kind: http-request
+name: 'Get a chat thread with paginated message history'
+description: |-
+  Summary: Get a chat thread with paginated message history
+  
+  Returns the chat metadata and a page of messages, ordered newest-first.
+  Default page size is 100 messages. Use nextToken to load older messages
+  (scroll-up pagination). Returns 403 if the caller is not a participant.
+  Web-UI note: load page 1 on chat open; fetch older pages using the
+  returned nextToken when the user scrolls to the top of the message list.
+  
+  operationId: getChat
+url: '{{base_url}}/api/communication/chats/{{chatId}}'
+method: GET
+queryParams:
+  - key: 'nextToken'
+    value: '{{nextToken}}'
+    disabled: true
+    description: 'Pagination cursor returned from a previous response (for loading older messages)'
+  - key: 'limit'
+    value: '{{limit}}'
+    disabled: true
+    description: 'Number of messages to return per page'
+order: 3000

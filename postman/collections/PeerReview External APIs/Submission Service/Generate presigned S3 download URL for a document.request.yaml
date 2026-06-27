@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'Generate presigned S3 download URL for a document'
+description: |-
+  Summary: Generate presigned S3 download URL for a document
+  
+  operationId: getPresignedDownloadUrl
+  
+  Note: This endpoint returns a download URL or binary response. Use the returned URL in a browser or a follow-up request.
+url: '{{base_url}}/api/submission/submissions/{{id}}/documents/{{documentId}}/download'
+method: GET
+order: 6000

@@ -1,0 +1,38 @@
+$kind: http-request
+name: 'Refresh (Cognito REFRESH_TOKEN_AUTH)'
+description: 'Request new access/id tokens using refresh token.'
+url: 'https://cognito-idp.eu-north-1.amazonaws.com/'
+method: POST
+headers:
+  Content-Type: 'application/x-amz-json-1.1'
+  X-Amz-Target: 'AWSCognitoIdentityProviderService.InitiateAuth'
+body:
+  type: json
+  content: |-
+    {
+      "AuthFlow": "REFRESH_TOKEN_AUTH",
+      "ClientId": "{{ClientId}}",
+      "AuthParameters": {
+        "REFRESH_TOKEN": "{{refresh_token}}"
+      }
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      const data = pm.response.json();
+      const authResult = data.AuthenticationResult || {};
+      
+      if (authResult.AccessToken) {
+        pm.environment.set('access_token', authResult.AccessToken);
+      }
+      if (authResult.IdToken) {
+        pm.environment.set('id_token', authResult.IdToken);
+      }
+      if (authResult.ExpiresIn) {
+        const expiresAt = new Date(Date.now() + (Number(authResult.ExpiresIn) * 1000)).toISOString();
+        pm.environment.set('token_expires_at', expiresAt);
+      }
+    language: text/javascript
+order: 2000

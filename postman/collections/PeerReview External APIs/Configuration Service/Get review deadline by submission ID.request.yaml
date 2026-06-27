@@ -1,0 +1,6 @@
+$kind: http-request
+name: 'Get review deadline by submission ID'
+description: 'Summary: Get review deadline by submission ID'
+url: '{{base_url}}/api/configuration/submissions/{{submissionId}}/review-deadline'
+method: GET
+order: 11000
