@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.InvokeRequest;
 import software.amazon.awssdk.services.lambda.model.InvokeResponse;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -19,13 +20,16 @@ public class BedrockProxyClientService {
     private final LambdaClient lambdaClient;
     private final ObjectMapper objectMapper;
     private final String lambdaName;
+    private final String submissionDocumentsBucketName;
 
     public BedrockProxyClientService(LambdaClient lambdaClient,
                                      ObjectMapper objectMapper,
-                                     @Value("${aws.bedrock-proxy.lambda-name:}") String lambdaName) {
+                                     @Value("${aws.bedrock-proxy.lambda-name:}") String lambdaName,
+                                     @Value("${aws.submission-documents.bucket-name:}") String submissionDocumentsBucketName) {
         this.lambdaClient = lambdaClient;
         this.objectMapper = objectMapper;
         this.lambdaName = lambdaName;
+        this.submissionDocumentsBucketName = submissionDocumentsBucketName;
     }
 
     public String generateReview(String submissionId,
@@ -37,12 +41,15 @@ public class BedrockProxyClientService {
         }
 
         try {
-            String payload = objectMapper.writeValueAsString(Map.of(
-                    "submissionId", submissionId,
-                    "reviewResultId", reviewResultId,
-                    "criteriaJson", criteriaJson,
-                    "documentS3Key", documentS3Key
-            ));
+            Map<String, Object> payloadMap = new HashMap<>();
+            payloadMap.put("submissionId", submissionId);
+            payloadMap.put("reviewResultId", reviewResultId);
+            payloadMap.put("criteriaJson", criteriaJson);
+            payloadMap.put("documentS3Key", documentS3Key);
+            if (submissionDocumentsBucketName != null && !submissionDocumentsBucketName.isBlank()) {
+                payloadMap.put("documentS3Bucket", submissionDocumentsBucketName);
+            }
+            String payload = objectMapper.writeValueAsString(payloadMap);
 
             InvokeRequest request = InvokeRequest.builder()
                     .functionName(lambdaName)

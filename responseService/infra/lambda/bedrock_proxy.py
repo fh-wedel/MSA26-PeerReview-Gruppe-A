@@ -28,9 +28,17 @@ def _strip_json_fence(text: str) -> str:
     return text.strip()
 
 
-def _load_document_bytes(document_s3_key: str) -> bytes:
-    bucket_candidates = [PRIMARY_BUCKET_NAME]
-    if FALLBACK_BUCKET_NAME and FALLBACK_BUCKET_NAME != PRIMARY_BUCKET_NAME:
+def _load_document_bytes(document_s3_key: str, preferred_bucket_name: str | None = None) -> bytes:
+    bucket_candidates = []
+    if preferred_bucket_name:
+        bucket_candidates.append(preferred_bucket_name)
+    if PRIMARY_BUCKET_NAME not in bucket_candidates:
+        bucket_candidates.append(PRIMARY_BUCKET_NAME)
+    if (
+        FALLBACK_BUCKET_NAME
+        and FALLBACK_BUCKET_NAME != PRIMARY_BUCKET_NAME
+        and FALLBACK_BUCKET_NAME not in bucket_candidates
+    ):
         bucket_candidates.append(FALLBACK_BUCKET_NAME)
 
     last_error = None
@@ -58,6 +66,7 @@ def handler(event, _context):
     submission_id = event.get("submissionId", "unknown")
     review_result_id = event.get("reviewResultId", "unknown")
     document_s3_key = event.get("documentS3Key")
+    document_s3_bucket = event.get("documentS3Bucket")
     criteria_json = event.get("criteriaJson")
 
     if not document_s3_key:
@@ -66,13 +75,14 @@ def handler(event, _context):
         raise ValueError("criteriaJson is required")
 
     LOGGER.info(
-        "Processing Bedrock proxy request for submission=%s reviewResultId=%s using modelOrProfileId=%s",
+        "Processing Bedrock proxy request for submission=%s reviewResultId=%s using modelOrProfileId=%s bucketHint=%s",
         submission_id,
         review_result_id,
         MODEL_ID,
+        document_s3_bucket,
     )
 
-    pdf_bytes = _load_document_bytes(document_s3_key)
+    pdf_bytes = _load_document_bytes(document_s3_key, document_s3_bucket)
 
     system_prompt = (
         "You are an expert AI peer reviewer evaluating a scientific or academic submission. "

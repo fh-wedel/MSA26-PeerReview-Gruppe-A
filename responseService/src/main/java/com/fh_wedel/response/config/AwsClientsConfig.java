@@ -3,10 +3,14 @@ package com.fh_wedel.response.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.lambda.LambdaClient;
+
+import java.time.Duration;
 
 /**
  * Provides the AWS SDK v2 DynamoDB client beans.
@@ -21,6 +25,9 @@ public class AwsClientsConfig {
 
     @Value("${spring.cloud.aws.region.static:eu-north-1}")
     private String awsRegion;
+
+    @Value("${aws.lambda.invoke-timeout-seconds:240}")
+    private long lambdaInvokeTimeoutSeconds;
 
     @Bean
     public DynamoDbClient dynamoDbClient() {
@@ -39,9 +46,16 @@ public class AwsClientsConfig {
 
     @Bean
     public LambdaClient lambdaClient() {
+        Duration invokeTimeout = Duration.ofSeconds(lambdaInvokeTimeoutSeconds);
         return LambdaClient.builder()
                 .region(Region.of(awsRegion))
                 .dualstackEnabled(true)
+                .overrideConfiguration(ClientOverrideConfiguration.builder()
+                        .apiCallAttemptTimeout(invokeTimeout)
+                        .apiCallTimeout(invokeTimeout.plusSeconds(20))
+                        // Retrying invoke() can trigger duplicate Lambda executions for the same task.
+                        .retryPolicy(RetryPolicy.none())
+                        .build())
                 .build();
     }
 }

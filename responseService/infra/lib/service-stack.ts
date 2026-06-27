@@ -81,7 +81,7 @@ export class ResponseServiceStack extends cdk.Stack {
       handler: 'bedrock_proxy.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
       memorySize: 1024,
-      timeout: cdk.Duration.minutes(2),
+      timeout: cdk.Duration.minutes(5),
       environment: {
         RESPONSE_DOCUMENTS_BUCKET: props.s3BucketName,
         SUBMISSION_DOCUMENTS_BUCKET: submissionDocumentsBucket.bucketName,
@@ -128,6 +128,7 @@ export class ResponseServiceStack extends cdk.Stack {
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'S3_BUCKET_NAME': props.s3BucketName,
+        'SUBMISSION_DOCUMENTS_BUCKET_NAME': submissionDocumentsBucket.bucketName,
         'DYNAMODB_TABLE_NAME': props.dynamoDbTableName,
         // ECS-to-ECS targets via internal.services AAAA records (NOT sc.internal).
         // Used to enrich review results: grading schema (workflow), examiner
