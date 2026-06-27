@@ -152,6 +152,14 @@ export const SubmissionDetails: React.FC = () => {
                     <Skeleton variant="text" width={80} height={24} />
                     <Skeleton variant="text" width={120} height={32} />
                   </Box>
+                  <Box>
+                    <Skeleton variant="text" width={130} height={24} />
+                    <Skeleton variant="text" width={160} height={32} />
+                  </Box>
+                  <Box>
+                    <Skeleton variant="text" width={130} height={24} />
+                    <Skeleton variant="text" width={160} height={32} />
+                  </Box>
                 </Box>
               </Box>
               <Stack spacing={1.5} sx={{ minWidth: { md: 260 }, width: { xs: '100%', md: 'auto' } }}>
@@ -552,6 +560,20 @@ export const SubmissionDetails: React.FC = () => {
                     Reviewers
                   </Typography>
                   {displayReviewers}
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Submission Deadline
+                  </Typography>
+                  <Typography>{submissionConfig?.submissionDeadline ? formatDateTime(submissionConfig.submissionDeadline) : 'Not set'}</Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Review Deadline
+                  </Typography>
+                  <Typography>{submissionConfig?.reviewDeadline ? formatDateTime(submissionConfig.reviewDeadline) : 'Not set'}</Typography>
                 </Box>
               </Box>
               
