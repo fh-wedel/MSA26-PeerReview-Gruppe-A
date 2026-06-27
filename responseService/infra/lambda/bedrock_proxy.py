@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import time
 
 import boto3
 from botocore.exceptions import ClientError
@@ -82,7 +83,9 @@ def handler(event, _context):
         document_s3_bucket,
     )
 
+    s3_start = time.time()
     pdf_bytes = _load_document_bytes(document_s3_key, document_s3_bucket)
+    LOGGER.info("Loaded %d bytes from S3 in %.2fs", len(pdf_bytes), time.time() - s3_start)
 
     system_prompt = (
         "You are an expert AI peer reviewer evaluating a scientific or academic submission. "
@@ -120,12 +123,15 @@ def handler(event, _context):
         ],
     }
 
+    bedrock_start = time.time()
+    LOGGER.info("Invoking Bedrock model/profile '%s'", MODEL_ID)
     bedrock_response = BEDROCK_CLIENT.invoke_model(
         modelId=MODEL_ID,
         contentType="application/json",
         accept="application/json",
         body=json.dumps(request_payload),
     )
+    LOGGER.info("Bedrock invocation completed in %.2fs", time.time() - bedrock_start)
 
     body = json.loads(bedrock_response["body"].read())
     content = body.get("content") or []
