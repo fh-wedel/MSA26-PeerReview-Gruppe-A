@@ -26,6 +26,7 @@ export interface CreateConfigurationRequest {
 }
 
 export interface Configuration {
+  submissionId: string;
   title: string;
   reviewProcessType: string;
   authorIds: string[];
@@ -423,11 +424,12 @@ export class Api<
       data: CreateConfigurationRequest,
       params: RequestParams = {},
     ) =>
-      this.request<void, void>({
+      this.request<Configuration, void>({
         path: `/submissions`,
         method: "POST",
         body: data,
         type: ContentType.Json,
+        format: "json",
         ...params,
       }),
 

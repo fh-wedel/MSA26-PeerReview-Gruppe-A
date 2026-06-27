@@ -143,8 +143,10 @@ export const Dashboard: React.FC = () => {
         } else if (task.type === 'Assignment') {
             try {
                 const resResult = await responseApiClient.results.resultsDetail(task.submissionId);
-                if (resResult && (resResult as any).data) {
-                    continue; // Already reviewed
+                if (resResult && resResult.data && Array.isArray(resResult.data)) {
+                    if (resResult.data.some((r: any) => r.reviewerId === user.id)) {
+                        continue; // Already reviewed by this user
+                    }
                 }
             } catch (e) {
                 // Not reviewed yet
@@ -201,6 +203,8 @@ export const Dashboard: React.FC = () => {
             `Failed to create configuration: ${response.status} ${response.statusText}`
         );
       }
+
+      // Removed eager createSubmission call as AI flag is no longer supported automatically
 
       setSnackbarOpen(true);
       fetchTasks(); // Refresh tasks after a new submission

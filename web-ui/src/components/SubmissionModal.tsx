@@ -16,7 +16,7 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
-  Typography,
+  Typography
 } from "@mui/material";
 import type {UserSummary} from "../api/communication";
 import {useGroupMembers} from "../hooks/useGroupMembers";

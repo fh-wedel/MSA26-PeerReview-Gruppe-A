@@ -9,13 +9,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   FormControlLabel,
   IconButton,
-  InputLabel,
-  MenuItem,
-  OutlinedInput,
-  Select,
   Switch,
   Tab,
   Tabs,
@@ -31,7 +26,6 @@ import {
   Autocomplete,
   CircularProgress
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material/Select';
 import { Delete, Edit, GroupAdd } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -177,14 +171,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const handleTagChange = (event: SelectChangeEvent<typeof selectedTags>) => {
-    const {
-      target: { value },
-    } = event;
-    setSelectedTags(
-      typeof value === 'string' ? value.split(',') : value,
-    );
-  };
+
 
   if (!hasAccess) {
     return <Navigate to="/dashboard" replace />;
@@ -357,29 +344,20 @@ export const UserManagement: React.FC = () => {
                 }
                 label="Is Active"
               />
-              <FormControl fullWidth>
-                <InputLabel id="topic-tags-label">Topic Tags</InputLabel>
-                <Select
-                  labelId="topic-tags-label"
-                  multiple
-                  value={selectedTags}
-                  onChange={handleTagChange}
-                  input={<OutlinedInput label="Topic Tags" />}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} />
-                      ))}
-                    </Box>
-                  )}
-                >
-                  {topicTags.map((tag) => (
-                    <MenuItem key={tag.tagName} value={tag.tagName}>
-                      {tag.tagName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                multiple
+                options={topicTags.map((tag) => tag.tagName || '')}
+                value={selectedTags}
+                onChange={(_, newValue) => setSelectedTags(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="outlined"
+                    label="Topic Tags"
+                    placeholder="Select tags..."
+                  />
+                )}
+              />
             </>
           )}
         </DialogContent>
@@ -401,29 +379,20 @@ export const UserManagement: React.FC = () => {
             }
             label="Is Active"
           />
-          <FormControl fullWidth>
-            <InputLabel id="edit-topic-tags-label">Topic Tags</InputLabel>
-            <Select
-              labelId="edit-topic-tags-label"
-              multiple
-              value={selectedTags}
-              onChange={handleTagChange}
-              input={<OutlinedInput label="Topic Tags" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
-                  ))}
-                </Box>
-              )}
-            >
-              {topicTags.map((tag) => (
-                <MenuItem key={tag.tagName} value={tag.tagName}>
-                  {tag.tagName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Autocomplete
+            multiple
+            options={topicTags.map((tag) => tag.tagName || '')}
+            value={selectedTags}
+            onChange={(_, newValue) => setSelectedTags(newValue)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined"
+                label="Topic Tags"
+                placeholder="Select tags..."
+              />
+            )}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>

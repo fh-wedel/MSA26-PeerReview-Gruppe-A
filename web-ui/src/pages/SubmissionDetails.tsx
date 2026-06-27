@@ -18,7 +18,7 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
-import {ArrowBack, Chat as ChatIcon, PictureAsPdf} from '@mui/icons-material';
+import {ArrowBack, Chat as ChatIcon, PictureAsPdf, AutoAwesome as AutoAwesomeIcon} from '@mui/icons-material';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 
@@ -47,6 +47,7 @@ export const SubmissionDetails: React.FC = () => {
   const [chatAllowed, setChatAllowed] = useState(true);
   const [loadingContext, setLoadingContext] = useState(true);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewDialogOpenType, setReviewDialogOpenType] = useState<'human' | 'ai'>('human');
   const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [isReviewerState, setIsReviewerState] = useState(false);
   const [submissionConfig, setSubmissionConfig] = useState<any>(null);
@@ -57,7 +58,7 @@ export const SubmissionDetails: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [reviewResult, setReviewResult] = useState<any>(null);
+  const [reviewResults, setReviewResults] = useState<any[]>([]);
   const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
 
   const { user } = useAuth();
@@ -89,8 +90,8 @@ export const SubmissionDetails: React.FC = () => {
       if (docsRes && (docsRes as any).data) {
         setDocuments((docsRes as any).data);
       }
-      if (reviewRes && (reviewRes as any).data) {
-        setReviewResult((reviewRes as any).data);
+      if (reviewRes && reviewRes.data) {
+        setReviewResults(reviewRes.data);
       }
       if (formRes && (formRes as any).data) {
         setReviewQuestions((formRes as any).data);
@@ -110,6 +111,18 @@ export const SubmissionDetails: React.FC = () => {
       }
       setLoadingContext(false);
     });
+
+    // Polling for review results every 30s to reflect AI processing updates
+    const pollInterval = setInterval(() => {
+      responseApiClient.results.resultsDetail(submissionId).catch(() => null)
+        .then(reviewRes => {
+          if (reviewRes && reviewRes.data) {
+            setReviewResults(reviewRes.data);
+          }
+        });
+    }, 30000);
+
+    return () => clearInterval(pollInterval);
   }, [submissionId, user]);
 
   if (loadingContext) {
@@ -168,16 +181,33 @@ export const SubmissionDetails: React.FC = () => {
     );
   }
 
-  // Combine real API data with mock data as a fallback
-  const reviewAvailable = reviewResult ? true : (mockSubmission ? Boolean(mockSubmission.review) : false);
+
+  const aiReviewResults = reviewResults.filter(r => r.isAiGenerated || r.aiStatus != null);
+  const aiEverRequested = aiReviewResults.length > 0;
+  
+  const rawStatus = realSubmission?.status;
+  
+  const aiProcessing = aiReviewResults.some(r => r.aiStatus === 'PROCESSING' || r.aiStatus === 'REQUESTED');
+  const aiFailed = aiReviewResults.some(r => r.aiStatus === 'FAILED');
+
+  const completedReviews = reviewResults.filter(r => r.aiStatus === 'COMPLETED' || !r.isAiGenerated);
+  const aiCompletedReviews = completedReviews.filter(r => r.isAiGenerated);
+  const humanReviews = completedReviews.filter(r => !r.isAiGenerated);
+  const aiCompleted = aiCompletedReviews.length > 0;
+  const expectedHumanReviews = submissionMatch?.matches?.length || submissionMatch?.numberOfExaminers || 0;
+  const completedHumanCount = humanReviews.length;
+  const allHumanReviewsCompleted = expectedHumanReviews > 0
+    ? completedHumanCount >= expectedHumanReviews
+    : completedHumanCount > 0;
+
+  const reviewAvailable = humanReviews.length > 0 || aiCompletedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
+  const currentUserHasReviewed = reviewResults.some(r => r.reviewerId === user?.id);
   const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
   // Resolve status based on realSubmission or matching
   let status = 'Created';
-  let rawStatus = undefined;
   if (realSubmission && realSubmission.status) {
-    rawStatus = realSubmission.status;
     if (rawStatus === 'SUBMITTED') {
       status = 'Submitted';
     } else if (rawStatus === 'WAITING_FOR_SUBMISSION') {
@@ -195,8 +225,24 @@ export const SubmissionDetails: React.FC = () => {
     status = 'Failed';
   }
 
-  if (reviewAvailable) {
-    status = 'Review Completed';
+  if (allHumanReviewsCompleted) {
+    if (aiProcessing) {
+      status = 'All Human Reviews Completed (AI Processing)';
+    } else if (aiFailed) {
+      status = 'All Human Reviews Completed (AI Failed)';
+    } else if (aiCompleted) {
+      status = 'All Reviews Completed';
+    } else {
+      status = 'All Human Reviews Completed';
+    }
+  } else if (completedHumanCount > 0 && expectedHumanReviews > 0) {
+    status = `${completedHumanCount} / ${expectedHumanReviews} Human Reviews Completed`;
+  } else if (aiProcessing) {
+    status = 'AI Review Processing';
+  } else if (aiCompleted) {
+    status = 'AI Review Completed';
+  } else if (aiFailed) {
+    status = 'AI Review Failed';
   }
   const reviewType = submissionConfig?.reviewProcessType || mockSubmission?.reviewType || 'unknown';
 
@@ -210,6 +256,7 @@ export const SubmissionDetails: React.FC = () => {
   // Determine user context for smart anonymity
   const privilegedRoles = ['Admin', 'Teacher', 'ExaminationOfficer'];
   const isPrivileged = user?.roles?.some(r => privilegedRoles.includes(r)) ?? false;
+  const isAdminRole = user?.roles?.some(r => r.toLowerCase() === 'admin') ?? false;
   const authorIds: string[] = submissionConfig?.authorIds ?? submissionMatch?.submitterIds ?? [];
   const isAuthor = !!user && authorIds.includes(user.id);
 
@@ -295,12 +342,35 @@ export const SubmissionDetails: React.FC = () => {
       description: 'The author finalized the document submission.'
     });
   }
-  if (reviewResult && (reviewResult.completedAt || reviewResult.createdAt)) {
+  completedReviews.forEach((review, idx) => {
+    let label = 'Review Submitted';
+    let description = 'A reviewer has submitted their evaluation.';
+    if (review.isAiGenerated) {
+       label = 'AI Review Completed';
+       description = 'The AI reviewer has successfully submitted its evaluation.';
+    }
+
     historyToDisplay.push({
-      id: 'event-reviewed',
-      label: 'Finished Review',
-      changedAt: reviewResult.completedAt || reviewResult.createdAt,
-      description: 'The review for this submission has been completed.'
+      id: `event-reviewed-${review.id || idx}`,
+      label: label,
+      changedAt: review.completedAt || review.createdAt,
+      description: description
+    });
+  });
+  if (aiProcessing) {
+    historyToDisplay.push({
+      id: 'event-ai-processing',
+      label: 'AI Review in Progress',
+      changedAt: new Date().toISOString(),
+      description: 'An AI reviewer is currently processing the submission. Results will be available shortly.'
+    });
+  }
+  if (aiFailed) {
+    historyToDisplay.push({
+      id: 'event-ai-failed',
+      label: 'AI Review Failed',
+      changedAt: new Date().toISOString(),
+      description: 'The AI reviewer failed to process the submission.'
     });
   }
   if (historyToDisplay.length === 0 && mockSubmission?.history) {
@@ -393,6 +463,29 @@ export const SubmissionDetails: React.FC = () => {
       } finally {
         setSubmitting(false);
       }
+    }
+  };
+
+  const handleTriggerAiReview = async () => {
+    if (!submissionId) return;
+    try {
+      await responseApiClient.results.aiReviewCreate(submissionId);
+      const refreshed = await responseApiClient.results.resultsDetail(submissionId);
+      if (refreshed?.data) {
+        setReviewResults(refreshed.data);
+      }
+      showSuccess('AI Review requested successfully!');
+    } catch (e) {
+      console.error('Failed to trigger AI review', e);
+      try {
+        const refreshed = await responseApiClient.results.resultsDetail(submissionId);
+        if (refreshed?.data) {
+          setReviewResults(refreshed.data);
+        }
+      } catch {
+        // ignore refresh errors; preserve original trigger error feedback
+      }
+      showError('Failed to trigger AI review. It may have already been requested.');
     }
   };
 
@@ -491,6 +584,17 @@ export const SubmissionDetails: React.FC = () => {
                   <Typography>{submissionConfig?.reviewDeadline ? formatDateTime(submissionConfig.reviewDeadline) : 'Not set'}</Typography>
                 </Box>
               </Box>
+              
+              {aiEverRequested && (
+                <Box sx={{ mt: 3, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(25, 118, 210, 0.04)', borderRadius: 1, border: '1px solid', borderColor: 'primary.main' }}>
+                  <Typography variant="subtitle2" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AutoAwesomeIcon fontSize="small" /> AI Review Status
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {aiCompleted ? 'The AI review has been completed.' : aiFailed ? 'The AI review failed.' : 'The AI is currently processing this submission.'}
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             <Stack spacing={1.5} sx={{ minWidth: { md: 260 }, width: { xs: '100%', md: 'auto' } }}>
@@ -505,7 +609,7 @@ export const SubmissionDetails: React.FC = () => {
                 {downloading ? 'Loading PDF...' : 'View Uploaded PDF'}
               </Button>
 
-              {(status === 'Submitted' || status === 'Ready for Review') && isReviewerState && !reviewAvailable && (
+              {(rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW') && isReviewerState && !currentUserHasReviewed && (
                 <Button
                   variant="contained"
                   color="secondary"
@@ -517,15 +621,41 @@ export const SubmissionDetails: React.FC = () => {
                 </Button>
               )}
 
+              {(rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW') && !aiEverRequested && (isAuthor || isReviewerState || isAdminRole) && (
+                <Button
+                  variant="outlined"
+                  color="info"
+                  size="large"
+                  fullWidth
+                  onClick={handleTriggerAiReview}
+                  startIcon={<AutoAwesomeIcon />}
+                >
+                  Trigger AI Review
+                </Button>
+              )}
+
               <Button
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={!reviewAvailable}
-                onClick={() => setReviewOpen(true)}
+                disabled={humanReviews.length === 0 && !(mockSubmission ? Boolean(mockSubmission.review) : false)}
+                onClick={() => { setReviewDialogOpenType('human'); setReviewOpen(true); }}
               >
-                View Review
+                {humanReviews.length > 1 ? `View ${humanReviews.length} Reviews` : 'View Review'}
               </Button>
+
+              {aiCompleted && (
+                <Button
+                  variant="contained"
+                  color="info"
+                  size="large"
+                  fullWidth
+                  onClick={() => { setReviewDialogOpenType('ai'); setReviewOpen(true); }}
+                  startIcon={<AutoAwesomeIcon />}
+                >
+                  View Review from AI
+                </Button>
+              )}
 
               <Tooltip
                   title={!chatAllowed ? (workflowRules?.authorReviewerChatAllowed ? "Only authors and reviewers can access this chat" : "Chat is disabled by the workflow rules") : ""}>
@@ -580,15 +710,17 @@ export const SubmissionDetails: React.FC = () => {
                 </Button>
               )}
 
-              {reviewAvailable ? (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                  The completed review is available for this submission.
-                </Typography>
-              ) : (isAuthor && documentAvailable) ? (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                  The review is not available yet. It will appear here once the evaluation is complete.
-                </Typography>
-              ) : null}
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                {reviewAvailable
+                  ? (humanReviews.length + aiCompletedReviews.length > 1 
+                      ? `${humanReviews.length + aiCompletedReviews.length} completed reviews are available for this submission.` 
+                      : 'The completed review is available for this submission.')
+                  : aiProcessing
+                  ? 'The AI is currently analyzing the document. Please wait...'
+                  : aiFailed
+                  ? 'The AI encountered an error while reviewing.'
+                  : 'The review is not available yet. It will appear here once the evaluation is complete.'}
+              </Typography>
             </Stack>
           </Box>
         </Paper>
@@ -617,88 +749,95 @@ export const SubmissionDetails: React.FC = () => {
 
       {/* Review Dialog */}
       <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>Review</DialogTitle>
+        <DialogTitle>{reviewDialogOpenType === 'ai' ? 'AI Review' : 'Reviews'}</DialogTitle>
         <DialogContent dividers>
-          {reviewResult ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {reviewResult.finalGrade && (
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Final Grade
+          {(reviewDialogOpenType === 'ai' ? aiCompletedReviews : humanReviews).length > 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {(reviewDialogOpenType === 'ai' ? aiCompletedReviews : humanReviews).map((review: any, idx: number) => (
+                <Box key={review.id || idx} sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 3, borderBottom: idx < (reviewDialogOpenType === 'ai' ? aiCompletedReviews : humanReviews).length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                  <Typography variant="h6">
+                    Review {idx + 1} {review.isAiGenerated && <Chip label="AI Generated" color="primary" size="small" sx={{ ml: 1 }} />}
                   </Typography>
-                  <Typography>{reviewResult.finalGrade}</Typography>
-                </Box>
-              )}
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Reviewed At
-                </Typography>
-                <Typography>{formatDateTime(reviewResult.completedAt || reviewResult.createdAt)}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Overall Comments
-                </Typography>
-                <Typography sx={{ whiteSpace: 'pre-line' }}>{reviewResult.reviewComments}</Typography>
-              </Box>
-
-              {(() => {
-                const schemaToUse = reviewQuestions.length > 0 ? reviewQuestions : reviewResult.gradingSchema;
-                if (schemaToUse && schemaToUse.length > 0) {
-                  return (
+                  {review.finalGrade && (
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Detailed Assessment
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Final Grade
                       </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {schemaToUse.map((q: any, index: number) => {
-                          const answerObj = reviewResult.answers?.find((a: any) => a.questionId === (q.id || q.questionId));
-                          const displayAnswer = answerObj?.answer || q.answer || '';
-                          return (
-                            <Box key={q.id || index} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-                                {q.text}
-                              </Typography>
-                              {q.type === 'RATING' ? (
-                                <Rating value={parseFloat(displayAnswer) || 0} max={q.maxPoints || 5} readOnly />
-                              ) : q.type === 'SCALE' ? (
-                                <Typography variant="body2">{displayAnswer} / {q.maxPoints || 10}</Typography>
-                              ) : q.type === 'MULTIPLE_CHOICE' ? (
-                                <Chip label={displayAnswer || 'No answer'} size="small" />
-                              ) : (
-                                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{displayAnswer || 'No answer'}</Typography>
-                              )}
-                            </Box>
-                          );
-                        })}
-                      </Box>
+                      <Typography>{review.finalGrade}</Typography>
                     </Box>
-                  );
-                } else if (reviewResult.answers && reviewResult.answers.length > 0) {
-                  return (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Detailed Assessment
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {reviewResult.answers.map((answer: any, index: number) => (
-                          <Box key={answer.questionId || index} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>Question ID: {answer.questionId}</Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {answer.answer}
-                            </Typography>
+                  )}
+
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Reviewed At
+                    </Typography>
+                    <Typography>{formatDateTime(review.completedAt || review.createdAt)}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Overall Comments
+                    </Typography>
+                    <Typography sx={{ whiteSpace: 'pre-line' }}>{review.reviewComments}</Typography>
+                  </Box>
+
+                  {(() => {
+                    const schemaToUse = reviewQuestions.length > 0 ? reviewQuestions : review.gradingSchema;
+                    if (schemaToUse && schemaToUse.length > 0) {
+                      return (
+                        <Box>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Detailed Assessment
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {schemaToUse.map((q: any, index: number) => {
+                              const answerObj = review.answers?.find((a: any) => a.questionId === (q.id || q.questionId));
+                              const displayAnswer = answerObj?.answer || q.answer || '';
+                              return (
+                                <Box key={q.id || index} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                                    {q.text}
+                                  </Typography>
+                                  {q.type === 'RATING' ? (
+                                    <Rating value={parseFloat(displayAnswer) || 0} max={q.maxPoints || 5} readOnly />
+                                  ) : q.type === 'SCALE' ? (
+                                    <Typography variant="body2">{displayAnswer} / {q.maxPoints || 10}</Typography>
+                                  ) : q.type === 'MULTIPLE_CHOICE' ? (
+                                    <Chip label={displayAnswer || 'No answer'} size="small" />
+                                  ) : (
+                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{displayAnswer || 'No answer'}</Typography>
+                                  )}
+                                </Box>
+                              );
+                            })}
                           </Box>
-                        ))}
-                      </Box>
-                    </Box>
-                  );
-                }
-                return null;
-              })()}
+                        </Box>
+                      );
+                    } else if (review.answers && review.answers.length > 0) {
+                      return (
+                        <Box>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Detailed Assessment
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {review.answers.map((answer: any, index: number) => (
+                              <Box key={answer.questionId || index} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>Question ID: {answer.questionId}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {answer.answer}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+                      );
+                    }
+                    return null;
+                  })()}
+                </Box>
+              ))}
             </Box>
-          ) : mockSubmission?.review ? (
+          ) : reviewDialogOpenType === 'human' && mockSubmission?.review ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -766,8 +905,8 @@ export const SubmissionDetails: React.FC = () => {
             setReviewFormOpen(false);
             // Optionally reload the review data
             responseApiClient.results.resultsDetail(submissionId).then(res => {
-              if (res && (res as any).data) {
-                setReviewResult((res as any).data);
+              if (res && res.data) {
+                setReviewResults(res.data);
               }
             }).catch(console.error);
           }}

@@ -1,6 +1,8 @@
 package com.fh_wedel.response.controller;
 
 import com.fh_wedel.response.model.ReviewResultDto;
+import com.fh_wedel.response.model.SubmitReviewRequest;
+import com.fh_wedel.response.service.AiReviewOrchestrator;
 import com.fh_wedel.response.service.ResultService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +29,8 @@ class ResultControllerTest {
 
     @Mock
     private ResultService resultService;
+    @Mock
+    private AiReviewOrchestrator aiReviewOrchestrator;
 
     @InjectMocks
     private ResultController controller;
@@ -44,7 +49,13 @@ class ResultControllerTest {
     private ReviewResultDto dtoForAuthor(String authorId) {
         return new ReviewResultDto(
                 UUID.randomUUID(), "sub-1", "rev-1", List.of("examiner-1"), authorId,
-                "1.7", "Good", null, null, null, true, Instant.now(), Instant.now());
+                "1.7", "Good", null, null, null, true, Instant.now(), Instant.now(), false, "COMPLETED");
+    }
+
+    private ReviewResultDto aiDtoForAuthor(String authorId, String status) {
+        return new ReviewResultDto(
+                UUID.randomUUID(), "sub-1", "AI-Reviewer", List.of("examiner-1"), authorId,
+                "1.3", "AI review", null, null, null, false, Instant.now(), Instant.now(), true, status);
     }
 
     @Test
@@ -88,7 +99,9 @@ class ResultControllerTest {
     @Test
     @DisplayName("Author accessing their own submission result succeeds")
     void getResultBySubmission_own_success() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("author-sub"));
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(dtoForAuthor("author-sub")));
+        when(resultService.isAuthorOfSubmission("sub-1", "author-sub")).thenReturn(true);
+        when(resultService.isReviewComplete("sub-1", 1)).thenReturn(true);
 
         var response = controller.getResultBySubmission("sub-1", auth("Author", "author-user", "author-sub"));
 
@@ -96,19 +109,35 @@ class ResultControllerTest {
     }
 
     @Test
-    @DisplayName("Author accessing a foreign submission result gets 404")
-    void getResultBySubmission_foreign_notFound() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("other-sub"));
+    @DisplayName("Author sees only AI result while human reviews are incomplete")
+    void getResultBySubmission_authorGetsOnlyAiBeforeHumanComplete() {
+        var human = dtoForAuthor("author-sub");
+        var ai = aiDtoForAuthor("author-sub", "PROCESSING");
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(human, ai));
+        when(resultService.isAuthorOfSubmission("sub-1", "author-sub")).thenReturn(true);
+        when(resultService.isReviewComplete("sub-1", 1)).thenReturn(false);
 
         var response = controller.getResultBySubmission("sub-1", auth("Author", "author-user", "author-sub"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1);
+        assertThat(response.getBody().getFirst().isAiGenerated()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Author accessing a foreign submission result gets 403")
+    void getResultBySubmission_foreign_forbidden() {
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(dtoForAuthor("other-sub")));
+
+        var response = controller.getResultBySubmission("sub-1", auth("Author", "author-user", "author-sub"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
     @DisplayName("Admin may access any submission result")
     void getResultBySubmission_admin_success() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("other-sub"));
+        when(resultService.findResultsBySubmission("sub-1")).thenReturn(List.of(dtoForAuthor("other-sub")));
 
         var response = controller.getResultBySubmission("sub-1", auth("Admin", "admin-user", "admin-sub"));
 
@@ -118,7 +147,7 @@ class ResultControllerTest {
     @Test
     @DisplayName("Author downloads their own document")
     void getDocumentUrl_own_success() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("author-sub"));
+        when(resultService.isAuthorOfSubmission("sub-1", "author-sub")).thenReturn(true);
         when(resultService.getDocumentDownloadUrl("sub-1")).thenReturn("https://s3.presigned.url");
 
         var response = controller.getDocumentUrl("sub-1", auth("Author", "author-user", "author-sub"));
@@ -128,12 +157,37 @@ class ResultControllerTest {
     }
 
     @Test
-    @DisplayName("Author cannot download a foreign document (404, no presign)")
-    void getDocumentUrl_foreign_notFound() {
-        when(resultService.findBySubmission("sub-1")).thenReturn(dtoForAuthor("other-sub"));
-
+    @DisplayName("Author cannot download a foreign document (403, no presign)")
+    void getDocumentUrl_foreign_forbidden() {
         var response = controller.getDocumentUrl("sub-1", auth("Author", "author-user", "author-sub"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("Unassigned reviewer cannot submit a review")
+    void submitReview_unassignedReviewer_forbidden() {
+        SubmitReviewRequest request = SubmitReviewRequest.builder()
+                .submissionId("sub-1")
+                .reviewComments("Review comments")
+                .build();
+        when(resultService.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user")).thenReturn(false);
+
+        var response = controller.submitReview(request, auth("Reviewer", "reviewer-user", "reviewer-sub"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(resultService, never()).submitReview(request, "reviewer-sub");
+    }
+
+    @Test
+    @DisplayName("Unassigned reviewer cannot trigger AI review")
+    void requestAiReview_unassignedReviewer_forbidden() {
+        when(resultService.isAuthorOfSubmission("sub-1", "reviewer-sub")).thenReturn(false);
+        when(resultService.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user")).thenReturn(false);
+
+        var response = controller.requestAiReview("sub-1", auth("Reviewer", "reviewer-user", "reviewer-sub"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(aiReviewOrchestrator, never()).requestReview("sub-1", null);
     }
 }

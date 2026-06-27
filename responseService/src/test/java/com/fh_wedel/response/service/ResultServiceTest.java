@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.matching.client.model.AssignmentEntry;
+import com.fh_wedel.matching.client.model.ExaminerMatchResponse;
 import com.fh_wedel.matching.client.model.MatchEntry;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.ReviewResult;
@@ -29,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,21 +62,6 @@ class ResultServiceTest {
                 submissionReviewsApi, matchesApi, submissionsApi);
     }
 
-    @Test
-    void emitsResultAvailableNotificationOnSave() {
-        ResultService service = buildService("notification-request-queue");
-
-        ReviewResult result = ReviewResult.builder()
-                .submissionId("sub-9").authorId("author-1").reviewerId("rev-1")
-                .completedAt(Instant.now()).build();
-        when(repository.save(any(ReviewResult.class))).thenReturn(result);
-
-        service.save(result);
-
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(sqsTemplate).send(eq("notification-request-queue"), body.capture());
-        assertThat(body.getValue()).contains("Review Result Available").contains("IN_APP").contains("author-1");
-    }
 
     @Test
     void enrichesResultFromNeighbouringServicesOnSave() throws Exception {
@@ -154,14 +142,14 @@ class ResultServiceTest {
     }
 
     @Test
-    void shouldThrowWhenSubmissionNotFound() {
+    void shouldReturnEmptyListWhenSubmissionNotFound() {
         ResultService service = buildService("");
 
-        when(repository.findBySubmissionId("nonexistent")).thenReturn(Optional.empty());
+        when(repository.findBySubmissionId("nonexistent")).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.findBySubmission("nonexistent"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No result found");
+        List<ReviewResultDto> results = service.findResultsBySubmission("nonexistent");
+
+        assertThat(results).isEmpty();
     }
 
     @Test
@@ -176,12 +164,42 @@ class ResultServiceTest {
                 .createdAt(Instant.now())
                 .build();
 
-        when(repository.findBySubmissionId("sub-1")).thenReturn(Optional.of(result));
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(result));
         when(documentStorageService.generatePresignedDownloadUrl("reviews/sub-1/final.pdf"))
                 .thenReturn("https://s3.presigned.url/...");
 
         String url = service.getDocumentDownloadUrl("sub-1");
 
         assertThat(url).isEqualTo("https://s3.presigned.url/...");
+    }
+
+    @Test
+    void isAssignedReviewer_returnsTrueWhenSubmissionMatchesContainCallerSub() throws Exception {
+        ResultService service = buildService("");
+
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerId("reviewer-sub").examinerUsername("reviewer-user"))));
+
+        boolean assigned = service.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user");
+
+        assertThat(assigned).isTrue();
+        verify(matchesApi, never()).getMatchesByExaminer(any());
+    }
+
+    @Test
+    void isAssignedReviewer_fallsBackToExaminerAssignmentsWhenIdsAreHidden() throws Exception {
+        ResultService service = buildService("");
+
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerId(null).examinerUsername(null))));
+        when(matchesApi.getMatchesByExaminer("reviewer-user")).thenReturn(
+                new ExaminerMatchResponse().assignments(List.of(
+                        new AssignmentEntry().submissionId("sub-1"))));
+
+        boolean assigned = service.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user");
+
+        assertThat(assigned).isTrue();
     }
 }

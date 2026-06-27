@@ -37,15 +37,14 @@ class SubmissionServiceTest {
     private ConfigurationServiceClient configurationServiceClient;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-    private String submissionReadyQueueName = "test-submission-ready-queue";
+
     private String notificationQueueName = "test-notification-queue";
 
     private SubmissionService submissionService;
 
     @BeforeEach
     void setUp() {
-        submissionService = new SubmissionService(
-                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, submissionReadyQueueName, notificationQueueName);
+        submissionService = new SubmissionService(repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, notificationQueueName);
     }
 
     @Test
@@ -130,7 +129,7 @@ class SubmissionServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getStatus()).isEqualTo(SubmissionStatus.SUBMITTED.getDbValue());
         verify(repository).saveSubmission(submission);
-        verify(sqsTemplate).send(eq("test-submission-ready-queue"), anyString());
+
     }
 
     @Test

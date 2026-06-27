@@ -15,6 +15,8 @@ const env = {
 
 const imageContext = app.node.tryGetContext('imageTag');
 const imageTag = imageContext || 'latest';
+const bedrockModelIdContext = app.node.tryGetContext('bedrockModelId');
+const bedrockModelId = bedrockModelIdContext || process.env.BEDROCK_MODEL_ID || 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0';
 
 const serviceNameContext = app.node.tryGetContext('serviceName');
 if (!serviceNameContext) {
@@ -53,9 +55,10 @@ const serviceStack = new ResponseServiceStack(app, 'ResponseServiceStack', {
   description: 'Response service for storing and exposing review results',
   containerPort,
   requestQueueName: 'response-request-queue',
-  submissionReadyQueueName: 'submission-ready-queue',
+  aiReviewQueueName: 'response-ai-review-queue',
   s3BucketName: 'msa26-peer-review-response-documents',
   dynamoDbTableName: 'response-service-results',
+  bedrockModelId,
   minTaskCount: 1,
   maxTaskCount: 2,
   memory: 512,

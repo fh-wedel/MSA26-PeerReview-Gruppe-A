@@ -12,11 +12,12 @@ const synth = () => {
         requestQueueName: 'response-request-queue',
         s3BucketName: 'msa26-peer-review-response-documents',
         dynamoDbTableName: 'response-service-results',
-        submissionReadyQueueName: 'submission-ready-queue',
+        aiReviewQueueName: 'response-ai-review-queue',
         minTaskCount: 1,
         maxTaskCount: 1,
         memory: 512,
         cpu: 256,
+        bedrockModelId: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0',
     });
     return Template.fromStack(stack);
 };
@@ -44,6 +45,57 @@ test('Response stack provisions the documents bucket and the request queue', () 
     });
     template.hasResourceProperties('AWS::SQS::Queue', {
         QueueName: 'response-request-queue',
+    });
+});
+
+test('Response stack creates a Bedrock proxy Lambda and injects it into ECS environment', () => {
+    const template = synth();
+
+    template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'response-bedrock-proxy',
+        Runtime: 'python3.12',
+        Handler: 'bedrock_proxy.handler',
+    });
+
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+            Match.objectLike({
+                Environment: Match.arrayWith([
+                    Match.objectLike({ Name: 'BEDROCK_PROXY_LAMBDA_NAME' }),
+                ]),
+            }),
+        ]),
+    });
+});
+
+test('Response stack grants Bedrock invoke to proxy Lambda and Lambda invoke to ECS task role', () => {
+    const template = synth();
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+            Statement: Match.arrayWith([
+                Match.objectLike({
+                    Action: 'bedrock:InvokeModel',
+                    Effect: 'Allow',
+                    Resource: Match.arrayWith([
+                        'arn:aws:bedrock:*::foundation-model/*',
+                        'arn:aws:bedrock:*:*:inference-profile/*',
+                        'arn:aws:bedrock:*:*:application-inference-profile/*',
+                    ]),
+                }),
+            ]),
+        },
+    });
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+            Statement: Match.arrayWith([
+                Match.objectLike({
+                    Action: 'lambda:InvokeFunction',
+                    Effect: 'Allow',
+                }),
+            ]),
+        },
     });
 });
 
