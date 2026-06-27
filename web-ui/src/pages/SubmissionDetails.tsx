@@ -477,6 +477,14 @@ export const SubmissionDetails: React.FC = () => {
       showSuccess('AI Review requested successfully!');
     } catch (e) {
       console.error('Failed to trigger AI review', e);
+      try {
+        const refreshed = await responseApiClient.results.resultsDetail(submissionId);
+        if (refreshed?.data) {
+          setReviewResults(refreshed.data);
+        }
+      } catch {
+        // ignore refresh errors; preserve original trigger error feedback
+      }
       showError('Failed to trigger AI review. It may have already been requested.');
     }
   };

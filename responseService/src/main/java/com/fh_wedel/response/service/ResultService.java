@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.matching.client.model.ExaminerMatchResponse;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.GradingCriterion;
 import com.fh_wedel.response.model.NotificationEvent;
@@ -228,14 +229,32 @@ public class ResultService {
         }
     }
 
-    public boolean isAssignedReviewer(String submissionId, String callerSub) {
+    public boolean isAssignedReviewer(String submissionId, String callerSub, String callerUsername) {
         if (callerSub == null) return false;
+        boolean assignedBySubmissionLookup = false;
         try {
             SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
-            return matches != null && matches.getMatches() != null &&
+            assignedBySubmissionLookup = matches != null && matches.getMatches() != null &&
                     matches.getMatches().stream().anyMatch(m -> callerSub.equals(m.getExaminerId()));
+            if (assignedBySubmissionLookup) {
+                return true;
+            }
         } catch (Exception e) {
             log.warn("Could not check examiners for submission {}: {}", submissionId, e.getMessage());
+        }
+
+        if (callerUsername == null || callerUsername.isBlank()) {
+            return false;
+        }
+
+        try {
+            ExaminerMatchResponse examinerMatches = matchesApi.getMatchesByExaminer(callerUsername);
+            return examinerMatches != null && examinerMatches.getAssignments() != null &&
+                    examinerMatches.getAssignments().stream().anyMatch(a -> submissionId.equals(a.getSubmissionId()));
+        } catch (Exception e) {
+            // Fallback may fail for non-reviewer callers (e.g., Authors). Keep this at debug level.
+            log.debug("Could not fallback-check examiner assignments for username {} and submission {}: {}",
+                    callerUsername, submissionId, e.getMessage());
             return false;
         }
     }

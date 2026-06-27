@@ -20,6 +20,8 @@ import java.util.List;
 @Slf4j
 public class AiReviewOrchestrator {
 
+    private static final String AI_REVIEWER_ID = "AI-Reviewer";
+
     private final ReviewResultRepository repository;
     private final SqsTemplate sqsTemplate;
     private final ObjectMapper objectMapper;
@@ -45,7 +47,10 @@ public class AiReviewOrchestrator {
         }
 
         List<ReviewResult> existingResults = repository.findBySubmissionId(submissionId);
-        boolean aiReviewExists = existingResults.stream().anyMatch(ReviewResult::isAiGenerated);
+        boolean aiReviewExists = existingResults.stream()
+                .anyMatch(r -> r.isAiGenerated()
+                        || AI_REVIEWER_ID.equals(r.getReviewerId())
+                        || (r.getAiStatus() != null && !r.getAiStatus().isBlank()));
 
         if (aiReviewExists) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An AI review has already been requested or completed for this submission.");
@@ -55,7 +60,7 @@ public class AiReviewOrchestrator {
 
         ReviewResult result = new ReviewResult();
         result.setSubmissionId(submissionId);
-        result.setReviewerId("AI-Reviewer");
+        result.setReviewerId(AI_REVIEWER_ID);
         result.setAiGenerated(true);
         result.setAiStatus("REQUESTED");
         result.setCreatedAt(Instant.now());

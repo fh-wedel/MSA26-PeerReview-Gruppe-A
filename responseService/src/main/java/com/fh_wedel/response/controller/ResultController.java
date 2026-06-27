@@ -49,13 +49,14 @@ public class ResultController {
             Authentication authentication) {
 
         String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
 
         if (callerSub == null || callerSub.isBlank()) {
             log.warn("Could not determine callerSub for caller '{}'",
                     authentication != null ? authentication.getName() : "anonymous");
             return ResponseEntity.badRequest().build();
         }
-        if (!isAdmin(authentication) && !resultService.isAssignedReviewer(request.getSubmissionId(), callerSub)) {
+        if (!isAdmin(authentication) && !resultService.isAssignedReviewer(request.getSubmissionId(), callerSub, callerUsername)) {
             log.warn("Access denied: reviewer '{}' is not assigned to submission {}", callerSub, request.getSubmissionId());
             return ResponseEntity.status(403).build();
         }
@@ -71,9 +72,10 @@ public class ResultController {
             @PathVariable String submissionId,
             Authentication authentication) {
         String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
         boolean hasAccess = isAdmin(authentication)
                 || resultService.isAuthorOfSubmission(submissionId, callerSub)
-                || resultService.isAssignedReviewer(submissionId, callerSub);
+                || resultService.isAssignedReviewer(submissionId, callerSub, callerUsername);
 
         if (!hasAccess) {
             log.warn("Access denied: caller '{}' cannot trigger AI review for submission {}",
@@ -118,12 +120,13 @@ public class ResultController {
         log.info("Fetching result for submission: {}", submissionId);
         List<ReviewResultDto> results = resultService.findResultsBySubmission(submissionId);
         String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
 
         if (isAdmin(authentication)) {
             return ResponseEntity.ok(results);
         }
 
-        if (resultService.isAssignedReviewer(submissionId, callerSub)) {
+        if (resultService.isAssignedReviewer(submissionId, callerSub, callerUsername)) {
             return ResponseEntity.ok(results);
         }
 
@@ -155,8 +158,9 @@ public class ResultController {
         log.info("Generating document URL for submission: {}", submissionId);
 
         String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
         boolean hasAccess = isAdmin(authentication) ||
-                resultService.isAssignedReviewer(submissionId, callerSub) ||
+                resultService.isAssignedReviewer(submissionId, callerSub, callerUsername) ||
                 resultService.isAuthorOfSubmission(submissionId, callerSub);
 
         if (!hasAccess) {

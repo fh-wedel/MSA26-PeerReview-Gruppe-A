@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.matching.client.model.AssignmentEntry;
+import com.fh_wedel.matching.client.model.ExaminerMatchResponse;
 import com.fh_wedel.matching.client.model.MatchEntry;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.ReviewResult;
@@ -29,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -168,5 +171,35 @@ class ResultServiceTest {
         String url = service.getDocumentDownloadUrl("sub-1");
 
         assertThat(url).isEqualTo("https://s3.presigned.url/...");
+    }
+
+    @Test
+    void isAssignedReviewer_returnsTrueWhenSubmissionMatchesContainCallerSub() throws Exception {
+        ResultService service = buildService("");
+
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerId("reviewer-sub").examinerUsername("reviewer-user"))));
+
+        boolean assigned = service.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user");
+
+        assertThat(assigned).isTrue();
+        verify(matchesApi, never()).getMatchesByExaminer(any());
+    }
+
+    @Test
+    void isAssignedReviewer_fallsBackToExaminerAssignmentsWhenIdsAreHidden() throws Exception {
+        ResultService service = buildService("");
+
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerId(null).examinerUsername(null))));
+        when(matchesApi.getMatchesByExaminer("reviewer-user")).thenReturn(
+                new ExaminerMatchResponse().assignments(List.of(
+                        new AssignmentEntry().submissionId("sub-1"))));
+
+        boolean assigned = service.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user");
+
+        assertThat(assigned).isTrue();
     }
 }

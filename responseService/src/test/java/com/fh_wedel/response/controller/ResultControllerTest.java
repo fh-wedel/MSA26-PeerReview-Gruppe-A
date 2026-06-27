@@ -171,7 +171,7 @@ class ResultControllerTest {
                 .submissionId("sub-1")
                 .reviewComments("Review comments")
                 .build();
-        when(resultService.isAssignedReviewer("sub-1", "reviewer-sub")).thenReturn(false);
+        when(resultService.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user")).thenReturn(false);
 
         var response = controller.submitReview(request, auth("Reviewer", "reviewer-user", "reviewer-sub"));
 
@@ -183,7 +183,7 @@ class ResultControllerTest {
     @DisplayName("Unassigned reviewer cannot trigger AI review")
     void requestAiReview_unassignedReviewer_forbidden() {
         when(resultService.isAuthorOfSubmission("sub-1", "reviewer-sub")).thenReturn(false);
-        when(resultService.isAssignedReviewer("sub-1", "reviewer-sub")).thenReturn(false);
+        when(resultService.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user")).thenReturn(false);
 
         var response = controller.requestAiReview("sub-1", auth("Reviewer", "reviewer-user", "reviewer-sub"));
 
