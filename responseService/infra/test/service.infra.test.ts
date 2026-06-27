@@ -47,6 +47,53 @@ test('Response stack provisions the documents bucket and the request queue', () 
     });
 });
 
+test('Response stack creates a Bedrock proxy Lambda and injects it into ECS environment', () => {
+    const template = synth();
+
+    template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'response-bedrock-proxy',
+        Runtime: 'python3.12',
+        Handler: 'bedrock_proxy.handler',
+    });
+
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+            Match.objectLike({
+                Environment: Match.arrayWith([
+                    Match.objectLike({ Name: 'BEDROCK_PROXY_LAMBDA_NAME' }),
+                ]),
+            }),
+        ]),
+    });
+});
+
+test('Response stack grants Bedrock invoke to proxy Lambda and Lambda invoke to ECS task role', () => {
+    const template = synth();
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+            Statement: Match.arrayWith([
+                Match.objectLike({
+                    Action: 'bedrock:InvokeModel',
+                    Effect: 'Allow',
+                    Resource: 'arn:aws:bedrock:*::foundation-model/*',
+                }),
+            ]),
+        },
+    });
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+            Statement: Match.arrayWith([
+                Match.objectLike({
+                    Action: 'lambda:InvokeFunction',
+                    Effect: 'Allow',
+                }),
+            ]),
+        },
+    });
+});
+
 test('Response task runs the container on the IPv6 port behind the API Gateway Lambda', () => {
     const template = synth();
 

@@ -5,6 +5,8 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
 import {EcsInfra} from '../../../infraLibrary/lib/ecs';
 import {SqsInfra} from '../../../infraLibrary/lib/sqs';
@@ -66,6 +68,27 @@ export class ResponseServiceStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
+    const bedrockProxyLambda = new lambda.Function(this, 'BedrockProxyLambda', {
+      functionName: `${props.serviceName}-bedrock-proxy`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'bedrock_proxy.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
+      memorySize: 1024,
+      timeout: cdk.Duration.minutes(2),
+      environment: {
+        RESPONSE_DOCUMENTS_BUCKET: props.s3BucketName,
+        BEDROCK_MODEL_ID: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+      },
+    });
+
+    documentBucket.grantRead(bedrockProxyLambda);
+    bedrockProxyLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: ['arn:aws:bedrock:*::foundation-model/*'],
+      }),
+    );
+
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: props.memory,
       cpu: props.cpu,
@@ -98,6 +121,7 @@ export class ResponseServiceStack extends cdk.Stack {
         'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
         'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
         'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
+        'BEDROCK_PROXY_LAMBDA_NAME': bedrockProxyLambda.functionName,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -156,14 +180,7 @@ export class ResponseServiceStack extends cdk.Stack {
     });
     SqsInfra.grantReadPermissions(aiReviewQueues, ecsService.taskDefinition.taskRole);
     SqsInfra.grantWritePermissions(aiReviewQueues, ecsService.taskDefinition.taskRole);
-
-    // Grant Bedrock InvokeModel permissions
-    ecsService.taskDefinition.taskRole.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: ['bedrock:InvokeModel'],
-        resources: ['arn:aws:bedrock:*::foundation-model/*'],
-      })
-    );
+    bedrockProxyLambda.grantInvoke(ecsService.taskDefinition.taskRole);
 
     // Grant S3 read access
     documentBucket.grantRead(ecsService.taskDefinition.taskRole);

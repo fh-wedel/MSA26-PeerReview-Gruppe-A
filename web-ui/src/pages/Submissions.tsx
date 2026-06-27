@@ -86,11 +86,13 @@ export const Submissions: React.FC = () => {
           let status = 'Created';
           let reviewerId: string | undefined = undefined;
           let matchedAt: string | undefined = undefined;
+          let expectedHumanReviews = 0;
 
           try {
             const matchRes = await matchingApiClient.matches.getMatchesBySubmission(id);
             const matchData: any = (matchRes as any).data;
             if (matchData) {
+              expectedHumanReviews = matchData.matches?.length || matchData.numberOfExaminers || 0;
               if (matchData.status === 'MATCHED') {
                 status = 'Matched';
                 reviewerId = matchData.matches?.[0]?.examinerId;
@@ -126,8 +128,34 @@ export const Submissions: React.FC = () => {
 
           try {
             const resResult = await responseApiClient.results.resultsDetail(id);
-            if (resResult && resResult.data && resResult.data.length > 0) {
+            if (resResult && resResult.data) {
+              const results = resResult.data;
+              const humanCompletedCount = results.filter(r => !r.isAiGenerated).length;
+              const aiProcessing = results.some(r => r.isAiGenerated && (r.aiStatus === 'REQUESTED' || r.aiStatus === 'PROCESSING'));
+              const aiFailed = results.some(r => r.isAiGenerated && r.aiStatus === 'FAILED');
+              const aiCompleted = results.some(r => r.isAiGenerated && r.aiStatus === 'COMPLETED');
+
+              if (expectedHumanReviews > 0 && humanCompletedCount >= expectedHumanReviews) {
+                if (aiProcessing) {
+                  status = 'All Human Reviews Completed (AI Processing)';
+                } else if (aiFailed) {
+                  status = 'All Human Reviews Completed (AI Failed)';
+                } else if (aiCompleted) {
+                  status = 'All Reviews Completed';
+                } else {
+                  status = 'All Human Reviews Completed';
+                }
+              } else if (humanCompletedCount > 0 && expectedHumanReviews > 0) {
+                status = `${humanCompletedCount} / ${expectedHumanReviews} Human Reviews Completed`;
+              } else if (aiProcessing) {
+                status = 'AI Review Processing';
+              } else if (aiFailed) {
+                status = 'AI Review Failed';
+              } else if (aiCompleted) {
+                status = 'AI Review Completed';
+              } else if (humanCompletedCount > 0) {
                 status = 'Review Completed';
+              }
             }
           } catch (e) {
             // No review yet

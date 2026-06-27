@@ -6,8 +6,10 @@ import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 
 import java.util.List;
@@ -44,6 +46,28 @@ public class ReviewResultRepository {
         result.setPk(ReviewResult.PK_PREFIX + result.getSubmissionId());
         result.setSk(ReviewResult.SK_VALUE + "#" + result.getReviewerId());
         table.putItem(result);
+        return result;
+    }
+
+    /**
+     * Persists an item only when no item exists for the same PK/SK pair.
+     * Used for AI review placeholders to guarantee "max one AI review per submission"
+     * under concurrent requests.
+     */
+    public ReviewResult saveIfAbsent(ReviewResult result) {
+        if (result.getId() == null) {
+            result.setId(UUID.randomUUID());
+        }
+        result.setPk(ReviewResult.PK_PREFIX + result.getSubmissionId());
+        result.setSk(ReviewResult.SK_VALUE + "#" + result.getReviewerId());
+
+        PutItemEnhancedRequest<ReviewResult> request = PutItemEnhancedRequest.builder(ReviewResult.class)
+                .item(result)
+                .conditionExpression(Expression.builder()
+                        .expression("attribute_not_exists(pk) AND attribute_not_exists(sk)")
+                        .build())
+                .build();
+        table.putItem(request);
         return result;
     }
 

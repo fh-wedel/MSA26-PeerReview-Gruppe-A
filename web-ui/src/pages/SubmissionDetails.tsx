@@ -186,11 +186,14 @@ export const SubmissionDetails: React.FC = () => {
   const aiCompletedReviews = completedReviews.filter(r => r.isAiGenerated);
   const humanReviews = completedReviews.filter(r => !r.isAiGenerated);
   const aiCompleted = aiCompletedReviews.length > 0;
+  const expectedHumanReviews = submissionMatch?.matches?.length || submissionMatch?.numberOfExaminers || 0;
+  const completedHumanCount = humanReviews.length;
+  const allHumanReviewsCompleted = expectedHumanReviews > 0
+    ? completedHumanCount >= expectedHumanReviews
+    : completedHumanCount > 0;
 
   const reviewAvailable = humanReviews.length > 0 || aiCompletedReviews.length > 0 || (mockSubmission ? Boolean(mockSubmission.review) : false);
   const currentUserHasReviewed = reviewResults.some(r => r.reviewerId === user?.id);
-  const totalExpectedReviews = (submissionMatch?.matches?.length || submissionMatch?.numberOfExaminers || 0) + 
-      (aiEverRequested ? 1 : 0);
   const documentAvailable = documents.length > 0;
   const title = submissionConfig?.title || mockSubmission?.title || 'Untitled Submission';
   
@@ -214,14 +217,22 @@ export const SubmissionDetails: React.FC = () => {
     status = 'Failed';
   }
 
-  if (completedReviews.length > 0) {
-    if (totalExpectedReviews > 0 && completedReviews.length < totalExpectedReviews) {
-      status = `${completedReviews.length} / ${totalExpectedReviews} Reviews Completed`;
+  if (allHumanReviewsCompleted) {
+    if (aiProcessing) {
+      status = 'All Human Reviews Completed (AI Processing)';
+    } else if (aiFailed) {
+      status = 'All Human Reviews Completed (AI Failed)';
+    } else if (aiCompleted) {
+      status = 'All Reviews Completed';
     } else {
-      status = completedReviews.length > 1 ? 'All Reviews Completed' : 'Review Completed';
+      status = 'All Human Reviews Completed';
     }
+  } else if (completedHumanCount > 0 && expectedHumanReviews > 0) {
+    status = `${completedHumanCount} / ${expectedHumanReviews} Human Reviews Completed`;
   } else if (aiProcessing) {
     status = 'AI Review Processing';
+  } else if (aiCompleted) {
+    status = 'AI Review Completed';
   } else if (aiFailed) {
     status = 'AI Review Failed';
   }
@@ -237,6 +248,7 @@ export const SubmissionDetails: React.FC = () => {
   // Determine user context for smart anonymity
   const privilegedRoles = ['Admin', 'Teacher', 'ExaminationOfficer'];
   const isPrivileged = user?.roles?.some(r => privilegedRoles.includes(r)) ?? false;
+  const isAdminRole = user?.roles?.some(r => r.toLowerCase() === 'admin') ?? false;
   const authorIds: string[] = submissionConfig?.authorIds ?? submissionMatch?.submitterIds ?? [];
   const isAuthor = !!user && authorIds.includes(user.id);
 
@@ -450,9 +462,11 @@ export const SubmissionDetails: React.FC = () => {
     if (!submissionId) return;
     try {
       await responseApiClient.results.aiReviewCreate(submissionId);
+      const refreshed = await responseApiClient.results.resultsDetail(submissionId);
+      if (refreshed?.data) {
+        setReviewResults(refreshed.data);
+      }
       showSuccess('AI Review requested successfully!');
-      // Reload the page to fetch the latest state
-      window.location.reload();
     } catch (e) {
       console.error('Failed to trigger AI review', e);
       showError('Failed to trigger AI review. It may have already been requested.');
@@ -577,7 +591,7 @@ export const SubmissionDetails: React.FC = () => {
                 </Button>
               )}
 
-              {(rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW') && !aiEverRequested && (isAuthor || isReviewerState) && (
+              {(rawStatus === 'SUBMITTED' || rawStatus === 'READY_FOR_REVIEW') && !aiEverRequested && (isAuthor || isReviewerState || isAdminRole) && (
                 <Button
                   variant="outlined"
                   color="info"

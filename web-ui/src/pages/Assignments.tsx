@@ -21,7 +21,7 @@ import {useAssignments} from '../hooks/useAssignments';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
-import {configApiClient, submissionApiClient, responseApiClient} from '../api/clients';
+import {configApiClient, matchingApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 
 export const Assignments: React.FC = () => {
@@ -87,7 +87,19 @@ export const Assignments: React.FC = () => {
           let reviewProcessType = 'Unknown';
           let updateTime = assignment.assignedAt;
           let createdAt = new Date().toISOString();
-            let status = 'Assigned';
+          let expectedHumanReviews = 0;
+          let status = 'Assigned';
+
+          try {
+            const matchRes = await matchingApiClient.matches.getMatchesBySubmission(assignment.submissionId);
+            const matchData: any = (matchRes as any).data;
+            if (matchData) {
+              expectedHumanReviews = matchData.matches?.length || matchData.numberOfExaminers || 0;
+            }
+          } catch (e) {
+            // ignore
+          }
+
             try {
                 const subRes = await submissionApiClient.submissions.getSubmission(assignment.submissionId);
                 if (subRes && (subRes as any).data && (subRes as any).data.status) {
@@ -113,8 +125,34 @@ export const Assignments: React.FC = () => {
 
             try {
                 const resResult = await responseApiClient.results.resultsDetail(assignment.submissionId);
-                if (resResult && resResult.data && resResult.data.length > 0) {
+                if (resResult && resResult.data) {
+                  const results = resResult.data;
+                  const humanCompletedCount = results.filter(r => !r.isAiGenerated).length;
+                  const aiProcessing = results.some(r => r.isAiGenerated && (r.aiStatus === 'REQUESTED' || r.aiStatus === 'PROCESSING'));
+                  const aiFailed = results.some(r => r.isAiGenerated && r.aiStatus === 'FAILED');
+                  const aiCompleted = results.some(r => r.isAiGenerated && r.aiStatus === 'COMPLETED');
+
+                  if (expectedHumanReviews > 0 && humanCompletedCount >= expectedHumanReviews) {
+                    if (aiProcessing) {
+                      status = 'All Human Reviews Completed (AI Processing)';
+                    } else if (aiFailed) {
+                      status = 'All Human Reviews Completed (AI Failed)';
+                    } else if (aiCompleted) {
+                      status = 'All Reviews Completed';
+                    } else {
+                      status = 'All Human Reviews Completed';
+                    }
+                  } else if (humanCompletedCount > 0 && expectedHumanReviews > 0) {
+                    status = `${humanCompletedCount} / ${expectedHumanReviews} Human Reviews Completed`;
+                  } else if (aiProcessing) {
+                    status = 'AI Review Processing';
+                  } else if (aiFailed) {
+                    status = 'AI Review Failed';
+                  } else if (aiCompleted) {
+                    status = 'AI Review Completed';
+                  } else if (humanCompletedCount > 0) {
                     status = 'Review Completed';
+                  }
                 }
             } catch (e) {
                 // No review yet

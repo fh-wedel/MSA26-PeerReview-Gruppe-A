@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewResultRepositoryTest {
@@ -99,5 +100,22 @@ class ReviewResultRepositoryTest {
         when(table.query(any(Consumer.class))).thenReturn(pageIterable);
 
         assertThat(repository.findBySubmissionId("missing")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("saveIfAbsent builds keys and writes with a conditional put request")
+    void saveIfAbsent_buildsKeys() {
+        ReviewResult result = ReviewResult.builder()
+                .submissionId("sub-conditional")
+                .reviewerId("AI-Reviewer")
+                .authorId("author-1")
+                .build();
+
+        repository.saveIfAbsent(result);
+
+        assertThat(result.getId()).isNotNull();
+        assertThat(result.getPk()).isEqualTo("SUBMISSION#sub-conditional");
+        assertThat(result.getSk()).isEqualTo("RESULT#AI-Reviewer");
+        verify(table).putItem(any(PutItemEnhancedRequest.class));
     }
 }

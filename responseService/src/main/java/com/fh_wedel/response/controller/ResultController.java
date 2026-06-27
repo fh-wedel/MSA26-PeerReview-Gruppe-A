@@ -55,6 +55,10 @@ public class ResultController {
                     authentication != null ? authentication.getName() : "anonymous");
             return ResponseEntity.badRequest().build();
         }
+        if (!isAdmin(authentication) && !resultService.isAssignedReviewer(request.getSubmissionId(), callerSub)) {
+            log.warn("Access denied: reviewer '{}' is not assigned to submission {}", callerSub, request.getSubmissionId());
+            return ResponseEntity.status(403).build();
+        }
 
         log.info("Submitting review for submission: {}", request.getSubmissionId());
         ReviewResult saved = resultService.submitReview(request, callerSub);
@@ -66,7 +70,17 @@ public class ResultController {
     public ResponseEntity<ReviewResultDto> requestAiReview(
             @PathVariable String submissionId,
             Authentication authentication) {
-        
+        String callerSub = extractSubFromDetails(authentication);
+        boolean hasAccess = isAdmin(authentication)
+                || resultService.isAuthorOfSubmission(submissionId, callerSub)
+                || resultService.isAssignedReviewer(submissionId, callerSub);
+
+        if (!hasAccess) {
+            log.warn("Access denied: caller '{}' cannot trigger AI review for submission {}",
+                    authentication != null ? authentication.getName() : "anonymous", submissionId);
+            return ResponseEntity.status(403).build();
+        }
+
         log.info("Manual AI Review requested for submission: {}", submissionId);
         // Manual trigger has no S3 key; the listener will fetch it via the submission service API
         ReviewResult saved = aiReviewOrchestrator.requestReview(submissionId, null);
@@ -114,10 +128,16 @@ public class ResultController {
         }
 
         if (resultService.isAuthorOfSubmission(submissionId, callerSub)) {
-            if (resultService.isReviewComplete(submissionId, results.size())) {
+            int submittedHumanReviewsCount = (int) results.stream()
+                    .filter(r -> !r.isAiGenerated() && r.completedAt() != null)
+                    .count();
+            if (resultService.isReviewComplete(submissionId, submittedHumanReviewsCount)) {
                 return ResponseEntity.ok(results);
             } else {
-                return ResponseEntity.ok(List.of());
+                List<ReviewResultDto> aiOnlyResults = results.stream()
+                        .filter(ReviewResultDto::isAiGenerated)
+                        .toList();
+                return ResponseEntity.ok(aiOnlyResults);
             }
         }
 

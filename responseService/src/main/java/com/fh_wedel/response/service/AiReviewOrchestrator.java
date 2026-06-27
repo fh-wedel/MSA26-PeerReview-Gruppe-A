@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
 import java.util.List;
@@ -60,7 +61,12 @@ public class AiReviewOrchestrator {
         result.setCreatedAt(Instant.now());
         // Do not set completedAt yet
 
-        ReviewResult saved = repository.save(result);
+        ReviewResult saved;
+        try {
+            saved = repository.saveIfAbsent(result);
+        } catch (ConditionalCheckFailedException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "An AI review has already been requested or completed for this submission.");
+        }
 
         AiReviewTask task = new AiReviewTask(submissionId, saved.getId().toString(), documentS3Key);
         try {

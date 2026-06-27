@@ -240,13 +240,13 @@ public class ResultService {
         }
     }
 
-    public boolean isReviewComplete(String submissionId, int submittedReviewsCount) {
+    public boolean isReviewComplete(String submissionId, int submittedHumanReviewsCount) {
         try {
             SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
-            if (matches == null || matches.getMatches() == null) {
+            if (matches == null || matches.getMatches() == null || matches.getMatches().isEmpty()) {
                 return false;
             }
-            return submittedReviewsCount >= matches.getMatches().size();
+            return submittedHumanReviewsCount >= matches.getMatches().size();
         } catch (Exception e) {
             log.warn("Could not check match count for submission {}: {}", submissionId, e.getMessage());
             return false;

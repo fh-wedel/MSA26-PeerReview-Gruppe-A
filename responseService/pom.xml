@@ -64,6 +64,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>bedrockruntime</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>lambda</artifactId>
+        </dependency>
         <!-- AWS SDK v2: DynamoDB Enhanced Client -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

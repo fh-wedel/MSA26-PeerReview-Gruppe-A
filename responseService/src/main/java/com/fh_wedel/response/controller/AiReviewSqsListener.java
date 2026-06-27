@@ -10,7 +10,7 @@ import com.fh_wedel.response.model.GradingCriterion;
 import com.fh_wedel.response.model.ReviewAnswer;
 import com.fh_wedel.response.model.ReviewResult;
 import com.fh_wedel.response.repository.ReviewResultRepository;
-import com.fh_wedel.response.service.BedrockAiService;
+import com.fh_wedel.response.service.BedrockProxyClientService;
 import com.fh_wedel.response.service.ResultService;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,9 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -30,26 +32,23 @@ import java.util.UUID;
 public class AiReviewSqsListener {
 
     private final ReviewResultRepository repository;
-    private final BedrockAiService bedrockAiService;
+    private final BedrockProxyClientService bedrockProxyClientService;
     private final SubmissionReviewsApi submissionReviewsApi;
     private final ResultService resultService;
     private final ObjectMapper objectMapper;
-    private final com.fh_wedel.response.service.DocumentStorageService documentStorageService;
     private final String submissionServiceUrl;
 
     public AiReviewSqsListener(ReviewResultRepository repository,
-                               BedrockAiService bedrockAiService,
+                               BedrockProxyClientService bedrockProxyClientService,
                                SubmissionReviewsApi submissionReviewsApi,
                                ResultService resultService,
                                ObjectMapper objectMapper,
-                               com.fh_wedel.response.service.DocumentStorageService documentStorageService,
                                @Value("${aws.submission-service.url}") String submissionServiceUrl) {
         this.repository = repository;
-        this.bedrockAiService = bedrockAiService;
+        this.bedrockProxyClientService = bedrockProxyClientService;
         this.submissionReviewsApi = submissionReviewsApi;
         this.resultService = resultService;
         this.objectMapper = objectMapper;
-        this.documentStorageService = documentStorageService;
         this.submissionServiceUrl = submissionServiceUrl;
     }
 
@@ -68,115 +67,150 @@ public class AiReviewSqsListener {
 
         List<ReviewResult> results = repository.findBySubmissionId(submissionId);
         ReviewResult result = results.stream().filter(r -> r.getId().equals(reviewId)).findFirst().orElse(null);
-        
         if (result == null) {
-            log.error("ReviewResult {} not found for AI Review processing", reviewId);
+            log.error("ReviewResult {} not found for AI review processing", reviewId);
             return;
         }
 
         try {
-            // Mark as PROCESSING
             result.setAiStatus("PROCESSING");
             repository.save(result);
+            log.info("Starting AI review processing for submission {}", submissionId);
 
-            log.info("Starting AI Review processing for submission {}", submissionId);
-
-            // 1. Fetch Grading Schema
             List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(submissionId);
             if (form == null || form.isEmpty()) {
-                throw new IllegalStateException("No grading schema found for submission");
+                throw new IllegalStateException("No grading schema found for submission.");
             }
             String schemaJson = objectMapper.writeValueAsString(form);
+            String documentS3Key = resolveDocumentS3Key(task, submissionId);
 
-            // 2. Fetch PDF bytes
-            // Prefer direct S3 access using the key embedded in the task (no auth needed).
-            // Fall back to calling the submission service REST API with system-admin headers
-            // for manually-triggered reviews where no S3 key was supplied.
-            byte[] pdfBytes;
-            if (task.getDocumentS3Key() != null && !task.getDocumentS3Key().isBlank()) {
-                log.info("Fetching document bytes from S3 directly using key: {}", task.getDocumentS3Key());
-                pdfBytes = documentStorageService.getDocumentBytes(task.getDocumentS3Key());
-            } else {
-                log.info("No S3 key in task — falling back to submission service REST API for submission {}", submissionId);
-                // Build a RestTemplate with system-admin headers so the submission service ABAC passes
-                org.springframework.web.client.RestTemplate authRestTemplate = new RestTemplate();
-                authRestTemplate.getInterceptors().add((request, body, execution) -> {
-                    request.getHeaders().set("x-auth-username", "system-response-service");
-                    request.getHeaders().set("x-auth-groups", "Admin");
-                    return execution.execute(request, body);
-                });
-                String docUrl = submissionServiceUrl + "/api/submission/submissions/" + submissionId + "/documents";
-                String docJson = authRestTemplate.getForObject(docUrl, String.class);
-                List<Map<String, Object>> documents = objectMapper.readValue(docJson, new TypeReference<List<Map<String, Object>>>() {});
-                if (documents == null || documents.isEmpty()) {
-                    throw new IllegalStateException("No documents found for submission");
-                }
-                String docId = (String) documents.get(0).get("documentId");
-                String dlUrl = submissionServiceUrl + "/api/submission/submissions/" + submissionId + "/documents/" + docId + "/download";
-                Map<String, String> dlMap = authRestTemplate.getForObject(dlUrl, Map.class);
-                String downloadUrl = dlMap != null ? dlMap.get("uploadUrl") : null;
-                if (downloadUrl == null) throw new IllegalStateException("Could not get presigned download URL");
-                pdfBytes = new RestTemplate().getForObject(new java.net.URI(downloadUrl), byte[].class);
-            }
-            if (pdfBytes == null || pdfBytes.length == 0) {
-                throw new IllegalStateException("Failed to obtain document bytes for submission " + submissionId);
-            }
+            String generatedReviewJson = bedrockProxyClientService.generateReview(
+                    submissionId,
+                    reviewId.toString(),
+                    schemaJson,
+                    documentS3Key
+            );
 
-            // 4. Call Bedrock
-            String generatedReviewJson = bedrockAiService.generateReview(schemaJson, pdfBytes);
+            Map<String, Object> parsedReview = objectMapper.readValue(generatedReviewJson, new TypeReference<Map<String, Object>>() {
+            });
+            List<ReviewAnswer> mappedAnswers = mapAndValidateAnswers(parsedReview, form);
+            String reviewComments = requireString(parsedReview, "reviewComments");
+            String finalGrade = parsedReview.get("finalGrade") instanceof String grade ? grade : null;
 
-            // 5. Parse output
-            Map<String, Object> parsedReview = objectMapper.readValue(generatedReviewJson, new TypeReference<Map<String, Object>>() {});
-
-            // Construct Answers
-            List<Map<String, Object>> generatedAnswers = (List<Map<String, Object>>) parsedReview.get("answers");
-            List<ReviewAnswer> mappedAnswers = null;
-            if (generatedAnswers != null) {
-                mappedAnswers = generatedAnswers.stream().map(ga -> {
-                    ReviewAnswer ans = new ReviewAnswer();
-                    ans.setQuestionId((String) ga.get("questionId"));
-                    ans.setAnswer((String) ga.get("answer"));
-                    return ans;
-                }).toList();
-            }
-
-            result.setFinalGrade((String) parsedReview.get("finalGrade"));
-            result.setReviewComments((String) parsedReview.get("reviewComments"));
+            result.setFinalGrade(finalGrade);
+            result.setReviewComments(reviewComments);
             result.setAnswers(mappedAnswers);
-
-            // Apply grading schema
-            final List<ReviewAnswer> finalMappedAnswers = mappedAnswers;
-            List<GradingCriterion> criteria = form.stream().map(q -> {
-                GradingCriterion c = GradingCriterion.builder()
-                        .id(q.getId())
-                        .text(q.getText())
-                        .type(q.getType() != null ? q.getType().getValue() : null)
-                        .maxPoints(q.getMaxPoints())
-                        .required(q.getRequired())
-                        .options(q.getOptions())
-                        .build();
-                if (finalMappedAnswers != null) {
-                    finalMappedAnswers.stream()
-                            .filter(a -> a.getQuestionId().equals(q.getId()))
-                            .findFirst()
-                            .ifPresent(a -> c.setAnswer(a.getAnswer()));
-                }
-                return c;
-            }).toList();
-            result.setGradingSchema(criteria);
-
-            // Mark as COMPLETED
+            result.setGradingSchema(applyGradingSchema(form, mappedAnswers));
             result.setAiStatus("COMPLETED");
             result.setCompletedAt(Instant.now());
 
-            // Save and notify
             resultService.save(result);
-            log.info("Successfully completed AI Review for submission {}", submissionId);
-
+            log.info("Successfully completed AI review for submission {}", submissionId);
         } catch (Exception e) {
-            log.error("AI Review failed for submission {}", submissionId, e);
+            log.error("AI review failed for submission {}", submissionId, e);
             result.setAiStatus("FAILED");
             repository.save(result);
         }
+    }
+
+    private String resolveDocumentS3Key(AiReviewTask task, String submissionId) throws Exception {
+        if (task.getDocumentS3Key() != null && !task.getDocumentS3Key().isBlank()) {
+            return task.getDocumentS3Key();
+        }
+
+        log.info("No S3 key in task, fetching document metadata from submission service for {}", submissionId);
+        RestTemplate authRestTemplate = new RestTemplate();
+        authRestTemplate.getInterceptors().add((request, body, execution) -> {
+            request.getHeaders().set("x-auth-username", "system-response-service");
+            request.getHeaders().set("x-auth-groups", "Admin");
+            return execution.execute(request, body);
+        });
+
+        String documentListUrl = submissionServiceUrl + "/api/submission/submissions/" + submissionId + "/documents";
+        String docJson = authRestTemplate.getForObject(documentListUrl, String.class);
+        List<Map<String, Object>> documents = objectMapper.readValue(docJson, new TypeReference<List<Map<String, Object>>>() {
+        });
+        if (documents == null || documents.isEmpty()) {
+            throw new IllegalStateException("No documents found for submission.");
+        }
+
+        Object keyValue = documents.get(0).get("s3Key");
+        if (!(keyValue instanceof String key) || key.isBlank()) {
+            throw new IllegalStateException("Document metadata does not contain a valid s3Key.");
+        }
+        return key;
+    }
+
+    private List<ReviewAnswer> mapAndValidateAnswers(Map<String, Object> parsedReview, List<ReviewQuestionDto> form) {
+        Object rawAnswers = parsedReview.get("answers");
+        if (!(rawAnswers instanceof List<?> answersList) || answersList.isEmpty()) {
+            throw new IllegalStateException("AI response does not contain a non-empty answers array.");
+        }
+
+        Set<String> validQuestionIds = form.stream()
+                .map(ReviewQuestionDto::getId)
+                .collect(Collectors.toSet());
+        Set<String> requiredQuestionIds = form.stream()
+                .filter(q -> Boolean.TRUE.equals(q.getRequired()))
+                .map(ReviewQuestionDto::getId)
+                .collect(Collectors.toSet());
+
+        List<ReviewAnswer> mappedAnswers = answersList.stream().map(entry -> {
+            if (!(entry instanceof Map<?, ?> answerMap)) {
+                throw new IllegalStateException("AI response contains malformed answer entries.");
+            }
+
+            Object questionIdRaw = answerMap.get("questionId");
+            Object answerRaw = answerMap.get("answer");
+            if (!(questionIdRaw instanceof String questionId) || questionId.isBlank()) {
+                throw new IllegalStateException("AI response contains an answer without questionId.");
+            }
+            if (!validQuestionIds.contains(questionId)) {
+                throw new IllegalStateException("AI response contains unknown questionId: " + questionId);
+            }
+            if (!(answerRaw instanceof String answerText) || answerText.isBlank()) {
+                throw new IllegalStateException("AI response contains an empty answer for questionId: " + questionId);
+            }
+
+            return ReviewAnswer.builder()
+                    .questionId(questionId)
+                    .answer(answerText)
+                    .build();
+        }).toList();
+
+        Set<String> answeredIds = mappedAnswers.stream()
+                .map(ReviewAnswer::getQuestionId)
+                .collect(Collectors.toSet());
+        if (!answeredIds.containsAll(requiredQuestionIds)) {
+            throw new IllegalStateException("AI response is missing required answers.");
+        }
+
+        return mappedAnswers;
+    }
+
+    private List<GradingCriterion> applyGradingSchema(List<ReviewQuestionDto> form, List<ReviewAnswer> answers) {
+        return form.stream().map(q -> {
+            GradingCriterion criterion = GradingCriterion.builder()
+                    .id(q.getId())
+                    .text(q.getText())
+                    .type(q.getType() != null ? q.getType().getValue() : null)
+                    .maxPoints(q.getMaxPoints())
+                    .required(q.getRequired())
+                    .options(q.getOptions())
+                    .build();
+            answers.stream()
+                    .filter(a -> a.getQuestionId().equals(q.getId()))
+                    .findFirst()
+                    .ifPresent(a -> criterion.setAnswer(a.getAnswer()));
+            return criterion;
+        }).toList();
+    }
+
+    private String requireString(Map<String, Object> parsedReview, String fieldName) {
+        Object value = parsedReview.get(fieldName);
+        if (!(value instanceof String stringValue) || stringValue.isBlank()) {
+            throw new IllegalStateException("AI response field '" + fieldName + "' is missing or empty.");
+        }
+        return stringValue;
     }
 }
