@@ -67,6 +67,11 @@ export class ResponseServiceStack extends cdk.Stack {
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
+    const submissionDocumentsBucket = s3.Bucket.fromBucketName(
+      this,
+      'SubmissionDocumentsBucket',
+      `peerreview-submissions-${AWSConstants.AWS_ACCOUNT_ID}`,
+    );
 
     const bedrockProxyLambda = new lambda.Function(this, 'BedrockProxyLambda', {
       functionName: `${props.serviceName}-bedrock-proxy`,
@@ -77,11 +82,13 @@ export class ResponseServiceStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(2),
       environment: {
         RESPONSE_DOCUMENTS_BUCKET: props.s3BucketName,
-        BEDROCK_MODEL_ID: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+        SUBMISSION_DOCUMENTS_BUCKET: submissionDocumentsBucket.bucketName,
+        BEDROCK_MODEL_ID: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
       },
     });
 
     documentBucket.grantRead(bedrockProxyLambda);
+    submissionDocumentsBucket.grantRead(bedrockProxyLambda);
     bedrockProxyLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['bedrock:InvokeModel'],

@@ -20,8 +20,8 @@ public class BedrockAiService {
     private final BedrockRuntimeClient bedrockClient;
     private final ObjectMapper objectMapper;
     
-    // AWS Bedrock Model ID for Claude 3.5 Sonnet
-    private static final String MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+    // AWS Bedrock Model ID for Claude Sonnet 4.5
+    private static final String MODEL_ID = "anthropic.claude-sonnet-4-5-20250929-v1:0";
 
     public BedrockAiService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;

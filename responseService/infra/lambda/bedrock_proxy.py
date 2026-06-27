@@ -4,6 +4,7 @@ import logging
 import os
 
 import boto3
+from botocore.exceptions import ClientError
 
 
 LOGGER = logging.getLogger()
@@ -12,8 +13,9 @@ LOGGER.setLevel(logging.INFO)
 S3_CLIENT = boto3.client("s3")
 BEDROCK_CLIENT = boto3.client("bedrock-runtime")
 
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20240620-v1:0")
-BUCKET_NAME = os.environ["RESPONSE_DOCUMENTS_BUCKET"]
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-sonnet-4-5-20250929-v1:0")
+PRIMARY_BUCKET_NAME = os.environ["RESPONSE_DOCUMENTS_BUCKET"]
+FALLBACK_BUCKET_NAME = os.environ.get("SUBMISSION_DOCUMENTS_BUCKET")
 
 
 def _strip_json_fence(text: str) -> str:
@@ -24,6 +26,32 @@ def _strip_json_fence(text: str) -> str:
     if text.endswith("```"):
         text = text[:-3]
     return text.strip()
+
+
+def _load_document_bytes(document_s3_key: str) -> bytes:
+    bucket_candidates = [PRIMARY_BUCKET_NAME]
+    if FALLBACK_BUCKET_NAME and FALLBACK_BUCKET_NAME != PRIMARY_BUCKET_NAME:
+        bucket_candidates.append(FALLBACK_BUCKET_NAME)
+
+    last_error = None
+    for bucket_name in bucket_candidates:
+        try:
+            LOGGER.info("Trying to fetch document key '%s' from bucket '%s'", document_s3_key, bucket_name)
+            response = S3_CLIENT.get_object(Bucket=bucket_name, Key=document_s3_key)
+            body = response["Body"].read()
+            if not body:
+                raise ValueError(f"Document at key '{document_s3_key}' in bucket '{bucket_name}' is empty.")
+            return body
+        except ClientError as exc:
+            error_code = exc.response.get("Error", {}).get("Code")
+            if error_code == "NoSuchKey":
+                last_error = exc
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError(f"Could not resolve document key '{document_s3_key}' from configured buckets.")
 
 
 def handler(event, _context):
@@ -43,10 +71,7 @@ def handler(event, _context):
         review_result_id,
     )
 
-    document = S3_CLIENT.get_object(Bucket=BUCKET_NAME, Key=document_s3_key)
-    pdf_bytes = document["Body"].read()
-    if not pdf_bytes:
-        raise ValueError(f"Document at key '{document_s3_key}' is empty.")
+    pdf_bytes = _load_document_bytes(document_s3_key)
 
     system_prompt = (
         "You are an expert AI peer reviewer evaluating a scientific or academic submission. "
