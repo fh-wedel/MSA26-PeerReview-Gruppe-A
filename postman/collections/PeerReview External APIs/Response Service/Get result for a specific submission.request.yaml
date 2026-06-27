@@ -1,0 +1,6 @@
+$kind: http-request
+name: 'Get result for a specific submission'
+description: 'Summary: Get result for a specific submission'
+url: '{{base_url}}/api/response/results/{{submissionId}}'
+method: GET
+order: 3000

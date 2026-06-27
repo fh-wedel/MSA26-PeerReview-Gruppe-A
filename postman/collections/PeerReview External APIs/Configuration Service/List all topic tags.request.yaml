@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'List all topic tags'
+description: |-
+  Summary: List all topic tags
+  
+  operationId: listTopicTags
+url: '{{base_url}}/api/configuration/topic-tags'
+method: GET
+order: 14000

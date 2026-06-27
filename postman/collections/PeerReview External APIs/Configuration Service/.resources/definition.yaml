@@ -1,0 +1,3 @@
+$kind: collection
+description: 'Requests generated from `configuration-service/configuration-core/src/main/resources/openapi/configuration.json`.'
+order: 8000

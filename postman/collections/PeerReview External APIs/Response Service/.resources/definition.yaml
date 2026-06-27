@@ -1,0 +1,3 @@
+$kind: collection
+description: 'Requests generated from `responseService/src/main/resources/openapi/response.json`.'
+order: 3000

@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'Submit a review result for a submission'
+description: 'Summary: Submit a review result for a submission'
+url: '{{base_url}}/api/response/results'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "reviewComments": "sample-reviewComments",
+      "submissionId": "{{submissionId}}",
+      "answers": [
+        {
+          "answer": "sample-answer",
+          "questionId": "00000000-0000-4000-8000-000000000000"
+        }
+      ],
+      "finalGrade": "sample-finalGrade"
+    }
+order: 2000

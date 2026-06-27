@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Get grading form for a configuration (proxied to configuration-service)'
+description: |-
+  Summary: Get grading form for a configuration (proxied to configuration-service)
+  
+  operationId: getGradingForm
+url: '{{base_url}}/api/submission/configurations/{{id}}/grading-form'
+method: GET
+order: 2000

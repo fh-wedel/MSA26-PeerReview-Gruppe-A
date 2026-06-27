@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'Get the rules for a specific submission'
+description: |-
+  Summary: Get the rules for a specific submission
+  
+  Returns the anonymity and communication rules for the workflow plugin associated with the given submission ID.
+  
+  operationId: getRulesForSubmission
+url: '{{base_url}}/api/configuration/submissions/{{submissionId}}/rules'
+method: GET
+order: 12000

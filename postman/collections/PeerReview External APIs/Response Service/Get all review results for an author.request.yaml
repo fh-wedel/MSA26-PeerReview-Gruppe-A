@@ -1,0 +1,10 @@
+$kind: http-request
+name: 'Get all review results for an author'
+description: 'Summary: Get all review results for an author'
+url: '{{base_url}}/api/response/results'
+method: GET
+queryParams:
+  - key: 'authorId'
+    value: '{{authorId}}'
+    disabled: false
+order: 1000

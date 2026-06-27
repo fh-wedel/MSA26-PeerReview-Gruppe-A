@@ -1,0 +1,6 @@
+$kind: http-request
+name: 'Get configuration details by submission ID'
+description: 'Summary: Get configuration details by submission ID'
+url: '{{base_url}}/api/configuration/submissions/{{submissionId}}'
+method: GET
+order: 9000

@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'List all chats for the authenticated user'
+description: |-
+  Summary: List all chats for the authenticated user
+  
+  Returns all chat threads in which the authenticated user (identified by
+  x-auth-principal-id header) is a participant. No pagination — the number
+  of chats per user is expected to remain small.
+  
+  operationId: listChats
+url: '{{base_url}}/api/communication/chats'
+method: GET
+order: 1000

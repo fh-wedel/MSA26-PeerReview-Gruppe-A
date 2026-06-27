@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'Returns all submissions assigned to a specific examiner'
+description: |-
+  Summary: Returns all submissions assigned to a specific examiner
+  
+  The path parameter is the human-readable Cognito username (e.g. 'Marcel'). The service resolves it to the internal Cognito sub UUID for DynamoDB queries and access-control checks.
+  
+  operationId: getMatchesByExaminer
+url: '{{base_url}}/api/matching/matches/examiners/{{examinerUsername}}'
+method: GET
+order: 1000

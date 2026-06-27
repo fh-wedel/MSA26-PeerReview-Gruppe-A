@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get a user by Cognito sub UUID'
+description: |-
+  Summary: Get a user by Cognito sub UUID
+  
+  Resolves a Cognito sub UUID to a full UserProfile.
+  Used by all services internally for username resolution.
+  All authenticated users may call this endpoint.
+  
+  operationId: getUserBySub
+url: '{{base_url}}/api/users/{{sub}}'
+method: GET
+order: 8000

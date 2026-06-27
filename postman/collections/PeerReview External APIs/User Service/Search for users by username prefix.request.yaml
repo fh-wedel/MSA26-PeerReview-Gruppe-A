@@ -1,0 +1,18 @@
+$kind: http-request
+name: 'Search for users by username prefix'
+description: |-
+  Summary: Search for users by username prefix
+  
+  Returns users whose username starts with or contains the given query string.
+  Replaces the /api/communication/users endpoint previously in the Communication Service.
+  All authenticated users may call this endpoint.
+  
+  operationId: searchUsers
+url: '{{base_url}}/api/users/search'
+method: GET
+queryParams:
+  - key: 'q'
+    value: '{{q}}'
+    disabled: true
+    description: 'Username prefix or substring to filter by. Returns all users if omitted.'
+order: 7000

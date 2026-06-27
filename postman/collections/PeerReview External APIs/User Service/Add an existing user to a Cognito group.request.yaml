@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'Add an existing user to a Cognito group'
+description: |-
+  Summary: Add an existing user to a Cognito group
+  
+  Promotes an existing Cognito user into the specified group.
+  Replaces POST /api/matching/examiners for the Reviewer group.
+  Restricted to Admin and ExaminationOfficer.
+  
+  operationId: addGroupMember
+url: '{{base_url}}/api/users/groups/{{groupName}}/members'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "username": "{{username}}",
+      "customAttributes": {}
+    }
+order: 4000

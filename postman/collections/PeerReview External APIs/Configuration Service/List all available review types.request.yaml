@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'List all available review types'
+description: |-
+  Summary: List all available review types
+  
+  Returns an array of all registered workflow plugins with their metadata and rules.
+  
+  operationId: listReviewTypes
+url: '{{base_url}}/api/configuration/review-types'
+method: GET
+order: 3000

@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'Add a new topic tag'
+description: |-
+  Summary: Add a new topic tag
+  
+  operationId: addTopicTag
+url: '{{base_url}}/api/configuration/topic-tags'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "tagName": "{{tagName}}"
+    }
+order: 15000

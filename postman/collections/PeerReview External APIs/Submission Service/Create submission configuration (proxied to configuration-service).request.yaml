@@ -1,0 +1,15 @@
+$kind: http-request
+name: 'Create submission configuration (proxied to configuration-service)'
+description: |-
+  Summary: Create submission configuration (proxied to configuration-service)
+  
+  operationId: createConfiguration
+url: '{{base_url}}/api/submission/configurations'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {}
+order: 1000
