@@ -3,6 +3,7 @@
 // Load the JSON data into a variable
 #let metadata = json("metadata.json")
 #show: thesis.with(..metadata)
+#set par(justify: true)
 
 // Roman numbering for front matter
 #set page(numbering: "I")
