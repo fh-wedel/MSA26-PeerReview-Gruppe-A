@@ -37,7 +37,7 @@ Abbildung .... gibt einen Überblick über die verwendeten Servis in der AWS Clo
 ) <fig:application-architecture>
 
 === Compute
-Die Basis für die Compute Bereitstellung wird durch AWS Elastic Container Services (ECS) realisiert, wobei hierbei auf die AWS Managed Serverless Version Fargate zurück gegriffen wird. AWS ECS Fargate erlaubt das einfache provisionieren von Compute Runtimes für Docker Images, wobei die Docker Images in der Elastic Container Registry (ECR) hinterlget sind. 
+Die Basis für die Compute Bereitstellung wird durch AWS Elastic Container Services (ECS) realisiert, wobei hierbei auf die AWS Managed Serverless Version Fargate zurück gegriffen wird. AWS ECS Fargate erlaubt das einfache provisionieren von Compute Runtimes für Docker Images, wobei die Docker Images in der Elastic Container Registry (ECR) hinterlget sind.
 
 Die Ausfallsicherheit der Services ist hoch und kann durch das vertikale Skallieren weiter erhöht werden. Um Lastspitzen abzufangen wird ein Autoscaler verwendet, der mittels Target Tracking Policy versucht die CPU Auslastung bei 75% zu halten, bei höher nutzung wird Vertikal Skalliert und bei geringerer Nutung wieder runterskalliert. Auch das kontinuerliche Ausrollen neuer Software Versionen wird durch AWS ECS Farget bestens unterstützte, wobei es die Möglicheiten des Blue/Green Deployments, Canary Deployments oder dem Rolling Deployment besteht, wobei neue Servceis erst parallel gesratte werden und erst nachdem sie verfügbar sind auch von dem Nutzer verwendet werden können.
 
@@ -50,9 +50,9 @@ Die Compute Instanzen kommunizieren größtenteils entkoppelt voneinander durch 
 Einige direkte Kommunikationen sind Aufgrund der Fachlichkeit notwendig gewesen, welche direkt ber REst realsiert wurden. DAbei nutzen die Servcies interen DNS Namen die im folgende nNetzwerk Abschnitt (link) beschriebn werden.
 
 === Netwerk
-Netzwerkseitig wird die Software in ein Virtuell Private Network (VPC) größtentiels in ein sicheres privates Subnetzwerk installiert. Dabei ist das Netzwerk ein wichtiger Aspekt der Kosteneffizienz stellen passive Kosten dar, welche in der AWS Infrastruktur sehr schnell im Bereich Netzwerk entstehen. 
+Netzwerkseitig wird die Software in ein Virtuell Private Network (VPC) größtentiels in ein sicheres privates Subnetzwerk installiert. Dabei ist das Netzwerk ein wichtiger Aspekt der Kosteneffizienz stellen passive Kosten dar, welche in der AWS Infrastruktur sehr schnell im Bereich Netzwerk entstehen.
 
-Die Software wird in einem privaten Subnetz Deployed, wodruch eine Sicherheit entsteht da die Instanzen aus dem Öffentlichen Internet nicht Routbar sind. Gleichezit bedeuted es, dass keine Verbnung möglich ist und die Instanzen auch selber nicht nach außen kommunieziren können um zum Beispiel das Image von ECR zu beziehen. Nicht so stark Kostenoptimierte Lösungen würden ein Network Adress Translation (NAT) Gateway installieren, welches von AWS geamaneged wird und die Instanzen so die Verbindung ins Internet und insbesondere das zurück Routen der Antworten ermöglicht. Ein NAT Gateway ist jedoch Kostspilig und hat passive Kosten von ~50€ pro Monat, wobei Traffic Kosten zu addieren sind. Eine alterntive ist es jede Instanz mit einer Öffetnlichen routbaren IPv4 auszustallen. Diese kosten pro IPv4 jedoch auch 3,50€ pro IPv4 Adresse, sodass sich bei 8 Services ebenfalls etwa 30 pro Monat ergeben. 
+Die Software wird in einem privaten Subnetz Deployed, wodruch eine Sicherheit entsteht da die Instanzen aus dem Öffentlichen Internet nicht Routbar sind. Gleichezit bedeuted es, dass keine Verbnung möglich ist und die Instanzen auch selber nicht nach außen kommunieziren können um zum Beispiel das Image von ECR zu beziehen. Nicht so stark Kostenoptimierte Lösungen würden ein Network Adress Translation (NAT) Gateway installieren, welches von AWS geamaneged wird und die Instanzen so die Verbindung ins Internet und insbesondere das zurück Routen der Antworten ermöglicht. Ein NAT Gateway ist jedoch Kostspilig und hat passive Kosten von ~50€ pro Monat, wobei Traffic Kosten zu addieren sind. Eine alterntive ist es jede Instanz mit einer Öffetnlichen routbaren IPv4 auszustallen. Diese kosten pro IPv4 jedoch auch 3,50€ pro IPv4 Adresse, sodass sich bei 8 Services ebenfalls etwa 30 pro Monat ergeben.
 
 Die Lösung für das Problem besteht in einem reinen IPv6 Netzwerk, wobei es die von AWS die Möglichkeit gibt ein kostenfreies Egress Only Gateway anzuschließen. Somit können die ECS Instanzen nach außen selbständig kommunizieren um Abhägikeiten und zum Beispiel das ECR Image herutnerladen. Auch wenn AWS ein Dualstack Subnetz anbietet, sodass gleichzeitg IPv4 und IPv6 nutzen können war es für den Anwendungsfall nicht möglich, denn dann versuchen die ECS Maschienen das ECR Image über IPv4 zu beziehen, was aufgrudn einer Fehlen Netzwerkstreck über IPv4 mit fehlendem NAT Gateway oder fehlend Public IPv4 nicht möglich war. Die Einzige lösung ist ein reines IPv6 Subnetz, wodurch jedoch Hürden bei eingehenden Verbindungen entstadt.
 
@@ -63,6 +63,8 @@ Dafür war es jedoch notwendig, dass die Lambda Proxies die Adressen der ECS Ser
 Durch die Entscheidungen des Lambda Proxies kann es zeitweise zu langsaen Antweortzeiten führen, weil die Lamdbas durch den kaltstart einige Sekunden benötigen um eine Anfrage weiter zu leiten. Als Kostenintesive Lösung können die Lambda Funktionen bereits instazieriert vorgehalten werden, worduch die Antweortzeiten deutlich besser geworden sind. Die Lamdbas werden jedoch nicht kosntant sondern nur zu Demo und Testzwecken vorgehalten. Als Alternative würde man nicht einen Lamdba Proy als API Gateway Ziel sondern einen echten Appliaktion Load Balancer installeiren, welcher eine IPv4 Adresse bereitstellen würde und nicht nur die Request zu einer ECS Maschinen weiter leitet sodnern auch den Verkehr über mehrere Insatnzen basierend auf Metriken verteilen kann. Die passiven Kosten eines Appliaktion Load Balncer belfauen sich jedoch auf etwa 16€ pro Monat pro Load Balancer, wodurch etwa 130€ bei acht Services entstehen würde, was mit dem Projekt nicht vereinabr war. Es ist jedoch zu erwarten das die Antwrotzeit deutlich besser wäre.
 
 Ein zweite Lambda Proxy wurde zwischen dem Response Servce und AWS Bedrock installiert, weil Bedrock aktuell nicht IPv6 fähig ist. Durch die Nutzung des Proxies wurde das Problem jedoch gelöst.
+
+Als letzen Service im Bereich des Netwzerks wird AWS CloudFront verwednt. Dieser Service elraubt es Global verteilt eine geringe Latenz der Services zu beiten, indem immer auf die nächstgelgenen Services zugririffen wird und eine Möglicheti des Caching an erster Stelle anbeitet. Zudem wurde durch CloudFront eine eigene Domain 'fh-wedel.dev' installiert, sodass die Sofwtare nicht hinter einer nicht stabilen DNS den API Gateways verfügbar ist, sondern über ein durchgehend feste DNS nach außen. Mittels AWS Route53 werden DNS einträge erstelllt, sodass die Anfragen für 'fh-wedel.dev' den Endpunkt des API Gateways auflösen lassen.
 
 === Datenbank Architekturen
 Auch die Datenbanken sind auf Kosten effizienz optimiert, sodass eine echte Serverless Datenbank verwendet werden musste. Zusätzlich haben die Daten keine Notwendigkeit eines Relationalen Modells gebilted, sodass eine Key-Value Datenbank in form von AWS DynamoBB, die keine passiven Kosten hat, als passend gewählt wurde.
@@ -93,11 +95,16 @@ Die verwendung der Technologie hat sich als sehr zuverlässig und vorteilhaft f�
 
 Daher utnerbricht der Server nach 25 Skunden die Verbindunge von sich aus. Aufgrund der Selbstheilenden Eigenscaftt von Serverside Events erkennt der Client sofort einen Verbinsungsabruch und verbindet sich neu mit dem Server, sodass die SSE Verbindung etabliert wird.
 
-== User Service (Cognito)
-// (Marcel)
-
 == Frontend
 // Luca -- (Gideon)
 
-== Sonstiges
-// CI CD Integration (ggf. nur leicht Architketur anschneiden), IaC Integration, Native AWS Integration, Kosten Optimierung (Marcel), Bedrock
+== DevOps und Infrastructure as Code
+Neben der Applikations und der Infrastrukturellen INfrastruktur gehört zur Modernen Sofwtare Architektur und dem Entwicklungszyklus DevOps Praktiken, die das durchgehdne Testen, Bauen und Deplyoen ermöglichen. Die Architektur der Pipline ist modular und ermölicht es leicht neue Services zu integrieren. In Abschnitt CI / CD Integration aus Kapitel Umsetzung und Workflow (Links!!) wird der Zyklus detailleirt beschrieben
+
+Damit das Deployment in die AWS vollautomatiersert möglich ist, wird Infrastrucre as Code (IaC) benötigt, welches es erlaubt die Infrastruktur durch Code zu beschrieben, der in der Pipeline ausgeführt werden kann und anschließend die Infrastrukturressouen erstellt/updatet. Hierbei wurde das von AWS veröffentlichte Cloud Development Kit (CDK) verwendet. Die verwendete Programmiersprache ist Typescript.
+
+Die IaC Kompontentne nutzen auf eben der Programmeirsprache eine entwicklete InfraLibrary, welche alle Standard Funktionalitäten, wie das in diesem Fall komplexe deplyoen eines ECS Service mit Lambda Proxy, API Gateway Eintrag und Integration in AVP durch wenige Zeilen Code standatiesiert hat. Es uwrde möglich dass alle Services auf den gelichen Infrastrukturellen Sturktuen basiert, was eine Konsitenz geboten hat und die Fehersucher sehr stark erlaeichtert hat. Auch Änderungen an allen Service auf der Infrasturturellen Ebene wurden serh einfach möglich.
+
+Neben der InfraLibrary gibt es das InfraBaseline Projekt welche eine Infrastrukturelle Basislinie erstellt, welche das Netwerk, den AWS Cognito Userpool, die CloudMap konfiguration sowie die CloudFront einrichtung umfasst.
+
+Im Projekt hat sich häufig ein sehr großer Vorteil des IaC gezeigt, um zum Beispiel Features direkt auszuprobieren und gleichezitg immer wieder zu ältern Versionen zurückrollen zu können, wobei die Infrasturkur und der Appliaktionscode immer zueinder passten. Insbeosndere hat sich die Verwendung als vorteilhaft gezeigt, als der erste AWS Account aufgrund eines ausgelaufenen Leases gesprerrt wurde. Durch IaC konnten alle Resosurce nahe zu ohne Anpassungen direkt in den neuen Account Deployed werden. Ohne IaC wäre eine manuelle stundenlange und fehleranfällige manuelle neusrstellung aller Ressourcen notwendig gewesen.
