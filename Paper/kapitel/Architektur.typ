@@ -26,7 +26,19 @@ Die Backend Services lassen sich zudem als Basis-Service kategorisieren, denn di
 
 
 == Infrastruktur Architektur
-Die Architrktur basiert auf Containierisierten Deployments der einzelnen Microsrvies. Dazu wird die gesamte Bereitstellung der Compute und weiteren Services durch AWS realsiiert
+Die Architrktur basiert auf Containierisierten Deployments der einzelnen Microsrvies. Dazu wird die gesamte Bereitstellung der Compute und weiteren Services durch AWS realsiiert. Ein wichtes Kriterium der gesasmten Infrastrukturen Architektur ist die sehr starke Kosteneffizien, wodruch ausschließlich modernen Serverless Komponenten verwendet werden. Zudem wurde auf High Avaiblibily verzichetet, wodurch auch erhöhte Kosten entstehen würden. Die Möglichkeit besteht jedoch High Avaiblability umzusetzen.
+
+Abbildung .... gibt einen Überblick über die verwendeten Servis in der AWS Cloud, die folgend näher beschrieben werden.
+#set figure.caption(position: bottom)
+
+#figure(
+  image("../bilder/Infra Architecture High Level-AWS.drawio.pdf", width: 100%),
+  caption: [Applikationsarchitektur],
+) <fig:application-architecture>
+
+Die Basis für die Compute Bereitstellung wird durch AWS Elastic Container Services (ECS) realisiert, wobei hierbei auf die AWS Managed Serverless Version Fargate zurück gegriffen wird. AWS ECS Fargate erlaubt das einfache provisionieren von Compute Runtimes für Docker Images, wobei die Docker Images in der Elastic Container Registry (ECR) hinterlget sind. Die Ausfallsicherheit der Services ist hoch und kann durch das vertikale Skallieren weiter erhöht werden. Um Lastspitzen abzufangen wird ein Autoscaler verwendet, der mittels Target Tracking Policy versucht die CPU Auslastung bei 75% zu halten, bei höher nutzung wird Vertikal Skalliert und bei geringerer Nutung wieder runterskalliert. Auch das kontinuerliche Ausrollen neuer Software Versionen wird durch AWS ECS Farget bestens unterstützte, wobei es die Möglicheiten des Blue/Green Deployments, Canary Deployments oder dem Rolling Deployment besteht, wobei neue Servceis erst parallel gesratte werden und erst nachdem sie verfügbar sind auch von dem Nutzer verwendet werden können. Um weiter Kosten zu sparen basieren alle ECS Services als CPU Architektur auf ARM64, die kostengünstiger ist. Zudem werden sogennate Spot Instanzen verwendet, die stark reduziert sind, jedoch nicht so stabil. Für das aktuelle Projekt, ideal, denn kurze Downtimes sind akzeptierbar und zusätzlich sorgt das Autscalling dafür das neue Instanzen anch gestartet werden. Für den weiteren Betrieb könnte zusätzlich eine Multi Avalibilty Zone Strategie verwendet werden, sodass bei einzelnen Ausfällen von Rechenzentraen keine Auswirkungen in der Appliaktion spürbar ist. Dies würde jedoch erhöhte Kosten erzeugeund und wurde daher nicht berücksitgt.
+
+Ein weitere wichtiger Aspekt der Kosteneffizienz stellen passive Kosten dar, welche in der AWS Infrastruktur sehr schnell im Bereich Netzwerk entstehen. Die Software wird in einem privaten Subnetz Deployed, wodruch eine Sicherheit entsteht da die Instanzen aus dem Öffentlichen Internet nicht Routbar sind. Gleichezit bedeuted es, dass keine Verbnung möglich ist und die Instanzen auch selber nicht nach außen kommunieziren können um zum Beispiel das Image von ECR zu beziehen. Nicht so stark Kostenoptimierte Lösungen würden ein Network Adress Translation (NAT) Gateway installieren, welches von AWS geamaneged wird und die Instanzen so die Verbindung ins Internet und insbesondere das zurück Routen der Antworten ermöglicht. Ein NAT Gateway ist jedoch Kostspilig und hat passive Kosten von ~50€ pro Monat, wobei Traffic Kosten zu addieren sind. Eine alterntive ist es jede Instanz mit einer Öffetnlichen routbaren IPv4 auszustallen. Diese kosten pro IPv4 jedoch auch 3,50€ pro IPv4 Adresse, sodass sich bei 8 Services ebenfalls etwa 30 pro Monat ergeben. 
 // (Marcel)
 
 == Datenbank Architekturen
