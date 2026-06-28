@@ -9,7 +9,7 @@
 #counter(page).update(1)
 
 // Table of Contents
-#outline(title: "Table of Content", indent: 1.5em)
+#outline(title: "Inhaltsverzeichnis", indent: 1.5em)
 #pagebreak()
 
 // List of Figures
@@ -31,9 +31,10 @@
 // Include Chapters
 // #include "kapitel/Abstract.typ"
 #include "kapitel/Einleitung.typ"
-#include "kapitel/Grundlagen.typ"
-#include "kapitel/Hauptkapitel_1.typ"
-#include "kapitel/Hauptkapitel_2.typ"
+#include "kapitel/Features.typ"
+#include "kapitel/Architektur.typ"
+#include "kapitel/Umsetzung.typ"
+#include "kapitel/Kritik.typ"
 #include "kapitel/Zusammenfassung.typ"
 #include "kapitel/Anhang.typ"
 
