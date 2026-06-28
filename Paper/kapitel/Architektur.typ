@@ -36,7 +36,7 @@ Abbildung .... gibt einen Überblick über die verwendeten Servis in der AWS Clo
   caption: [Applikationsarchitektur],
 ) <fig:application-architecture>
 
-== Compute
+=== Compute
 Die Basis für die Compute Bereitstellung wird durch AWS Elastic Container Services (ECS) realisiert, wobei hierbei auf die AWS Managed Serverless Version Fargate zurück gegriffen wird. AWS ECS Fargate erlaubt das einfache provisionieren von Compute Runtimes für Docker Images, wobei die Docker Images in der Elastic Container Registry (ECR) hinterlget sind. 
 
 Die Ausfallsicherheit der Services ist hoch und kann durch das vertikale Skallieren weiter erhöht werden. Um Lastspitzen abzufangen wird ein Autoscaler verwendet, der mittels Target Tracking Policy versucht die CPU Auslastung bei 75% zu halten, bei höher nutzung wird Vertikal Skalliert und bei geringerer Nutung wieder runterskalliert. Auch das kontinuerliche Ausrollen neuer Software Versionen wird durch AWS ECS Farget bestens unterstützte, wobei es die Möglicheiten des Blue/Green Deployments, Canary Deployments oder dem Rolling Deployment besteht, wobei neue Servceis erst parallel gesratte werden und erst nachdem sie verfügbar sind auch von dem Nutzer verwendet werden können.
@@ -49,7 +49,7 @@ Die Compute Instanzen kommunizieren größtenteils entkoppelt voneinander durch 
 
 Einige direkte Kommunikationen sind Aufgrund der Fachlichkeit notwendig gewesen, welche direkt ber REst realsiert wurden. DAbei nutzen die Servcies interen DNS Namen die im folgende nNetzwerk Abschnitt (link) beschriebn werden.
 
-== Netwerk
+=== Netwerk
 Netzwerkseitig wird die Software in ein Virtuell Private Network (VPC) größtentiels in ein sicheres privates Subnetzwerk installiert. Dabei ist das Netzwerk ein wichtiger Aspekt der Kosteneffizienz stellen passive Kosten dar, welche in der AWS Infrastruktur sehr schnell im Bereich Netzwerk entstehen. 
 
 Die Software wird in einem privaten Subnetz Deployed, wodruch eine Sicherheit entsteht da die Instanzen aus dem Öffentlichen Internet nicht Routbar sind. Gleichezit bedeuted es, dass keine Verbnung möglich ist und die Instanzen auch selber nicht nach außen kommunieziren können um zum Beispiel das Image von ECR zu beziehen. Nicht so stark Kostenoptimierte Lösungen würden ein Network Adress Translation (NAT) Gateway installieren, welches von AWS geamaneged wird und die Instanzen so die Verbindung ins Internet und insbesondere das zurück Routen der Antworten ermöglicht. Ein NAT Gateway ist jedoch Kostspilig und hat passive Kosten von ~50€ pro Monat, wobei Traffic Kosten zu addieren sind. Eine alterntive ist es jede Instanz mit einer Öffetnlichen routbaren IPv4 auszustallen. Diese kosten pro IPv4 jedoch auch 3,50€ pro IPv4 Adresse, sodass sich bei 8 Services ebenfalls etwa 30 pro Monat ergeben. 
@@ -62,18 +62,32 @@ Dafür war es jedoch notwendig, dass die Lambda Proxies die Adressen der ECS Ser
 
 Durch die Entscheidungen des Lambda Proxies kann es zeitweise zu langsaen Antweortzeiten führen, weil die Lamdbas durch den kaltstart einige Sekunden benötigen um eine Anfrage weiter zu leiten. Als Kostenintesive Lösung können die Lambda Funktionen bereits instazieriert vorgehalten werden, worduch die Antweortzeiten deutlich besser geworden sind. Die Lamdbas werden jedoch nicht kosntant sondern nur zu Demo und Testzwecken vorgehalten. Als Alternative würde man nicht einen Lamdba Proy als API Gateway Ziel sondern einen echten Appliaktion Load Balancer installeiren, welcher eine IPv4 Adresse bereitstellen würde und nicht nur die Request zu einer ECS Maschinen weiter leitet sodnern auch den Verkehr über mehrere Insatnzen basierend auf Metriken verteilen kann. Die passiven Kosten eines Appliaktion Load Balncer belfauen sich jedoch auf etwa 16€ pro Monat pro Load Balancer, wodurch etwa 130€ bei acht Services entstehen würde, was mit dem Projekt nicht vereinabr war. Es ist jedoch zu erwarten das die Antwrotzeit deutlich besser wäre.
 
-== Datenbank Architekturen
-// (Marcel)
+Ein zweite Lambda Proxy wurde zwischen dem Response Servce und AWS Bedrock installiert, weil Bedrock aktuell nicht IPv6 fähig ist. Durch die Nutzung des Proxies wurde das Problem jedoch gelöst.
 
-== User Managment
-// (Marcel)
+=== Datenbank Architekturen
+Auch die Datenbanken sind auf Kosten effizienz optimiert, sodass eine echte Serverless Datenbank verwendet werden musste. Zusätzlich haben die Daten keine Notwendigkeit eines Relationalen Modells gebilted, sodass eine Key-Value Datenbank in form von AWS DynamoBB, die keine passiven Kosten hat, als passend gewählt wurde.
 
+Es wurde dabei darauf geachtet, dass jeder Service eine eigene Datenbank erhält, sofern dieser Daten persitieren muss. Dadruch wird eine starke kopplung vermieden und die Unabögigeit einzelner Servcies bleibt bestehen.
+
+Bei den Datenmodellen wurde strikt ein modernes Single Table Design angewadnt, wodurch sehr effizient alle Daten in einem Service zu einer Abgabe mit einer Queriy erfrgat werden konnte. Es sind keine Joins über mehrere Tabellen notwendig noch müssen mehrere Queirs an verschiedene Tabellen gesendet werden.
+
+Auch die Datenhaltung der Services ist soweti beschränkt das jeder Service nur die Daten spiechert, welche in den Busines sKontext passend sind. Dadruch wird verhidnert das ein Datum in mehreren Tabellen überere Mhere Servies verteil liegt wodurch bei Ädnerungen mögliche Inkosittenzen entehsen könenn. Stattdessen müssen die Servcies ggf. die Daten bei anderen Services, welche die Data Owner über Rest sind erfragen. Die Datenhoheit wird dadurch bestmöglich gewahrt.
+
+=== User Managment
+Neben den Services zum Netzwerk, Compute und den Datenbanken wurde AWS Cognito und Aws Verfieid Permissions (AVP) verwednet. Cognito bietet einen AWS Managed User Management, sodass viele Aufagben wie das beretistellen einer Login-Seite, das Managend von Anmeldedaten und Session Tokens vollstädig durch AWS übernommen wird. Dies ist in der Modernen Software Entwicklung vom großen Vorteil um sich auf die Kernkompetenz eines Unternehmens zu fokusieren um Business Wert zu schaffen. Zusätzlich erlaubt Cognito das Managen von Gruppen, sodass eine Role Based Acess Controll (RBAC) möglich wird.
+
+Um die API Gateway Endpunkte abzusichern wird AVP verwednet, welches über eine Lambda Funktion eine native Integration erlaubt. AVP definiert dabei die Policies, welche Zugriffe auf Endpunkte erlauben, sodass bestimme User Gruppen aus Cognito nur auf bestimmte API Gateway Endpunkte zugreifen dürfen. Die tatsächliche anwendung dieser Regekn wird durch eine Lamdba Funktion realsieirt, welhe direkt vom API Gateway für jeden Requets aufgrufen wird. Die Lambda verküpft anschließend die AVP Regeln mit den Cogntio Gruppen den der USer angehörig ist und dem Endpunkt über API Gatewy und entscheided ob der Zugriff zulässig ist oder nicht.
+
+Die Lösung erzeugt keine PAssiven kosten und das Mangen der SUer sowie der AVP Policies ist sehr kostengünstig. Lediglich der Nachteil das die Requests über eine Lamdba, die wieder ein langsames Kaltstart Verhalten von einigen Sekunden haben kann ist zu nennen. Jeodch kann auch hier durch vorprovisionierte Instanzen die Antwortzeit reduzeirt werde, was sich beosnders bemerbar macht wenn die Proxy Lambda ebenfalls vorprovisioenirt ist, denn dann kann der Vorteil doppelt genutzt werden.
+
+Weitere Sicherheitsmechanismen finden nur noch in der Appliaktio selber statt um Zum Beispiel basierend auf den zu lesenden/ändernden Daten zu entscheiden ob der Nutzer erlaubt ist oder nicht. Hierfür wird Spring Security verwendet, wobei auch heir die Usernamen und Rollen Mappings aus AWS Cognito die Vertraute Authetifizeirte Wahrheit darstellen.
 
 
 == Configuration Service (Plugin Service)
 // Luca
 
 == Communikation / Notifaction -- SSE
+Api Gateway Timeout
 // (Marcel)
 
 == User Service (Cognito)
