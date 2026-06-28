@@ -1,6 +1,7 @@
 **/node_modules
 **/*.bkp
 .idea
+.playwright-mcp
 
 **/*.d.ts
 **/*.js

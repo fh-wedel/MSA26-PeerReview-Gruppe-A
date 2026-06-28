@@ -5,13 +5,24 @@
 #show: thesis.with(..metadata)
 #set par(justify: true)
 
+#import "@preview/glossarium:0.5.10": make-glossary, register-glossary, print-glossary, gls, glspl
+#import "abkuerzungen.typ": acronyms
+#show: make-glossary
+#register-glossary(acronyms)
+
 // Roman numbering for front matter
 #set page(numbering: "I")
 #counter(page).update(1)
 
 // Table of Contents
-#outline(title: "Inhaltsverzeichnis", indent: 1.5em)
+#outline(title: "Table of Content", indent: 1.5em)
 #pagebreak()
+
+// List of Abbreviations
+#heading(level: 1, numbering: none)[Abkürzungsverzeichnis]
+#print-glossary(acronyms, show-all: true)
+#pagebreak()
+
 
 // List of Figures
 //#outline(title: "Abbildungsverzeichnis", target: figure.where(kind: image))
