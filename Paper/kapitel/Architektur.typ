@@ -86,9 +86,12 @@ Weitere Sicherheitsmechanismen finden nur noch in der Appliaktio selber statt um
 == Configuration Service (Plugin Service)
 // Luca
 
-== Communikation / Notifaction -- SSE
-Api Gateway Timeout
-// (Marcel)
+== Serversite Events im Communication und Notification Service
+Eine Architturelle Besonderheit in dem Communicatin und dem Notifaction Service ist die Verwendung von Server Side Events. Diese erlauben es eine Unidirektionale Verbidnugn von Server zu Client zu etablieren, wodruch der Server Live Updates und Benachritguen schicken kann. Sie bieten Vorteile gegenüber Websocket Verbidngen die Bi-Direktional und in der regel komplexer sind. Auch gegenüber dem Ansatz des Clientseitigen Pollings bietet es den Vorteil, dass die Updates echt Live sind und nicht zeitvesetzt und keine ständige neuverbindugn stattfidnen muss.
+
+Die verwendung der Technologie hat sich als sehr zuverlässig und vorteilhaft für die Anwednugen in Chats und Notifications gezgti. Es gibt jedoch eine starke Einschräöung aufgrund der verwendeten Infrastruktur, insbeosndere des API Gatewys. Denn dieses erlaubt eine maximale Verbidnungszeit von 29 Sekunden. Dies ist nicht tragbar für eine durchgehend haltende Verbindung von Server zum Client.
+
+Daher utnerbricht der Server nach 25 Skunden die Verbindunge von sich aus. Aufgrund der Selbstheilenden Eigenscaftt von Serverside Events erkennt der Client sofort einen Verbinsungsabruch und verbindet sich neu mit dem Server, sodass die SSE Verbindung etabliert wird.
 
 == User Service (Cognito)
 // (Marcel)
