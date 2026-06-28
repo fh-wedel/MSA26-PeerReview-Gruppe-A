@@ -96,8 +96,10 @@ Der Einsatz von SSE hat sich für die Chat- und Benachrichtigungsfunktionen als 
 
 Um dieses Limit zu umgehen, beendet der Server die SSE-Verbindung proaktiv nach 25 Sekunden. Da das SSE-Protokoll nativ über Selbstheilungsmechanismen (Auto-Reconnect) verfügt, erkennt der Client den Verbindungsabbruch sofort und baut die Verbindung automatisch neu auf. Dadurch wird ein scheinbar unterbrechungsfreier Live-Datenstrom simuliert.
 
-== Frontend <sec:frontend>
+== Weboberfläche <sec:frontend>
 // Luca -- (Gideon)
+
+Die Weboberfläche nimmt im komponenten- und ereignisgesteuerten PeerReview-System eine zentrale Rolle ein, da sie zur Ermöglichung von Benutzerinteraktionen, Daten bereitstellen muss, welche auf diverse Services verteilt vorliegen. Hierdurch soll die Skalierbarkeit des Gesamtsystems erhöht werden, wobei jedoch eine Datenaggregation erforderlich wird, bevor die Weboberfläche vollständig angezeigt werden kann. Angesichts des Umfangs des Projekts, wurde sich in diesem Zusammenhang dazu entschieden, kein dediziertes @BFF zu implementieren, welches diese Aufgabe übernehmen könnte. Folglich obliegt es der Weboberfläche, die notwendigen Daten von den verschiedenen Services abzurufen und zusammenzuführen. Dies soll dazu beitragen, die infrastrukturelle Komplexität gemäß der Idee zur Implementierung eines @MVP zu reduzieren. Konzeptionell erklärt sich hieraus, weshalb die Weboberfläche als @SPA  unter Verwendung von React und Vite implementiert wurde. Dies ermöglicht es, Daten von verschiedenen Services asynchron abzurufen und die Benutzeroberfläche dynamisch und schrittweise zu aktualisieren, ohne dass eine vollständige Seitenaktualisierung erforderlich wird.
 
 == DevOps und Infrastructure as Code <sec:devops-iac>
 Zu einer modernen Softwarearchitektur gehören neben dem reinen Applikations- und Infrastrukturdesign zwingend auch DevOps-Praktiken, die ein kontinuierliches Testen, Bauen und Ausrollen (CI/CD) der Software ermöglichen. Die Architektur der CI/CD-Pipeline ist modular aufgebaut, wodurch sich neue Services aufwandsarm integrieren lassen. Der genaue Entwicklungszyklus wird in @sec:cicd-integration detailliert beschrieben.
