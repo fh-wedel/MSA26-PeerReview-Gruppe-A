@@ -1,3 +1,6 @@
+// Add Numbering of headings
+#set heading(numbering: "1.1")
+
 = Umsetzung und Workflow
 
 // (Infra gestarted mit "manueller Baseline), Erklärung unserer Umsetzung / Workflow mit Antigravity / Claude Code -- Inklusie Testen
@@ -22,7 +25,7 @@
 === GitHub Reviewer
 // (Matthias)
 
-== CI / CD Integration
+== CI / CD Integration <sec:cicd-integration>
 // (Marcel)
 
 == Testen (Manuell)
