@@ -14,6 +14,9 @@ Marcel Notitzen:
   - Der Agent macht zum teil sehr sehr viel nur halb. Mal verhisst er die Test anzupassne, mal lässt sich das projekt gar nicht compilieren, wei das Imports fehlen etc. Selbst beim Propmt: Fixe comiler fehler und tests, hat er zwar änderungen geacmht aber es hat nicht funktioniert neue/andere fehler
   - GitHub Reviwer: einmal hat er vorschläge gemacht, die wir angewadnt haben und dann hat alles nicth mehr funktioneirt --> Schlechtes review wenn der funktionaliät danach nicht mehr geht
 
+Luca:
+  - Die Landschaft an KI-Tools zur Entwicklung ist hochgradig verwirrend und trägt zur Frustration bei. Es gibt unzählige KI-Agenten-Harnesses, welche den gleichen Zweck erfüllen: Claude Code, Codex, Antigravity, Cursor, OpenCode ... alle jeweils als CLI- und Dekstop-Variante. Jedes Tool ist etwas anders zu bedienen und zu konfigurieren. Alle paar Wochen gibt es etwas neues. Oftmals gibt es dazu noch Abonnements, die zur aktiven Verwendung der Tools abzuschließen sind.
+
 == Herrausforderungen
 
 == Zukunfts-"Ausrichtung"
