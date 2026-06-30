@@ -39,4 +39,9 @@
     short: "AWS",
     long: "Amazon Web Services",
   ),
+  (
+    key: "CDN",
+    short: "CDN",
+    long: "Content Delivery Network",
+  ),
 )
