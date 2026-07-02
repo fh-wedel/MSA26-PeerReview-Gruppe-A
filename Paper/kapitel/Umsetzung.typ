@@ -16,9 +16,13 @@ Die Praxis zeigte, dass die Coding-Agenten die vorgegebene Baseline sowohl auf i
 Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (Context Window) der verwendeten Sprachmodelle positiv aus, da die Modelle jederzeit serviceübergreifendes Systemwissen in ihre Generierung einbeziehen konnten. Aus ökonomischer Sicht offenbarte dieser Ansatz jedoch auch Nachteile: Bei der Initiierung neuer Prompts fiel das Kontextfeld und insbesondere die Anzahl der Input-Tokens sehr groß aus, was zu erhöhten API-Gebühren führte. Zudem besteht bei sehr großen Kontexten das inhärente Risiko von Qualitätseinbußen, da @LLM dazu neigen, feine Details inmitten umfangreicher Datenmengen zu übersehen (Lost-in-the-Middle-Phänomen).
 
 == Agentic Coding <sec:agentic-coding>
+Unter Agentic Coding versteht man den Einsatz autonomer Software-Agenten auf Basis von @LLM:pl, die über klassische Code-Vervollständigung hinausgehen. Im Gegensatz zu Assistenzsystemen versucht man mit Coding-Agenten einen kontinuierlichen Zyklus (Agentic Loop) aus Analyse, Planung, Umsetzung sowie anschließender Verifikation abzubilden. Dies soll die selbstständige Bearbeitung komplexer Entwicklungsaufgaben ermöglichen. Im Rahmen dieser Arbeit wurden verschiedene agentische Werkzeuge evaluiert, um deren Eignung für den Aufbau einer ereignisgesteuerten Microservice-Architektur zu untersuchen.
 
 === Agents.MD / Claude.MD <sec:agents-md>
 // (Gideon)
+
+Da es bei guter Softwareentwicklung maßgeblich ist, dass zum Beispiel Architekturentscheidungen und Konventionen allen Entwicklern eines Projekts bekannt sind und diese anwenden, muss zwangsweise gleiches für autonom agierende Agenten gelten. Um Coding-Agenten ebensolche projektbezogene Instruktionen und Kontext bereitzustellen, hat sich zunehmend die plattformübergreifende `AGENTS.md` als offener Standard @agents_md_website etabliert, der von Editoren wie Cursor und Agentensystemen wie Codex gelesen und respektiert wird. Entgegen dieser herstellerunabhängigen Praxis verbleibt einzig Anthropic mit Claude Code als einziger großer Hersteller, welcher diesen Standard weiterhin nicht integriert hat und verlangt stattdessen die proprietäre Datei `CLAUDE.md`. Diese fehlende Interoperabilität erschwert den flexiblen Einsatz verschiedener Agenten im selben Projekt und stößt in der Entwickler-Community auf Kritik @claude_code_agents_issue_2025.
+
 
 === Antigravity <sec:antigravity>
 // (Matthias)
