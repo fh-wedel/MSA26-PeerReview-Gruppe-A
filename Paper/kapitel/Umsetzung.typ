@@ -26,10 +26,12 @@ Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (C
 === Claude Code <sec:claude-code>
 // (Gideon)
 
-=== Open Code <sec:open-code>
+=== OpenCode <sec:opencode>
 // (Luca)
 
-KI-Coding-Harnesses wie Claude Code, Antigravity oder Codex haben gemeinsam, dass sie üblicherweise für die Softwareentwicklung in Kombination mit den hauseigenen @LLM:pl und Abonnements der jeweiligen Hersteller wie Anthropic, Google oder OpenAI vorgesehen werden. Es wird versucht, die Verwendung der Abonnements außerhalb der jeweiligen Plattformen zu unterbinden und das Ökosystem durch die Bindung an die proprietären Dienste zu stärken. Insbesondere Anthropic hat sich zum Beispiel bestrebt gezeigt, eine Verwendung mit nicht unternehmenseigener Software zu verhindern und den Zugriff von Benutzern vollständig zu sperren @engelking_anthropic_2026. Eine Migration 
+KI-Coding-Harnesses wie Claude Code, Antigravity oder Codex haben gemeinsam, dass sie üblicherweise für die Softwareentwicklung in Kombination mit den hauseigenen @LLM:pl und Abonnements der jeweiligen Hersteller wie Anthropic, Google oder OpenAI vorgesehen werden. Eine Anbindung der Harnesse an @LLM:pl von Drittherstellern oder selbstbetriebenen Instanzen wird nicht unterstützt oder obliegt vorbehaltlich zukünftigen Einschränkungen. Es wird aktiv versucht, die Verwendung der Abonnements außerhalb der jeweiligen Plattformen zu unterbinden und die Ökosysteme durch die Bindung an die proprietären Dienste zu stärken. Insbesondere Anthropic hat sich zum Beispiel bestrebt gezeigt, eine Verwendung mit nicht unternehmenseigener Software zu verhindern und den Zugriff von zuwiderhandelnden Benutzern vollständig zu sperren @engelking_anthropic_2026. Eine Migration von einem Anbieter zu einem anderen wird hierdurch erheblich erschwert, obwohl die zur Anbindung von @LLM:pl verwendeten Schnittstellen üblicherweise einheitlich sind. 
+
+Das Open-Source-Projekt OpenCode soll eine Alternative zu den proprietären Coding-Harnesses darstellen. Es bietet die Möglichkeit, beliebige @LLM:pl von verschiedensten Anbietern zu integrieren oder die Agenten auf selbstgehosteten Instanzen zu betreiben. OpenCode ist hochgradig konfigurierbar und erlaubt die Erweiterung durch Plugins. So ist es beispielsweise möglich, dass KI Agenten, die auf verschiedenen Plattformen ausgeführt werden, miteinander kommunizieren und von einem einzigen kombinierten Harness orchestriert werden.  
 
 === GitHub Copilot Reviewer <sec:github-reviewer>
 // (Matthias)
