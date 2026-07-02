@@ -1,7 +1,5 @@
 = Features der App
 
-// MVP Feature set liste (Matthias) -- Explizit auch Features gegen Entschieden
-
 Die Applikation (das "PeerReview"-System) ist als eine moderne, ereignisgesteuerte Microservice-Architektur implementiert. Sie umfasst eine interaktive Web-Oberfläche (React/Vite) sowie sieben dedizierte Backend-Services (Java/Spring Boot).
 
 Im Folgenden werden alle im aktuellen MVP (Minimum Viable Product) implementierten Features detailliert aufgeschlüsselt.
@@ -81,3 +79,13 @@ Jeder Microservice arbeitet mit einer eigenen, isolierten Datenbank (PostgreSQL 
 - *Asynchrone Benachrichtigungs-Pipeline:* SQS-Listener verarbeitet Events aus dem Backend (z.B. "Review Assigned", "Matching Failed") und erstellt in-app Einträge.
 - *Live-Push-Notification (SSE):* Streamt Benachrichtigungen in Echtzeit an den Browser, sobald ein SQS-Event verarbeitet wurde.
 - *Statusverwaltung:* Endpunkte zum Markieren einzelner oder aller Benachrichtigungen als gelesen.
+
+== Out of scope
+Für das MVP wurde sich bewusst gegen die Implementierung bestimmter Features entschieden oder diese wurden zugunsten eines reduzierten Scopes zurückgestellt:
+
+- *PDF-Annotationen:* Direkte visuelle Markierungen, Kommentare oder Zeichnungen auf den PDF-Dokumenten im Browser wurden nicht implementiert. Die Begutachtung erfolgt stattdessen strukturiert über Bewertungsbögen und textuelles Gesamt-Feedback. (Begründung: Hohe UI-Komplexität bei geringem Mehrwert für das MVP).
+- *Dateiformate abseits von PDF:* Es wird ausschließlich das `.pdf`-Format für Einreichungen unterstützt. Andere in der Aufgabenstellung denkbare Formate (z. B. `.zip`-Dateien für Quellcode-Abgaben) wurden nicht realisiert.
+- *Erinnerungsverwaltung (Reminder Service):* Es gibt kein automatisiertes System, das Benutzer vor Ablauf von Deadlines (Abgabe- oder Review-Fristen) benachrichtigt oder an ausstehende Aufgaben erinnert.
+- *Externe API-Schnittstelle (z. B. für LMS-Anbindung):* Eine API-Schnittstelle zur direkten Einbindung in externe Systeme wie Lernmanagementsysteme (z. B. Moodle, Canvas via LTI) wurde nicht realisiert.
+- *Dedizierter Statistik- & Reporting-Service:* Statistische Auswertungen sind auf einfache KPIs im Admin-Dashboard (Nutzerzahlen, aktive Plugins) beschränkt. Ein eigenständiger Dienst zur Aggregation komplexer Kennzahlen (z. B. Notenverläufe) wurde nicht umgesetzt.
+
