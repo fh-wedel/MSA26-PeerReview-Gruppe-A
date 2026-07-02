@@ -2,14 +2,14 @@
 
 // MVP Feature set liste (Matthias) -- Explizit auch Features gegen Entschieden
 
-Die Applikation (das "PeerReview"-System) ist als eine moderne, ereignisgesteuerte Microservice-Architektur implementiert. Sie umfasst eine interaktive Web-Oberfläche (React/Vite) sowie sieben dedizierte Backend-Services (Java/Spring Boot). 
+Die Applikation (das "PeerReview"-System) ist als eine moderne, ereignisgesteuerte Microservice-Architektur implementiert. Sie umfasst eine interaktive Web-Oberfläche (React/Vite) sowie sieben dedizierte Backend-Services (Java/Spring Boot).
 
 Im Folgenden werden alle im aktuellen MVP (Minimum Viable Product) implementierten Features detailliert aufgeschlüsselt.
 
 == Web-UI (Frontend)
 Das Frontend ist als Single-Page-Application (SPA) mit React, TypeScript und Material-UI (MUI) realisiert. Es bietet folgende Features:
 
-- *Authentifizierung & Registrierung:* Login- und Registrierungsformulare, die nahtlos an AWS Cognito angebunden sind. 
+- *Authentifizierung & Registrierung:* Login- und Registrierungsformulare, die nahtlos an AWS Cognito angebunden sind.
 - *Rollenabhängiges Dashboard:* Zentrale Übersicht über Einreichungen, Zuweisungen, offene Chats und Benachrichtigungen. Die UI passt sich dynamisch an die Rolle des Benutzers an.
 - *Einreichungserstellung & -verwaltung:*
   - Benutzeroberfläche zum Erstellen von Abgaben mit der Konfiguration von Titeln, Deadlines und Autoren.
@@ -35,25 +35,19 @@ Das Frontend ist als Single-Page-Application (SPA) mit React, TypeScript und Mat
 == Backend-Microservices
 Jeder Microservice arbeitet mit einer eigenen, isolierten Datenbank (PostgreSQL für relationale Daten, DynamoDB für dokumentenbasierte bzw. Single-Table-Strukturen) und kommuniziert über REST-Schnittstellen (synchron) sowie Amazon SQS (asynchron).
 
-=== 1. Benutzerverwaltung (User Service)
+=== Benutzerverwaltung (User Service)
 - *Cognito-Integration:* Zentrales Identitätsmanagement durch Anbindung an den AWS Cognito User Pool.
 - *Benutzersuche (Präfixbasiert):* Endpunkt für die effiziente Suche nach Benutzern anhand von Namenspräfixen.
 - *Massenauflösung (Bulk Resolve):* Post-Endpunkt zur schnellen Auflösung einer Liste von Cognito-Subs (UUIDs) in verständliche Benutzernamen (reduziert API-Calls im Frontend).
 - *Gruppen- und Attributsverwaltung:* Endpunkte zum Hinzufügen/Entfernen von Nutzern zu Cognito-Gruppen und Editieren von Custom Attributes (z.B. `isActive` und `topicTags` für Reviewer).
 
-=== 2. Einreichungs- & Dokumentenservice (Submission Service)
-- *Abgabe-Lebenszyklus:* Steuerung des Prozesses von der Entwurfserstellung (Draft) bis zur finalen Abgabe.
-- *Gruppenabgaben-Unterstützung:* Verwaltung von n-Autoren pro Einreichung über ein `authorIds`-Array.
-- *AWS S3-Integration:* Generierung von sicheren, zeitlich begrenzten Presigned Upload- und Download-URLs für PDF-Arbeiten, um direkte, performante Dokumenten-Uploads ins S3-Bucket zu ermöglichen.
-- *Event-gesteuertes Status-Tracking:* Ein SQS-Listener lauscht auf Ereignisse der anderen Services (z.B. "MATCHED" oder "REVIEW_COMPLETED") und aktualisiert den internen Status der Einreichung in der relationalen Datenbank.
-
-=== 3. Konfigurations- & Workflow-Service (Configuration Service)
+=== Konfigurations- & Workflow-Service (Configuration Service)
 - *Workflow-Abstraktion (Plugin-Architektur):* Schnittstelle zur dynamischen Bereitstellung von Begutachtungsprozessen (z.B. Open Review, Double-Blind) mit anpassbaren Regeln (Wer darf wen sehen? Ist ein Chat erlaubt?).
 - *Dynamische Bewertungsbögen (Review Templates):* Bereitstellung von strukturierten Feedback-Formularen mit Fragen und Datentypen (Rating, Scale, Multiple Choice, Text).
 - *Themen-Tag-Verwaltung:* CRUD-Schnittstelle für Topic-Tags, die zur thematischen Zuordnung von Arbeiten und Reviewern dienen.
 - *Fristen- und Metadaten-Management:* Verwaltung von Deadlines für Einreichungen und Reviews sowie die Zuweisung von Fachbereichen zu einer Abgabekonfiguration.
 
-=== 4. Zuteilungsservice (Matching Service)
+=== Zuteilungsservice (Matching Service)
 - *Automatisches Zuweisungs-Event:* SQS-Listener startet die Reviewer-Zuteilung automatisch, sobald eine Abgabe finalisiert wurde.
 - *Fachgebiet-Matching:* Filtert Reviewer nach aktiven Profilen (`isActive=true`), schließt Selbstbegutachtung aus (Abgleich mit den `submitterIds`) und wählt nur Reviewer mit übereinstimmenden `topicTags` aus.
 - *Prüfer-Zuteilung:* Wählt zufällig eine konfigurierte Anzahl von Prüfern aus dem gefilterten Pool aus.
@@ -61,7 +55,14 @@ Jeder Microservice arbeitet mit einer eigenen, isolierten Datenbank (PostgreSQL 
 - *Transaktionale Persistenz:* Match-Datensätze werden transaktional in DynamoDB gespeichert. Bei unzureichender Reviewer-Anzahl wird der Status "FAILED" gesetzt.
 - *SQS-Broker-Zuweisung:* Informiert den Submission-Service über erfolgreiche Zuweisungen und sendet Benachrichtigungsaufträge an den Notification-Service.
 
-=== 5. Bewertungs- & Feedback-Service (Response Service)
+=== Einreichungs- & Dokumentenservice (Submission Service)
+- *Abgabe-Lebenszyklus:* Steuerung des Prozesses von der Entwurfserstellung (Draft) bis zur finalen Abgabe.
+- *Gruppenabgaben-Unterstützung:* Verwaltung von n-Autoren pro Einreichung über ein `authorIds`-Array.
+- *AWS S3-Integration:* Generierung von sicheren, zeitlich begrenzten Presigned Upload- und Download-URLs für PDF-Arbeiten, um direkte, performante Dokumenten-Uploads ins S3-Bucket zu ermöglichen.
+- *Event-gesteuertes Status-Tracking:* Ein SQS-Listener lauscht auf Ereignisse der anderen Services (z.B. "MATCHED" oder "REVIEW_COMPLETED") und aktualisiert den internen Status der Einreichung in der relationalen Datenbank.
+
+
+=== Bewertungs- & Feedback-Service (Response Service)
 - *Manuelles Review:* Endpunkt zum Einreichen von ausgefüllten Bewertungsformularen durch Reviewer (Abgleich der IDs mit den Zuweisungen des Matching-Service).
 - *Asynchrones KI-Gutachten (Bedrock-Integration):*
   - SQS-Listener empfängt Anfragen für KI-Reviews.
@@ -70,12 +71,12 @@ Jeder Microservice arbeitet mit einer eigenen, isolierten Datenbank (PostgreSQL 
 - *KI-Antwortvalidierung:* Automatisches Validieren und Parsen der KI-generierten JSON-Struktur gegen Datentypen, Wertegrenzen (z.B. maxPoints) und Pflichtfelder des hinterlegten Feedback-Schemas.
 - *Ergebnis-Freigabe (Anonymitätsschutz):* Autoren können KI-Gutachten sofort einsehen, menschliche Gutachten werden jedoch erst freigegeben, sobald alle zugewiesenen menschlichen Reviews abgeschlossen sind.
 
-=== 6. Kommunikationsservice (Communication Service)
+=== Kommunikationsservice (Communication Service)
 - *DynamoDB Single-Table Design:* Speicherung von Chats und Nachrichten in einer einzigen Tabelle zur Vermeidung von Race Conditions und Performance-Engpässen bei parallelen Zugriffen.
 - *Deterministische Chat-IDs:* Generierung von Chat-IDs über Hashes der Teilnehmer-UUIDs zur Vermeidung doppelter Chats.
 - *Server-Sent Events (SSE):* Streaming-Schnittstelle zur Echtzeitübertragung neuer Nachrichten an verbundene Clients.
 
-=== 7. Benachrichtigungsservice (Notification Service)
+=== Benachrichtigungsservice (Notification Service)
 - *In-App Inbox:* Zentrale Datenbank für persönliche Benachrichtigungen der Benutzer.
 - *Asynchrone Benachrichtigungs-Pipeline:* SQS-Listener verarbeitet Events aus dem Backend (z.B. "Review Assigned", "Matching Failed") und erstellt in-app Einträge.
 - *Live-Push-Notification (SSE):* Streamt Benachrichtigungen in Echtzeit an den Browser, sobald ein SQS-Event verarbeitet wurde.
