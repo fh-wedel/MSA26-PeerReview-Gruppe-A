@@ -2,42 +2,81 @@
 
 // MVP Feature set liste (Matthias) -- Explizit auch Features gegen Entschieden
 
-Die Applikation (das "PeerReview"-System) ist in eine Web-Oberfläche und diverse zuständige Backend-Microservices unterteilt. Die folgenden Funktionen wurden für das MVP (Minimum Viable Product) implementiert:
+Die Applikation (das "PeerReview"-System) ist als eine moderne, ereignisgesteuerte Microservice-Architektur implementiert. Sie umfasst eine interaktive Web-Oberfläche (React/Vite) sowie sieben dedizierte Backend-Services (Java/Spring Boot). 
 
-== Benutzer- und Rollenverwaltung (User Service)
-- *Identitätsmanagement:* Anbindung an AWS Cognito zur Verwaltung der Benutzer und Authentifizierung.
-- *Benutzersuche & -auflösung:* Endpunkte zum Suchen von Benutzern anhand von Präfixen oder zum massenhaften Auflösen von IDs (Sub-UUIDs) zu Benutzernamen.
-- *Rollenbasierter Zugriff (RBAC):* Gruppenverwaltung für Rollen wie Admin, ExaminationOfficer, Teacher, Reviewer und Author, inklusive Zugriffsbeschränkungen auf bestimmte Systemaktionen.
-- *Profil-Details:* Abrufen und Ändern von Benutzer-Metadaten (Custom Attributes).
+Im Folgenden werden alle im aktuellen MVP (Minimum Viable Product) implementierten Features detailliert aufgeschlüsselt.
 
-== Prozess- und Formular-Konfiguration (Configuration Service)
-- *Einrichtungs-Parameter:* Konfigurieren von Parametern für Einreichungen wie Deadlines (Abgabe/Review), Anzahl der Prüfer und der gewünschte Begutachtungsprozess.
-- *Review-Typen (Plugin-Architektur):* Flexibles System zur Unterstützung unterschiedlicher Begutachtungs-Workflows (z.B. Double-Blind, Open-Review) mit anpassbaren Regeln (Anonymität, Chat-Erlaubnis).
-- *Review-Templates:* Bereitstellung von Bewertungsschemata und Formularen (Feedback Forms), die für Einreichungen gelten.
-- *Themen und Kategorisierung:* Verwaltung von fachlichen Themen-Tags (Topic Tags), die für das Routing/Matching genutzt werden können.
+== Web-UI (Frontend)
+Das Frontend ist als Single-Page-Application (SPA) mit React, TypeScript und Material-UI (MUI) realisiert. Es bietet folgende Features:
 
-== Automatisierte Zuweisung (Matching Service)
-- *Ereignisgesteuertes Matching:* Automatischer Start eines Zuteilungs-Prozesses nach Eingang des SQS-Events.
-- *Themenbasiertes Matching:* Zuweisung einer definierten Anzahl von Prüfern (Examinern) zu einer abgeschlossenen Einreichung, gefiltert nach den Topic-Tags des Prüfers und der Einreichung (oder direkter Zuweisung von Custom Reviewers).
-- *Zuweisungs-Übersichten:* Abfragen für Prüfer (zugewiesene Arbeiten) und für Arbeiten (zuständige Prüfer).
+- *Authentifizierung & Registrierung:* Login- und Registrierungsformulare, die nahtlos an AWS Cognito angebunden sind. 
+- *Rollenabhängiges Dashboard:* Zentrale Übersicht über Einreichungen, Zuweisungen, offene Chats und Benachrichtigungen. Die UI passt sich dynamisch an die Rolle des Benutzers an.
+- *Einreichungserstellung & -verwaltung:*
+  - Benutzeroberfläche zum Erstellen von Abgaben mit der Konfiguration von Titeln, Deadlines und Autoren.
+  - Upload-Bereich für PDF-Dokumente via AWS S3 Presigned URLs mit direktem Client-Upload.
+  - Möglichkeit, Einreichungen final abzugeben (Finalize & Submit), was weitere Uploads sperrt und den Review-Prozess triggert.
+- *Intelligente Anonymisierung (Smart Anonymity):* Dynamisches Ausblenden (Redacting) von Autoren- oder Reviewer-Identitäten in der Detailansicht basierend auf den Workflow-Regeln (z.B. Double-Blind). Administratoren und Lehrer sehen die echten Namen, während sie für Autoren/Reviewer unleserlich geschwärzt werden.
+- *Interaktiver Bewertungsbogen (Start Review):* Dynamisches Formular, das sich an das konfigurierte Schema (Rating-Sterne, Punkteskalen, Multiple-Choice oder Freitext) anpasst.
+- *In-App Kommunikationsbereich (Chats):*
+  - Chat-Übersicht getrennt nach generellen Direktnachrichten ("General") und abgabebezogenen Gruppen-Chats ("Submissions").
+  - Dynamisches Suchen von Chatpartnern per Autocomplete.
+  - Live-Streaming neuer Chatnachrichten im aktiven Widget über Server-Sent Events (SSE).
+- *Echtzeit-Benachrichtigungen:* Eine Notification-Glocke und eine Inbox-Seite mit Live-Updates bei neuen Systemereignissen via SSE.
+- *Benutzerverwaltung (User Management):*
+  - Für Administratoren/Prüfungsbeamte: Tabellarische Ansicht aller Nutzer, Filterung nach Cognito-Gruppen (Admin, Reviewer, etc.).
+  - Zuweisung von Nutzern zu Rollengruppen.
+  - Spezifische Konfiguration von Reviewern (Aktivieren/Deaktivieren für das Matching, Zuweisen von fachlichen Themenbereichen via Autocomplete).
+- *Admin-Dashboard:*
+  - Übersicht der globalen Systemstatistiken (Benutzerzahlen, aktive Plugins).
+  - Verwaltung gültiger Fachgebiet-Tags (Topic Tags) (Hinzufügen, Auflisten, Löschen).
+  - Übersicht der registrierten Review-Typen und Review-Templates.
+- *Theme-Support:* Umschaltbares Design zwischen Light-Mode und Dark-Mode.
 
-== Einreichungen & Dokumentenverwaltung (Submission Service)
-- *Gruppenabgaben:* Unterstützung für Einreichungen mit mehreren Autoren (1-zu-N Bindung).
-- *Einreichungsprozess:* Erstellen einer Einreichung, Upload von Dokumenten und finales Abschließen der Einreichung.
-- *Status-Tracking:* Verfolgung und Aktualisierung des Einreichungsstatus basierend auf SQS-Events (z.B. Match gefunden, Review abgeschlossen).
-- *Cloud-Speicherung:* Hochladen und Herunterladen von Dokumenten (PDFs) direkt über AWS S3 mittels Presigned URLs.
-- *Zugriffskontrolle:* Rollenbasierte Filterung, sodass Autoren nur auf ihre eigenen und Prüfer nur auf zugewiesene Einreichungen Zugriff haben.
+== Backend-Microservices
+Jeder Microservice arbeitet mit einer eigenen, isolierten Datenbank (PostgreSQL für relationale Daten, DynamoDB für dokumentenbasierte bzw. Single-Table-Strukturen) und kommuniziert über REST-Schnittstellen (synchron) sowie Amazon SQS (asynchron).
 
-== Begutachtungsprozess & Resultate (Response Service)
-- *Manuelles Review:* Einreichen von ausgefüllten Bewertungsformularen und Feedback zu Dokumenten.
-- *AI-Review (Integration):* Anfragen von automatisiertem, KI-generiertem Feedback zu hochgeladenen wissenschaftlichen Arbeiten.
-- *Ergebnis-Einsicht:* Aggregierte Ansicht von Review-Ergebnissen je Einreichung oder gefiltert nach Autor.
+=== 1. Benutzerverwaltung (User Service)
+- *Cognito-Integration:* Zentrales Identitätsmanagement durch Anbindung an den AWS Cognito User Pool.
+- *Benutzersuche (Präfixbasiert):* Endpunkt für die effiziente Suche nach Benutzern anhand von Namenspräfixen.
+- *Massenauflösung (Bulk Resolve):* Post-Endpunkt zur schnellen Auflösung einer Liste von Cognito-Subs (UUIDs) in verständliche Benutzernamen (reduziert API-Calls im Frontend).
+- *Gruppen- und Attributsverwaltung:* Endpunkte zum Hinzufügen/Entfernen von Nutzern zu Cognito-Gruppen und Editieren von Custom Attributes (z.B. `isActive` und `topicTags` für Reviewer).
 
-== In-App Kommunikation (Communication Service)
-- *Chats:* Chat-Sitzungen zwischen Nutzern mit dem Austausch von Textnachrichten.
-- *Echtzeit-Synchronisation:* Server-Sent Events (SSE) für das Livestreaming neuer Chat-Nachrichten im Frontend.
+=== 2. Einreichungs- & Dokumentenservice (Submission Service)
+- *Abgabe-Lebenszyklus:* Steuerung des Prozesses von der Entwurfserstellung (Draft) bis zur finalen Abgabe.
+- *Gruppenabgaben-Unterstützung:* Verwaltung von n-Autoren pro Einreichung über ein `authorIds`-Array.
+- *AWS S3-Integration:* Generierung von sicheren, zeitlich begrenzten Presigned Upload- und Download-URLs für PDF-Arbeiten, um direkte, performante Dokumenten-Uploads ins S3-Bucket zu ermöglichen.
+- *Event-gesteuertes Status-Tracking:* Ein SQS-Listener lauscht auf Ereignisse der anderen Services (z.B. "MATCHED" oder "REVIEW_COMPLETED") und aktualisiert den internen Status der Einreichung in der relationalen Datenbank.
 
-== Benachrichtigungssystem (Notification Service)
-- *System-Benachrichtigungen:* Versenden von Benachrichtigungen aufgrund von Ereignissen im Backend (via SQS).
-- *Benutzer-Inbox:* Verwaltung ungelesener Benachrichtigungen im System und Markieren als (alle) gelesen.
-- *Echtzeit-Benachrichtigungen:* Integration von SSE für sofortige Updates bei Benachrichtigungseingang.
+=== 3. Konfigurations- & Workflow-Service (Configuration Service)
+- *Workflow-Abstraktion (Plugin-Architektur):* Schnittstelle zur dynamischen Bereitstellung von Begutachtungsprozessen (z.B. Open Review, Double-Blind) mit anpassbaren Regeln (Wer darf wen sehen? Ist ein Chat erlaubt?).
+- *Dynamische Bewertungsbögen (Review Templates):* Bereitstellung von strukturierten Feedback-Formularen mit Fragen und Datentypen (Rating, Scale, Multiple Choice, Text).
+- *Themen-Tag-Verwaltung:* CRUD-Schnittstelle für Topic-Tags, die zur thematischen Zuordnung von Arbeiten und Reviewern dienen.
+- *Fristen- und Metadaten-Management:* Verwaltung von Deadlines für Einreichungen und Reviews sowie die Zuweisung von Fachbereichen zu einer Abgabekonfiguration.
+
+=== 4. Zuteilungsservice (Matching Service)
+- *Automatisches Zuweisungs-Event:* SQS-Listener startet die Reviewer-Zuteilung automatisch, sobald eine Abgabe finalisiert wurde.
+- *Fachgebiet-Matching:* Filtert Reviewer nach aktiven Profilen (`isActive=true`), schließt Selbstbegutachtung aus (Abgleich mit den `submitterIds`) und wählt nur Reviewer mit übereinstimmenden `topicTags` aus.
+- *Prüfer-Zuteilung:* Wählt zufällig eine konfigurierte Anzahl von Prüfern aus dem gefilterten Pool aus.
+- *Manuelle Zuweisung (Custom Reviewers):* Option zur gezielten Übergabe von Reviewer-IDs, was den automatischen Matching-Algorithmus überschreibt.
+- *Transaktionale Persistenz:* Match-Datensätze werden transaktional in DynamoDB gespeichert. Bei unzureichender Reviewer-Anzahl wird der Status "FAILED" gesetzt.
+- *SQS-Broker-Zuweisung:* Informiert den Submission-Service über erfolgreiche Zuweisungen und sendet Benachrichtigungsaufträge an den Notification-Service.
+
+=== 5. Bewertungs- & Feedback-Service (Response Service)
+- *Manuelles Review:* Endpunkt zum Einreichen von ausgefüllten Bewertungsformularen durch Reviewer (Abgleich der IDs mit den Zuweisungen des Matching-Service).
+- *Asynchrones KI-Gutachten (Bedrock-Integration):*
+  - SQS-Listener empfängt Anfragen für KI-Reviews.
+  - Das PDF wird aus S3 geladen, das Formular-Schema vom Configuration-Service abgefragt und eine Bedrock-Proxy-Lambda aufgerufen.
+  - Das LLM generiert ein strukturiertes Gutachten basierend auf den genauen Kriterien der Einreichung.
+- *KI-Antwortvalidierung:* Automatisches Validieren und Parsen der KI-generierten JSON-Struktur gegen Datentypen, Wertegrenzen (z.B. maxPoints) und Pflichtfelder des hinterlegten Feedback-Schemas.
+- *Ergebnis-Freigabe (Anonymitätsschutz):* Autoren können KI-Gutachten sofort einsehen, menschliche Gutachten werden jedoch erst freigegeben, sobald alle zugewiesenen menschlichen Reviews abgeschlossen sind.
+
+=== 6. Kommunikationsservice (Communication Service)
+- *DynamoDB Single-Table Design:* Speicherung von Chats und Nachrichten in einer einzigen Tabelle zur Vermeidung von Race Conditions und Performance-Engpässen bei parallelen Zugriffen.
+- *Deterministische Chat-IDs:* Generierung von Chat-IDs über Hashes der Teilnehmer-UUIDs zur Vermeidung doppelter Chats.
+- *Server-Sent Events (SSE):* Streaming-Schnittstelle zur Echtzeitübertragung neuer Nachrichten an verbundene Clients.
+
+=== 7. Benachrichtigungsservice (Notification Service)
+- *In-App Inbox:* Zentrale Datenbank für persönliche Benachrichtigungen der Benutzer.
+- *Asynchrone Benachrichtigungs-Pipeline:* SQS-Listener verarbeitet Events aus dem Backend (z.B. "Review Assigned", "Matching Failed") und erstellt in-app Einträge.
+- *Live-Push-Notification (SSE):* Streamt Benachrichtigungen in Echtzeit an den Browser, sobald ein SQS-Event verarbeitet wurde.
+- *Statusverwaltung:* Endpunkte zum Markieren einzelner oder aller Benachrichtigungen als gelesen.
