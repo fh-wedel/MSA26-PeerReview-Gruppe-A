@@ -44,4 +44,10 @@
     short: "CDN",
     long: "Content Delivery Network",
   ),
+  (
+    key: "LLM",
+    short: "LLM",
+    long: "Large Language Model",
+    longplural: "Large Language Models",
+  ),
 )
