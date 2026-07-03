@@ -15,7 +15,7 @@ Aus Sicht eines Lehrenden stellt das System folgende Funktionen bereit:
 - *Abgaben begutachten:* Einfacher Download der eingereichten PDF-Dokumente der Studierenden zur Korrektur.
 - *Bewertungen abgeben:* Ausfüllen des Bewertungsbogens im System, Notenvergabe und Verfassen eines textuellen Feedbacks.
 - *Korrekturstatus aktualisieren:* Ändern des Bearbeitungsstatus (z. B. "In Bearbeitung" oder "Abgeschlossen"), um Studierende und das Prüfungsamt auf dem Laufenden zu halten.
-- *Direktkommunikation (Chat):* Austausch mit den Autoren der Arbeiten über einen integrierten Chat. In anonymen Verfahren (Doppelblind) erfolgt dieser Chat vollständig anonymisiert, um die Identität beider Seiten zu schützen.
+- *Direktkommunikation (Chat):* Austausch mit den Autoren der Arbeiten über einen integrierten Chat (sofern dieser durch die Workflow-Regeln des Review-Verfahrens freigeschaltet ist, wie z. B. bei Open Review). In anonymen Verfahren (Doppelblind / Einfach-Blind) ist der direkte Chat zum Schutz der Identitäten deaktiviert.
 - *Benachrichtigungen:* Automatische Hinweise bei nahenden Deadlines oder neu zur Begutachtung eingereichten Arbeiten.
 
 === Autoren / Studierende
@@ -26,7 +26,7 @@ Aus Sicht eines Studierenden bietet die Plattform folgende Funktionen:
 - *Fristen und Status im Blick behalten:* Einsehen anstehender Deadlines in einem Kalender sowie Live-Verfolgung des aktuellen Status der Einreichung (z. B. "Eingereicht", "In Bewertung").
 - *Ergebnisse abrufen:* Detaillierte Einsicht in Noten, Kommentare und ausgefüllte Bewertungskriterien nach Abschluss des Begutachtungsprozesses.
 - *Feedback-Dokumente herunterladen:* Zugriff auf korrigierte oder mit Feedback versehene Versionen der eingereichten PDF-Datei.
-- *Fragen klären (Chat):* Kontaktaufnahme mit den Gutachtern über das integrierte Chatsystem (anonymisiert oder offen, je nach Review-Verfahren).
+- *Fragen klären (Chat):* Kontaktaufnahme mit den Gutachtern über das integrierte Chatsystem, sofern das gewählte Review-Verfahren dies erlaubt (z. B. bei Open Review). In anonymen Verfahren (Doppelblind / Einfach-Blind) ist der Chat deaktiviert, um die Anonymität zu wahren.
 - *Notenspiegel einsehen:* Einsicht in anonymisierte Leistungsstatistiken und Notenverteilungen des gesamten Moduls zur Einordnung der eigenen Leistung.
 - *Benachrichtigungseinstellungen:* Individuelles Festlegen, bei welchen Statusänderungen (z. B. Beginn der Bewertung) Benachrichtigungen gesendet werden.
 
