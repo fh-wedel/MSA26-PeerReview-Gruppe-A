@@ -6,42 +6,38 @@ Im Folgenden werden alle im aktuellen MVP (Minimum Viable Product) implementiert
 == Nutzertypen und ihre User Stories
 
 === Dozenten / Lehrende (Dozenten und Prüfer)
-Aus Sicht eines Lehrenden stellt das System folgende Funktionen bereit:
-- *Abgaben anlegen und konfigurieren:* Neue wissenschaftliche Arbeiten für Kurse oder Projekte erstellen und detailliert konfigurieren (Titel, Abgabe- und Review-Fristen).
-- *Flexibler Review-Prozess:* Auswahl des gewünschten Begutachtungsverfahrens (Doppelblind, Einfach-Blind oder Open Review).
-- *Prüferanzahl steuern:* Festlegen, wie viele Gutachter für eine Arbeit benötigt werden (z. B. Erst- und Zweitprüfer).
-- *Bewertungskriterien definieren:* Erstellen eines individuellen Bewertungsbogens mit Kriterien (z. B. Methodik, Struktur) und Festlegen, ob diese für Studierende vorab sichtbar sind.
-- *Zugeordnete Arbeiten einsehen:* Übersicht der Arbeiten, bei denen man als Gutachter eingeteilt ist.
-- *Abgaben begutachten:* Einfacher Download der eingereichten PDF-Dokumente der Studierenden zur Korrektur.
-- *Bewertungen abgeben:* Ausfüllen des Bewertungsbogens im System, Notenvergabe und Verfassen eines textuellen Feedbacks.
-- *Statusverfolgung der Begutachtung:* Durch das Einreichen einer abgeschlossenen Bewertung wird der Gesamtfortschritt der Einreichung automatisch aktualisiert (z. B. „X von Y Gutachten abgeschlossen“), wodurch Autoren und das Prüfungsamt über den aktuellen Stand informiert bleiben.
-- *Direktkommunikation (Chat):* Austausch mit den Autoren der Arbeiten über einen integrierten Chat (sofern dieser durch die Workflow-Regeln des Review-Verfahrens freigeschaltet ist, wie z. B. bei Open Review). In anonymen Verfahren (Doppelblind / Einfach-Blind) ist der direkte Chat deaktiviert.
+Aus Sicht eines Lehrenden stellt das System folgende Kernfunktionen bereit:
+- *Abgaben anlegen und konfigurieren:* Erstellen neuer Arbeiten mit individuellen Titeln, Deadlines, Mitautoren und Themen-Tags.
+- *Review-Verfahren & Kriterien bestimmen:* Auswahl des Review-Prozesses (Doppelblind, Einfach-Blind, Open Review) sowie Definition des Bewertungsbogens und dessen Sichtbarkeit für Studierende.
+- *Zugeordnete Arbeiten einsehen:* Übersicht über alle Einreichungen, bei denen man als Gutachter eingeteilt ist.
+- *Abgaben begutachten:* Download der eingereichten PDF-Arbeiten der Studierenden zur Korrektur.
+- *Bewertungen abgeben:* Ausfüllen des Bewertungsbogens im System mit Noten und textuellem Gesamt-Feedback.
+- *Statusverfolgung der Begutachtung:* Automatische Aktualisierung des Korrekturfortschritts (z. B. „X von Y Gutachten abgeschlossen“) für Autoren und Prüfungsamt nach Absenden einer Bewertung.
+- *Direktkommunikation (Chat):* Austausch mit Autoren über einen integrierten Chat (aktiviert bei Open Review, deaktiviert bei Doppelblind / Einfach-Blind zum Schutz der Anonymität).
 - *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei neu zugewiesenen Arbeiten zur Begutachtung.
 
 === Autoren / Studierende
-Aus Sicht eines Studierenden bietet die Plattform folgende Funktionen:
-- *Eigenständige Abgaben erstellen:* Anlegen eigener Abgaben (z. B. für Abschlussarbeiten) unter Angabe von Wunschprüfern, Deadlines und Mitautoren.
-- *Gruppenarbeiten organisieren:* Arbeiten im Team erstellen, bei denen alle Gruppenmitglieder Zugriff haben, Details bearbeiten und das finale Dokument einreichen können.
+Aus Sicht eines Studierenden bietet die Plattform folgende Kernfunktionen:
+- *Abgaben selbstständig anlegen:* Erstellen eigener Arbeiten (z. B. Abschlussarbeiten) als Einzel- oder Gruppenarbeit unter Angabe von Wunschprüfern, Fristen und Mitautoren.
 - *Wissenschaftliche Arbeiten einreichen:* Hochladen des PDF-Dokuments zur konfigurierten Abgabe vor Ablauf der Abgabefrist.
-- *Fristen und Status im Blick behalten:* Einsehen anstehender Deadlines in einem Kalender sowie Live-Verfolgung des aktuellen Status der Einreichung (z. B. "Eingereicht", "In Bewertung").
-- *Ergebnisse abrufen:* Detaillierte Einsicht in Noten, Kommentare und ausgefüllte Bewertungskriterien nach Abschluss des Begutachtungsprozesses.
-- *Feedback-Dokumente herunterladen:* Zugriff auf korrigierte oder mit Feedback versehene Versionen der eingereichten PDF-Datei.
-- *Fragen klären (Chat):* Kontaktaufnahme mit den Gutachtern über das integrierte Chatsystem, sofern das gewählte Review-Verfahren dies erlaubt (z. B. bei Open Review). In anonymen Verfahren (Doppelblind / Einfach-Blind) ist der Chat deaktiviert, um die Anonymität zu wahren.
-- *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei Statusänderungen der eigenen Abgabe (z. B. nach dem erfolgreichen Anlegen oder sobald ein neues Gutachten vorliegt).
+- *Fristen und Status im Blick behalten:* Übersicht anstehender Fristen im Kalender und Live-Verfolgung des Bearbeitungsstands der eigenen Abgabe auf dem Dashboard.
+- *Ergebnisse & Feedback abrufen:* Detaillierte Einsicht in Noten, Kommentare und ausgefüllte Kriterien sowie Download der korrigierten PDF-Datei nach Abschluss der Bewertung.
+- *Fragen klären (Chat):* Austausch mit Gutachtern über den integrierten Chat (aktiviert bei Open Review, deaktiviert bei Doppelblind / Einfach-Blind zur Wahrung der Anonymität).
+- *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei Statusänderungen der eigenen Abgabe (z. B. nach erfolgreicher Erstellung oder Vorliegen einer Bewertung).
 
 === Prüfungsamt (Administrative Nutzer)
-Aus Sicht von Mitarbeitern des Prüfungsamts stehen folgende Funktionen bereit:
-- *Zentrale Abgaben erstellen:* Anlegen offizieller Abgaben mit globalen Fristen und Bewertungsbögen für Studierende.
-- *Gutachterpool pflegen:* Registrierung von Prüfern im System inklusive Hinterlegen von Fachgebieten (Themen-Tags) und Aktivieren bzw. Deaktivieren von Gutachtern (z. B. bei Abwesenheit oder Konflikten).
-- *Manuelle Zuweisungen vornehmen:* Möglichkeit, beim Anlegen einer Abgabe bestimmte Gutachter manuell auszuwählen und somit den automatischen Zuweisungs-Algorithmus zu überschreiben.
-- *Überwachung des Gesamtprozesses:* Uneingeschränkte Sicht auf alle Abgaben, Zuweisungen, Deadlines und Korrekturfortschritte im System.
-- *Systemstatistiken einsehen:* Einsehen einfacher globaler Kennzahlen (wie der Gesamtzahl der registrierten Benutzer und aktiven Workflow-Plugins) im Admin-Bereich.
-- *Benutzer und Rollen verwalten:* Zuweisung von Berechtigungen und Gruppen (z. B. Autor, Dozent, Prüfungsamt) für alle Benutzer.
+Aus Sicht von Mitarbeitern des Prüfungsamts stehen folgende administrative Funktionen bereit:
+- *Zentrale Abgaben konfigurieren:* Erstellen offizieller Abgaben mit globalen Fristen und Bewertungsbögen für Studierende.
+- *Gutachterpool pflegen:* Registrierung von Prüfern im System inklusive Hinterlegen von Fachgebieten (Themen-Tags) und Aktivieren/Deaktivieren von Profilen.
+- *Manuelle Zuweisungen vornehmen:* Gezieltes Festlegen bestimmter Gutachter beim Anlegen einer Abgabe, wodurch der automatische Zuweisungs-Algorithmus überschrieben wird.
+- *Überwachung des Gesamtprozesses:* Uneingeschränkte Sicht auf den Status aller Abgaben, Zuweisungen, Deadlines und Korrekturfortschritte im System.
+- *Systemstatistiken einsehen:* Übersicht über globale Kennzahlen wie Benutzerzahlen, aktive Plugins und Templates im Admin-Bereich.
+- *Benutzer und Rollen verwalten:* Zuweisung von Berechtigungsgruppen (z. B. Dozent, Autor, Prüfungsamt) für registrierte Benutzer.
 
 === System-Administratoren
 Aus Sicht der System-Administration werden folgende administrative Kontrollfunktionen geboten:
-- *Globale Benutzerverwaltung:* Verwaltung aller Profile und Systemberechtigungen.
-- *Systemkomponenten einsehen:* Übersicht der registrierten Review-Typen (Plugins), aktiven Templates und globalen Themen-Tags.
+- *Globale Benutzerverwaltung:* Umfassende Verwaltung aller Profile und Systemberechtigungen.
+- *Systemkomponenten einsehen:* Übersicht und Verwaltung der registrierten Review-Typen (Plugins), aktiven Templates und globalen Themen-Tags.
 - *Fehlerbehebung und Administration:* Administrative Eingriffe bei technischen Störungen oder Zuweisungskonflikten.
 
 == Out of scope
