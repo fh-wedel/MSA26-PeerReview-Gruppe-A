@@ -16,7 +16,7 @@ Aus Sicht eines Lehrenden stellt das System folgende Funktionen bereit:
 - *Bewertungen abgeben:* Ausfüllen des Bewertungsbogens im System, Notenvergabe und Verfassen eines textuellen Feedbacks.
 - *Statusverfolgung der Begutachtung:* Durch das Einreichen einer abgeschlossenen Bewertung wird der Gesamtfortschritt der Einreichung automatisch aktualisiert (z. B. „X von Y Gutachten abgeschlossen“), wodurch Autoren und das Prüfungsamt über den aktuellen Stand informiert bleiben.
 - *Direktkommunikation (Chat):* Austausch mit den Autoren der Arbeiten über einen integrierten Chat (sofern dieser durch die Workflow-Regeln des Review-Verfahrens freigeschaltet ist, wie z. B. bei Open Review). In anonymen Verfahren (Doppelblind / Einfach-Blind) ist der direkte Chat deaktiviert.
-- *Benachrichtigungen:* Automatische Hinweise bei neu zur Begutachtung eingereichten Arbeiten.
+- *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei neu zugewiesenen Arbeiten zur Begutachtung.
 
 === Autoren / Studierende
 Aus Sicht eines Studierenden bietet die Plattform folgende Funktionen:
@@ -27,7 +27,7 @@ Aus Sicht eines Studierenden bietet die Plattform folgende Funktionen:
 - *Ergebnisse abrufen:* Detaillierte Einsicht in Noten, Kommentare und ausgefüllte Bewertungskriterien nach Abschluss des Begutachtungsprozesses.
 - *Feedback-Dokumente herunterladen:* Zugriff auf korrigierte oder mit Feedback versehene Versionen der eingereichten PDF-Datei.
 - *Fragen klären (Chat):* Kontaktaufnahme mit den Gutachtern über das integrierte Chatsystem, sofern das gewählte Review-Verfahren dies erlaubt (z. B. bei Open Review). In anonymen Verfahren (Doppelblind / Einfach-Blind) ist der Chat deaktiviert, um die Anonymität zu wahren.
-- *Echtzeit-In-App-Benachrichtigungen:* Live-Aktualisierung der Benachrichtigungs-Glocke bei geöffneter Web-UI sowie eine Inbox-Übersicht für Systemereignisse (wie das Erstellen einer Abgabe oder das Vorliegen einer Bewertung) mit der Option, Benachrichtigungen als gelesen zu markieren.
+- *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei Statusänderungen der eigenen Abgabe (z. B. nach dem erfolgreichen Anlegen oder sobald ein neues Gutachten vorliegt).
 
 === Prüfungsamt (Administrative Nutzer)
 Aus Sicht von Mitarbeitern des Prüfungsamts stehen folgende Funktionen bereit:
