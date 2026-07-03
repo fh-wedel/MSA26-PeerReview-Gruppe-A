@@ -5,7 +5,7 @@
 #show: thesis.with(..metadata)
 #set par(justify: true)
 
-#import "@preview/glossarium:0.5.10": make-glossary, register-glossary, print-glossary, gls, glspl
+#import "@preview/glossarium:0.5.10": gls, glspl, make-glossary, print-glossary, register-glossary
 #import "abkuerzungen.typ": acronyms
 #show: make-glossary
 #register-glossary(acronyms)
@@ -15,7 +15,7 @@
 #counter(page).update(1)
 
 // Table of Contents
-#outline(title: "Table of Content", indent: 1.5em)
+#outline(title: "Inhaltsverzeichnis", indent: 1.5em)
 #pagebreak()
 
 // List of Abbreviations
@@ -52,7 +52,7 @@
 
 // Bibliography
 #pagebreak()
-#bibliography("sources.bib", style: "ieee", title: "Bibliography")
+#bibliography("sources.bib", style: "ieee", title: "Literaturverzeichnis")
 
 
 #statutory-declaration((
