@@ -144,7 +144,7 @@
 
 #let statutory-declaration(authors) = {
   pagebreak()
-  heading(level: 1, numbering: none, outlined: true)[Declaration of Authorship]
+  heading(level: 1, numbering: none, outlined: true)[Eigenständigkeitserklärung]
   v(1em)
   [I hereby declare ... ja was declaren wir denn?]
   v(5cm)
