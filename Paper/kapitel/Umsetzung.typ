@@ -1,7 +1,8 @@
 #set heading(numbering: "1.1")
+#import "@preview/glossarium:0.5.10": gls, glspl
 
 = Umsetzung und Workflow <ch:implementation-workflow>
-Ein wesentlicher Bestandteil der praktischen Umsetzung umfasste den Einsatz von KI-gestützten Coding-Agenten wie Claude Code oder Google Antigravity. Vor Beginn der eigentlichen Projektphase wurden strategische Entscheidungen bezüglich deren Evaluierung getroffen, um eine bestmögliche Integration in den Entwicklungsprozess zu gewährleisten. Neben diesen modernen, LLM-basierten Ansätzen fanden klassische Verfahren des Software-Lebenszyklus Anwendung. Hierzu zählen die Einrichtung einer Continuous-Integration- und Continuous-Deployment-Pipeline (CI/CD) sowie das automatisierte und manuelle Testen.
+Ein wesentlicher Bestandteil der praktischen Umsetzung umfasste den Einsatz von KI-gestützten Coding-Agenten wie Claude Code oder Google Antigravity. Vor Beginn der eigentlichen Projektphase wurden strategische Entscheidungen bezüglich deren Evaluierung getroffen, um eine bestmögliche Integration in den Entwicklungsprozess zu gewährleisten. Neben diesen modernen, #gls("LLM")-basierten Ansätzen fanden klassische Verfahren des Software-Lebenszyklus Anwendung. Hierzu zählen die Einrichtung einer Continuous-Integration- und Continuous-Deployment-Pipeline (CI/CD) sowie das automatisierte und manuelle Testen.
 
 == Baseline <sec:baseline>
 Zu Beginn der Implementierungsphase wurde die Entscheidung für ein Mono-Repository (Monorepo) getroffen. Die primäre Absicht bestand darin, den KI-Agenten den vollständigen Kontext über alle Microservices hinweg agnostisch bereitzustellen, ohne dass ein isolierter Wechsel zwischen verschiedenen Projektarchiven erforderlich ist. Obwohl es sich bei dem Vorhaben um eine vollständige Greenfield-Entwicklung handelte, wurde die initiale Baseline bewusst nicht agentisch, sondern lediglich KI-unterstützt und manuell entwickelt.
@@ -12,23 +13,33 @@ Ergänzend zur infrastrukturellen Basis wurde eine applikative Grundlage in Form
 
 Die Praxis zeigte, dass die Coding-Agenten die vorgegebene Baseline sowohl auf infrastruktureller als auch auf applikativer Ebene weitgehend adaptierten, was zu einer konsistenten Systemlandschaft führte. Dennoch war auffällig, dass die Agenten vereinzelt unvorhergesehene und nicht an die Architekturrichtlinien angepasste Entscheidungen trafen. Beispielsweise versuchte ein Agent eigenständig, eine PostgreSQL-Datenbank zu provisionieren, was für den vorliegenden Anwendungsfall fachlich nicht erforderlich war und zudem durch den Verzicht auf vollständige Serverless-Eigenschaften die Betriebskosten unnötig erhöht hätte.
 
-Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (Context Window) der verwendeten Sprachmodelle positiv aus, da die Modelle jederzeit serviceübergreifendes Systemwissen in ihre Generierung einbeziehen konnten. Aus ökonomischer Sicht offenbarte dieser Ansatz jedoch auch Nachteile: Bei der Initiierung neuer Prompts fiel das Kontextfeld und insbesondere die Anzahl der Input-Tokens sehr groß aus, was zu erhöhten API-Gebühren führte. Zudem besteht bei sehr großen Kontexten das inhärente Risiko von Qualitätseinbußen, da LLMs dazu neigen, feine Details inmitten umfangreicher Datenmengen zu übersehen (Lost-in-the-Middle-Phänomen).
+Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (Context Window) der verwendeten Sprachmodelle positiv aus, da die Modelle jederzeit serviceübergreifendes Systemwissen in ihre Generierung einbeziehen konnten. Aus ökonomischer Sicht offenbarte dieser Ansatz jedoch auch Nachteile: Bei der Initiierung neuer Prompts fiel das Kontextfeld und insbesondere die Anzahl der Input-Tokens sehr groß aus, was zu erhöhten API-Gebühren führte. Zudem besteht bei sehr großen Kontexten das inhärente Risiko von Qualitätseinbußen, da @LLM dazu neigen, feine Details inmitten umfangreicher Datenmengen zu übersehen (Lost-in-the-Middle-Phänomen).
 
 == Agentic Coding <sec:agentic-coding>
+Unter Agentic Coding versteht man den Einsatz autonomer Software-Agenten auf Basis von @LLM:pl, die über klassische Code-Vervollständigung hinausgehen. Im Gegensatz zu Assistenzsystemen versucht man mit Coding-Agenten einen kontinuierlichen Zyklus (Agentic Loop) aus Analyse, Planung, Umsetzung sowie anschließender Verifikation abzubilden. Dies soll die selbstständige Bearbeitung komplexer Entwicklungsaufgaben ermöglichen. Im Rahmen dieser Arbeit wurden verschiedene agentische Werkzeuge evaluiert, um deren Eignung für den Aufbau einer ereignisgesteuerten Microservice-Architektur zu untersuchen.
 
 === Agents.MD / Claude.MD <sec:agents-md>
-// (Gideon)
+// (Gideon, Luca)
 
-=== AntiGravity <sec:antigravity>
+Ein wichtiger Aspekt guter Softwareentwicklung besteht darin, dass Architekturentscheidungen und Konventionen allen an der Software arbeitenden Entwicklern bekannt sein müssen, um diese anwenden zu können. Dieses Selbstverständnis führt zwangsweise dazu, dass auch autonom agierende Agenten die existierenden Regeln beachten müssen. Nur so kann Konsistenz gewährleistet werden. Um Coding-Agenten ebensolche projektbezogene Instruktionen und Kontext bereitzustellen, hat sich zunehmend die plattformübergreifende `AGENTS.md` als offener Standard @agents_md_website etabliert, der von Editoren wie Cursor und Agentensystemen wie Codex gelesen und respektiert wird. Im wesentlichen handelt es sich hierbei um eine Markdown-Datei, die ähnliche Funktionen wie die klassische `README.md` erfüllt, jedoch speziell für die Bereitstellung von Richtlinien, Konventionen und Projektinformationen für KI-Agenten konzipiert ist. Üblicherweise wird diese Datei im Wurzelverzeichnis eines Projekts abgelegt, um den Agenten einen zentralen Einstiegspunkt zu bieten. Oftmals ist es auch möglich, mehrere `AGENTS.md`-Dateien zu verwenden und diese in Unterverzeichnissen zu platzieren, um den Agenten kontextspezifische Informationen zu liefern. Hierzu sei angemerkt, dass durch die `AGENTS.md` zwar ein verbreiteter Standard existiert, es jedoch keine Garantie gibt, dass dieser stets eingehalten wird. So gibt es bis heute KI Werkzeuge, die den Standard nicht respektieren. Dies führt zum Beispiel dazu, dass der Hersteller Anthropic mit Claude Code weiterhin ausschließlich sein proprietäres Dateiformat `CLAUDE.md` beachtet @claude_code_agents_issue_2025. // ¯\_(ツ)_/¯
+Da im Rahmen dieser Arbeit mit verschiedenen Coding-Agenten und Harnesses gearbeitet wurde, war es erforderlich, ebendiesen Umstand zu beachten und adressieren. So wurde neben der `AGENTS.md` auch eine `CLAUDE.md` erstellt, wobei letztere mithilfe eines \@Agents.md-Ausdrucks auf die `AGENTS.md` verweist. 
+
+// ROOM FOR MORE
+
+=== Antigravity <sec:antigravity>
 // (Matthias)
 
 === Claude Code <sec:claude-code>
 // (Gideon)
 
-=== Open Code <sec:open-code>
+=== OpenCode <sec:opencode>
 // (Luca)
 
-=== GitHub Reviewer <sec:github-reviewer>
+KI-Coding-Harnesses wie Claude Code, Antigravity oder Codex haben gemeinsam, dass sie üblicherweise für die Softwareentwicklung in Kombination mit den hauseigenen @LLM:pl und Abonnements der jeweiligen Hersteller wie Anthropic, Google oder OpenAI vorgesehen werden. Eine Anbindung der Harnesse an @LLM:pl von Drittherstellern oder selbstbetriebenen Instanzen wird nicht unterstützt oder obliegt vorbehaltlich zukünftigen Einschränkungen. Es wird aktiv versucht, die Verwendung der Abonnements außerhalb der jeweiligen Plattformen zu unterbinden und die Ökosysteme durch die Bindung an die proprietären Dienste zu stärken. Insbesondere Anthropic hat sich zum Beispiel bestrebt gezeigt, eine Verwendung mit nicht unternehmenseigener Software zu verhindern und den Zugriff von zuwiderhandelnden Benutzern vollständig zu sperren @engelking_anthropic_2026. Eine Migration von einem Anbieter zu einem anderen wird hierdurch erheblich erschwert, obwohl die zur Anbindung von @LLM:pl verwendeten Schnittstellen üblicherweise einheitlich sind. 
+
+Das Open-Source-Projekt OpenCode soll eine Alternative zu den proprietären Coding-Harnesses darstellen. Es bietet die Möglichkeit, beliebige @LLM:pl von verschiedensten Anbietern zu integrieren oder die Agenten auf selbstgehosteten Instanzen zu betreiben. OpenCode ist hochgradig konfigurierbar und erlaubt die Erweiterung durch Plugins. So ist es beispielsweise möglich, dass KI Agenten, die auf verschiedenen Plattformen ausgeführt werden, miteinander kommunizieren und von einem einzigen kombinierten Harness orchestriert werden.  
+
+=== GitHub Copilot Reviewer <sec:github-reviewer>
 // (Matthias)
 
 == CI / CD Integration <sec:cicd-integration>
