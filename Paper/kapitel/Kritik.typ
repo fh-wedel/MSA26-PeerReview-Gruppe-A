@@ -1,10 +1,5 @@
 = Kritik und Einordnung des Vibecoding
-
-// ("Agentic Engineering") -- Inklusive Wissenschaflticher Teil (Matthias -- Alle anderne Stichpunkte erstellen lassne)
-
-
-
-
+Unter dem Begriff des „Vibe Coding“ beschreibt Andrej Karpathy im Februar 2025 eine neue Entwicklungsphilosophie, bei der das manuelle Code schreiben nahezu vollständig durch die Interaktion mit agentischen, auf großen Sprachmodellen basierenden Werkzeugen wie Antigravity oder Claude Code ersetzt wird #footnote[https://www.ibm.com/think/topics/vibe-coding].
 
 == Was lief gut
 Marcel Notitzen:
@@ -36,6 +31,11 @@ Luca:
 - Die Landschaft an KI-Tools zur Entwicklung ist hochgradig verwirrend und trägt zur Frustration bei. Es gibt unzählige KI-Agenten-Harnesses, welche den gleichen Zweck erfüllen: Claude Code, Codex, Antigravity, Cursor, OpenCode ... alle jeweils als CLI- und Dekstop-Variante. Jedes Tool ist etwas anders zu bedienen und zu konfigurieren. Alle paar Wochen gibt es etwas neues. Oftmals gibt es dazu noch Abonnements, die zur aktiven Verwendung der Tools abzuschließen sind.
 
 == Herrausforderungen
+Die wirtschaftliche Nutzung des Vibe Codings wird oft mit einer drastischen Beschleunigung der Entwicklungszyklen begründet. Der finanzielle Aufwand für den Einsatz von Werkzeugen wie Claude Code hat sich von den ursprünglichen Lizenzgebühren einfacher Abonnements (20 US-Dollar pro Monat) hin zu erheblichen Token-Kosten entwickelt. Kosten für Teams die KI-Werkzeuge nutzen, liegen heute eher zwischen 200 und teils mehr als 2.000 US-Dollar pro Entwickler und Monat #footnote[https://larridin.com/developer-productivity-hub/developer-productivity-benchmarks-2026]. In Einzelfällen gibt es bereits berichte von Mitarbeitern, die über 1,4 Millionen US-Dollar pro Monat verbrauchten #footnote[https://fortune.com/2026/04/09/meta-killed-employee-ai-token-dashboard/]. Diese Investitionen führen durchaus zu einer höheren Anzahl an geschriebenen Zeilen Quellcode, doch sagt diese Metrik nichts über den tatsächlichen Nutzen aus. "Anybody who this that's a valid metric is too stupid to work at a tech company." - Linus Torvalds (über Zeilen von Code als KPI) #footnote[https://youtu.be/mfv0V1SxbNA?si=194GnFk2K2L2lZ8-&t=2220 Zeit 37:00 - 37:25, Zugriff am 04.07.2026].
+
+Eine der umfangreichsten empirischen Untersuchungen zu diesem Phänomen ist die Langzeitstudie des Analyseunternehmens GitClear, die über einen Zeitraum von fünf Jahren die strukturellen Veränderungen von 211 Millionen Zeilen Quellcode aus Repositories führender Technologiekonzerne wie Google, Microsoft und Meta sowie globaler Großkonzerne auswertete. Die Ergebnisse zeigen eine Beschleunigung in qualitativer Degradierung moderner Codebasen #footnote[https://www.gitclear.com/ai_assistant_code_quality_2025_research] #footnote[https://www.gitclear.com/blog/gitclear_ai_code_quality_research_pre_release].
+
+Der wohl folgenschwerste negative Effekt des Vibe Codings betrifft nicht die technische Beschaffenheit des Codes selbst, sondern die intellektuelle Kapazität des Entwicklerteams. Während technische Schulden ein im Code verankertes Phänomen beschreiben, das durch Refactoring behoben werden kann, entsteht durch den massiven Einsatz generativer Werkzeuge eine kognitive Verschuldung (Cognitive Debt). Diese beschreibt den fortschreitenden Verlust des Systemverständnisses, der sogenannten „Theorie des Systems“ #footnote[https://getdx.com/blog/cognitive-debt-the-hidden-risk-in-ai-driven-software-development/]. Eine viermonatige Studie des MIT Media Lab, die im August 2025 veröffentlicht wurde, konnte unter einsatz von Elektroenzephalografie (EEG) verschiedenste negative Effekte des Einsatz von generativer KI nachweisen #footnote[https://www.media.mit.edu/publications/your-brain-on-chatgpt/]. So zeigten Nutzer, die intesiv auf LLM-Unterstützung zurückgriffen die schwächste neuronale Konnektivität und die geringste Gehirnaktivität. Als die KI-Unterstützung entzogen wurde und die Probanden Aufgaben wieder eigenständig lösen mussten, zeigten sie eine signifikant reduzierte Alpha- und Beta-Konnektivität. Dieser Zustand der neuronalen Unteraktivierung (Neural Under-Engagement) belegt, dass das Gehirn nach längerer KI-Nutzung massive Schwierigkeiten hat, sich wieder eigenständig und tiefgehend auf komplexe kognitive Prozesse einzustellen.
 
 == Zukunfts-"Ausrichtung"
 // Aublick über KI
