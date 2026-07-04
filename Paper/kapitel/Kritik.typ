@@ -15,7 +15,7 @@ Marcel Notitzen:
   - GitHub Reviwer: einmal hat er vorschläge gemacht, die wir angewadnt haben und dann hat alles nicth mehr funktioneirt --> Schlechtes review wenn der funktionaliät danach nicht mehr geht
 
 Luca:
-  - Die Landschaft an KI-Tools zur Entwicklung ist hochgradig verwirrend und trägt zur Frustration bei. Es gibt unzählige KI-Agenten-Harnesses, welche den gleichen Zweck erfüllen: Claude Code, Codex, Antigravity, GitHub Copilot, Cursor, OpenCode ... alle jeweils als CLI- und Dekstop-Variante. Jedes Tool ist etwas anders zu bedienen und zu konfigurieren. Alle paar Wochen gibt es etwas neues. Oftmals gibt es dazu noch Abonnements, die zur aktiven Verwendung der Tools abzuschließen sind.
+  - Die Landschaft an KI-Tools zur Entwicklung ist hochgradig verwirrend und trägt zur Frustration bei. Es gibt unzählige Agentensysteme, welche den gleichen Zweck erfüllen: Claude Code, Codex, Antigravity, GitHub Copilot, Cursor, OpenCode ... alle jeweils als CLI- und Dekstop-Variante. Jedes Tool ist etwas anders zu bedienen und zu konfigurieren. Alle paar Wochen gibt es etwas neues. Oftmals gibt es dazu noch Abonnements, die zur aktiven Verwendung der Tools abzuschließen sind.
 
 == Herrausforderungen
 
