@@ -3,6 +3,12 @@
 // Load the JSON data into a variable
 #let metadata = json("metadata.json")
 #show: thesis.with(..metadata)
+#set par(justify: true)
+
+#import "@preview/glossarium:0.5.10": gls, glspl, make-glossary, print-glossary, register-glossary
+#import "abkuerzungen.typ": acronyms
+#show: make-glossary
+#register-glossary(acronyms)
 
 // Roman numbering for front matter
 #set page(numbering: "I")
@@ -11,6 +17,12 @@
 // Table of Contents
 #outline(title: "Inhaltsverzeichnis", indent: 1.5em)
 #pagebreak()
+
+// List of Abbreviations
+#heading(level: 1, numbering: none)[Abkürzungsverzeichnis]
+#print-glossary(acronyms, disable-back-references: true)
+#pagebreak()
+
 
 // List of Figures
 //#outline(title: "Abbildungsverzeichnis", target: figure.where(kind: image))
@@ -40,7 +52,7 @@
 
 // Bibliography
 #pagebreak()
-#bibliography("sources.bib", style: "ieee", title: "Bibliography")
+#bibliography("sources.bib", style: "ieee", title: "Literaturverzeichnis")
 
 
 #statutory-declaration((

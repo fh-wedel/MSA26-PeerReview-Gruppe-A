@@ -50,48 +50,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Plugins -->
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-type-open-review</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-type-single-blind</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-type-double-blind</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-template-individual-work</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-template-group-work</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-template-bachelor-thesis</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-template-master-thesis</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fh-wedel</groupId>
-            <artifactId>configuration-template-seminar</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

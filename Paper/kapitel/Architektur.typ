@@ -1,24 +1,117 @@
-= Architektur
+// Add Numbering of headings
+#set heading(numbering: "1.1")
 
-// Gesamtbild, Gedanken dahinter, Einschräkungen die getreoffen wurden inklusive seinen "Typen von Service"
+= Architektur <ch:architecture>
+Einen Kernpunkt dieser Ausarbeitung bildet die zugrunde liegende Softwarearchitektur. Um eine ausfallsichere und skalierbare Software zu entwickeln, fanden durchgehend moderne Architekturmuster Anwendung. Diese Muster wurden auf allen Ebenen des Systems berücksichtigt, von der grundlegenden Klassifizierung als Microservices-Architektur bis hin zur Nutzung spezifischer Webprotokolle wie Server-Sent Events (SSE) für die asynchrone Kommunikation. Im Folgenden werden die verschiedenen Architekturebenen detailliert dargestellt sowie die zugrunde liegenden Motivationen und die daraus resultierenden technischen Einschränkungen beleuchtet.
 
-== Overall
-// (Marcel)
+== Übersicht <sec:overview>
+Die entwickelte Software implementiert eine Microservices-Architektur, bei der domänenspezifische Fachlichkeiten nach dem Prinzip der losen Kopplung gekapselt und in eigenständige Services ausgelagert wurden. Grundlage hierfür war eine detaillierte Analyse des gesamten Peer-Review-Prozesses, aus der sich spezifische fachliche Schwerpunkte (Bounded Contexts) ableiten ließen.
 
-== Infra Architektur
-// (Marcel)
+Insgesamt wurden acht Domänen identifiziert. @fig:application-architecture bietet einen Überblick über alle Services sowie deren Relationen zueinander. Vier dieser Services bilden das Kern-Framework des eigentlichen Review-Prozesses, während vier weitere Services zusätzliche allgemeine oder technisch bedingte Domänen abdecken.
 
-== Datenbank Architekturen
-// (Marcel)
+Die Services des Frameworks umfassen den *Configuration Service*, *Matching Service*, *Submission Service* und *Response Service*. Die Architektur des Erstgenannten wird im nachfolgenden @sec:configuration-service genau erläutert. Grundsätzlich besteht dessen Fachlichkeit darin, verschiedene Einreichungstypen sowie Review-Formate bereitzustellen und das Erstellen neuer Abgaben zu verwalten. Nach dem erfolgreichen Anlegen einer Abgabe ermittelt der Matching Service eine passende Kombination aus Abgabe und Reviewer, wobei die allgemeine Verfügbarkeit sowie die jeweiligen Fachgebiete berücksichtigt werden. Anschließend ermöglicht der Submission Service die eigentliche Abgabe der Arbeit durch den Autor mittels PDF-Upload. Abschließend nimmt der Response Service die Gutachten der Reviewer entgegen und stellt diese nach Abschluss des gesamten Prozesses dem Autor zur Verfügung.
 
-== Config Service (Plugin Service)
+#set figure.caption(position: bottom)
+
+#figure(
+  image("../bilder/Architecture High Level.drawio.pdf", width: 100%),
+  caption: [Applikationsarchitektur],
+) <fig:application-architecture>
+
+Auffällig ist der Verzicht auf einen zentralen Orchestrierungs-Service (Orchestrator), welcher in Microservices-Architekturen häufig zum Einsatz kommt. Diese Entscheidung wird durch die Natur des Peer-Review-Verfahrens begünstigt: Es handelt sich um einen deterministischen Workflow, bei dem nach jedem abgeschlossenen Schritt eindeutig der nächste folgt. Die einzelnen Services des Frameworks können somit über eine ereignisgesteuerte Architektur (Event-Driven Architecture) mittels asynchroner Message-Queues direkt miteinander kommunizieren.
+
+Die zusätzlichen Services umfassen den *Communication Service*, *Notification Service*, *User Service* sowie die *Web-UI*. Der Communication Service ermöglicht den interaktiven Austausch der Nutzer über die Plattform, entweder in Form von Direktnachrichten zwischen zwei Personen oder als fachlicher Austausch über eine spezifische Abgabe mit mehreren Beteiligten. Diese Funktion berücksichtigt strikt die Vorgaben des Configuration Service, der je nach Review-Format (z. B. Double-Blind-Verfahren) jegliche direkte Kommunikation unterbinden kann. Der Notification Service ist für die Benachrichtigung der Nutzer verantwortlich. Diese Benachrichtigungen werden vom System basierend auf spezifischen Ereignissen im Review-Prozess generiert und dem Anwender asynchron ausgespielt. Der User Service bietet eine einheitliche Schnittstelle für das Identity- und Access-Management, wobei dieser Service eine Abstraktionsschicht („Wrapper“) für AWS Cognito darstellt, was im @sec:user-management detailliert beschrieben wird. Die Web-UI fungiert als Client-Side-API-Aggregation: Sie konsumiert sämtliche REST-APIs der Backend-Services und bündelt diese für den Endnutzer.
+
+Die technologische Basis bilden im Backend Java 25 mit dem Spring Boot Framework sowie React mit Vite für das Frontend. Die Infrastruktur wird vollständig über @AWS abgebildet und im @sec:infra-architecture näher beleuchtet. Der gewählte Microservices-Ansatz erlaubt prinzipiell eine polyglotte Entwicklung, bei der beliebige Technologien eingesetzt werden können, sofern die API-Schnittstellen kompatibel bleiben. Zu diesem Zweck stellen alle Backend-Services ihre Funktionalitäten über vollständig dokumentierte REST-APIs auf Basis von OpenAPI-Spezifikationen bereit.
+
+Die Backend-Services lassen sich als funktionale Basis-Services kategorisieren. Sie umfassen bewusst eng gefasste Fachlichkeiten und bilden isoliert betrachtet keinen eigenständigen, vollständigen Geschäftsprozess ab. Erst durch die Integration in der zustandslosen Web-UI, die als aggregierender Service agiert, verschmelzen die isolierten Backend-APIs zu einem zusammenhängenden Prozess. Dieser Ansatz der clientseitigen Bündelung bietet den Architekturvorteil, dass die Web-UI hochgradig austauschbar ist. Es können jederzeit neue Frontends entwickelt werden, die basierend auf den vorhandenen REST-Schnittstellen einen modifizierten Detaillierungsgrad oder alternative User Journeys abbilden, ohne die Backend-Logik anzupassen.
+
+== Infrastruktur Architektur <sec:infra-architecture>
+Die Architektur basiert auf containerisierten Deployments der einzelnen Microservices. Die gesamte Bereitstellung der Compute-Ressourcen sowie weiterer Plattform-Dienste erfolgt über AWS. Ein maßgebliches Entwurfskriterium war eine strikte Kosteneffizienz, weshalb ausschließlich moderne Serverless-Komponenten zum Einsatz kommen. Zugunsten der Kostenoptimierung wurde auf eine ausgedehnte High-Availability-Architektur (Multi-AZ) vorerst verzichtet, eine nachträgliche Implementierung ist jedoch möglich.
+
+@fig:infra-architecture veranschaulicht die eingesetzten AWS-Dienste sowie deren strukturelles Zusammenwirken innerhalb der Software. Die genaue Funktionsweise dieser Komponenten wird in den nachfolgenden Abschnitten detailliert beschrieben.
+
+#set figure.caption(position: bottom)
+
+#figure(
+  image("../bilder/Infra Architecture High Level-AWS.drawio.pdf", width: 100%),
+  caption: [Infrastrukturarchitektur (AWS)],
+) <fig:infra-architecture>
+
+=== Compute <sec:compute>
+Die Bereitstellung der Rechenleistung (Compute) erfolgt über den AWS Elastic Container Service (ECS) in Kombination mit der Serverless-Compute-Engine AWS Fargate. Fargate ermöglicht die vollautomatisierte Provisionierung von Laufzeitumgebungen für Docker-Container, deren Images in der Amazon Elastic Container Registry (ECR) versioniert vorliegen.
+
+Die Ausfallsicherheit der Services ist systembedingt hoch und kann durch vertikales Skalieren weiter optimiert werden. Zur Bewältigung von Lastspitzen kommt ein Autoscaler zum Einsatz, der mittels einer Target-Tracking-Skalierungsrichtlinie (Target Tracking Policy) eine durchschnittliche CPU-Auslastung von 75 % anstrebt. Bei Überschreiten dieses Schwellenwerts wird vertikal hochskaliert, bei geringerer Last entsprechend herunterskaliert. Auch das kontinuierliche Ausrollen neuer Software-Versionen wird durch AWS ECS Fargate nativ unterstützt, was moderne Deployment-Strategien wie Blue/Green-, Canary- oder Rolling-Deployments ermöglicht. Hierbei werden neue Service-Instanzen parallel gestartet und erst nach erfolgreicher Gesundheitsprüfung (Health Check) für den produktiven Datenverkehr freigegeben.
+
+Zur weiteren Kostenreduktion nutzen alle ECS-Services die ARM64-Prozessorarchitektur (AWS Graviton), welche ein besseres Preis-Leistungs-Verhältnis aufweist als vergleichbare x86-Architekturen. Zudem werden AWS Spot-Instanzen verwendet, die erhebliche Rabatte bieten, jedoch durch AWS bei Kapazitätsengpässen kurzfristig terminiert werden können. Für den aktuellen Projektstatus ist dies ein idealer Kompromiss, da kurze Downtimes tolerierbar sind und der Autoscaler ausfallende Instanzen automatisch durch neue ersetzt. Für einen ausfallsicheren Produktivbetrieb könnte das System auf eine Multi-Availability-Zone-Strategie (Multi-AZ) erweitert werden, um den Ausfall einzelner Rechenzentren transparent zu kompensieren. Aufgrund der damit verbundenen Mehrkosten wurde dies jedoch im aktuellen Scope nicht umgesetzt.
+
+Da jede Instanz mit der kleinstmöglichen Konfiguration von 0,256 vCPUs und 512 MB RAM dimensioniert ist, belaufen sich die reinen Compute-Kosten, unter der Annahme, dass kein Autoscaling stattfindet und kontinuierlich nur eine Instanz läuft, auf 0,078192 € pro Tag. In Summe resultiert dies in Kosten von 0,625536 € pro Tag für alle Services, was die Vorgabe einer hocheffizienten Infrastruktur vollumfänglich erfüllt.
+
+Die Compute-Instanzen kommunizieren größtenteils asynchron und entkoppelt über den Amazon Simple Queue Service (SQS). Hierbei wurde das Paradigma der Data Ownership strikt angewendet: Jeder Service stellt eine dedizierte SQS-Queue als Eingangskanal (Input Queue) bereit. Andere Services, die Daten an diesen Service übergeben möchten, schreiben ihre Events direkt in die jeweilige Ziel-Queue.
+
+Bestimmte fachliche Abläufe erfordern jedoch eine synchrone Kommunikation, welche direkt über REST abgebildet wurde. Dafür nutzen die Services interne DNS-Namen zur Service Discovery über CloudMap, deren Funktionsweise im folgenden Abschnitt zum Netzwerk erläutert wird.
+
+=== Netzwerk <sec:network>
+Netzwerkseitig wird die Software in einer Virtual Private Cloud (VPC) überwiegend in einem sicheren, privaten Subnetz bereitgestellt. Die Netzwerkkonfiguration ist ein kritischer Aspekt der Kostenoptimierung, da insbesondere passiv bereitgestellte Netzwerkinfrastruktur in der AWS-Cloud erhebliche Fixkosten verursachen kann.
+
+Durch das Deployment in ein privates Subnetz sind die Instanzen nicht über das öffentliche Internet routingfähig, was die Sicherheit der Architektur signifikant erhöht. Dies bedeutet jedoch auch, dass die ECS-Instanzen ohne weitere Maßnahmen nicht nach außen kommunizieren können, um beispielsweise initiale Docker-Images aus der ECR zu pullen. Ein klassischer Lösungsansatz bestünde in der Provisionierung eines von AWS verwalteten NAT Gateways (Network Address Translation). Ein NAT Gateway verursacht jedoch hohe passive Kosten von ca. 50 € pro Monat, zuzüglich variabler Traffic-Kosten. Eine Alternative wäre die Zuweisung öffentlicher IPv4-Adressen an jede ECS-Instanz. Da AWS jedoch Gebühren für die Nutzung öffentlicher IPv4-Adressen erhebt (ca. 3,50 € pro IP/Monat), würden sich die monatlichen Kosten bei acht Services auf knapp 30 € summieren.
+
+Die implementierte Lösung nutzt stattdessen ein reines IPv6-Netzwerk. AWS ermöglicht es, einem IPv6-Subnetz ein kostenfreies Egress-Only-Internet-Gateway zuzuordnen. Dadurch können die ECS-Instanzen ausgehende Verbindungen über IPv6 aufbauen, um Abhängigkeiten oder ECR-Images herunterzuladen. Obwohl AWS auch Dual-Stack-Subnetze (parallele IPv4- und IPv6-Nutzung) anbietet, war dieser Ansatz nicht zielführend. In einem Dual-Stack-Setup nutzen ECS-Instanzen den Image-Pull über IPv4, was ohne NAT Gateway oder öffentliche IPv4-Adresse zwangsläufig fehlschlägt. Der konsequente Einsatz eines reinen IPv6-Subnetzes löst dieses Problem kostenneutral, schafft jedoch neue Herausforderungen beim Routing des eingehenden Datenverkehrs (Ingress).
+
+Externe Requests müssen die ECS-Instanzen erreichen, optimalerweise nicht über IPv6-Adressen, sondern über DNS. Hierfür kommt das AWS API Gateway zum Einsatz, das eine öffentlich verfügbare DNS-Auflösung ohne Fixkosten bereitstellt. Die technische Limitierung besteht jedoch darin, dass das API Gateway ECS-Instanzen in einem reinen IPv6-Netzwerk nicht direkt als Ziel (Target) adressieren kann, da es zwingend IPv4-Endpunkte erwartet. Als Lösung wurden AWS Lambda-Funktionen als Proxy-Schicht entwickelt und in einem separaten, Dual-Stack-fähigen Subnetz bereitgestellt. Das API Gateway routet eingehende Anfragen an diese Lambda-Proxies, welche die Requests an die ECS-Services im IPv6-Subnetz weiterleiten. Die Lambdas können in einem Dual-Stack-Subnetz betrieben werden, da sie keine externen Docker-Images über IPv4 beziehen müssen und die IPv4-Netzwerkstrecke zum API Gateway systemseitig gewährleistet ist.
+
+Für dieses Proxy-Pattern müssen die Lambda-Funktionen die internen, dynamischen IPv6-Adressen der ECS-Services kennen. Zur Realisierung der Service Discovery kommt AWS Cloud Map zum Einsatz. Alle ECS-Services registrieren sich beim Bootvorgang vollautomatisch bei Cloud Map. Die Lambda-Proxies fragen den internen DNS-Namen über Cloud Map ab, erhalten die aktuelle IPv6-Adresse des Ziels und leiten den Request entsprechend weiter.
+
+Dieser Lambda-Proxy-Ansatz kann durch sogenannte Kaltstarts (Cold Starts) zeitweise zu erhöhten Latenzen führen, da die Initialisierung der Lambda-Laufzeitumgebung einige Sekunden beanspruchen kann. Eine performantere, aber kostenintensive Lösung ist die Nutzung von Provisioned Concurrency, bei der vorkonfigurierte Lambda-Instanzen warmgehalten werden. Diese Funktion wird im Projekt jedoch nur temporär zu Demonstrations- und Testzwecken aktiviert. Alternativ ließe sich ein Application Load Balancer (ALB) implementieren, der die Lambda-Proxies oder gar das API Gateway ersetzt, eine feste IPv4-Adresse bereitstellt und Lastverteilungs-Metriken nativ unterstützt. Die fixen Vorhaltekosten eines ALBs belaufen sich jedoch auf ca. 16 € pro Monat. Bei einer dedizierten Bereitstellung pro Service würden somit monatliche Fixkosten von rund 130 € entstehen, was den ökonomischen Vorgaben des Projekts widerspricht.
+
+Ein weiterer Lambda-Proxy wurde zwischen dem Response Service und AWS Bedrock implementiert, da Bedrock derzeit keine nativen IPv6-Verbindungen unterstützt. Durch das Proxying über eine Dual-Stack-fähige Lambda-Funktion konnte diese Einschränkung erfolgreich umgangen werden.
+
+Den Abschluss der Netzwerkarchitektur bildet Amazon CloudFront als @CDN. CloudFront reduziert die globale Latenz durch Edge-Caching und leitet Anfragen effizient an den geografisch nächsten Edge-Standort weiter. Über CloudFront wurde zudem die Custom Domain `fh-wedel.dev` konfiguriert. Anstatt die flüchtigen Endpunkte des API Gateways direkt anzusprechen, ermöglicht Amazon Route 53 eine feste DNS-Auflösung, sodass externe Anfragen konsistent über die Custom Domain an das API Gateway geroutet werden.
+
+=== Datenbank Architektur <sec:database-architecture>
+Die Datenbankarchitektur unterliegt denselben strengen Vorgaben zur Kosteneffizienz. Es war zwingend erforderlich, eine vollständig serverlose Datenbanklösung ohne Fixkosten zu implementieren. Da die Geschäftsdaten keine strenge relationale Modellierung erforderten, fiel die Wahl auf Amazon DynamoDB, eine hochskalierbare Key-Value-Datenbank mit einem Pay-per-Request-Preismodell.
+
+Um eine starke strukturelle Kopplung zu vermeiden und die Unabhängigkeit der Microservices zu wahren, wurde das Database-per-Service-Pattern konsequent umgesetzt. Jeder Service, der Persistenz benötigt, verfügt über eine eigene, isolierte DynamoDB-Tabelle.
+
+Bei der Datenmodellierung kam konsequent ein modernes Single-Table-Design zum Einsatz. Dieser Ansatz ermöglicht es, alle zu einer Abgabe gehörenden Entitäten eines Services über eine einzige Query hocheffizient abzufragen. Komplizierte Joins über mehrere Tabellen hinweg oder das Absetzen sequenzieller Abfragen (N+1-Problem) entfallen dadurch vollständig.
+
+Zudem wird das Prinzip der Datenhoheit (Data Sovereignty) strikt eingehalten: Jeder Service speichert ausschließlich die Daten, die in seinen Bounded Context fallen. Dies verhindert Datenredundanz über mehrere Services hinweg und eliminiert das Risiko von Dateninkonsistenzen bei Updates. Benötigt ein Service aggregierte Daten, fragt er diese zur Laufzeit über die REST-Schnittstelle des zuständigen Data Owners an.
+
+=== User Management <sec:user-management>
+Für das Identitäts- und Zugriffsmanagement (IAM) werden AWS Cognito und Amazon Verified Permissions (AVP) genutzt. Cognito agiert als Managed Identity Provider (IdP) und übernimmt komplexe Aufgaben wie die Bereitstellung gehosteter Login-Seiten, das Management von Anmeldeinformationen (Credentials) sowie die Verwaltung von Session-Tokens. Dies entspricht Best Practices der modernen Softwareentwicklung, da sich das Entwicklungsteam auf die Kernkompetenzen und die Geschäftslogik konzentrieren kann. Zudem ermöglicht Cognito die Gruppierung von Nutzern, was die Grundlage für eine rollenbasierte Zugriffskontrolle (Role-Based Access Control, RBAC) bildet.
+
+Zur Autorisierung der API-Gateway-Endpunkte kommt Amazon Verified Permissions zum Einsatz. AVP definiert feingranulare Policies, die den Zugriff auf Ressourcen regulieren, sodass nur berechtigte Cognito-Benutzergruppen bestimmte API-Endpunkte aufrufen dürfen. Die Durchsetzung dieser Richtlinien erfolgt über einen Lambda Authorizer, der vom API Gateway bei jedem eingehenden Request aufgerufen wird. Diese Lambda-Funktion validiert das Session-Token, gleicht die Cognito-Gruppen des Nutzers mit den in AVP hinterlegten Policies ab und trifft die finale Autorisierungsentscheidung (Allow/Deny).
+
+Auch diese Architektur erzeugt keine passiven Kosten, und die nutzungsbasierten Gebühren für Cognito und AVP sind marginal. Der einzige Trade-off besteht in potenziellen Latenzen durch Kaltstarts des Lambda Authorizers. Auch hier kann durch Provisioned Concurrency die Antwortzeit signifikant optimiert werden, ein Effekt, der sich potenziert, wenn parallel auch der Lambda-Proxy vorkonfiguriert ist.
+
+Zusätzliche Sicherheitsmechanismen sind direkt in der Geschäftslogik (Applikationsschicht) verankert. Hierbei entscheidet die Software kontextbezogen, ob ein Nutzer bestimmte Datensätze lesen oder mutieren darf (z. B. Author einer Abgabe). Diese Logik wird über Spring Security abgebildet, wobei die aus AWS Cognito injizierten Benutzernamen und Rollen als vertrauenswürdige Quelle (Single Source of Truth) dienen.
+
+== Configuration Service (Plugin Service) <sec:configuration-service>
 // Luca
 
-== Communikation / Notifaction -- SSE
-// (Marcel)
+== Server-Sent Events im Communication und Notification Service <sec:sse-communication>
+Eine architektonische Besonderheit des Communication und Notification Services ist die Implementierung von Server-Sent Events (SSE). SSE etabliert eine unidirektionale Verbindung vom Server zum Client, über die der Server asynchron Live-Updates und Benachrichtigungen pushen kann. Im Vergleich zu WebSockets, die bidirektional und in der Handhabung deutlich komplexer sind, stellt SSE für diesen Anwendungsfall eine leichtgewichtigere Alternative dar. Auch gegenüber clientseitigem Polling (z. B. Short oder Long Polling) bietet SSE den Vorteil, dass Updates in Echtzeit und mit stark reduziertem Overhead (ohne ständigen Verbindungsaufbau) übertragen werden.
 
-== Frontend
+Der Einsatz von SSE hat sich für die Chat- und Benachrichtigungsfunktionen als äußerst zuverlässig erwiesen. Es existiert jedoch eine signifikante infrastrukturelle Einschränkung durch das AWS API Gateway, welches ein hartes Timeout von 29 Sekunden für aktive Verbindungen erzwingt. Für eine langlebige SSE-Verbindung ist dies im Standardbetrieb nicht praktikabel.
+
+Um dieses Limit zu umgehen, beendet der Server die SSE-Verbindung proaktiv nach 25 Sekunden. Da das SSE-Protokoll nativ über Selbstheilungsmechanismen (Auto-Reconnect) verfügt, erkennt der Client den Verbindungsabbruch sofort und baut die Verbindung automatisch neu auf. Dadurch wird ein scheinbar unterbrechungsfreier Live-Datenstrom simuliert.
+
+== Web-UI <sec:frontend>
 // Luca -- (Gideon)
 
-== Sonstiges
-// CI CD Integration (ggf. nur leicht Architketur anschneiden), IaC Integration, Native AWS Integration, Kosten Optimierung (Marcel)
+Der Web-UI-Service ist für die Bereitstellung der Weboberfläche des PeerReview-Systems verantwortlich. Sie nimmt in der komponenten- und ereignisgesteuerten Gesamtanwendung eine zentrale Rolle ein, da sie zur Ermöglichung von Benutzerinteraktionen, Daten bereitstellen muss, welche auf diverse Services verteilt vorliegen. Hierdurch wird einerseits die Skalierung von einzelnen Services ermöglicht, andererseits wird jedoch gleichzeitg eine Datenaggregation erforderlich, bevor die Weboberfläche vollständig angezeigt werden kann. Angesichts des Umfangs des Projekts, wurde sich in diesem Zusammenhang dazu entschieden, kein dediziertes @BFF zu implementieren, welches diese Aufgabe übernehmen könnte. Folglich obliegt es dem Web-UI, die notwendigen Daten von den verschiedenen Services abzurufen und zusammenzuführen. Dies soll dazu beitragen, die Weboberfläche weiter zu entkoppeln und infrastrukturelle Komplexität gemäß der Idee zur Implementierung eines @MVP zu reduzieren. Die Weboberfläche ist zustandslos und verwendet hiervon abweichend lediglich den LocalStorage des Browsers, um Einstellungen wie den präferierten Ansichtsmodus des Benutzers zu speichern. Konzeptionell erklärt sich aus diesen Bedingungen, weshalb die Weboberfläche als @SPA unter Verwendung von React und Vite implementiert wurde. Dies ermöglicht es, Daten von verschiedenen Services asynchron abzurufen und die Benutzeroberfläche dynamisch und schrittweise zu aktualisieren, ohne dass eine vollständige Seitenaktualisierung erforderlich wird. Die zusätzliche Verwendung eines @CDN erlaubt es zudem die Latenzzeit der Weboberfläche zu reduzieren. 
+
+Zur Kommunikation mit den Backend-Services werden von der Web-UI ausschließlich solche API-Clients verwendet, welche anhand der OpenAPI-Spezifikationen der jeweiligen Services automatisiert generiert wurden. Der Aufbau des Projekts als Mono-Repository trägt hierbei dazu bei, dass die Schnittstellen leicht überprüfbar bleiben und inkompatible Änderungen frühzeitig bemerkt werden. Anpassungen an einem Service erfordern lediglich die Neugenerierung des jeweiligen Clients. In diesem Zuge wurde auf die explizite Einführung von Data-Access-Objekten innerhalb der Weboberfläche verzichtet. Sollte die Komplexität des Projekts durch zukünftige Erweiterungen steigen oder externe Services angebunden werden, sollte dies erneut evaluiert werden.
+
+Die Weboberfläche ist aufgrund der Verwendung von @AWS Cognito nicht für die Bereitstellung einer Anmeldeseite zuständig. Stattdessen wird die Authentifizierung durch einer Umleitung auf eine von @AWS angebotenen Anmeldeseite durchgeführt. Nach erfolgreicher Authentifizierung wird der Benutzer zurück auf die Weboberfläche geleitet, wobei ein Session-Token übergeben wird, welches für die Dauer der Sitzung gültig ist. Dieses Token wird von der Weboberfläche bei jedem Request an die Backend-Services übermittelt, um die Identität des Benutzers zu verifizieren und den Zugriff auf die jeweiligen Ressourcen zu autorisieren. Gleiches gilt für den Logout, bei welchem der Benutzer kurzzeitig ebenfalls umgeleitet wird, um die Sitzung zu beenden.
+
+== DevOps und Infrastructure as Code <sec:devops-iac>
+Zu einer modernen Softwarearchitektur gehören neben dem reinen Applikations- und Infrastrukturdesign zwingend auch DevOps-Praktiken, die ein kontinuierliches Testen, Bauen und Ausrollen (CI/CD) der Software ermöglichen. Die Architektur der CI/CD-Pipeline ist modular aufgebaut, wodurch sich neue Services aufwandsarm integrieren lassen. Der genaue Entwicklungszyklus wird in @sec:cicd-integration detailliert beschrieben.
+
+Um das Deployment in die AWS-Cloud vollautomatisiert durchzuführen, wurde Infrastructure as Code (IaC) angewandt. Die Infrastruktur wird dabei in deklarativem Code beschrieben, welcher innerhalb der Pipeline ausgeführt wird, um die entsprechenden Cloud-Ressourcen zu provisionieren oder zu aktualisieren. Zum Einsatz kam hierbei das AWS Cloud Development Kit (CDK) in der Programmiersprache TypeScript.
+
+Auf Code-Ebene nutzen die IaC-Komponenten eine eigens entwickelte *InfraLibrary*. Diese abstrahiert und standardisiert komplexe Infrastruktur-Setups, wie das Deployment eines ECS-Services inklusive Lambda-Proxy, API-Gateway-Routen und AVP-Integration, in wenigen, wiederverwendbaren Zeilen Code. Durch diese Abstraktion wird sichergestellt, dass alle Services auf identischen infrastrukturellen Mustern basieren. Dies gewährleistet eine hohe Konsistenz, erleichtert das Debugging enorm und ermöglicht es, infrastrukturelle Anpassungen zentral vorzunehmen und global auf alle Services auszurollen.
+
+Ergänzend zur InfraLibrary existiert das Projekt *InfraBaseline*. Dieses provisioniert die grundlegende Netzwerkinfrastruktur, den AWS-Cognito-Userpool, die Cloud-Map-Namespaces sowie die CloudFront-Distribution.
+
+Der massive strategische Vorteil von IaC zeigte sich im Projektverlauf mehrfach. So konnten Features isoliert getestet und die Infrastruktur jederzeit deterministisch auf ältere Stände zurückgerollt werden, wobei Applikationscode und Infrastruktur stets konsistent blieben. Besonders erfolgskritisch war der IaC-Ansatz, als der ursprüngliche AWS-Account aufgrund eines abgelaufenen Leases gesperrt wurde. Dank der vollständigen Deklaration im Code konnten sämtliche Ressourcen nahezu ohne manuelle Eingriffe in einem neuen Account hochgefahren werden. Ohne IaC hätte dieser Vorfall eine stundenlange, extrem fehleranfällige manuelle Neuprovisionierung erfordert.
