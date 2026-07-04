@@ -43,10 +43,28 @@ WORKDIR /app
 
 ENV HOME=/home/spring
 RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
 
-# The final executable jar is built in the configuration-core module
+# Create the plugins directory
+RUN mkdir -p /app/plugins
+
+# The core executable jar (no plugin modules baked in)
 COPY --from=builder /app/configuration-service/configuration-core/target/configuration-service.jar configuration-service.jar
+
+# Copy each plugin JAR into /app/plugins/ as separate, externally-loaded JARs.
+# These are discovered at runtime via ServiceLoader + URLClassLoader.
+COPY --from=builder /app/configuration-service/configuration-type-open-review/target/configuration-type-open-review-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-type-single-blind/target/configuration-type-single-blind-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-type-double-blind/target/configuration-type-double-blind-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-template-individual-work/target/configuration-template-individual-work-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-template-group-work/target/configuration-template-group-work-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-template-bachelor-thesis/target/configuration-template-bachelor-thesis-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-template-master-thesis/target/configuration-template-master-thesis-*.jar /app/plugins/
+COPY --from=builder /app/configuration-service/configuration-template-seminar/target/configuration-template-seminar-*.jar /app/plugins/
+
+# Ensure spring user owns the plugins directory
+RUN chown -R spring:spring /app/plugins
+
+USER spring:spring
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-Djava.net.preferIPv6Addresses=true", "-Djava.net.preferIPv4Stack=false", "-jar", "configuration-service.jar"]
