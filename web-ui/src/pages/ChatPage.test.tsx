@@ -1,4 +1,3 @@
-import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -103,7 +102,7 @@ describe('ChatPage Component', () => {
         } as any);
 
         vi.mocked(searchUsers).mockResolvedValue([
-            {id: 'user2', username: 'john_doe', email: 'john@example.com', roles: []}
+            {id: 'user2', username: 'john_doe', email: 'john@example.com',}
         ]);
 
         renderComponent();

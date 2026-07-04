@@ -49,8 +49,8 @@ vi.mock('../api/communication', () => ({
 vi.mock('../api/clients', () => ({
     configApiClient: {
         submissions: {
-            authorDetail: vi.fn(() => Promise.resolve({data: []})),
-            submissionsDetail: vi.fn(() => Promise.resolve({data: {}})),
+            authorDetail: vi.fn(() => Promise.resolve({data: []} as any)),
+            submissionsDetail: vi.fn(() => Promise.resolve({data: {}} as any)),
             submissionsCreate: vi.fn(() => Promise.resolve({ok: true})),
         }
     },
@@ -61,20 +61,20 @@ vi.mock('../api/clients', () => ({
     },
     submissionApiClient: {
         submissions: {
-            getSubmission: vi.fn(() => Promise.resolve({data: {}})),
+            getSubmission: vi.fn(() => Promise.resolve({data: {}} as any)),
         }
     },
     responseApiClient: {
         results: {
-            resultsDetail: vi.fn(() => Promise.resolve({data: []})),
+            resultsDetail: vi.fn(() => Promise.resolve({data: []} as any)),
         }
     },
     usersApiClient: {
         groups: {
-            listGroupMembers: vi.fn(() => Promise.resolve({data: []})),
+            listGroupMembers: vi.fn(() => Promise.resolve({data: []} as any)),
         },
         users: {
-            searchUsers: vi.fn(() => Promise.resolve({data: []})),
+            searchUsers: vi.fn(() => Promise.resolve({data: []} as any)),
         }
     }
 }));

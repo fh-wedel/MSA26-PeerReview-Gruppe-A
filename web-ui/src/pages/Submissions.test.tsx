@@ -1,4 +1,3 @@
-import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -72,11 +71,11 @@ describe('Submissions Component', () => {
             error: null,
         });
 
-        vi.mocked(configApiClient.submissions.authorDetail).mockResolvedValue({data: []});
-        vi.mocked(configApiClient.submissions.submissionsList).mockResolvedValue({data: []});
-        vi.mocked(matchingApiClient.matches.getMatchesBySubmission).mockResolvedValue({data: {}});
-        vi.mocked(submissionApiClient.submissions.getSubmission).mockResolvedValue({data: {}});
-        vi.mocked(responseApiClient.results.resultsDetail).mockResolvedValue({data: []});
+        vi.mocked(configApiClient.submissions.authorDetail).mockResolvedValue({data: []} as any);
+        vi.mocked(configApiClient.submissions.submissionsList).mockResolvedValue({data: []} as any);
+        vi.mocked(matchingApiClient.matches.getMatchesBySubmission).mockResolvedValue({data: {}} as any);
+        vi.mocked(submissionApiClient.submissions.getSubmission).mockResolvedValue({data: {}} as any);
+        vi.mocked(responseApiClient.results.resultsDetail).mockResolvedValue({data: []} as any);
     });
 
     const renderComponent = () => render(
@@ -136,7 +135,7 @@ describe('Submissions Component', () => {
             signup: vi.fn(),
         });
 
-        vi.mocked(configApiClient.submissions.authorDetail).mockResolvedValue({data: []});
+        vi.mocked(configApiClient.submissions.authorDetail).mockResolvedValue({data: []} as any);
         vi.mocked(configApiClient.submissions.submissionsList).mockResolvedValue({
             data: [{
                 id: 'sub2',

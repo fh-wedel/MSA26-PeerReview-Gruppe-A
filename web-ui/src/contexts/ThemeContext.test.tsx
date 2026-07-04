@@ -1,4 +1,3 @@
-import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {CustomThemeProvider, useThemeContext} from './ThemeContext';
