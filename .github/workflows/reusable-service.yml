@@ -21,6 +21,9 @@ on:
       run_maven:
         type: boolean
         required: true
+      run_frontend_test:
+        type: boolean
+        required: true
       run_infra:
         type: boolean
         required: true
@@ -70,6 +73,16 @@ jobs:
       - name: Maven build and tests
         if: inputs.run_maven
         run: mvn -B -ntp clean verify
+        working-directory: ${{ inputs.service_path }}
+
+      - name: Install frontend dependencies
+        if: inputs.run_frontend_test
+        run: npm ci
+        working-directory: ${{ inputs.service_path }}
+
+      - name: Frontend tests
+        if: inputs.run_frontend_test
+        run: npm test
         working-directory: ${{ inputs.service_path }}
 
       - name: Install infra dependencies

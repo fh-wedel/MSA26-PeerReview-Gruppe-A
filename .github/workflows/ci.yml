@@ -257,6 +257,7 @@ jobs:
       docker_context: templateEcsService
       ecr_repository: fh-wedel/template
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -277,6 +278,7 @@ jobs:
       docker_context: userService
       ecr_repository: fh-wedel/user
       run_maven: ${{ needs.changes.outputs.user_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.user_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.user_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -297,6 +299,7 @@ jobs:
       docker_context: web-ui
       ecr_repository: fh-wedel/web-ui
       run_maven: false
+      run_frontend_test: ${{ needs.changes.outputs.web_ui_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_infra: ${{ needs.changes.outputs.web_ui_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.web_ui_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -317,6 +320,7 @@ jobs:
       docker_context: matchingService
       ecr_repository: fh-wedel/matching
       run_maven: ${{ needs.changes.outputs.matching_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.matching_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.matching_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -337,6 +341,7 @@ jobs:
       docker_context: communicationService
       ecr_repository: fh-wedel/communication
       run_maven: ${{ needs.changes.outputs.communication_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.communication_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.communication_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -357,6 +362,7 @@ jobs:
       docker_context: .
       ecr_repository: fh-wedel/configuration
       run_maven: ${{ needs.changes.outputs.configuration_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.configuration_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.configuration_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -377,6 +383,7 @@ jobs:
       docker_context: submission-service
       ecr_repository: fh-wedel/submission
       run_maven: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.submission_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -397,6 +404,7 @@ jobs:
       docker_context: notificationService
       ecr_repository: fh-wedel/notification
       run_maven: ${{ needs.changes.outputs.notification_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.notification_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.notification_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
@@ -417,6 +425,7 @@ jobs:
       docker_context: responseService
       ecr_repository: fh-wedel/response
       run_maven: ${{ needs.changes.outputs.response_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
+      run_frontend_test: false
       run_infra: ${{ needs.changes.outputs.response_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
       run_docker: ${{ needs.changes.outputs.response_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
       allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}

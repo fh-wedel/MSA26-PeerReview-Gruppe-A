@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import {
   Alert,
   Autocomplete,
@@ -14,9 +14,9 @@ import {
   Select,
   Snackbar,
   TextField,
+  Typography,
   useMediaQuery,
-  useTheme,
-  Typography
+  useTheme
 } from "@mui/material";
 import type {UserSummary} from "../api/communication";
 import {useGroupMembers} from "../hooks/useGroupMembers";
@@ -216,15 +216,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                       {template.title}
                     </MenuItem>
                   ))
-                ) : (
-                  <>
-                    <MenuItem value="INDIVIDUAL_WORK">Individual Work</MenuItem>
-                    <MenuItem value="GROUP_WORK">Group Work</MenuItem>
-                    <MenuItem value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>
-                    <MenuItem value="MASTER_THESIS">Master Thesis</MenuItem>
-                    <MenuItem value="SEMINAR">Seminar</MenuItem>
-                  </>
-                )}
+                ) : [
+                  <MenuItem key="INDIVIDUAL_WORK" value="INDIVIDUAL_WORK">Individual Work</MenuItem>,
+                  <MenuItem key="GROUP_WORK" value="GROUP_WORK">Group Work</MenuItem>,
+                  <MenuItem key="BACHELOR_THESIS" value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>,
+                  <MenuItem key="MASTER_THESIS" value="MASTER_THESIS">Master Thesis</MenuItem>,
+                  <MenuItem key="SEMINAR" value="SEMINAR">Seminar</MenuItem>,
+                ]}
               </Select>
             </FormControl>
 
@@ -313,13 +311,11 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
                       {plugin.title}
                     </MenuItem>
                   ))
-                ) : (
-                  <>
-                    <MenuItem value="SINGLE_BLIND">Single Blind Review</MenuItem>
-                    <MenuItem value="DOUBLE_BLIND">Double Blind Review</MenuItem>
-                    <MenuItem value="OPEN_REVIEW">Open Review</MenuItem>
-                  </>
-                )}
+                ) : [
+                  <MenuItem key="SINGLE_BLIND" value="SINGLE_BLIND">Single Blind Review</MenuItem>,
+                  <MenuItem key="DOUBLE_BLIND" value="DOUBLE_BLIND">Double Blind Review</MenuItem>,
+                  <MenuItem key="OPEN_REVIEW" value="OPEN_REVIEW">Open Review</MenuItem>,
+                ]}
               </Select>
             </FormControl>
 

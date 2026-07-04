@@ -155,18 +155,21 @@ export const SubmissionChatDialog: React.FC<SubmissionChatDialogProps> = ({ open
               helperText="Select an assignment or your submission from the list."
             />
           )}
-          renderOption={(props, option) => (
-            <li {...props}>
-              <div>
-                <strong>{option.title}</strong>
-                <br/>
-                <small style={{ color: 'gray' }}>ID: {option.id}</small>
-                {!option.allowed && (
-                  <div style={{ color: 'red', fontSize: '0.8em' }}>{option.reason}</div>
-                )}
-              </div>
-            </li>
-          )}
+          renderOption={(props, option) => {
+            const {key, ...rest} = props as any;
+            return (
+                <li key={key} {...rest}>
+                  <div>
+                    <strong>{option.title}</strong>
+                    <br/>
+                    <small style={{color: 'gray'}}>ID: {option.id}</small>
+                    {!option.allowed && (
+                        <div style={{color: 'red', fontSize: '0.8em'}}>{option.reason}</div>
+                    )}
+                  </div>
+                </li>
+            );
+          }}
         />
         {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
       </DialogContent>
