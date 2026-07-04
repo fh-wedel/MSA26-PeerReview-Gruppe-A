@@ -1,91 +1,66 @@
 = Features der App
 
-Die Applikation (das "PeerReview"-System) ist als eine moderne, ereignisgesteuerte Microservice-Architektur implementiert. Sie umfasst eine interaktive Web-Oberfläche (React/Vite) sowie sieben dedizierte Backend-Services (Java/Spring Boot).
+Die Applikation (das "PeerReview"-System) umfasst eine interaktive Web-Oberfläche sowie sieben dedizierte Backend-Services.
+Im Folgenden werden alle im aktuellen MVP (Minimum Viable Product) implementierten Features aus Nutzersicht anhand von typischen Benutzergeschichten (User Stories) dargestellt.
 
-Im Folgenden werden alle im aktuellen MVP (Minimum Viable Product) implementierten Features detailliert aufgeschlüsselt.
+== Nutzertypen und ihre User Stories
 
-== Web-UI (Frontend)
-Das Frontend ist als Single-Page-Application (SPA) mit React, TypeScript und Material-UI (MUI) realisiert. Es bietet folgende Features:
+=== Dozenten / Lehrende (Dozenten und Prüfer)
+Aus Sicht eines Lehrenden stellt das System folgende Kernfunktionen bereit:
+- *Abgaben anlegen und konfigurieren:* Erstellen neuer Arbeiten mit individuellen Titeln, Deadlines, Mitautoren und Themen-Tags.
+- *Review-Verfahren & Kriterien bestimmen:* Auswahl des Review-Prozesses (Doppelblind, Einfach-Blind, Open Review) sowie Definition des Bewertungsbogens und dessen Sichtbarkeit für Studierende.
+- *Zugeordnete Arbeiten einsehen:* Übersicht über alle Einreichungen, bei denen man als Gutachter eingeteilt ist.
+- *Abgaben begutachten:* Download der eingereichten PDF-Arbeiten der Studierenden zur Korrektur.
+- *Bewertungen abgeben:* Ausfüllen des Bewertungsbogens im System mit Noten und textuellem Gesamt-Feedback.
+- *Statusverfolgung der Begutachtung:* Automatische Aktualisierung des Korrekturfortschritts (z. B. „X von Y Gutachten abgeschlossen“) für Autoren und Prüfungsamt nach Absenden einer Bewertung.
+- *Direktkommunikation (Chat):* Austausch mit Autoren über einen integrierten Chat (aktiviert bei Open Review, deaktiviert bei Doppelblind / Einfach-Blind zum Schutz der Anonymität).
+- *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei neu zugewiesenen Arbeiten zur Begutachtung.
 
-- *Authentifizierung & Registrierung:* Login- und Registrierungsformulare, die nahtlos an AWS Cognito angebunden sind.
-- *Rollenabhängiges Dashboard:* Zentrale Übersicht über Einreichungen, Zuweisungen, offene Chats und Benachrichtigungen. Die UI passt sich dynamisch an die Rolle des Benutzers an.
-- *Einreichungserstellung & -verwaltung:*
-  - Benutzeroberfläche zum Erstellen von Abgaben mit der Konfiguration von Titeln, Deadlines und Autoren.
-  - Upload-Bereich für PDF-Dokumente via AWS S3 Presigned URLs mit direktem Client-Upload.
-  - Möglichkeit, Einreichungen final abzugeben (Finalize & Submit), was weitere Uploads sperrt und den Review-Prozess triggert.
-- *Intelligente Anonymisierung (Smart Anonymity):* Dynamisches Ausblenden (Redacting) von Autoren- oder Reviewer-Identitäten in der Detailansicht basierend auf den Workflow-Regeln (z.B. Double-Blind). Administratoren und Lehrer sehen die echten Namen, während sie für Autoren/Reviewer unleserlich geschwärzt werden.
-- *Interaktiver Bewertungsbogen (Start Review):* Dynamisches Formular, das sich an das konfigurierte Schema (Rating-Sterne, Punkteskalen, Multiple-Choice oder Freitext) anpasst.
-- *In-App Kommunikationsbereich (Chats):*
-  - Chat-Übersicht getrennt nach generellen Direktnachrichten ("General") und abgabebezogenen Gruppen-Chats ("Submissions").
-  - Dynamisches Suchen von Chatpartnern per Autocomplete.
-  - Live-Streaming neuer Chatnachrichten im aktiven Widget über Server-Sent Events (SSE).
-- *Echtzeit-Benachrichtigungen:* Eine Notification-Glocke und eine Inbox-Seite mit Live-Updates bei neuen Systemereignissen via SSE.
-- *Benutzerverwaltung (User Management):*
-  - Für Administratoren/Prüfungsbeamte: Tabellarische Ansicht aller Nutzer, Filterung nach Cognito-Gruppen (Admin, Reviewer, etc.).
-  - Zuweisung von Nutzern zu Rollengruppen.
-  - Spezifische Konfiguration von Reviewern (Aktivieren/Deaktivieren für das Matching, Zuweisen von fachlichen Themenbereichen via Autocomplete).
-- *Admin-Dashboard:*
-  - Übersicht der globalen Systemstatistiken (Benutzerzahlen, aktive Plugins).
-  - Verwaltung gültiger Fachgebiet-Tags (Topic Tags) (Hinzufügen, Auflisten, Löschen).
-  - Übersicht der registrierten Review-Typen und Review-Templates.
-- *Theme-Support:* Umschaltbares Design zwischen Light-Mode und Dark-Mode.
+=== Autoren / Studierende
+Aus Sicht eines Studierenden bietet die Plattform folgende Kernfunktionen:
+- *Abgaben selbstständig anlegen:* Erstellen eigener Arbeiten (z. B. Abschlussarbeiten) als Einzel- oder Gruppenarbeit unter Angabe von Mitautoren sowie (je nach Vorlage) Wunschprüfern und individuellen Fristen.
+- *Wissenschaftliche Arbeiten einreichen:* Hochladen des PDF-Dokuments zur konfigurierten Abgabe vor Ablauf der Abgabefrist.
+- *Fristen und Status im Blick behalten:* Übersicht anstehender Fristen im Kalender und Live-Verfolgung des Bearbeitungsstands der eigenen Abgabe auf dem Dashboard.
+- *Ergebnisse & Feedback abrufen:* Detaillierte Einsicht in Noten, Kommentare und ausgefüllte Kriterien sowie Download der korrigierten PDF-Datei nach Abschluss der Bewertung.
+- *Fragen klären (Chat):* Austausch mit Gutachtern über den integrierten Chat (aktiviert bei Open Review, deaktiviert bei Doppelblind / Einfach-Blind zur Wahrung der Anonymität).
+- *Echtzeit-Benachrichtigungen:* Erhalt von In-App-Meldungen bei Statusänderungen der eigenen Abgabe (z. B. nach erfolgreicher Erstellung oder Vorliegen einer Bewertung).
 
-== Backend-Microservices
-Jeder Microservice arbeitet mit einer eigenen, isolierten Datenbank (PostgreSQL für relationale Daten, DynamoDB für dokumentenbasierte bzw. Single-Table-Strukturen) und kommuniziert über REST-Schnittstellen (synchron) sowie Amazon SQS (asynchron).
+=== Prüfungsamt (Administrative Nutzer)
+Aus Sicht von Mitarbeitern des Prüfungsamts stehen folgende administrative Funktionen bereit:
+- *Zentrale Abgaben konfigurieren:* Erstellen offizieller Abgaben mit globalen Fristen und Bewertungsbögen für Studierende.
+- *Gutachterpool pflegen:* Registrierung von Prüfern im System inklusive Hinterlegen von Fachgebieten (Themen-Tags) und Aktivieren/Deaktivieren von Profilen.
+- *Manuelle Zuweisungen vornehmen:* Gezieltes Festlegen bestimmter Gutachter beim Anlegen einer Abgabe, wodurch der automatische Zuweisungs-Algorithmus überschrieben wird.
+- *Überwachung des Gesamtprozesses:* Uneingeschränkte Sicht auf den Status aller Abgaben, Zuweisungen, Deadlines und Korrekturfortschritte im System.
+- *Systemstatistiken einsehen:* Übersicht über globale Kennzahlen wie Benutzerzahlen, aktive Plugins und Templates im Admin-Bereich.
+- *Benutzer und Rollen verwalten:* Zuweisung von Berechtigungsgruppen (z. B. Dozent, Autor, Prüfungsamt) für registrierte Benutzer.
 
-=== Benutzerverwaltung (User Service)
-- *Cognito-Integration:* Zentrales Identitätsmanagement durch Anbindung an den AWS Cognito User Pool.
-- *Benutzersuche (Präfixbasiert):* Endpunkt für die effiziente Suche nach Benutzern anhand von Namenspräfixen.
-- *Massenauflösung (Bulk Resolve):* Post-Endpunkt zur schnellen Auflösung einer Liste von Cognito-Subs (UUIDs) in verständliche Benutzernamen (reduziert API-Calls im Frontend).
-- *Gruppen- und Attributsverwaltung:* Endpunkte zum Hinzufügen/Entfernen von Nutzern zu Cognito-Gruppen und Editieren von Custom Attributes (z.B. `isActive` und `topicTags` für Reviewer).
-
-=== Konfigurations- & Workflow-Service (Configuration Service)
-- *Workflow-Abstraktion (Plugin-Architektur):* Schnittstelle zur dynamischen Bereitstellung von Begutachtungsprozessen (z.B. Open Review, Double-Blind) mit anpassbaren Regeln (Wer darf wen sehen? Ist ein Chat erlaubt?).
-- *Dynamische Bewertungsbögen (Review Templates):* Bereitstellung von strukturierten Feedback-Formularen mit Fragen und Datentypen (Rating, Scale, Multiple Choice, Text).
-- *Themen-Tag-Verwaltung:* CRUD-Schnittstelle für Topic-Tags, die zur thematischen Zuordnung von Arbeiten und Reviewern dienen.
-- *Fristen- und Metadaten-Management:* Verwaltung von Deadlines für Einreichungen und Reviews sowie die Zuweisung von Fachbereichen zu einer Abgabekonfiguration.
-
-=== Zuteilungsservice (Matching Service)
-- *Automatisches Zuweisungs-Event:* SQS-Listener startet die Reviewer-Zuteilung automatisch, sobald eine Abgabe finalisiert wurde.
-- *Fachgebiet-Matching:* Filtert Reviewer nach aktiven Profilen (`isActive=true`), schließt Selbstbegutachtung aus (Abgleich mit den `submitterIds`) und wählt nur Reviewer mit übereinstimmenden `topicTags` aus.
-- *Prüfer-Zuteilung:* Wählt zufällig eine konfigurierte Anzahl von Prüfern aus dem gefilterten Pool aus.
-- *Manuelle Zuweisung (Custom Reviewers):* Option zur gezielten Übergabe von Reviewer-IDs, was den automatischen Matching-Algorithmus überschreibt.
-- *Transaktionale Persistenz:* Match-Datensätze werden transaktional in DynamoDB gespeichert. Bei unzureichender Reviewer-Anzahl wird der Status "FAILED" gesetzt.
-- *SQS-Broker-Zuweisung:* Informiert den Submission-Service über erfolgreiche Zuweisungen und sendet Benachrichtigungsaufträge an den Notification-Service.
-
-=== Einreichungs- & Dokumentenservice (Submission Service)
-- *Abgabe-Lebenszyklus:* Steuerung des Prozesses von der Entwurfserstellung (Draft) bis zur finalen Abgabe.
-- *Gruppenabgaben-Unterstützung:* Verwaltung von n-Autoren pro Einreichung über ein `authorIds`-Array.
-- *AWS S3-Integration:* Generierung von sicheren, zeitlich begrenzten Presigned Upload- und Download-URLs für PDF-Arbeiten, um direkte, performante Dokumenten-Uploads ins S3-Bucket zu ermöglichen.
-- *Event-gesteuertes Status-Tracking:* Ein SQS-Listener lauscht auf Ereignisse der anderen Services (z.B. "MATCHED" oder "REVIEW_COMPLETED") und aktualisiert den internen Status der Einreichung in der relationalen Datenbank.
-
-
-=== Bewertungs- & Feedback-Service (Response Service)
-- *Manuelles Review:* Endpunkt zum Einreichen von ausgefüllten Bewertungsformularen durch Reviewer (Abgleich der IDs mit den Zuweisungen des Matching-Service).
-- *Asynchrones KI-Gutachten (Bedrock-Integration):*
-  - SQS-Listener empfängt Anfragen für KI-Reviews.
-  - Das PDF wird aus S3 geladen, das Formular-Schema vom Configuration-Service abgefragt und eine Bedrock-Proxy-Lambda aufgerufen.
-  - Das LLM generiert ein strukturiertes Gutachten basierend auf den genauen Kriterien der Einreichung.
-- *KI-Antwortvalidierung:* Automatisches Validieren und Parsen der KI-generierten JSON-Struktur gegen Datentypen, Wertegrenzen (z.B. maxPoints) und Pflichtfelder des hinterlegten Feedback-Schemas.
-- *Ergebnis-Freigabe (Anonymitätsschutz):* Autoren können KI-Gutachten sofort einsehen, menschliche Gutachten werden jedoch erst freigegeben, sobald alle zugewiesenen menschlichen Reviews abgeschlossen sind.
-
-=== Kommunikationsservice (Communication Service)
-- *DynamoDB Single-Table Design:* Speicherung von Chats und Nachrichten in einer einzigen Tabelle zur Vermeidung von Race Conditions und Performance-Engpässen bei parallelen Zugriffen.
-- *Deterministische Chat-IDs:* Generierung von Chat-IDs über Hashes der Teilnehmer-UUIDs zur Vermeidung doppelter Chats.
-- *Server-Sent Events (SSE):* Streaming-Schnittstelle zur Echtzeitübertragung neuer Nachrichten an verbundene Clients.
-
-=== Benachrichtigungsservice (Notification Service)
-- *In-App Inbox:* Zentrale Datenbank für persönliche Benachrichtigungen der Benutzer.
-- *Asynchrone Benachrichtigungs-Pipeline:* SQS-Listener verarbeitet Events aus dem Backend (z.B. "Review Assigned", "Matching Failed") und erstellt in-app Einträge.
-- *Live-Push-Notification (SSE):* Streamt Benachrichtigungen in Echtzeit an den Browser, sobald ein SQS-Event verarbeitet wurde.
-- *Statusverwaltung:* Endpunkte zum Markieren einzelner oder aller Benachrichtigungen als gelesen.
+=== System-Administratoren
+Aus Sicht der System-Administration werden folgende administrative Kontrollfunktionen geboten:
+- *Globale Benutzerverwaltung:* Umfassende Verwaltung aller Profile und Systemberechtigungen.
+- *Systemkomponenten einsehen:* Übersicht und Verwaltung der registrierten Review-Typen (Plugins), aktiven Templates und globalen Themen-Tags.
+- *Fehlerbehebung und Administration:* Administrative Eingriffe bei technischen Störungen oder Zuweisungskonflikten.
 
 == Out of scope
 Für das MVP wurde sich bewusst gegen die Implementierung bestimmter Features entschieden oder diese wurden zugunsten eines reduzierten Scopes zurückgestellt:
-
 - *PDF-Annotationen:* Direkte visuelle Markierungen, Kommentare oder Zeichnungen auf den PDF-Dokumenten im Browser wurden nicht implementiert. Die Begutachtung erfolgt stattdessen strukturiert über Bewertungsbögen und textuelles Gesamt-Feedback. (Begründung: Hohe UI-Komplexität bei geringem Mehrwert für das MVP).
 - *Dateiformate abseits von PDF:* Es wird ausschließlich das `.pdf`-Format für Einreichungen unterstützt. Andere in der Aufgabenstellung denkbare Formate (z. B. `.zip`-Dateien für Quellcode-Abgaben) wurden nicht realisiert.
 - *Erinnerungsverwaltung (Reminder Service):* Es gibt kein automatisiertes System, das Benutzer vor Ablauf von Deadlines (Abgabe- oder Review-Fristen) benachrichtigt oder an ausstehende Aufgaben erinnert.
 - *Externe API-Schnittstelle (z. B. für LMS-Anbindung):* Eine API-Schnittstelle zur direkten Einbindung in externe Systeme wie Lernmanagementsysteme (z. B. Moodle, Canvas via LTI) wurde nicht realisiert.
 - *Dedizierter Statistik- & Reporting-Service:* Statistische Auswertungen sind auf einfache KPIs im Admin-Dashboard (Nutzerzahlen, aktive Plugins) beschränkt. Ein eigenständiger Dienst zur Aggregation komplexer Kennzahlen (z. B. Notenverläufe) wurde nicht umgesetzt.
 
+== So könnte der Fließtext aussehen
+Im Rahmen des Minimum Viable Products (MVP) fokussiert sich die Plattform "PeerReview" auf die Kernprozesse der wissenschaftlichen Begutachtung. Hierzu werden die vier primären Nutzertypen, Dozierende, Autoren, das Prüfungsamt sowie System-Administratoren genutzt.
+
+=== Dozierende und Prüfende
+Für Dozierende und Prüfende bietet das System weitreichende Konfigurationsmöglichkeiten. Sie können neue Abgaben unter Angabe von Titeln, Deadlines und Themenbereichen anlegen und das gewünschte Begutachtungsverfahren, sei es Doppelblind, Einfach-Blind oder Open Review, festlegen. Darüber hinaus definieren sie den zugehörigen Bewertungsbogen und regeln dessen Sichtbarkeit für Studierende. Ihnen zugeteilte Arbeiten können Dozierende in einer zentralen Übersicht einsehen, die eingereichten PDF-Dokumente herunterladen und die Bewertungen inklusive Noten und Freitext-Feedback im System erfassen. Das System aktualisiert den Begutachtungsfortschritt kontinuierlich und benachrichtigt Prüfende in Echtzeit über neu zugewiesene Arbeiten. Bei Open-Review-Verfahren steht ihnen zudem ein integrierter Chat für den direkten Austausch mit den Autoren zur Verfügung, welcher bei anonymisierten Verfahren zum Schutz der Identitäten deaktiviert bleibt.
+
+=== Autoren und Studierende
+Autoren und Studierende nutzen das System als zentrale Plattform zur Abwicklung ihrer Einreichungen, wie beispielsweise Abschlussarbeiten. Sie können Arbeiten selbstständig als Einzel- oder Gruppenleistung anlegen, Mitautoren sowie Wunschprüfende angeben und das PDF-Dokument fristgerecht hochladen. Ein übersichtliches Dashboard und ein integrierter Kalender unterstützen sie dabei, Deadlines und den aktuellen Status ihrer Einreichung stets im Blick zu behalten. Nach Abschluss des Gutachterprozesses erhalten sie Zugriff auf ihre Noten, das detaillierte Feedback sowie die korrigierte Arbeit. Wie auch die Prüfenden werden sie über Statusänderungen per Echtzeit-Meldung informiert und können bei Open-Review-Verfahren über den Chat Rückfragen direkt klären.
+
+=== Prüfungsamt
+Das Prüfungsamt nimmt eine administrative Rolle ein. Die Mitarbeiter pflegen den Gutachterpool, hinterlegen Fachgebiete und steuern Profile. Sie können globale Abgaben mit einheitlichen Fristen und Bewertungsbögen konfigurieren sowie bei Bedarf manuelle Prüferzuweisungen vornehmen, um den automatischen Zuweisungs-Algorithmus gezielt zu überschreiben. Für eine lückenlose Qualitätssicherung behält das Prüfungsamt stets die volle Übersicht über alle Einreichungen, Deadlines und den aktuellen Korrekturfortschritt. Zudem erhalten sie im Admin-Bereich Einsicht in grundlegende Systemstatistiken und verwalten Benutzerrollen.
+
+=== System-Administration
+Die System-Administration ist für die technische Überwachung und globale Konfiguration zuständig. Sie verwaltet Profile und Berechtigungen, überwacht registrierte Review-Typen (Plugins), aktive Templates sowie globale Themen-Tags und greift bei technischen Störungen oder Zuweisungskonflikten korrigierend ein.
+
+Um den Scope des MVPs fokussiert zu halten, wurden bestimmte Funktionen bewusst ausgeschlossen. So verfügt das System über keine webbasierten PDF-Annotationswerkzeuge. Kommentare und Bewertungen werden stattdessen strukturiert über den Bewertungsbogen und ein textuelles Gesamt-Feedback erfasst. Die Einreichungen sind auf das PDF-Format beschränkt, und ein automatisierter Erinnerungsdienst für ausstehende Fristen ist nicht implementiert. Ebenso wurde auf Schnittstellen zu externen Lernmanagementsystemen (wie Moodle) sowie auf einen eigenständigen, komplexen Reporting-Service verzichtet.
