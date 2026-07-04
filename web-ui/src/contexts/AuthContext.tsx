@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { generateCodeVerifier, generateCodeChallenge } from '../utils/pkce';
+import React, {createContext, useContext, useEffect, useState} from 'react';
+import {generateCodeChallenge, generateCodeVerifier} from '../utils/pkce';
 
 export interface User {
   id: string;
@@ -34,7 +34,9 @@ const REDIRECT_URI = window.location.origin + import.meta.env.BASE_URL;
 
 function decodeJwt(token: string): any {
   try {
-    const base64Url = token.split('.')[1];
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)

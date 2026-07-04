@@ -1,18 +1,8 @@
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Box,
-  Typography,
-  TextField,
-  IconButton,
-  Button,
-  Paper
-} from '@mui/material';
-import { Close, Send, FormatBold, FormatItalic, FormatUnderlined } from '@mui/icons-material';
-import type { ChatThread } from '../stubs/chats';
-import { format } from 'date-fns';
+import React, {useState} from 'react';
+import {Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Paper, TextField, Typography} from '@mui/material';
+import {Close, FormatBold, FormatItalic, FormatUnderlined, Send} from '@mui/icons-material';
+import type {ChatThread} from '../stubs/chats';
+import {format} from 'date-fns';
 
 interface ChatModalProps {
   open: boolean;
@@ -56,7 +46,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth sx={{ '& .MuiDialog-paper': { height: '70vh' } }}>
       <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">{thread ? getThreadDisplayName(thread) : 'Chat'}</Typography>
+        <Typography variant="h6" component="div">{thread ? getThreadDisplayName(thread) : 'Chat'}</Typography>
         <IconButton onClick={onClose} aria-label="close">
           <Close />
         </IconButton>
