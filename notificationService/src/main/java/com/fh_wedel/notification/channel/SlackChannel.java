@@ -8,6 +8,8 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Component
 @Slf4j
 public class SlackChannel implements NotificationChannel {
@@ -15,7 +17,12 @@ public class SlackChannel implements NotificationChannel {
     private final SecretsConfig secretsConfig;
     private final RestClient restClient;
 
-    public SlackChannel(SecretsConfig secretsConfig, RestClient.Builder restClientBuilder) {
+    @Autowired
+    public SlackChannel(SecretsConfig secretsConfig) {
+        this(secretsConfig, RestClient.builder());
+    }
+
+    SlackChannel(SecretsConfig secretsConfig, RestClient.Builder restClientBuilder) {
         this.secretsConfig = secretsConfig;
         this.restClient = restClientBuilder.build();
     }
