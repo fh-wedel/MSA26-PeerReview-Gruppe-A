@@ -16,8 +16,12 @@ public class DiscordChannel implements NotificationChannel {
     private final RestClient restClient;
 
     public DiscordChannel(SecretsConfig secretsConfig) {
+        this(secretsConfig, RestClient.create());
+    }
+
+    DiscordChannel(SecretsConfig secretsConfig, RestClient restClient) {
         this.secretsConfig = secretsConfig;
-        this.restClient = RestClient.create();
+        this.restClient = restClient;
     }
 
     @Override

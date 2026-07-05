@@ -289,7 +289,7 @@ class AiReviewSqsListenerTest {
 
     @Test
     @DisplayName("returns early if ReviewResult not found")
-    void receiveAiReviewTask_reviewResultNotFound() {
+    void receiveAiReviewTask_reviewResultNotFound() throws Exception {
         AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
         when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
         listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + UUID.randomUUID() + "\"}");

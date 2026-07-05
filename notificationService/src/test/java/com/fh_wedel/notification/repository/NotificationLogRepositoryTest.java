@@ -65,4 +65,24 @@ class NotificationLogRepositoryTest {
         assertThat(stored.getSk()).isEqualTo("META");
         assertThat(stored.getRecipient()).isEqualTo("user@example.com");
     }
+
+    @Test
+    void findByStatus_queriesGsi() {
+        software.amazon.awssdk.enhanced.dynamodb.model.PageIterable<NotificationLog> mockIterable = mock(software.amazon.awssdk.enhanced.dynamodb.model.PageIterable.class);
+        software.amazon.awssdk.enhanced.dynamodb.model.Page<NotificationLog> mockPage = mock(software.amazon.awssdk.enhanced.dynamodb.model.Page.class);
+        
+        when(statusIndex.query(any(java.util.function.Consumer.class))).thenAnswer(invocation -> {
+            java.util.function.Consumer<software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest.Builder> consumer = invocation.getArgument(0);
+            consumer.accept(software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest.builder());
+            return mockIterable;
+        });
+        
+        when(mockIterable.stream()).thenReturn(java.util.stream.Stream.of(mockPage));
+        when(mockPage.items()).thenReturn(java.util.List.of(NotificationLog.builder().id(java.util.UUID.randomUUID()).build()));
+
+        java.util.List<NotificationLog> results = repository.findByStatus(NotificationStatus.SENT);
+
+        assertThat(results).hasSize(1);
+        verify(statusIndex).query(any(java.util.function.Consumer.class));
+    }
 }
