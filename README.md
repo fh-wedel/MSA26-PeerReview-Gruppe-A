@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A/actions/workflows/ci.yml/badge.svg)](https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A/actions/workflows/ci.yml)
 
-**Zweck:** Ein verteiltes System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten (Peer-Review).
+Ein verteiltes System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten (Peer-Review).
+
 **Umgebung:** [msa26-peer-review.fh-wedel.dev](https://msa26-peer-review.fh-wedel.dev)
 
 ---

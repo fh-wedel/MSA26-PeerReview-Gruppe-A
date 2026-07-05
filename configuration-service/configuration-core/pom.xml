@@ -196,11 +196,21 @@
                 </executions>
             </plugin>
 
-            <!-- JaCoCo: Code Coverage + CRAP Index Quality Gate -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.13</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/model/api/**</exclude>
+                        <exclude>**/model/events/**</exclude>
+                        <exclude>**/client/api/**</exclude>
+                        <exclude>**/client/model/**</exclude>
+                        <exclude>**/api/generated/**</exclude>
+                        <exclude>**/ApiClient.class</exclude>
+                        <exclude>**/ApiClient$*.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <!-- Attach the JaCoCo Java agent before tests run -->
                     <execution>
@@ -237,15 +247,6 @@
                                     </limits>
                                 </rule>
                             </rules>
-                            <excludes>
-                                <exclude>**/model/api/**</exclude>
-                                <exclude>**/model/events/**</exclude>
-                                <exclude>**/client/api/**</exclude>
-                                <exclude>**/client/model/**</exclude>
-                                <exclude>**/api/generated/**</exclude>
-                                <exclude>**/ApiClient.class</exclude>
-                                <exclude>**/ApiClient$*.class</exclude>
-                            </excludes>
                         </configuration>
                     </execution>
                 </executions>
