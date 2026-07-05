@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
+import { handleChatSseMessage } from '../utils/chatContextHelpers';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { fetchChats } from '../api/communication';
@@ -103,24 +104,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signal: abortController.signal,
       openWhenHidden: true, // Prevents disconnection when the tab loses focus
       async onmessage(ev) {
-        if (!ev.event || ev.event === 'message') {
-          try {
-            const data = JSON.parse(ev.data);
-            const newMsg = data.message as Message;
-            const chatId = data.chatId;
-
-            // Only propagate to the chat widget if this message is from the *other* user.
-            // Our own messages are already handled optimistically in ChatWidget.
-            if (newMsg.senderId !== user?.id) {
-              setMessagesStream({ message: newMsg, chatId });
-            }
-
-            // Refresh the chat list so lastMessageAt and unread count are updated.
-            setTimeout(refreshChats, 500);
-          } catch (err) {
-            console.error('[SSE] Error parsing SSE message! Raw data was:', ev.data, err);
-          }
-        }
+        handleChatSseMessage(ev, user?.id, setMessagesStream, refreshChats);
       },
       onclose() {
         // The backend closes the emitter after each event (required for Lambda proxy compatibility).

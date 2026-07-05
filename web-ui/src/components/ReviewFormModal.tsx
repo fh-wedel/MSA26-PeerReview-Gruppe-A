@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNotification } from "../contexts/NotificationContext";
+import { QuestionInput } from "./review-form/QuestionInput";
 import {
   Dialog,
   DialogTitle,
@@ -124,57 +126,13 @@ export const ReviewFormModal: React.FC<ReviewFormModalProps> = ({
   };
 
   const renderQuestionInput = (q: ReviewQuestionDto) => {
-    const value = answers[q.id] || '';
-    switch (q.type) {
-      case 'TEXT':
-        return (
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={value}
-            onChange={e => handleAnswerChange(q.id, e.target.value)}
-            placeholder="Enter your feedback..."
-          />
-        );
-      case 'RATING':
-        return (
-          <Rating
-            value={parseFloat(value) || 0}
-            max={q.maxPoints || 5}
-            onChange={(_, newValue) => handleAnswerChange(q.id, newValue?.toString() || '0')}
-          />
-        );
-      case 'MULTIPLE_CHOICE':
-        return (
-          <FormControl component="fieldset">
-            <RadioGroup
-              value={value}
-              onChange={e => handleAnswerChange(q.id, e.target.value)}
-            >
-              {(q.options || []).map(opt => (
-                <FormControlLabel key={opt} value={opt} control={<Radio />} label={opt} />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        );
-      case 'SCALE':
-        return (
-          <Box sx={{ px: 2 }}>
-            <Slider
-              value={parseFloat(value) || 0}
-              min={0}
-              max={q.maxPoints || 10}
-              step={1}
-              marks
-              valueLabelDisplay="auto"
-              onChange={(_, val) => handleAnswerChange(q.id, val.toString())}
-            />
-          </Box>
-        );
-      default:
-        return null;
-    }
+    return (
+      <QuestionInput
+        question={q}
+        value={answers[q.id] || ''}
+        handleAnswerChange={handleAnswerChange}
+      />
+    );
   };
 
   return (

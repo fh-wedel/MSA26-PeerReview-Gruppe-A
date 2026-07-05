@@ -23,7 +23,16 @@ import {useGroupMembers} from "../hooks/useGroupMembers";
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 import {useTopicTags} from "../hooks/useTopicTags";
 import {useAuth} from "../contexts/AuthContext";
-
+import {validateSubmission, checkIsSubmitDisabled, validateAuthorsChange} from "../utils/submissionValidation";
+import {calculateSubmissionDefaults} from "../utils/submissionDefaults";
+import {getSubmissionModalPermissions} from "../utils/submissionPermissions";
+import {handleSubmissionModalSubmit} from "../utils/submissionHandlers";
+import {AuthorField} from "./submission-modal/AuthorField";
+import {ReviewTemplateField} from "./submission-modal/ReviewTemplateField";
+import {ReviewTypeField} from "./submission-modal/ReviewTypeField";
+import {TopicTagField} from "./submission-modal/TopicTagField";
+import {CustomReviewerField} from "./submission-modal/CustomReviewerField";
+import {DeadlineFields} from "./submission-modal/DeadlineFields";
 type ReviewType = string;
 
 interface SubmissionModalProps {
@@ -86,99 +95,65 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
 
   useEffect(() => {
     if (!activeTemplate) return;
-    const now = new Date();
-
-    // Default reviewers
-    if (activeTemplate.minReviewers !== undefined && activeTemplate.minReviewers !== null) {
-      setNumberOfReviewers(activeTemplate.minReviewers);
-    } else {
-      setNumberOfReviewers(1);
-    }
-
-    // Default deadlines
-    if (activeTemplate.submissionDurationDays !== undefined && activeTemplate.submissionDurationDays !== null) {
-      const subDead = new Date(now.getTime() + activeTemplate.submissionDurationDays * 24 * 60 * 60 * 1000);
-      setSubmissionDeadline(subDead);
-      if (activeTemplate.reviewDurationDays !== undefined && activeTemplate.reviewDurationDays !== null) {
-        setReviewDeadline(new Date(subDead.getTime() + activeTemplate.reviewDurationDays * 24 * 60 * 60 * 1000));
-      }
-    } else {
-      setSubmissionDeadline(new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000));
-      setReviewDeadline(new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000));
-    }
-
-    // Default authors: if the template enforces exactly 1 author, reset selected authors
-    if (activeTemplate.minAuthors === 1 && activeTemplate.maxAuthors === 1) {
-      if (!isTeacherOrAdminInit && selectedAuthors.length !== 1) {
-        setSelectedAuthors([{ id: currentUserId, username: authorName }]);
-      } else if (isTeacherOrAdminInit && selectedAuthors.length > 1) {
-        setSelectedAuthors([]);
-      }
+    const defaults = calculateSubmissionDefaults(
+      activeTemplate,
+      currentUserId,
+      authorName,
+      isTeacherOrAdminInit,
+      selectedAuthors.length
+    );
+    setNumberOfReviewers(defaults.numberOfReviewers);
+    setSubmissionDeadline(defaults.submissionDeadline);
+    setReviewDeadline(defaults.reviewDeadline);
+    if (defaults.selectedAuthors !== undefined) {
+      setSelectedAuthors(defaults.selectedAuthors);
     }
   }, [reviewTemplateType, currentUserId, authorName, activeTemplate, isTeacherOrAdminInit, selectedAuthors.length]);
 
-  const isFixedAuthors = activeTemplate ? (activeTemplate.minAuthors === activeTemplate.maxAuthors && activeTemplate.minAuthors !== undefined && activeTemplate.minAuthors !== null) : false;
-  const isFixedReviewers = activeTemplate ? (activeTemplate.minReviewers === activeTemplate.maxReviewers && activeTemplate.minReviewers !== undefined && activeTemplate.minReviewers !== null) : false;
-  const isFixedDeadlines = activeTemplate ? (activeTemplate.submissionDurationDays !== undefined && activeTemplate.submissionDurationDays !== null) : false;
-
-  const roles = (user?.roles || []).map(r => r.toLowerCase());
-  const isAdminOrTeacher = roles.includes('admin') || roles.includes('examinationofficer') || roles.includes('teacher');
-  
-  const canEditAuthors = isAdminOrTeacher || (!isFixedAuthors);
-  const canAddCustomReviewer = isAdminOrTeacher || (activeTemplate?.allowAuthorCustomReviewer ?? false);
+  const {
+    isFixedAuthors,
+    isFixedReviewers,
+    isFixedDeadlines,
+    isAdminOrTeacher,
+    canEditAuthors,
+    canAddCustomReviewer
+  } = getSubmissionModalPermissions(activeTemplate, user);
 
   const handleSubmit = async () => {
-    setHasAttemptedSubmit(true);
-    
-    if (selectedAuthors.length === 0) {
-      setValidationError("At least one author must be specified.");
-      return;
-    }
-
-    if (selectedCustomReviewers.length > 0 && selectedCustomReviewers.length !== numberOfReviewers) {
-      setValidationError(`You selected manual reviewers. Please select exactly ${numberOfReviewers} reviewer(s).`);
-      return;
-    }
-    
-    if (activeTemplate && activeTemplate.maxAuthors !== undefined && activeTemplate.maxAuthors !== null && selectedAuthors.length > activeTemplate.maxAuthors) {
-      setValidationError(`At most ${activeTemplate.maxAuthors} author(s) allowed for this template.`);
-      return;
-    }
-    if (activeTemplate && activeTemplate.minAuthors !== undefined && activeTemplate.minAuthors !== null && selectedAuthors.length < activeTemplate.minAuthors) {
-      setValidationError(`At least ${activeTemplate.minAuthors} author(s) required for this template.`);
-      return;
-    }
-
-    if (isSubmitDisabled) {
-      return;
-    }
-    
-    setSubmitting(true);
-    setValidationError("");
-    try {
-      const authorIds = selectedAuthors.map(u => u.id);
-      const customReviewerIds = selectedCustomReviewers.map(u => u.id);
-      await onSubmit(title, reviewType, authorIds, reviewTemplateType, numberOfReviewers, submissionDeadline, reviewDeadline, topicTag, customReviewerIds);
-      setTitle("");
-      setReviewType("SINGLE_BLIND");
-      setTopicTag("");
-      setSelectedAuthors(isTeacherOrAdminInit ? [] : [{ id: currentUserId, username: authorName }]);
-      setSelectedCustomReviewers([]);
-      setReviewTemplateType("INDIVIDUAL_WORK");
-      setHasAttemptedSubmit(false);
-      onClose();
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setErrorOpen(true);
-    } finally {
-      setSubmitting(false);
-    }
+    await handleSubmissionModalSubmit(
+      isSubmitDisabled,
+      setHasAttemptedSubmit,
+      validateSubmission,
+      selectedAuthors,
+      selectedCustomReviewers,
+      numberOfReviewers,
+      activeTemplate,
+      setValidationError,
+      setSubmitting,
+      onSubmit,
+      title,
+      reviewType,
+      reviewTemplateType,
+      submissionDeadline,
+      reviewDeadline,
+      topicTag,
+      setTitle,
+      setReviewType,
+      setTopicTag,
+      setSelectedAuthors,
+      setSelectedCustomReviewers,
+      setReviewTemplateType,
+      isTeacherOrAdminInit,
+      currentUserId,
+      authorName,
+      onClose,
+      setErrorOpen
+    );
   };
 
-  const isSubmitDisabled = !title || !topicTag || submitting || selectedAuthors.length === 0 || 
-    (selectedCustomReviewers.length > 0 && selectedCustomReviewers.length !== numberOfReviewers) ||
-    (activeTemplate?.maxAuthors !== undefined && activeTemplate?.maxAuthors !== null && selectedAuthors.length > activeTemplate.maxAuthors) ||
-    (activeTemplate?.minAuthors !== undefined && activeTemplate?.minAuthors !== null && selectedAuthors.length < activeTemplate.minAuthors);
+  const isSubmitDisabled = checkIsSubmitDisabled(
+    title, topicTag, submitting, selectedAuthors, selectedCustomReviewers, numberOfReviewers, activeTemplate
+  );
 
   return (
     <>
@@ -201,143 +176,54 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               helperText={!title ? "Title is mandatory" : ""}
             />
             
-            <FormControl fullWidth>
-              <InputLabel id="review-template-label">Review Template</InputLabel>
-              <Select
-                labelId="review-template-label"
-                value={reviewTemplateType}
-                label="Review Template"
-                onChange={(e) => setReviewTemplateType(e.target.value as string)}
-                disabled={loading || submitting}
-              >
-                {templates.length > 0 ? (
-                  templates.map((template) => (
-                    <MenuItem key={template.name} value={template.name || ""}>
-                      {template.title}
-                    </MenuItem>
-                  ))
-                ) : [
-                  <MenuItem key="INDIVIDUAL_WORK" value="INDIVIDUAL_WORK">Individual Work</MenuItem>,
-                  <MenuItem key="GROUP_WORK" value="GROUP_WORK">Group Work</MenuItem>,
-                  <MenuItem key="BACHELOR_THESIS" value="BACHELOR_THESIS">Bachelor Thesis</MenuItem>,
-                  <MenuItem key="MASTER_THESIS" value="MASTER_THESIS">Master Thesis</MenuItem>,
-                  <MenuItem key="SEMINAR" value="SEMINAR">Seminar</MenuItem>,
-                ]}
-              </Select>
-            </FormControl>
-
-            <Autocomplete
-                multiple
-                options={authorOptions}
-                getOptionLabel={(option) => option.username}
-                value={selectedAuthors}
-                onChange={(_, newValue) => {
-                    // If author is not admin/teacher and it's not fixed authors, prevent removing themselves
-                    if (!isAdminOrTeacher && !isFixedAuthors) {
-                      const hasSelf = newValue.some(u => u.id === currentUserId);
-                      if (!hasSelf) {
-                        setValidationError("You cannot remove yourself from this submission.");
-                        return;
-                      }
-                    }
-                    if (activeTemplate && activeTemplate.maxAuthors !== undefined && activeTemplate.maxAuthors !== null && newValue.length > activeTemplate.maxAuthors) {
-                        setValidationError(`At most ${activeTemplate.maxAuthors} author(s) allowed for this template.`);
-                        return;
-                    }
-                    if (activeTemplate && activeTemplate.minAuthors !== undefined && activeTemplate.minAuthors !== null && newValue.length < activeTemplate.minAuthors) {
-                        setValidationError(`At least ${activeTemplate.minAuthors} author(s) required for this template.`);
-                        // We still set it so user can build up the list
-                    } else {
-                        setValidationError("");
-                    }
-                    setSelectedAuthors(newValue);
-                }}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                disabled={!canEditAuthors || submitting}
-                loading={authorsLoading}
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        label="Authors *"
-                        variant="outlined"
-                        fullWidth
-                        error={hasAttemptedSubmit && !!validationError}
-                        helperText={
-                          validationError || 
-                          (!canEditAuthors 
-                            ? "Author selection is locked for this template or your role." 
-                            : isFixedAuthors ? "Exactly one author is required." : "Select one or more authors.")
-                        }
-                    />
-                )}
+            <ReviewTemplateField
+              reviewTemplateType={reviewTemplateType}
+              setReviewTemplateType={setReviewTemplateType}
+              loading={loading}
+              submitting={submitting}
+              templates={templates}
             />
 
-            {canAddCustomReviewer && (
-              <Autocomplete
-                  multiple
-                  options={reviewerOptions}
-                  getOptionLabel={(option) => option.username}
-                  value={selectedCustomReviewers}
-                  onChange={(_, newValue) => {
-                      setSelectedCustomReviewers(newValue);
-                  }}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
-                  disabled={submitting}
-                  loading={reviewersLoading}
-                  renderInput={(params) => (
-                      <TextField
-                          {...params}
-                          label="Custom Reviewers (Optional)"
-                          variant="outlined"
-                          fullWidth
-                          helperText="Select specific reviewers to bypass the automatic matching process."
-                      />
-                  )}
-              />
-            )}
-            
-            <FormControl fullWidth>
-              <InputLabel id="review-type-label">Review Type</InputLabel>
-              <Select
-                labelId="review-type-label"
-                value={reviewType}
-                label="Review Type"
-                onChange={(e) => setReviewType(e.target.value as ReviewType)}
-                disabled={loading || submitting}
-              >
-                {types.length > 0 ? (
-                  types.map((plugin) => (
-                    <MenuItem key={plugin.name} value={plugin.name}>
-                      {plugin.title}
-                    </MenuItem>
-                  ))
-                ) : [
-                  <MenuItem key="SINGLE_BLIND" value="SINGLE_BLIND">Single Blind Review</MenuItem>,
-                  <MenuItem key="DOUBLE_BLIND" value="DOUBLE_BLIND">Double Blind Review</MenuItem>,
-                  <MenuItem key="OPEN_REVIEW" value="OPEN_REVIEW">Open Review</MenuItem>,
-                ]}
-              </Select>
-            </FormControl>
+            <AuthorField
+              authorOptions={authorOptions}
+              selectedAuthors={selectedAuthors}
+              setSelectedAuthors={setSelectedAuthors}
+              validationError={validationError}
+              setValidationError={setValidationError}
+              hasAttemptedSubmit={hasAttemptedSubmit}
+              canEditAuthors={canEditAuthors && !submitting}
+              isFixedAuthors={isFixedAuthors}
+              authorsLoading={authorsLoading}
+              isAdminOrTeacher={isAdminOrTeacher}
+              currentUserId={currentUserId}
+              activeTemplate={activeTemplate}
+            />
 
-            <FormControl fullWidth error={hasAttemptedSubmit && !topicTag}>
-              <InputLabel id="topic-tag-label">Topic Tag *</InputLabel>
-              <Select
-                labelId="topic-tag-label"
-                value={topicTag}
-                label="Topic Tag *"
-                onChange={(e) => {
-                  setTopicTag(e.target.value as string);
-                  if (hasAttemptedSubmit) setHasAttemptedSubmit(false);
-                }}
-                disabled={tagsLoading || submitting}
-              >
-                {topicTags.map((tag) => (
-                  <MenuItem key={tag.tagName} value={tag.tagName || ""}>
-                    {tag.tagName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <CustomReviewerField
+              canAddCustomReviewer={canAddCustomReviewer}
+              reviewerOptions={reviewerOptions}
+              selectedCustomReviewers={selectedCustomReviewers}
+              setSelectedCustomReviewers={setSelectedCustomReviewers}
+              submitting={submitting}
+              reviewersLoading={reviewersLoading}
+            />
+            
+            <ReviewTypeField
+              reviewType={reviewType}
+              setReviewType={setReviewType}
+              loading={loading}
+              submitting={submitting}
+              types={types}
+            />
+
+            <TopicTagField
+              topicTag={topicTag}
+              setTopicTag={setTopicTag}
+              tagsLoading={tagsLoading}
+              submitting={submitting}
+              topicTags={topicTags}
+              hasAttemptedSubmit={hasAttemptedSubmit}
+            />
 
             <TextField
               label="Number of Reviewers"
@@ -351,28 +237,13 @@ export const SubmissionModal: React.FC<SubmissionModalProps> = ({
               helperText={isFixedReviewers ? `Fixed to ${numberOfReviewers} for this template.` : ""}
             />
             
-            <TextField
-              label="Submission Deadline"
-              type="date"
-              variant="outlined"
-              fullWidth
-              value={submissionDeadline.toISOString().split('T')[0]}
-              onChange={(e) => setSubmissionDeadline(new Date(e.target.value))}
-              disabled={isFixedDeadlines || submitting}
-              slotProps={{ inputLabel: { shrink: true } }}
-              helperText={isFixedDeadlines ? "Submission deadline is fixed for this template." : ""}
-            />
-
-            <TextField
-              label="Review Deadline"
-              type="date"
-              variant="outlined"
-              fullWidth
-              value={reviewDeadline.toISOString().split('T')[0]}
-              onChange={(e) => setReviewDeadline(new Date(e.target.value))}
-              disabled={isFixedDeadlines || submitting}
-              slotProps={{ inputLabel: { shrink: true } }}
-              helperText={isFixedDeadlines ? "Review deadline is fixed for this template." : ""}
+            <DeadlineFields
+              submissionDeadline={submissionDeadline}
+              setSubmissionDeadline={setSubmissionDeadline}
+              reviewDeadline={reviewDeadline}
+              setReviewDeadline={setReviewDeadline}
+              isFixedDeadlines={isFixedDeadlines}
+              submitting={submitting}
             />
 
           </Box>

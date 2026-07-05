@@ -9,6 +9,100 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { usersApiClient } from '../../api/clients';
 
+const canSendMessage = (chatType: string, input: string, submissionId?: string, chatId?: string, recipientId?: string): boolean => {
+  if (!input.trim()) return false;
+  if (chatType === 'SUBMISSION') return !!submissionId;
+  return !!(chatId || recipientId);
+};
+
+const createTempMessage = (body: string, userId?: string): Message => ({
+  messageId: `temp-${Date.now()}`,
+  senderId: userId || '',
+  body,
+  sentAt: new Date().toISOString()
+});
+
+const isNotTemp = (m: Message) => !m.messageId.startsWith('temp-');
+const isNewMessage = (nm: Message, currentMsgs: Message[]) => !currentMsgs.some(m => m.messageId === nm.messageId);
+
+const updateMessagesAfterSend = (prev: Message[], responseMessages: Message[]): Message[] => {
+  const withoutTemp = prev.filter(isNotTemp);
+  const newMsgs = responseMessages.filter(nm => isNewMessage(nm, withoutTemp));
+  return [...withoutTemp, ...newMsgs.reverse()];
+};
+
+const handlePostSendActions = (
+  responseChatId: string,
+  refreshChats: () => void,
+  markChatAsRead: (id: string) => void,
+  chatId?: string,
+  onChatCreated?: (id: string) => void
+) => {
+  refreshChats();
+  const activeChatId = chatId || responseChatId;
+  if (activeChatId) markChatAsRead(activeChatId);
+  if (!chatId && onChatCreated) onChatCreated(responseChatId);
+};
+
+const getErrorMessage = (err: unknown): string => {
+  return err instanceof Error ? err.message : 'Failed to send message.';
+};
+
+const getRecipientId = (chatType: string, recipientId?: string) => {
+  return chatType === 'GENERAL' ? recipientId : undefined;
+};
+
+const resolveUsernames = async (
+  userIds: string[],
+  setUserMap: React.Dispatch<React.SetStateAction<Record<string, string>>>
+) => {
+  const uniqueIds = Array.from(new Set(userIds));
+  if (uniqueIds.length === 0) return;
+  try {
+    const res = await usersApiClient.bulk.bulkResolveUsers({ subs: uniqueIds });
+    if (res.data.users) {
+      setUserMap(prev => ({...prev, ...res.data.users}));
+    }
+  } catch (err) {
+    console.error('Failed to resolve usernames', err);
+  }
+};
+
+const MyMessageItem = ({ msg }: { msg: Message }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <Box sx={{ maxWidth: '70%' }}>
+      <Paper sx={{ p: 1.5, bgcolor: 'primary.main', color: 'primary.contrastText', borderRadius: 2 }}>
+        <Typography variant="body1">{msg.body}</Typography>
+      </Paper>
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
+        {msg.sentAt ? formatDistanceToNow(new Date(msg.sentAt), { addSuffix: true }) : ''}
+      </Typography>
+    </Box>
+  </Box>
+);
+
+const OtherMessageItem = ({ msg, username }: { msg: Message, username: string }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+    <Avatar sx={{ width: 32, height: 32, mr: 1, mt: 1 }}><AccountCircle /></Avatar>
+    <Box sx={{ maxWidth: '70%' }}>
+      <Typography variant="caption" sx={{ ml: 0.5, mb: 0.5, display: 'block', color: 'text.secondary' }}>
+        {username}
+      </Typography>
+      <Paper sx={{ p: 1.5, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 2 }}>
+        <Typography variant="body1">{msg.body}</Typography>
+      </Paper>
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'left' }}>
+        {msg.sentAt ? formatDistanceToNow(new Date(msg.sentAt), { addSuffix: true }) : ''}
+      </Typography>
+    </Box>
+  </Box>
+);
+
+const ChatMessageItem = ({ msg, isMine, username }: { msg: Message, isMine: boolean, username: string }) => {
+  if (isMine) return <MyMessageItem msg={msg} />;
+  return <OtherMessageItem msg={msg} username={username} />;
+};
+
 interface ChatWidgetProps {
   chatId?: string;
   recipientId?: string;
@@ -30,35 +124,23 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
 
   useEffect(() => {
     const loadMessages = async () => {
-      if (chatId) {
-        setLoading(true);
-        try {
-          const detail = await fetchChatDetail(chatId, 100);
-          const msgs = detail.messages.reverse(); // Reverse to show oldest first at top
-          setMessages(msgs);
-          markChatAsRead(chatId);
-
-          // Resolve usernames for senders
-          const uniqueSenders = Array.from(new Set(msgs.map(m => m.senderId)));
-          if (uniqueSenders.length > 0) {
-            try {
-              const resolveRes = await usersApiClient.bulk.bulkResolveUsers({ subs: uniqueSenders });
-              if (resolveRes.data.users) {
-                setUserMap(prev => ({...prev, ...resolveRes.data.users}));
-              }
-            } catch (err) {
-              console.error('Failed to resolve usernames', err);
-            }
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : 'Failed to load chat messages.';
-          showError(msg, 'Communication Service');
-        } finally {
-          setLoading(false);
-        }
-      } else {
+      if (!chatId) {
         setMessages([]);
         setUserMap({});
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const detail = await fetchChatDetail(chatId, 100);
+        const msgs = detail.messages.reverse(); // Reverse to show oldest first at top
+        setMessages(msgs);
+        markChatAsRead(chatId);
+        await resolveUsernames(msgs.map(m => m.senderId), setUserMap);
+      } catch (err) {
+        showError(getErrorMessage(err), 'Communication Service');
+      } finally {
+        setLoading(false);
       }
     };
     loadMessages();
@@ -67,26 +149,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
 
   // Listen to SSE updates
   useEffect(() => {
-    if (messagesStream && chatId) {
-      // Only handle messages for this chat
-      if (messagesStream.chatId === chatId) {
-        const newMsg = messagesStream.message;
-        setMessages(prev => {
-          if (prev.find(m => m.messageId === newMsg.messageId)) return prev;
-          return [...prev, newMsg];
-        });
-        markChatAsRead(chatId);
+    if (messagesStream && messagesStream.chatId === chatId && chatId) {
+      const newMsg = messagesStream.message;
+      setMessages(prev => prev.some(m => m.messageId === newMsg.messageId) ? prev : [...prev, newMsg]);
+      markChatAsRead(chatId);
 
-        // Resolve username if not present
-        if (!userMap[newMsg.senderId]) {
-          usersApiClient.bulk.bulkResolveUsers({ subs: [newMsg.senderId] })
-            .then(res => {
-              if (res.data.users) {
-                setUserMap(prev => ({...prev, ...res.data.users}));
-              }
-            })
-            .catch(err => console.error('Failed to resolve new message sender', err));
-        }
+      if (!userMap[newMsg.senderId]) {
+        resolveUsernames([newMsg.senderId], setUserMap);
       }
     }
   }, [messagesStream, chatId, markChatAsRead, userMap]);
@@ -99,52 +168,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   }, [messages]);
 
   const handleSend = async () => {
-    // For GENERAL chats we need recipientId or chatId; for SUBMISSION chats we need submissionId
-    const canSend = chatType === 'SUBMISSION'
-      ? (submissionId && input.trim())
-      : ((chatId || recipientId) && input.trim());
-    
-    if (!canSend) return;
+    if (!canSendMessage(chatType, input, submissionId, chatId, recipientId)) return;
 
     const body = input.trim();
     setInput('');
     
-    // Optimistic UI update
-    const tempMsg: Message = {
-      messageId: `temp-${Date.now()}`,
-      senderId: user?.id || '',
-      body,
-      sentAt: new Date().toISOString()
-    };
-    setMessages(prev => [...prev, tempMsg]);
+    setMessages(prev => [...prev, createTempMessage(body, user?.id)]);
 
     try {
       const response = await sendMessage({
-        recipientId: chatType === 'GENERAL' ? recipientId : undefined,
+        recipientId: getRecipientId(chatType, recipientId),
         body,
-        chatContext: {
-          type: chatType,
-          submissionId
-        }
+        chatContext: { type: chatType, submissionId }
       });
 
-      // Update local messages (remove temp, append new from response)
-      setMessages(prev => {
-        const withoutTemp = prev.filter(m => !m.messageId.startsWith('temp-'));
-        const newMsgs = response.messages.filter(nm => !withoutTemp.some(m => m.messageId === nm.messageId));
-        return [...withoutTemp, ...newMsgs.reverse()];
-      });
-      refreshChats();
-      const activeChatId = chatId || response.chatId;
-      if (activeChatId) {
-        markChatAsRead(activeChatId);
-      }
-      if (!chatId && onChatCreated) {
-        onChatCreated(response.chatId);
-      }
+      setMessages(prev => updateMessagesAfterSend(prev, response.messages));
+      handlePostSendActions(response.chatId, refreshChats, markChatAsRead, chatId, onChatCreated);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to send message.';
-      showError(msg, 'Communication Service');
+      showError(getErrorMessage(err), 'Communication Service');
     }
   };
 
@@ -155,27 +196,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ chatId, recipientId, cha
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {messages.map((msg) => {
-          const isMine = msg.senderId === user?.id;
-          return (
-            <Box key={msg.messageId} sx={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-              {!isMine && <Avatar sx={{ width: 32, height: 32, mr: 1, mt: 1 }}><AccountCircle /></Avatar>}
-              <Box sx={{ maxWidth: '70%' }}>
-                {!isMine && (
-                  <Typography variant="caption" sx={{ ml: 0.5, mb: 0.5, display: 'block', color: 'text.secondary' }}>
-                    {userMap[msg.senderId] || msg.senderId}
-                  </Typography>
-                )}
-                <Paper sx={{ p: 1.5, bgcolor: isMine ? 'primary.main' : 'background.paper', color: isMine ? 'primary.contrastText' : 'text.primary', borderRadius: 2 }}>
-                  <Typography variant="body1">{msg.body}</Typography>
-                </Paper>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: isMine ? 'right' : 'left' }}>
-                  {msg.sentAt ? formatDistanceToNow(new Date(msg.sentAt), { addSuffix: true }) : ''}
-                </Typography>
-              </Box>
-            </Box>
-          );
-        })}
+        {messages.map((msg) => (
+          <React.Fragment key={msg.messageId}>
+            <ChatMessageItem msg={msg} isMine={msg.senderId === user?.id} username={userMap[msg.senderId] || msg.senderId} />
+          </React.Fragment>
+        ))}
         <div ref={messagesEndRef} />
       </Box>
       <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>

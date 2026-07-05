@@ -23,7 +23,11 @@ import type {UserSummary} from '../api/communication';
 import {searchUsers} from '../api/communication';
 import {useAuth} from '../contexts/AuthContext';
 import {useLocation} from 'react-router-dom';
+import { getChatTitle } from '../utils/chatHelpers';
 import {configApiClient} from '../api/clients';
+import {ChatSidebar} from '../components/chat/ChatSidebar';
+import {MainChatArea} from '../components/chat/MainChatArea';
+import { handleNewGeneralChatLogic, handleNewSubmissionChatLogic } from '../utils/chatPageHandlers';
 
 export const ChatPage: React.FC = () => {
   const { chats } = useChat();
@@ -75,40 +79,27 @@ export const ChatPage: React.FC = () => {
   const filteredChats = chats.filter(c => c.chatType === chatTypeTab);
 
   const handleNewGeneralChat = (selectedUser: UserSummary) => {
-    setSearchOpen(false);
-    // Check if a GENERAL chat already exists with this user
-    const existing = chats.find(c => c.chatType === 'GENERAL' && c.otherParticipantId === selectedUser.id);
-    if (existing) {
-      setSelectedChatId(existing.chatId);
-      setSelectedRecipientId(existing.otherParticipantId ?? null);
-      setChatTypeTab('GENERAL');
-    } else {
-      setSelectedChatId(null);
-      setSelectedRecipientId(selectedUser.id);
-      // We temporarily store the selectedUser's display name so it shows nicely before chat is created
-      setUserMap(prev => ({...prev, [selectedUser.id]: selectedUser.username}));
-      setChatTypeTab('GENERAL');
-    }
+    handleNewGeneralChatLogic(
+      selectedUser,
+      chats,
+      setSearchOpen,
+      setSelectedChatId,
+      setSelectedRecipientId,
+      setUserMap,
+      setChatTypeTab
+    );
   };
 
   const handleNewSubmissionChat = (submissionId: string) => {
-    setSubmissionSearchOpen(false);
-    
-    // Check if a SUBMISSION chat already exists for this submission
-    const existing = chats.find(c => c.chatType === 'SUBMISSION' && c.submissionId === submissionId);
-    
-    if (existing) {
-      setSelectedChatId(existing.chatId);
-      setSelectedRecipientId(null);
-      setChatTypeTab('SUBMISSION');
-      setPendingSubmissionId(null);
-    } else {
-      // No existing chat — the first message will create it
-      setSelectedChatId(null);
-      setSelectedRecipientId(null);
-      setPendingSubmissionId(submissionId);
-      setChatTypeTab('SUBMISSION');
-    }
+    handleNewSubmissionChatLogic(
+      submissionId,
+      chats,
+      setSubmissionSearchOpen,
+      setSelectedChatId,
+      setSelectedRecipientId,
+      setPendingSubmissionId,
+      setChatTypeTab
+    );
   };
 
   // We need a state for the pending submission ID
@@ -128,101 +119,39 @@ export const ChatPage: React.FC = () => {
       }
   };
 
-  // Derive the chat title based on type
-  const getChatTitle = () => {
-    if (chatTypeTab === 'SUBMISSION') {
-      const subId = selectedChatId
-        ? filteredChats.find(c => c.chatId === selectedChatId)?.submissionId
-        : pendingSubmissionId;
-      const title = subId ? (submissionMap[subId] || subId) : 'Unknown Submission';
-      return `Submission Chat: ${title}`;
-    }
-    return `Chat with ${userMap[selectedRecipientId || ''] || selectedRecipientId}`;
-  };
+  const title = getChatTitle(
+    chatTypeTab,
+    selectedChatId,
+    pendingSubmissionId,
+    filteredChats,
+    submissionMap,
+    userMap,
+    selectedRecipientId
+  );
 
   return (
     <Box sx={{ display: 'flex', height: 'calc(100vh - 220px)', bgcolor: 'background.paper', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
-      {/* Sidebar List */}
-      <Box sx={{ width: 320, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Chats</Typography>
-        </Box>
-        <Tabs value={chatTypeTab} onChange={(_, val) => setChatTypeTab(val)} variant="fullWidth">
-          <Tab label="General" value="GENERAL" />
-          <Tab label="Submissions" value="SUBMISSION" />
-        </Tabs>
-        <List sx={{ flexGrow: 1, overflowY: 'auto', p: 0 }}>
-          {filteredChats.map((chat) => (
-            <React.Fragment key={chat.chatId}>
-              <ListItem disablePadding>
-                <ListItemButton 
-                  selected={selectedChatId === chat.chatId} 
-                  onClick={() => handleSelectChat(chat.chatId, chat.otherParticipantId ?? undefined)}
-                >
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: chat.chatType === 'SUBMISSION' ? 'secondary.main' : 'primary.main' }}>
-                      {chat.chatType === 'SUBMISSION' ? <Group /> : <AccountCircle />}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText 
-                    primary={
-                      chat.chatType === 'SUBMISSION'
-                        ? `Submission: ${submissionMap[chat.submissionId || ''] || chat.submissionId?.slice(0, 8) + '...'}`
-                        : (userMap[chat.otherParticipantId || ''] || chat.otherParticipantId)
-                    }
-                    secondary={
-                      chat.chatType === 'SUBMISSION'
-                        ? ''
-                        : (chat.lastMessageAt ? formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: true }) : 'No messages')
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
-              <Divider />
-            </React.Fragment>
-          ))}
-          {filteredChats.length === 0 && (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography color="text.secondary">No chats found</Typography>
-            </Box>
-          )}
-        </List>
-        <Box sx={{ p: 2 }}>
-          <Fab variant="extended" color="primary" sx={{ width: '100%' }} onClick={handleFabClick}>
-            <AddIcon sx={{ mr: 1 }} /> New Chat
-          </Fab>
-        </Box>
-      </Box>
+      <ChatSidebar
+        chatTypeTab={chatTypeTab}
+        setChatTypeTab={setChatTypeTab}
+        filteredChats={filteredChats}
+        selectedChatId={selectedChatId}
+        handleSelectChat={handleSelectChat}
+        submissionMap={submissionMap}
+        userMap={userMap}
+        handleFabClick={handleFabClick}
+      />
 
-      {/* Main Chat Area */}
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        {(selectedChatId || selectedRecipientId || pendingSubmissionId) ? (
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
-            <Typography variant="h6">
-              {getChatTitle()}
-            </Typography>
-          </Box>
-        ) : null}
-        
-        <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-          {(selectedChatId || selectedRecipientId || pendingSubmissionId) ? (
-            <ChatWidget 
-              chatId={selectedChatId || undefined} 
-              recipientId={selectedRecipientId || undefined} 
-              chatType={chatTypeTab}
-              submissionId={chatTypeTab === 'SUBMISSION' ? (selectedChatId ? filteredChats.find(c => c.chatId === selectedChatId)?.submissionId : pendingSubmissionId) || undefined : undefined}
-              onChatCreated={(newChatId) => {
-                setSelectedChatId(newChatId);
-                setPendingSubmissionId(null);
-              }}
-            />
-          ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <Typography color="text.secondary">Select a chat or start a new one</Typography>
-            </Box>
-          )}
-        </Box>
-      </Box>
+      <MainChatArea
+        selectedChatId={selectedChatId}
+        selectedRecipientId={selectedRecipientId}
+        pendingSubmissionId={pendingSubmissionId}
+        chatTypeTab={chatTypeTab}
+        filteredChats={filteredChats}
+        title={title}
+        setSelectedChatId={setSelectedChatId}
+        setPendingSubmissionId={setPendingSubmissionId}
+      />
 
       <UserSearchDialog 
         open={searchOpen} 
