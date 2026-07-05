@@ -177,4 +177,157 @@ class AiReviewSqsListenerTest {
         assertThat(savedCaptor.getValue().getAiStatus()).isEqualTo("COMPLETED");
         assertThat(savedCaptor.getValue().getAnswers()).hasSize(2);
     }
+
+    @Test
+    @DisplayName("fetches document S3 key from submission service if not in task")
+    void receiveAiReviewTask_fetchesFromSubmissionService() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = ReviewResult.builder()
+                .id(reviewId)
+                .submissionId("sub-missing-key")
+                .reviewerId("AI-Reviewer")
+                .isAiGenerated(true)
+                .aiStatus("REQUESTED")
+                .createdAt(Instant.now())
+                .build();
+
+        when(repository.findBySubmissionId("sub-missing-key")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-missing-key")).thenReturn(List.of(
+                new ReviewQuestionDto().id("q1").text("Originality").required(true)
+        ));
+        when(bedrockProxyClientService.generateReview(any(), any(), any(), any())).thenReturn("""
+                {
+                  "finalGrade": "1.0",
+                  "reviewComments": "Excellent",
+                  "answers": [
+                    {"questionId": "q1", "answer": "Great"}
+                  ]
+                }
+                """);
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(
+                repository,
+                bedrockProxyClientService,
+                submissionReviewsApi,
+                resultService,
+                objectMapper,
+                "http://submission.internal.services:8081"
+        );
+
+        try (org.mockito.MockedConstruction<org.springframework.web.client.RestTemplate> mocked = 
+                org.mockito.Mockito.mockConstruction(org.springframework.web.client.RestTemplate.class, (mock, context) -> {
+            when(mock.getForObject("http://submission.internal.services:8081/api/submission/submissions/sub-missing-key/documents", String.class))
+                    .thenReturn("[{\"s3Key\":\"fetched/sub.pdf\"}]");
+            when(mock.getInterceptors()).thenReturn(new java.util.ArrayList<>());
+        })) {
+            listener.receiveAiReviewTask("""
+                    {"submissionId":"sub-missing-key","reviewResultId":"%s"}
+                    """.formatted(reviewId));
+        }
+
+        verify(bedrockProxyClientService).generateReview(
+                org.mockito.ArgumentMatchers.eq("sub-missing-key"),
+                org.mockito.ArgumentMatchers.eq(reviewId.toString()),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.eq("fetched/sub.pdf")
+        );
+        ArgumentCaptor<ReviewResult> savedCaptor = ArgumentCaptor.forClass(ReviewResult.class);
+        verify(resultService).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getAiStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    @DisplayName("fails if fetched documents list is empty")
+    void receiveAiReviewTask_failsIfFetchedDocumentsEmpty() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = ReviewResult.builder()
+                .id(reviewId)
+                .submissionId("sub-empty-docs")
+                .reviewerId("AI-Reviewer")
+                .isAiGenerated(true)
+                .aiStatus("REQUESTED")
+                .createdAt(Instant.now())
+                .build();
+
+        when(repository.findBySubmissionId("sub-empty-docs")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-empty-docs")).thenReturn(List.of(
+                new ReviewQuestionDto().id("q1").text("Originality").required(true)
+        ));
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(
+                repository,
+                bedrockProxyClientService,
+                submissionReviewsApi,
+                resultService,
+                objectMapper,
+                "http://submission.internal.services:8081"
+        );
+
+        try (org.mockito.MockedConstruction<org.springframework.web.client.RestTemplate> mocked = 
+                org.mockito.Mockito.mockConstruction(org.springframework.web.client.RestTemplate.class, (mock, context) -> {
+            when(mock.getForObject("http://submission.internal.services:8081/api/submission/submissions/sub-empty-docs/documents", String.class))
+                    .thenReturn("[]");
+            when(mock.getInterceptors()).thenReturn(new java.util.ArrayList<>());
+        })) {
+            listener.receiveAiReviewTask("""
+                    {"submissionId":"sub-empty-docs","reviewResultId":"%s"}
+                    """.formatted(reviewId));
+        }
+
+        ArgumentCaptor<ReviewResult> savedCaptor = ArgumentCaptor.forClass(ReviewResult.class);
+        verify(repository, org.mockito.Mockito.atLeast(2)).save(savedCaptor.capture());
+        assertThat(savedCaptor.getAllValues().getLast().getAiStatus()).isEqualTo("FAILED");
+    }
+
+    @Test
+    @DisplayName("returns early on invalid JSON")
+    void receiveAiReviewTask_invalidJson() {
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        listener.receiveAiReviewTask("invalid-json");
+        verify(repository, never()).findBySubmissionId(any());
+    }
+
+    @Test
+    @DisplayName("returns early if ReviewResult not found")
+    void receiveAiReviewTask_reviewResultNotFound() throws Exception {
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
+        listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + UUID.randomUUID() + "\"}");
+        verify(submissionReviewsApi, never()).getFeedbackFormForSubmission(any());
+    }
+
+    @Test
+    @DisplayName("fails if grading schema is empty")
+    void receiveAiReviewTask_failsIfSchemaEmpty() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = new ReviewResult();
+        placeholder.setId(reviewId);
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-1")).thenReturn(List.of());
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + reviewId + "\"}");
+
+        assertThat(placeholder.getAiStatus()).isEqualTo("FAILED");
+    }
+
+    @Test
+    @DisplayName("fails if reviewComments is missing")
+    void receiveAiReviewTask_failsIfCommentsMissing() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = new ReviewResult();
+        placeholder.setId(reviewId);
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-1")).thenReturn(List.of(new ReviewQuestionDto().id("q1").required(false)));
+        when(bedrockProxyClientService.generateReview(any(), any(), any(), any())).thenReturn("""
+                {
+                  "answers": [{"questionId": "q1", "answer": "1"}]
+                }
+                """);
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + reviewId + "\",\"documentS3Key\":\"key\"}");
+
+        assertThat(placeholder.getAiStatus()).isEqualTo("FAILED");
+    }
 }

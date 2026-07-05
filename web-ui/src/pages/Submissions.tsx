@@ -16,13 +16,13 @@ import {
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
-import {configApiClient, matchingApiClient, submissionApiClient, responseApiClient} from '../api/clients';
+import {configApiClient} from '../api/clients';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
 import {formatDateTime} from '../utils/date';
-
+import {mapConfigToDisplay} from '../utils/submissionMapper';
 export const Submissions: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -81,117 +81,7 @@ export const Submissions: React.FC = () => {
           allConfigs = (allRes as any).data || [];
         }
 
-        const mapConfigToDisplay = async (config: any) => {
-          const id = config.id || config.submissionId;
-          let status = 'Created';
-          let reviewerId: string | undefined = undefined;
-          let matchedAt: string | undefined = undefined;
-          let expectedHumanReviews = 0;
-
-          try {
-            const matchRes = await matchingApiClient.matches.getMatchesBySubmission(id);
-            const matchData: any = (matchRes as any).data;
-            if (matchData) {
-              expectedHumanReviews = matchData.matches?.length || matchData.numberOfExaminers || 0;
-              if (matchData.status === 'MATCHED') {
-                status = 'Matched';
-                reviewerId = matchData.matches?.[0]?.examinerId;
-                matchedAt = matchData.matchedAt;
-              } else if (matchData.status === 'FAILED') {
-                status = 'Failed';
-                matchedAt = matchData.matchedAt;
-              }
-            }
-          } catch (e) {
-            // Not matched yet or 404
-          }
-
-          let submissionUpdatedAt: string | undefined = undefined;
-          try {
-            const subRes = await submissionApiClient.submissions.getSubmission(id);
-            if (subRes && (subRes as any).data && (subRes as any).data.status) {
-              const subData = (subRes as any).data;
-              if (subData.status === 'SUBMITTED') {
-                status = 'Submitted';
-              } else if (subData.status === 'READY_FOR_REVIEW') {
-                status = 'Ready for Review';
-              } else if (subData.status === 'WAITING_FOR_SUBMISSION') {
-                status = 'Waiting for Submission';
-              } else if (subData.status === 'DRAFT') {
-                status = 'Draft';
-              }
-              submissionUpdatedAt = subData.updatedAt;
-            }
-          } catch (e) {
-            // No submission yet
-          }
-
-          try {
-            const resResult = await responseApiClient.results.resultsDetail(id);
-            if (resResult && resResult.data) {
-              const results = resResult.data;
-              const humanCompletedCount = results.filter(r => !r.isAiGenerated).length;
-              const aiProcessing = results.some(r => r.isAiGenerated && (r.aiStatus === 'REQUESTED' || r.aiStatus === 'PROCESSING'));
-              const aiFailed = results.some(r => r.isAiGenerated && r.aiStatus === 'FAILED');
-              const aiCompleted = results.some(r => r.isAiGenerated && r.aiStatus === 'COMPLETED');
-
-              if (expectedHumanReviews > 0 && humanCompletedCount >= expectedHumanReviews) {
-                if (aiProcessing) {
-                  status = 'All Human Reviews Completed (AI Processing)';
-                } else if (aiFailed) {
-                  status = 'All Human Reviews Completed (AI Failed)';
-                } else if (aiCompleted) {
-                  status = 'All Reviews Completed';
-                } else {
-                  status = 'All Human Reviews Completed';
-                }
-              } else if (humanCompletedCount > 0 && expectedHumanReviews > 0) {
-                status = `${humanCompletedCount} / ${expectedHumanReviews} Human Reviews Completed`;
-              } else if (aiProcessing) {
-                status = 'AI Review Processing';
-              } else if (aiFailed) {
-                status = 'AI Review Failed';
-              } else if (aiCompleted) {
-                status = 'AI Review Completed';
-              } else if (humanCompletedCount > 0) {
-                status = 'Review Completed';
-              }
-            }
-          } catch (e) {
-            // No review yet
-          }
-
-            if (!config.createdAt) {
-                throw new Error(`Submission ${id} is missing a creation date from the backend.`);
-            }
-
-          let updateTime = config.createdAt;
-          if (matchedAt) {
-            const matchDate = new Date(matchedAt);
-            const updateDate = new Date(updateTime);
-            if (matchDate > updateDate) {
-              updateTime = matchedAt;
-            }
-          }
-          if (submissionUpdatedAt) {
-            const subDate = new Date(submissionUpdatedAt);
-            const updateDate = new Date(updateTime);
-            if (subDate > updateDate) {
-              updateTime = submissionUpdatedAt;
-            }
-          }
-
-          return {
-            id,
-            title: config.title || 'Untitled',
-            createdAt: config.createdAt,
-            updateTime,
-            status,
-            reviewerId,
-            reviewProcessType: config.reviewProcessType,
-            numberOfExaminers: config.numberOfExaminers
-          };
-        };
+// The mapConfigToDisplay function has been extracted to src/utils/submissionMapper.ts
 
         const myParsed = await Promise.all(myConfigs.map(mapConfigToDisplay));
         setMySubmissions(myParsed);

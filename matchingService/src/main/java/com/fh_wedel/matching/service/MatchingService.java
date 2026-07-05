@@ -132,20 +132,7 @@ public class MatchingService {
 
             // 3. Check if we have enough eligible reviewers
             if (eligibleReviewers.size() < numberOfExaminers) {
-                String reason = String.format(
-                        "Not enough eligible reviewers. Required: %d, available: %d (total: %d, excluded submitters: %s)",
-                        numberOfExaminers, eligibleReviewers.size(), allReviewers.size(), submitterIds);
-
-                log.warn("Matching FAILED for submission {}: {}", submissionId, reason);
-
-                SubmissionStatusRecord failedStatus = new SubmissionStatusRecord(
-                        submissionId, submitterIds, MatchStatus.FAILED, numberOfExaminers, reason);
-                matchRepository.saveStatus(failedStatus);
-
-                for (String sId : submitterIds) {
-                    sendInAppNotification(sId, "Matching Failed",
-                            "Matching failed for your submission: " + reason, submissionId);
-                }
+                handleInsufficientReviewers(submissionId, submitterIds, numberOfExaminers, eligibleReviewers.size(), allReviewers.size());
                 return; // No SQS event on failure
             }
         }
@@ -154,14 +141,7 @@ public class MatchingService {
         List<UserProfile> selectedReviewers = new ArrayList<>();
         
         if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
-            log.info("Bypassing random matching because custom reviewers were provided: {}", customReviewerIds);
-            for (String customId : customReviewerIds) {
-                UserProfile dummyProfile = new UserProfile();
-                dummyProfile.setSub(customId);
-                dummyProfile.setUsername("CustomReviewer");
-                selectedReviewers.add(dummyProfile);
-            }
-            // Update numberOfExaminers to match the provided list
+            selectedReviewers = buildCustomReviewers(customReviewerIds);
             numberOfExaminers = customReviewerIds.size();
         } else {
             selectedReviewers = selectRandomReviewers(eligibleReviewers, numberOfExaminers);
@@ -185,6 +165,39 @@ public class MatchingService {
         // 7. Send success event to SQS
         sendSuccessEvent(submissionId, submitterIds);
 
+        sendNotificationsForMatches(matchRecords, submissionId);
+    }
+
+    private void handleInsufficientReviewers(String submissionId, List<String> submitterIds, int required, int eligibleSize, int totalSize) {
+        String reason = String.format(
+                "Not enough eligible reviewers. Required: %d, available: %d (total: %d, excluded submitters: %s)",
+                required, eligibleSize, totalSize, submitterIds);
+
+        log.warn("Matching FAILED for submission {}: {}", submissionId, reason);
+
+        SubmissionStatusRecord failedStatus = new SubmissionStatusRecord(
+                submissionId, submitterIds, MatchStatus.FAILED, required, reason);
+        matchRepository.saveStatus(failedStatus);
+
+        for (String sId : submitterIds) {
+            sendInAppNotification(sId, "Matching Failed",
+                    "Matching failed for your submission: " + reason, submissionId);
+        }
+    }
+
+    private List<UserProfile> buildCustomReviewers(List<String> customReviewerIds) {
+        log.info("Bypassing random matching because custom reviewers were provided: {}", customReviewerIds);
+        List<UserProfile> selectedReviewers = new ArrayList<>();
+        for (String customId : customReviewerIds) {
+            UserProfile dummyProfile = new UserProfile();
+            dummyProfile.setSub(customId);
+            dummyProfile.setUsername("CustomReviewer");
+            selectedReviewers.add(dummyProfile);
+        }
+        return selectedReviewers;
+    }
+
+    private void sendNotificationsForMatches(List<MatchRecord> matchRecords, String submissionId) {
         for (MatchRecord match : matchRecords) {
             sendInAppNotification(match.getExaminerId(),
                     "Review Assigned",

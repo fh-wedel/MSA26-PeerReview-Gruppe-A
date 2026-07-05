@@ -31,6 +31,8 @@
     "react-router-dom": "^7.15.1"
   },
   "devDependencies": {
+    "@barney-media/crap-typescript": "^0.4.2",
+    "@barney-media/crap-typescript-vitest": "^0.4.2",
     "@eslint/js": "^10.0.1",
     "@openapitools/openapi-generator-cli": "^2.38.0",
     "@testing-library/jest-dom": "^6.9.1",
@@ -40,6 +42,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^10.4.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

@@ -1,14 +1,14 @@
+# syntax=docker/dockerfile:1.4
 # ==========================================
 # Stage 1: Build the application
 # ==========================================
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-COPY src ./src
-RUN mvn clean package -DskipTests
+# Enable Docker BuildKit Maven caching and build from the aggregator POM.
+COPY . .
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -pl userService -am -DskipTests
 
 # ==========================================
 # Stage 2: Create the lightweight runtime image
@@ -20,7 +20,7 @@ ENV HOME=/home/spring
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /app/userService/target/*.jar app.jar
 
 EXPOSE 8081
 ENTRYPOINT ["java", "-Djava.net.preferIPv6Addresses=true", "-Djava.net.preferIPv4Stack=false", "-jar", "app.jar"]

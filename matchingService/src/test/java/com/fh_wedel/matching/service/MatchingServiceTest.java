@@ -239,4 +239,68 @@ class MatchingServiceTest {
         ));
         return profile;
     }
+
+    @Test
+    @DisplayName("Should bypass group API and use custom reviewers if provided")
+    void processMatchingRequest_customReviewers() throws Exception {
+        MatchingRequestEvent event = createEvent("sub-5", "submitter-5", 1);
+        event.setCustomReviewerIds(List.of("custom-1", "custom-2"));
+
+        matchingService.processMatchingRequest(event);
+
+        verify(groupsApi, never()).listGroupMembers(anyString());
+        verify(matchRepository).saveMatchBatch(matchRecordsCaptor.capture(), statusCaptor.capture());
+        
+        List<MatchRecord> records = matchRecordsCaptor.getValue();
+        assertThat(records).hasSize(2);
+        assertThat(records.get(0).getExaminerId()).isEqualTo("custom-1");
+        assertThat(records.get(1).getExaminerId()).isEqualTo("custom-2");
+    }
+
+    @Test
+    @DisplayName("Should handle GroupsApi exceptions gracefully")
+    void processMatchingRequest_groupsApiError() throws Exception {
+        MatchingRequestEvent event = createEvent("sub-6", "submitter-6", 1);
+        when(groupsApi.listGroupMembers(anyString())).thenThrow(new RuntimeException("API error"));
+
+        matchingService.processMatchingRequest(event);
+
+        verify(matchRepository).saveStatus(statusCaptor.capture());
+        assertThat(statusCaptor.getValue().getStatus()).isEqualTo(MatchStatus.FAILED.name());
+    }
+
+    @Test
+    @DisplayName("Should exclude inactive reviewers")
+    void processMatchingRequest_excludesInactive() throws Exception {
+        MatchingRequestEvent event = createEvent("sub-7", "submitter-7", 1);
+
+        UserProfile inactiveUser = createUser("inactive-user");
+        inactiveUser.setCustomAttributes(java.util.Map.of("isActive", "false", "topicTags", "Java"));
+
+        UserProfile activeUser = createUser("active-user");
+        
+        UserProfileListResponse response = new UserProfileListResponse();
+        response.setUsers(List.of(inactiveUser, activeUser));
+        when(groupsApi.listGroupMembers("Reviewer")).thenReturn(response);
+
+        matchingService.processMatchingRequest(event);
+
+        verify(matchRepository).saveMatchBatch(matchRecordsCaptor.capture(), any());
+        assertThat(matchRecordsCaptor.getValue()).hasSize(1);
+        assertThat(matchRecordsCaptor.getValue().getFirst().getExaminerId()).isEqualTo("active-user");
+    }
+
+    @Test
+    void testGetters() {
+        matchingService.getStatusBySubmission("sub-1");
+        verify(matchRepository).findStatusBySubmission("sub-1");
+
+        matchingService.getMatchesBySubmission("sub-1");
+        verify(matchRepository).findMatchesBySubmission("sub-1");
+
+        matchingService.getMatchesByExaminer("exam-1");
+        verify(matchRepository).findMatchesByExaminer("exam-1");
+
+        assertThat(matchingService.getServiceStatus()).isNotNull();
+    }
 }

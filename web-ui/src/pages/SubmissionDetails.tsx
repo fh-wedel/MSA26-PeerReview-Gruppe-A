@@ -26,6 +26,8 @@ import {useAuth} from '../contexts/AuthContext';
 import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
 import {configApiClient, configurationApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {ReviewFormModal} from '../components/ReviewFormModal';
+import { uploadDocument } from '../utils/documentUpload';
+import { triggerAiReview } from '../utils/aiReviewHandler';
 import {getMockSubmissionById} from '../stubs/submissions';
 import {formatDateTime} from '../utils/date';
 import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
@@ -403,50 +405,15 @@ export const SubmissionDetails: React.FC = () => {
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!submissionId || !event.target.files || event.target.files.length === 0) return;
     const file = event.target.files[0];
-    if (file.type !== 'application/pdf') {
-      showError('Only PDF files are allowed.');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      // 1. Get presigned upload URL
-      const urlRes = await submissionApiClient.submissions.getPresignedUploadUrl(submissionId, {
-        fileName: file.name,
-        contentType: file.type,
-      });
-
-      const { uploadUrl } = urlRes.data;
-      if (!uploadUrl) throw new Error('No upload URL returned');
-
-      // 2. Perform S3 PUT request
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-        },
-        body: file,
-      });
-
-      if (!putRes.ok) {
-        throw new Error('S3 upload failed');
-      }
-
-      // 3. Reload documents list
-      const docsRes = await submissionApiClient.submissions.getDocuments(submissionId);
-      setDocuments(docsRes.data || []);
-      
-      // 4. Reload submission details
-      const subRes = await submissionApiClient.submissions.getSubmission(submissionId);
-      setRealSubmission(subRes.data);
-
-      showSuccess('File uploaded successfully!');
-    } catch (e) {
-      console.error('Failed to upload file', e);
-      showError('Failed to upload file.');
-    } finally {
-      setUploading(false);
-    }
+    await uploadDocument(
+      submissionId,
+      file,
+      setUploading,
+      setDocuments,
+      setRealSubmission,
+      showSuccess,
+      showError
+    );
   };
 
   const handleSubmit = async () => {
@@ -467,26 +434,7 @@ export const SubmissionDetails: React.FC = () => {
   };
 
   const handleTriggerAiReview = async () => {
-    if (!submissionId) return;
-    try {
-      await responseApiClient.results.aiReviewCreate(submissionId);
-      const refreshed = await responseApiClient.results.resultsDetail(submissionId);
-      if (refreshed?.data) {
-        setReviewResults(refreshed.data);
-      }
-      showSuccess('AI Review requested successfully!');
-    } catch (e) {
-      console.error('Failed to trigger AI review', e);
-      try {
-        const refreshed = await responseApiClient.results.resultsDetail(submissionId);
-        if (refreshed?.data) {
-          setReviewResults(refreshed.data);
-        }
-      } catch {
-        // ignore refresh errors; preserve original trigger error feedback
-      }
-      showError('Failed to trigger AI review. It may have already been requested.');
-    }
+    await triggerAiReview(submissionId || '', setReviewResults, showSuccess, showError);
   };
 
   const isDraftOrWaiting = rawStatus === 'DRAFT' || rawStatus === 'WAITING_FOR_SUBMISSION';

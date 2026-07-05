@@ -48,4 +48,34 @@ class InAppNotificationServiceTest {
         when(repository.findById(id)).thenReturn(Optional.empty());
         assertThat(service.markRead("owner", id)).isFalse();
     }
+
+    @Test
+    void listForUserReturnsMappedDtos() {
+        InAppNotification n = InAppNotification.builder()
+                .id(UUID.randomUUID())
+                .title("T")
+                .body("B")
+                .createdAt(java.time.Instant.now())
+                .read(false)
+                .build();
+        when(repository.findByUserSubOrderByCreatedAtDesc("user1")).thenReturn(java.util.List.of(n));
+
+        java.util.List<com.fh_wedel.notification.model.NotificationDto> result = service.listForUser("user1");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().title()).isEqualTo("T");
+    }
+
+    @Test
+    void markAllReadUpdatesAll() {
+        InAppNotification n1 = InAppNotification.builder().read(false).build();
+        InAppNotification n2 = InAppNotification.builder().read(false).build();
+        when(repository.findByUserSubOrderByCreatedAtDesc("user1")).thenReturn(java.util.List.of(n1, n2));
+
+        service.markAllRead("user1");
+
+        assertThat(n1.isRead()).isTrue();
+        assertThat(n2.isRead()).isTrue();
+        verify(repository).saveAll(java.util.List.of(n1, n2));
+    }
 }

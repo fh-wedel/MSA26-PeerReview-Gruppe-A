@@ -91,4 +91,48 @@ public class ChatControllerSecurityTest {
 
         assertThrows(ResponseStatusException.class, () -> chatController.getChat("chat-1", null, null));
     }
+
+    @Test
+    void testGetUserId_DifferentFormats() {
+        // Test normal format without quotes
+        when(request.getHeader("x-auth-principal-id")).thenReturn("user-1");
+        when(chatService.listChats("user-1")).thenReturn(new com.fh_wedel.communication.model.api.ChatListResponse());
+        ResponseEntity<?> res = chatController.listChats();
+        assertEquals(200, res.getStatusCode().value());
+
+        // Test with quotes
+        when(request.getHeader("x-auth-principal-id")).thenReturn("\"user-2\"");
+        when(chatService.listChats("user-2")).thenReturn(new com.fh_wedel.communication.model.api.ChatListResponse());
+        res = chatController.listChats();
+        assertEquals(200, res.getStatusCode().value());
+
+        // Test with pipe
+        when(request.getHeader("x-auth-principal-id")).thenReturn("\"eu-central-1_abc|user-3\"");
+        when(chatService.listChats("user-3")).thenReturn(new com.fh_wedel.communication.model.api.ChatListResponse());
+        res = chatController.listChats();
+        assertEquals(200, res.getStatusCode().value());
+        
+        // Test with peer review
+        when(request.getHeader("x-auth-principal-id")).thenReturn("PeerReview::User::\"eu-central-1_abc|user-4\"");
+        when(chatService.listChats("user-4")).thenReturn(new com.fh_wedel.communication.model.api.ChatListResponse());
+        res = chatController.listChats();
+        assertEquals(200, res.getStatusCode().value());
+        
+        // Test null
+        when(request.getHeader("x-auth-principal-id")).thenReturn(null);
+        when(chatService.listChats(null)).thenReturn(new com.fh_wedel.communication.model.api.ChatListResponse());
+        res = chatController.listChats();
+        assertEquals(200, res.getStatusCode().value());
+    }
+    
+    @Test
+    void testStreamChats() {
+        when(request.getHeader("x-auth-principal-id")).thenReturn("user-a");
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter();
+        when(chatService.subscribe("user-a")).thenReturn(emitter);
+        
+        ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> res = chatController.streamChats();
+        assertEquals(200, res.getStatusCode().value());
+        assertEquals(emitter, res.getBody());
+    }
 }

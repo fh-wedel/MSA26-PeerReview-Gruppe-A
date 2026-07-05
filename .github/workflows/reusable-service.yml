@@ -70,10 +70,24 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ inputs.infra_path }}/package-lock.json
 
+      - name: Install shared api-client library
+        if: inputs.run_maven
+        run: mvn -B -ntp clean install
+        working-directory: api-client
+
       - name: Maven build and tests
         if: inputs.run_maven
         run: mvn -B -ntp clean verify
         working-directory: ${{ inputs.service_path }}
+
+      - name: Upload JaCoCo coverage report
+        if: inputs.run_maven && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-${{ inputs.service_name }}
+          path: ${{ inputs.service_path }}/**/target/site/jacoco/
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Install frontend dependencies
         if: inputs.run_frontend_test

@@ -21,9 +21,6 @@ jobs:
     outputs:
       baseline: ${{ steps.filter.outputs.baseline }}
       infra_library: ${{ steps.filter.outputs.infra_library }}
-      template_service_code: ${{ steps.filter.outputs.template_service_code }}
-      template_service_infra: ${{ steps.filter.outputs.template_service_infra }}
-      template_service_any: ${{ steps.filter.outputs.template_service_any }}
       user_service_code: ${{ steps.filter.outputs.user_service_code }}
       user_service_infra: ${{ steps.filter.outputs.user_service_infra }}
       user_service_any: ${{ steps.filter.outputs.user_service_any }}
@@ -61,22 +58,15 @@ jobs:
               - 'infrabaseline/**'
             infra_library:
               - 'infraLibrary/**'
-            template_service_code:
-              - 'templateEcsService/src/**'
-              - 'templateEcsService/pom.xml'
-              - 'templateEcsService/Dockerfile'
-            template_service_infra:
-              - 'templateEcsService/infra/**'
-            template_service_any:
-              - 'templateEcsService/**'
-              - 'infraLibrary/**'
             user_service_code:
+              - 'api-client/**'
               - 'userService/src/**'
               - 'userService/pom.xml'
               - 'userService/Dockerfile'
             user_service_infra:
               - 'userService/infra/**'
             user_service_any:
+              - 'api-client/**'
               - 'userService/**'
               - 'infraLibrary/**'
               - 'workflow-service/workflow-*/**'
@@ -86,6 +76,7 @@ jobs:
               - 'workflow-service/**'
               - 'infraLibrary/**'
             web_ui_code:
+              - 'api-client/**'
               - 'web-ui/src/**'
               - 'web-ui/public/**'
               - 'web-ui/index.html'
@@ -96,59 +87,72 @@ jobs:
             web_ui_infra:
               - 'web-ui/infra/**'
             web_ui_any:
+              - 'api-client/**'
               - 'web-ui/**'
               - 'infraLibrary/**'
             matching_service_code:
+              - 'api-client/**'
               - 'matchingService/src/**'
               - 'matchingService/pom.xml'
               - 'matchingService/Dockerfile'
             matching_service_infra:
               - 'matchingService/infra/**'
             matching_service_any:
+              - 'api-client/**'
               - 'matchingService/**'
               - 'infraLibrary/**'
             communication_service_code:
+              - 'api-client/**'
               - 'communicationService/src/**'
               - 'communicationService/pom.xml'
               - 'communicationService/Dockerfile'
             communication_service_infra:
               - 'communicationService/infra/**'
             communication_service_any:
+              - 'api-client/**'
               - 'communicationService/**'
             configuration_service_code:
+              - 'api-client/**'
               - 'configuration-service/src/**'
               - 'configuration-service/pom.xml'
               - 'configuration-service/Dockerfile'
             configuration_service_infra:
               - 'configuration-service/infra/**'
             configuration_service_any:
+              - 'api-client/**'
               - 'configuration-service/**'
               - 'infraLibrary/**'
             submission_service_code:
+              - 'api-client/**'
               - 'submission-service/src/**'
               - 'submission-service/pom.xml'
               - 'submission-service/Dockerfile'
             submission_service_infra:
               - 'submission-service/infra/**'
             submission_service_any:
+              - 'api-client/**'
               - 'submission-service/**'
               - 'infraLibrary/**'
             notification_service_code:
+              - 'api-client/**'
               - 'notificationService/src/**'
               - 'notificationService/pom.xml'
               - 'notificationService/Dockerfile'
             notification_service_infra:
               - 'notificationService/infra/**'
             notification_service_any:
+              - 'api-client/**'
               - 'notificationService/**'
               - 'infraLibrary/**'
             response_service_code:
+              - 'api-client/**'
               - 'responseService/src/**'
               - 'responseService/pom.xml'
               - 'responseService/Dockerfile'
             response_service_infra:
               - 'responseService/infra/**'
             response_service_any:
+              - 'api-client/**'
               - 'responseService/**'
               - 'infraLibrary/**'
             cloudfront:
@@ -243,27 +247,6 @@ jobs:
         run: npx cdk deploy --all --require-approval never
         working-directory: infrabaseline
 
-  template-service:
-    needs: [changes, infra-library-tests]
-    if: |
-      always() && 
-      (needs.changes.outputs.template_service_any == 'true' || github.event_name == 'workflow_dispatch') && 
-      (needs['infra-library-tests'].result == 'success' || needs['infra-library-tests'].result == 'skipped')
-    uses: ./.github/workflows/reusable-service.yml
-    with:
-      service_name: template
-      service_path: templateEcsService
-      infra_path: templateEcsService/infra
-      docker_context: templateEcsService
-      ecr_repository: fh-wedel/template
-      run_maven: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
-      run_frontend_test: false
-      run_infra: ${{ needs.changes.outputs.template_service_infra == 'true' || needs.changes.outputs.infra_library == 'true' || github.event_name == 'workflow_dispatch' }}
-      run_docker: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
-      allow_deploy: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
-      deploy_environment: "fh-wedel-prod"
-    secrets: inherit
-
   user-service:
     needs: [changes, infra-library-tests]
     if: |
@@ -275,7 +258,7 @@ jobs:
       service_name: user
       service_path: userService
       infra_path: userService/infra
-      docker_context: userService
+      docker_context: .
       ecr_repository: fh-wedel/user
       run_maven: ${{ needs.changes.outputs.user_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -317,7 +300,7 @@ jobs:
       service_name: matching
       service_path: matchingService
       infra_path: matchingService/infra
-      docker_context: matchingService
+      docker_context: .
       ecr_repository: fh-wedel/matching
       run_maven: ${{ needs.changes.outputs.matching_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -338,7 +321,7 @@ jobs:
       service_name: communication
       service_path: communicationService
       infra_path: communicationService/infra
-      docker_context: communicationService
+      docker_context: .
       ecr_repository: fh-wedel/communication
       run_maven: ${{ needs.changes.outputs.communication_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -380,7 +363,7 @@ jobs:
       service_name: submission
       service_path: submission-service
       infra_path: submission-service/infra
-      docker_context: submission-service
+      docker_context: .
       ecr_repository: fh-wedel/submission
       run_maven: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -401,7 +384,7 @@ jobs:
       service_name: notification
       service_path: notificationService
       infra_path: notificationService/infra
-      docker_context: notificationService
+      docker_context: .
       ecr_repository: fh-wedel/notification
       run_maven: ${{ needs.changes.outputs.notification_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -422,7 +405,7 @@ jobs:
       service_name: response
       service_path: responseService
       infra_path: responseService/infra
-      docker_context: responseService
+      docker_context: .
       ecr_repository: fh-wedel/response
       run_maven: ${{ needs.changes.outputs.response_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -439,13 +422,12 @@ jobs:
   # or on workflow_dispatch.
   cloudfront-deploy:
     runs-on: ubuntu-latest
-    needs: [ changes, web-ui, template-service, user-service, matching-service, communication-service, configuration-service, submission-service, notification-service, response-service ]
+    needs: [ changes, web-ui, user-service, matching-service, communication-service, configuration-service, submission-service, notification-service, response-service ]
     if: |
       always() && 
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && 
       (needs.changes.outputs.cloudfront == 'true' || needs.changes.outputs.web_ui_any == 'true' || github.event_name == 'workflow_dispatch') && 
-      (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') && 
-      (needs['template-service'].result == 'success' || needs['template-service'].result == 'skipped') && 
+      (needs['web-ui'].result == 'success' || needs['web-ui'].result == 'skipped') &&
       (needs['matching-service'].result == 'success' || needs['matching-service'].result == 'skipped') && 
       (needs['communication-service'].result == 'success' || needs['communication-service'].result == 'skipped') && 
       (needs['configuration-service'].result == 'success' || needs['configuration-service'].result == 'skipped') && 

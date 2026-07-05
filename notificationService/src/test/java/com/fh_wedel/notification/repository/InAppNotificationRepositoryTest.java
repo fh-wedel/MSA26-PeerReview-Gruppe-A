@@ -83,4 +83,26 @@ class InAppNotificationRepositoryTest {
         assertThat(repository.findById(null)).isEmpty();
         verify(table, never()).getItem(any(Key.class));
     }
+
+    @Test
+    void saveAll_savesMultiple() {
+        InAppNotification n1 = InAppNotification.builder().userSub("u1").build();
+        InAppNotification n2 = InAppNotification.builder().userSub("u2").build();
+        repository.saveAll(java.util.List.of(n1, n2));
+        verify(table, times(2)).putItem(any(InAppNotification.class));
+    }
+
+    @Test
+    void findByUserSubOrderByCreatedAtDesc_queriesGsi() {
+        software.amazon.awssdk.enhanced.dynamodb.model.PageIterable<InAppNotification> mockIterable = mock(software.amazon.awssdk.enhanced.dynamodb.model.PageIterable.class);
+        software.amazon.awssdk.enhanced.dynamodb.model.Page<InAppNotification> mockPage = mock(software.amazon.awssdk.enhanced.dynamodb.model.Page.class);
+        when(userIndex.query(any(software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest.class))).thenReturn(mockIterable);
+        when(mockIterable.stream()).thenReturn(java.util.stream.Stream.of(mockPage));
+        when(mockPage.items()).thenReturn(java.util.List.of(InAppNotification.builder().id(UUID.randomUUID()).build()));
+
+        java.util.List<InAppNotification> results = repository.findByUserSubOrderByCreatedAtDesc("u1");
+
+        assertThat(results).hasSize(1);
+        verify(userIndex).query(any(software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest.class));
+    }
 }
