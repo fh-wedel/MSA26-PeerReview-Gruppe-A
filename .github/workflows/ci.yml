@@ -290,7 +290,7 @@ jobs:
       service_name: template
       service_path: templateEcsService
       infra_path: templateEcsService/infra
-      docker_context: templateEcsService
+      docker_context: .
       ecr_repository: fh-wedel/template
       run_maven: ${{ needs.changes.outputs.template_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -311,7 +311,7 @@ jobs:
       service_name: user
       service_path: userService
       infra_path: userService/infra
-      docker_context: userService
+      docker_context: .
       ecr_repository: fh-wedel/user
       run_maven: ${{ needs.changes.outputs.user_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -353,7 +353,7 @@ jobs:
       service_name: matching
       service_path: matchingService
       infra_path: matchingService/infra
-      docker_context: matchingService
+      docker_context: .
       ecr_repository: fh-wedel/matching
       run_maven: ${{ needs.changes.outputs.matching_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -374,7 +374,7 @@ jobs:
       service_name: communication
       service_path: communicationService
       infra_path: communicationService/infra
-      docker_context: communicationService
+      docker_context: .
       ecr_repository: fh-wedel/communication
       run_maven: ${{ needs.changes.outputs.communication_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -416,7 +416,7 @@ jobs:
       service_name: submission
       service_path: submission-service
       infra_path: submission-service/infra
-      docker_context: submission-service
+      docker_context: .
       ecr_repository: fh-wedel/submission
       run_maven: ${{ needs.changes.outputs.submission_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -437,7 +437,7 @@ jobs:
       service_name: notification
       service_path: notificationService
       infra_path: notificationService/infra
-      docker_context: notificationService
+      docker_context: .
       ecr_repository: fh-wedel/notification
       run_maven: ${{ needs.changes.outputs.notification_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
@@ -458,7 +458,7 @@ jobs:
       service_name: response
       service_path: responseService
       infra_path: responseService/infra
-      docker_context: responseService
+      docker_context: .
       ecr_repository: fh-wedel/response
       run_maven: ${{ needs.changes.outputs.response_service_code == 'true' || github.event_name == 'workflow_dispatch' }}
       run_frontend_test: false
