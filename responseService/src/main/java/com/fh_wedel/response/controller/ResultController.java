@@ -131,17 +131,7 @@ public class ResultController {
         }
 
         if (resultService.isAuthorOfSubmission(submissionId, callerSub)) {
-            int submittedHumanReviewsCount = (int) results.stream()
-                    .filter(r -> !r.isAiGenerated() && r.completedAt() != null)
-                    .count();
-            if (resultService.isReviewComplete(submissionId, submittedHumanReviewsCount)) {
-                return ResponseEntity.ok(results);
-            } else {
-                List<ReviewResultDto> aiOnlyResults = results.stream()
-                        .filter(ReviewResultDto::isAiGenerated)
-                        .toList();
-                return ResponseEntity.ok(aiOnlyResults);
-            }
+            return buildAuthorVisibleResults(submissionId, results);
         }
 
         log.warn("Access Denied: caller '{}' (details: '{}') is neither the author nor an assigned reviewer of submission {}",
@@ -220,5 +210,19 @@ public class ResultController {
             return inner.substring(pipeIndex + 1);
         }
         return inner;
+    }
+
+    private ResponseEntity<List<ReviewResultDto>> buildAuthorVisibleResults(String submissionId, List<ReviewResultDto> results) {
+        int submittedHumanReviewsCount = (int) results.stream()
+                .filter(r -> !r.isAiGenerated() && r.completedAt() != null)
+                .count();
+        if (resultService.isReviewComplete(submissionId, submittedHumanReviewsCount)) {
+            return ResponseEntity.ok(results);
+        } else {
+            List<ReviewResultDto> aiOnlyResults = results.stream()
+                    .filter(ReviewResultDto::isAiGenerated)
+                    .toList();
+            return ResponseEntity.ok(aiOnlyResults);
+        }
     }
 }

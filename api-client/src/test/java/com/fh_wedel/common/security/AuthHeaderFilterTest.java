@@ -1,4 +1,4 @@
-package com.fh_wedel.matching.security;
+package com.fh_wedel.common.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,6 +1,7 @@
 package com.fh_wedel.response.service;
 
 import org.springframework.http.HttpStatus;
+import java.util.stream.Collectors;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -64,6 +65,13 @@ public class ResultService {
         return saved;
     }
 
+    private void enrichFromNeighbouringServices(ReviewResult result) {
+        String submissionId = result.getSubmissionId();
+        enrichGradingSchema(result, submissionId);
+        enrichExaminers(result, submissionId);
+        enrichReviewDeadline(result, submissionId);
+    }
+
     public ReviewResult submitReview(com.fh_wedel.response.model.SubmitReviewRequest request, String reviewerId) {
         List<ReviewResult> existingResults = repository.findBySubmissionId(request.getSubmissionId());
         if (existingResults.stream().anyMatch(r -> reviewerId.equals(r.getReviewerId()))) {
@@ -100,41 +108,72 @@ public class ResultService {
         }
 
         // Fetch author
-        try {
-            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(request.getSubmissionId());
-            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
-                result.setAuthorId(config.getAuthorIds().get(0));
-            }
-        } catch (Exception e) {
-            log.warn("Could not fetch author for submission {}: {}", request.getSubmissionId(), e.getMessage());
+        String authorId = fetchAuthorIdFromConfig(request.getSubmissionId());
+        if (authorId != null) {
+            result.setAuthorId(authorId);
         }
 
         ReviewResult saved = save(result);
         // Also publish ReviewCompletedEvent
         sendReviewCompletedEvent(saved);
+        sendReviewSubmittedNotification(authorId, request.getSubmissionId());
         return saved;
     }
 
     private void sendReviewCompletedEvent(ReviewResult result) {
-        // Find if we have a queue configured, or maybe the workflow needs to know?
-        // Actually, there is ReviewCompletedEvent.
-        // It's not clear which queue it goes to, maybe a workflow event queue.
-        // I will log it for now as there isn't a specific queue property shown in ResultService
-        // But let's check if there is a queue for ReviewCompletedEvent.
         log.info("Review completed for submission {}", result.getSubmissionId());
     }
 
-    /**
-     * Enriches the result with data owned by neighbouring services, fetched over
-     * REST: the grading schema (workflow), the examiner (matching), and the
-     * review deadline / end date (configuration). Each call is best-effort — a
-     * failure is logged and the result is stored without that field rather than
-     * losing the whole result.
-     */
-    private void enrichFromNeighbouringServices(ReviewResult result) {
-        String submissionId = result.getSubmissionId();
+    private void sendReviewSubmittedNotification(String authorId, String submissionId) {
+        if (notificationQueueName == null || notificationQueueName.isBlank()) {
+            return;
+        }
+        com.fh_wedel.response.model.NotificationEvent event = new com.fh_wedel.response.model.NotificationEvent(
+                "REVIEW_SUBMITTED",
+                List.of("IN_APP"),
+                authorId,
+                "Review Submitted",
+                "An examiner has submitted their review for your submission.",
+                java.util.Map.of("submissionId", submissionId)
+        );
+        try {
+            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Failed to serialize REVIEW_SUBMITTED notification", e);
+        }
+    }
 
-        // Grading schema (what the submission was reviewed by) — configuration service.
+    private List<GradingCriterion> fetchGradingFormAndBuildCriteria(String submissionId, com.fh_wedel.response.model.SubmitReviewRequest request) {
+        try {
+            // Simplified logic: Using existing API instead of configurationServiceClient placeholder
+            List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(submissionId);
+            if (form != null) {
+                return form.stream()
+                        .map(q -> {
+                            GradingCriterion c = toGradingCriterion(q);
+                            return c;
+                        })
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch grading form template for submission {}", submissionId, e);
+        }
+        return List.of();
+    }
+
+    private String fetchAuthorIdFromConfig(String submissionId) {
+        try {
+            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
+            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
+                return config.getAuthorIds().get(0);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch author ID for submission {}", submissionId, e);
+        }
+        return null;
+    }
+
+    private void enrichGradingSchema(ReviewResult result, String submissionId) {
         if (result.getGradingSchema() == null || result.getGradingSchema().isEmpty()) {
             try {
                 List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(submissionId);
@@ -145,8 +184,9 @@ public class ResultService {
                 log.warn("Could not fetch grading schema for submission {}: {}", submissionId, e.getMessage());
             }
         }
+    }
 
-        // Examiners — matching service (a submission may have several examiners).
+    private void enrichExaminers(ReviewResult result, String submissionId) {
         try {
             SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
             if (matches != null && matches.getMatches() != null && !matches.getMatches().isEmpty()) {
@@ -158,8 +198,9 @@ public class ResultService {
         } catch (Exception e) {
             log.warn("Could not fetch examiners for submission {}: {}", submissionId, e.getMessage());
         }
+    }
 
-        // Review deadline / end date — configuration service.
+    private void enrichReviewDeadline(ReviewResult result, String submissionId) {
         try {
             ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
             if (config != null && config.getReviewDeadline() != null) {

@@ -77,23 +77,9 @@ public class SubmissionService {
             throw new IllegalStateException("Submission not found");
         }
 
-        if (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(authorId)) {
-            throw new IllegalStateException("Not the owner of this submission");
-        }
-
-        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
-        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
-        if (!isDraft && !isWaiting) {
-            throw new IllegalStateException("Can only upload documents for submissions in DRAFT or WAITING_FOR_SUBMISSION status");
-        }
-
-        if (contentType == null || !"application/pdf".equalsIgnoreCase(contentType)) {
-            throw new IllegalArgumentException("Only PDF uploads are allowed. Unsupported content type: " + contentType);
-        }
-
-        if (fileName == null || !fileName.toLowerCase().endsWith(".pdf")) {
-            throw new IllegalArgumentException("Only PDF uploads are allowed. File name must end with .pdf");
-        }
+        validateOwnership(submission, authorId);
+        validateEditableStatus(submission, "upload documents for");
+        validatePdfUpload(contentType, fileName);
 
         String documentId = UUID.randomUUID().toString();
         String s3Key = String.format("submissions/%s/%s/%s", submissionId, documentId, fileName);
@@ -113,15 +99,8 @@ public class SubmissionService {
             return null;
         }
 
-        if (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(authorId)) {
-            throw new IllegalStateException("Not the owner of this submission");
-        }
-
-        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
-        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
-        if (!isDraft && !isWaiting) {
-            throw new IllegalStateException("Can only submit submissions in DRAFT or WAITING_FOR_SUBMISSION status");
-        }
+        validateOwnership(submission, authorId);
+        validateEditableStatus(submission, "submit");
 
         SubmissionConfiguration config = configurationServiceClient.getConfiguration(submission.getConfigurationId());
         if (config == null) {
@@ -167,19 +146,7 @@ public class SubmissionService {
         List<String> authorIds = submission.getAuthorIds();
         if (authorIds == null || authorIds.isEmpty()) return;
         for (String authorId : authorIds) {
-            NotificationEvent event = new NotificationEvent(
-                    "SUBMISSION_SUBMITTED",
-                    List.of("IN_APP"),
-                    authorId,
-                    "Submission Submitted",
-                    "Your submission was successfully submitted and is now under review.",
-                    Map.of("submissionId", submission.getSubmissionId()));
-            try {
-                sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
-                log.info("Sent submitted notification to '{}' for submission {}", authorId, submission.getSubmissionId());
-            } catch (JsonProcessingException e) {
-                log.error("Failed to serialize submitted notification for {}", submission.getSubmissionId(), e);
-            }
+            sendNotificationForAuthor(authorId, submission.getSubmissionId());
         }
     }
 
@@ -191,20 +158,62 @@ public class SubmissionService {
         List<String> authorIds = submission.getAuthorIds();
         if (authorIds == null || authorIds.isEmpty()) return;
         for (String authorId : authorIds) {
-            NotificationEvent event = new NotificationEvent(
-                    "REVIEW_RESULT_AVAILABLE",
-                    List.of("IN_APP"),
-                    authorId,
-                    "Review Result Available",
-                    "A review result is available for submission " + submission.getSubmissionId() + ".",
-                    Map.of("submissionId", submission.getSubmissionId()));
-            try {
-                sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
-                log.info("Sent result-available notification to '{}' for submission {}", authorId, submission.getSubmissionId());
-            } catch (JsonProcessingException e) {
-                log.error("Failed to serialize result-available notification for {}", submission.getSubmissionId(), e);
-            }
+            sendResultNotificationForAuthor(authorId, submission.getSubmissionId());
         }
     }
 
+    private void validateOwnership(Submission submission, String authorId) {
+        if (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(authorId)) {
+            throw new IllegalStateException("Not the owner of this submission");
+        }
+    }
+
+    private void validateEditableStatus(Submission submission, String operationName) {
+        boolean isDraft = SubmissionStatus.DRAFT.getDbValue().equals(submission.getStatus());
+        boolean isWaiting = SubmissionStatus.WAITING_FOR_SUBMISSION.getDbValue().equals(submission.getStatus());
+        if (!isDraft && !isWaiting) {
+            throw new IllegalStateException("Can only " + operationName + " submissions in DRAFT or WAITING_FOR_SUBMISSION status");
+        }
+    }
+
+    private void validatePdfUpload(String contentType, String fileName) {
+        if (contentType == null || !"application/pdf".equalsIgnoreCase(contentType)) {
+            throw new IllegalArgumentException("Only PDF uploads are allowed. Unsupported content type: " + contentType);
+        }
+        if (fileName == null || !fileName.toLowerCase().endsWith(".pdf")) {
+            throw new IllegalArgumentException("Only PDF uploads are allowed. File name must end with .pdf");
+        }
+    }
+
+    private void sendNotificationForAuthor(String authorId, String submissionId) {
+        NotificationEvent event = new NotificationEvent(
+                "SUBMISSION_SUBMITTED",
+                List.of("IN_APP"),
+                authorId,
+                "Submission Submitted",
+                "Your submission was successfully submitted and is now under review.",
+                Map.of("submissionId", submissionId));
+        try {
+            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+            log.info("Sent submitted notification to '{}' for submission {}", authorId, submissionId);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize submitted notification for {}", submissionId, e);
+        }
+    }
+
+    private void sendResultNotificationForAuthor(String authorId, String submissionId) {
+        NotificationEvent event = new NotificationEvent(
+                "REVIEW_RESULT_AVAILABLE",
+                List.of("IN_APP"),
+                authorId,
+                "Review Result Available",
+                "A review result is available for submission " + submissionId + ".",
+                Map.of("submissionId", submissionId));
+        try {
+            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+            log.info("Sent result-available notification to '{}' for submission {}", authorId, submissionId);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize result-available notification for {}", submissionId, e);
+        }
+    }
 }

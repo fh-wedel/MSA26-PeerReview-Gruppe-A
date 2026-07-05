@@ -92,17 +92,7 @@ public class ConfigurationController {
             return ResponseEntity.notFound().build();
         }
 
-        String callerSub = extractSubFromDetails(authentication);
-
-        // Access check: If caller is ONLY an Author, verify they are in authorIds
-        boolean callerIsAuthor = isOnlyAuthor(authentication);
-        if (callerIsAuthor) {
-            if (callerSub == null || !config.getAuthorIds().contains(callerSub)) {
-                log.warn("Access Denied: Author '{}' tried to access configuration {}",
-                        authentication.getName(), submissionId);
-                throw new AccessDeniedException("Access Denied: You do not have access to this configuration.");
-            }
-        }
+        verifyAuthorAccessToConfig(config, authentication, submissionId);
 
         return ResponseEntity.ok(config);
     }
@@ -122,17 +112,7 @@ public class ConfigurationController {
             return ResponseEntity.notFound().build();
         }
 
-        String callerSub = extractSubFromDetails(authentication);
-
-        // Access check: If caller is ONLY an Author, verify they are in authorIds
-        boolean callerIsAuthor = isOnlyAuthor(authentication);
-        if (callerIsAuthor) {
-            if (callerSub == null || !config.getAuthorIds().contains(callerSub)) {
-                log.warn("Access Denied: Author '{}' tried to access submission deadline for configuration {}",
-                        authentication.getName(), submissionId);
-                throw new AccessDeniedException("Access Denied: You do not have access to this configuration.");
-            }
-        }
+        verifyAuthorAccessToConfig(config, authentication, submissionId);
 
         return ResponseEntity.ok(config.getSubmissionDeadline());
     }
@@ -152,17 +132,7 @@ public class ConfigurationController {
             return ResponseEntity.notFound().build();
         }
 
-        String callerSub = extractSubFromDetails(authentication);
-
-        // Access check: If caller is ONLY an Author, verify they are in authorIds
-        boolean callerIsAuthor = isOnlyAuthor(authentication);
-        if (callerIsAuthor) {
-            if (callerSub == null || !config.getAuthorIds().contains(callerSub)) {
-                log.warn("Access Denied: Author '{}' tried to access review deadline for configuration {}",
-                        authentication.getName(), submissionId);
-                throw new AccessDeniedException("Access Denied: You do not have access to this configuration.");
-            }
-        }
+        verifyAuthorAccessToConfig(config, authentication, submissionId);
 
         return ResponseEntity.ok(config.getReviewDeadline());
     }
@@ -178,16 +148,7 @@ public class ConfigurationController {
 
         log.info("Request received: GET /author/{}", authorId);
 
-        String callerSub = extractSubFromDetails(authentication);
-        boolean callerIsAuthor = isOnlyAuthor(authentication);
-
-        if (callerIsAuthor) {
-            if (callerSub == null || !callerSub.equals(authorId)) {
-                log.warn("Access Denied: Author '{}' tried to query configs for authorId {}",
-                        authentication.getName(), authorId);
-                throw new AccessDeniedException("Access Denied: You can only query your own configurations.");
-            }
-        }
+        verifyAuthorAccessById(authorId, authentication);
 
         List<SubmissionConfiguration> configs = configurationService.getConfigurationsByAuthor(authorId);
 
@@ -262,5 +223,27 @@ public class ConfigurationController {
             return inner.substring(pipeIndex + 1);
         }
         return inner;
+    }
+
+    private void verifyAuthorAccessToConfig(SubmissionConfiguration config, Authentication authentication, String submissionId) {
+        String callerSub = extractSubFromDetails(authentication);
+        if (isOnlyAuthor(authentication)) {
+            if (callerSub == null || !config.getAuthorIds().contains(callerSub)) {
+                log.warn("Access Denied: Author '{}' tried to access configuration {}",
+                        authentication.getName(), submissionId);
+                throw new AccessDeniedException("Access Denied: You do not have access to this configuration.");
+            }
+        }
+    }
+
+    private void verifyAuthorAccessById(String authorId, Authentication authentication) {
+        String callerSub = extractSubFromDetails(authentication);
+        if (isOnlyAuthor(authentication)) {
+            if (callerSub == null || !callerSub.equals(authorId)) {
+                log.warn("Access Denied: Author '{}' tried to query configs for authorId {}",
+                        authentication.getName(), authorId);
+                throw new AccessDeniedException("Access Denied: You can only query your own configurations.");
+            }
+        }
     }
 }

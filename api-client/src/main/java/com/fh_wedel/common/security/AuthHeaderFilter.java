@@ -1,4 +1,4 @@
-package com.fh_wedel.configuration.security;
+package com.fh_wedel.common.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,6 +16,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Extracts identity information from trusted {@code x-auth-*} headers
+ * (set by the API Gateway Lambda proxy after JWT validation) and populates
+ * the Spring Security context.
+ * <p>
+ * Headers:
+ * <ul>
+ *   <li>{@code x-auth-username} — Cognito username</li>
+ *   <li>{@code x-auth-groups} — comma-separated Cognito group names</li>
+ *   <li>{@code x-auth-principal-id} — Cognito user pool ID + sub</li>
+ * </ul>
+ */
 @Component
 @Slf4j
 public class AuthHeaderFilter extends OncePerRequestFilter {
@@ -38,11 +50,11 @@ public class AuthHeaderFilter extends OncePerRequestFilter {
 
             var authentication = new UsernamePasswordAuthenticationToken(
                     username,
-                    null, // credentials not required (trusted API Gateway proxy)
+                    null, // no credentials needed — trust the API Gateway
                     authorities
             );
 
-            // Store Cognito Sub / Pool ID as authentication details
+            // Store the principalId (contains the Cognito sub) as authentication details
             authentication.setDetails(principalId);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -54,6 +66,10 @@ public class AuthHeaderFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Parses a comma-separated group string into Spring Security authorities.
+     * Each group is prefixed with "ROLE_" so it works with {@code hasRole(...)}.
+     */
     List<SimpleGrantedAuthority> parseAuthorities(String groups) {
         if (groups == null || groups.isBlank()) {
             return Collections.emptyList();

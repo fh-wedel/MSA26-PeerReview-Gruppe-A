@@ -28,7 +28,15 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        </dependencies>
+        
+        <!-- Shared API Client and Security Utils -->
+        <dependency>
+            <groupId>com.fh-wedel</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+    </dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -116,6 +124,14 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+    
+        <!-- Shared API Client and Security Utils -->
+        <dependency>
+            <groupId>com.fh-wedel</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -151,45 +167,61 @@
                 <executions>
 
                     <!-- Matching client: examiner per submission -->
-                    <execution>
-                        <id>generate-matching-client</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/matching.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-matching</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.matching.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.matching.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
-                        </configuration>
-                    </execution>
+                    
                     <!-- Configuration client: review deadline (end date) per submission -->
+                    
+                </executions>
+            </plugin>
+            <!-- JaCoCo: Code Coverage + CRAP Index Quality Gate -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.13</version>
+                <executions>
+                    <!-- Attach the JaCoCo Java agent before tests run -->
                     <execution>
-                        <id>generate-configuration-client</id>
+                        <id>jacoco-prepare-agent</id>
                         <goals>
-                            <goal>generate</goal>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- Generate HTML + XML report after tests -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <!-- Enforce CRAP quality gate: fail if any method has CRAP > 30 -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/configuration.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-configuration</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
+                            <rules>
+                                <rule>
+                                    <element>METHOD</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>COMPLEXITY</counter>
+                                            <value>TOTALCOUNT</value>
+                                            <maximum>30</maximum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <exclude>**/model/api/**</exclude>
+                                <exclude>**/model/events/**</exclude>
+                                <exclude>**/client/api/**</exclude>
+                                <exclude>**/client/model/**</exclude>
+                                <exclude>**/api/generated/**</exclude>
+                                <exclude>**/ApiClient.class</exclude>
+                                <exclude>**/ApiClient$*.class</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

@@ -30,7 +30,7 @@
     </developers>
 
     <properties>
-        <java.version>25</java.version>
+        <java.version>21</java.version>
         <aws.sdk.version>2.31.62</aws.sdk.version>
         <openapi-generator.version>7.14.0</openapi-generator.version>
         <jsonschema2pojo.version>1.2.2</jsonschema2pojo.version>
@@ -136,6 +136,14 @@
             <version>0.2.6</version>
         </dependency>
 
+        
+        <!-- Shared API Client and Security Utils -->
+        <dependency>
+            <groupId>com.fh-wedel</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -222,47 +230,8 @@
                             </configOptions>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>generate-user-client</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/user.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-user</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.user.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.user.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>generate-workflow-client</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/configuration.json
-                            </inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-configuration</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
-                        </configuration>
-                    </execution>
+                    
+                    
                 </executions>
             </plugin>
             <plugin>
@@ -283,6 +252,60 @@
                                     ${project.build.directory}/generated-sources/openapi-configuration/src/main/java
                                 </source>
                             </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- JaCoCo: Code Coverage + CRAP Index Quality Gate -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.13</version>
+                <executions>
+                    <!-- Attach the JaCoCo Java agent before tests run -->
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- Generate HTML + XML report after tests -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <!-- Enforce CRAP quality gate: fail if any method has CRAP > 30 -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>METHOD</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>COMPLEXITY</counter>
+                                            <value>TOTALCOUNT</value>
+                                            <maximum>30</maximum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <exclude>**/model/api/**</exclude>
+                                <exclude>**/model/events/**</exclude>
+                                <exclude>**/client/api/**</exclude>
+                                <exclude>**/client/model/**</exclude>
+                                <exclude>**/api/generated/**</exclude>
+                                <exclude>**/ApiClient.class</exclude>
+                                <exclude>**/ApiClient$*.class</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

@@ -22,32 +22,50 @@ jobs:
       baseline: ${{ steps.filter.outputs.baseline }}
       infra_library: ${{ steps.filter.outputs.infra_library }}
       template_service_code: ${{ steps.filter.outputs.template_service_code }}
+              - 'api-client/**'
       template_service_infra: ${{ steps.filter.outputs.template_service_infra }}
       template_service_any: ${{ steps.filter.outputs.template_service_any }}
+              - 'api-client/**'
       user_service_code: ${{ steps.filter.outputs.user_service_code }}
+              - 'api-client/**'
       user_service_infra: ${{ steps.filter.outputs.user_service_infra }}
       user_service_any: ${{ steps.filter.outputs.user_service_any }}
+              - 'api-client/**'
       web_ui_code: ${{ steps.filter.outputs.web_ui_code }}
+              - 'api-client/**'
       web_ui_infra: ${{ steps.filter.outputs.web_ui_infra }}
       web_ui_any: ${{ steps.filter.outputs.web_ui_any }}
+              - 'api-client/**'
       matching_service_code: ${{ steps.filter.outputs.matching_service_code }}
+              - 'api-client/**'
       matching_service_infra: ${{ steps.filter.outputs.matching_service_infra }}
       matching_service_any: ${{ steps.filter.outputs.matching_service_any }}
+              - 'api-client/**'
       communication_service_code: ${{ steps.filter.outputs.communication_service_code }}
+              - 'api-client/**'
       communication_service_infra: ${{ steps.filter.outputs.communication_service_infra }}
       communication_service_any: ${{ steps.filter.outputs.communication_service_any }}
+              - 'api-client/**'
       configuration_service_code: ${{ steps.filter.outputs.configuration_service_code }}
+              - 'api-client/**'
       configuration_service_infra: ${{ steps.filter.outputs.configuration_service_infra }}
       configuration_service_any: ${{ steps.filter.outputs.configuration_service_any }}
+              - 'api-client/**'
       submission_service_code: ${{ steps.filter.outputs.submission_service_code }}
+              - 'api-client/**'
       submission_service_infra: ${{ steps.filter.outputs.submission_service_infra }}
       submission_service_any: ${{ steps.filter.outputs.submission_service_any }}
+              - 'api-client/**'
       notification_service_code: ${{ steps.filter.outputs.notification_service_code }}
+              - 'api-client/**'
       notification_service_infra: ${{ steps.filter.outputs.notification_service_infra }}
       notification_service_any: ${{ steps.filter.outputs.notification_service_any }}
+              - 'api-client/**'
       response_service_code: ${{ steps.filter.outputs.response_service_code }}
+              - 'api-client/**'
       response_service_infra: ${{ steps.filter.outputs.response_service_infra }}
       response_service_any: ${{ steps.filter.outputs.response_service_any }}
+              - 'api-client/**'
       cloudfront: ${{ steps.filter.outputs.cloudfront }}
     steps:
       - uses: actions/checkout@v6
@@ -62,21 +80,25 @@ jobs:
             infra_library:
               - 'infraLibrary/**'
             template_service_code:
+              - 'api-client/**'
               - 'templateEcsService/src/**'
               - 'templateEcsService/pom.xml'
               - 'templateEcsService/Dockerfile'
             template_service_infra:
               - 'templateEcsService/infra/**'
             template_service_any:
+              - 'api-client/**'
               - 'templateEcsService/**'
               - 'infraLibrary/**'
             user_service_code:
+              - 'api-client/**'
               - 'userService/src/**'
               - 'userService/pom.xml'
               - 'userService/Dockerfile'
             user_service_infra:
               - 'userService/infra/**'
             user_service_any:
+              - 'api-client/**'
               - 'userService/**'
               - 'infraLibrary/**'
               - 'workflow-service/workflow-*/**'
@@ -86,6 +108,7 @@ jobs:
               - 'workflow-service/**'
               - 'infraLibrary/**'
             web_ui_code:
+              - 'api-client/**'
               - 'web-ui/src/**'
               - 'web-ui/public/**'
               - 'web-ui/index.html'
@@ -96,59 +119,72 @@ jobs:
             web_ui_infra:
               - 'web-ui/infra/**'
             web_ui_any:
+              - 'api-client/**'
               - 'web-ui/**'
               - 'infraLibrary/**'
             matching_service_code:
+              - 'api-client/**'
               - 'matchingService/src/**'
               - 'matchingService/pom.xml'
               - 'matchingService/Dockerfile'
             matching_service_infra:
               - 'matchingService/infra/**'
             matching_service_any:
+              - 'api-client/**'
               - 'matchingService/**'
               - 'infraLibrary/**'
             communication_service_code:
+              - 'api-client/**'
               - 'communicationService/src/**'
               - 'communicationService/pom.xml'
               - 'communicationService/Dockerfile'
             communication_service_infra:
               - 'communicationService/infra/**'
             communication_service_any:
+              - 'api-client/**'
               - 'communicationService/**'
             configuration_service_code:
+              - 'api-client/**'
               - 'configuration-service/src/**'
               - 'configuration-service/pom.xml'
               - 'configuration-service/Dockerfile'
             configuration_service_infra:
               - 'configuration-service/infra/**'
             configuration_service_any:
+              - 'api-client/**'
               - 'configuration-service/**'
               - 'infraLibrary/**'
             submission_service_code:
+              - 'api-client/**'
               - 'submission-service/src/**'
               - 'submission-service/pom.xml'
               - 'submission-service/Dockerfile'
             submission_service_infra:
               - 'submission-service/infra/**'
             submission_service_any:
+              - 'api-client/**'
               - 'submission-service/**'
               - 'infraLibrary/**'
             notification_service_code:
+              - 'api-client/**'
               - 'notificationService/src/**'
               - 'notificationService/pom.xml'
               - 'notificationService/Dockerfile'
             notification_service_infra:
               - 'notificationService/infra/**'
             notification_service_any:
+              - 'api-client/**'
               - 'notificationService/**'
               - 'infraLibrary/**'
             response_service_code:
+              - 'api-client/**'
               - 'responseService/src/**'
               - 'responseService/pom.xml'
               - 'responseService/Dockerfile'
             response_service_infra:
               - 'responseService/infra/**'
             response_service_any:
+              - 'api-client/**'
               - 'responseService/**'
               - 'infraLibrary/**'
             cloudfront:

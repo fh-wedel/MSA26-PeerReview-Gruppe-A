@@ -173,27 +173,8 @@ public class AiReviewSqsListener {
                 throw new IllegalStateException("AI response contains malformed answer entries.");
             }
 
-            Object questionIdRaw = answerMap.get("questionId");
-            if (!(questionIdRaw instanceof String) || ((String) questionIdRaw).isBlank()) {
-                questionIdRaw = answerMap.get("question_id");
-            }
-            if (!(questionIdRaw instanceof String) || ((String) questionIdRaw).isBlank()) {
-                questionIdRaw = answerMap.get("id");
-            }
-
-            Object answerRaw = answerMap.get("answer");
-            if (answerRaw == null) {
-                answerRaw = answerMap.get("value");
-            }
-            if (answerRaw == null) {
-                answerRaw = answerMap.get("grade");
-            }
-            if (answerRaw == null) {
-                answerRaw = answerMap.get("score");
-            }
-            if (answerRaw == null) {
-                answerRaw = answerMap.get("comment");
-            }
+            Object questionIdRaw = extractQuestionId(answerMap);
+            Object answerRaw = extractAnswerValue(answerMap);
 
             if (!(questionIdRaw instanceof String questionId) || questionId.isBlank()) {
                 throw new IllegalStateException("AI response contains an answer without questionId.");
@@ -246,5 +227,33 @@ public class AiReviewSqsListener {
             throw new IllegalStateException("AI response field '" + fieldName + "' is missing or empty.");
         }
         return stringValue;
+    }
+
+    private Object extractQuestionId(Map<?, ?> answerMap) {
+        Object questionIdRaw = answerMap.get("questionId");
+        if (!(questionIdRaw instanceof String) || ((String) questionIdRaw).isBlank()) {
+            questionIdRaw = answerMap.get("question_id");
+        }
+        if (!(questionIdRaw instanceof String) || ((String) questionIdRaw).isBlank()) {
+            questionIdRaw = answerMap.get("id");
+        }
+        return questionIdRaw;
+    }
+
+    private Object extractAnswerValue(Map<?, ?> answerMap) {
+        Object answerRaw = answerMap.get("answer");
+        if (answerRaw == null) {
+            answerRaw = answerMap.get("value");
+        }
+        if (answerRaw == null) {
+            answerRaw = answerMap.get("grade");
+        }
+        if (answerRaw == null) {
+            answerRaw = answerMap.get("score");
+        }
+        if (answerRaw == null) {
+            answerRaw = answerMap.get("comment");
+        }
+        return answerRaw;
     }
 }
