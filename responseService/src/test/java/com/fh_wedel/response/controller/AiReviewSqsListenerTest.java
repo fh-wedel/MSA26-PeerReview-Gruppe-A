@@ -278,4 +278,56 @@ class AiReviewSqsListenerTest {
         verify(repository, org.mockito.Mockito.atLeast(2)).save(savedCaptor.capture());
         assertThat(savedCaptor.getAllValues().getLast().getAiStatus()).isEqualTo("FAILED");
     }
+
+    @Test
+    @DisplayName("returns early on invalid JSON")
+    void receiveAiReviewTask_invalidJson() {
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        listener.receiveAiReviewTask("invalid-json");
+        verify(repository, never()).findBySubmissionId(any());
+    }
+
+    @Test
+    @DisplayName("returns early if ReviewResult not found")
+    void receiveAiReviewTask_reviewResultNotFound() {
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
+        listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + UUID.randomUUID() + "\"}");
+        verify(submissionReviewsApi, never()).getFeedbackFormForSubmission(any());
+    }
+
+    @Test
+    @DisplayName("fails if grading schema is empty")
+    void receiveAiReviewTask_failsIfSchemaEmpty() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = new ReviewResult();
+        placeholder.setId(reviewId);
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-1")).thenReturn(List.of());
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + reviewId + "\"}");
+
+        assertThat(placeholder.getAiStatus()).isEqualTo("FAILED");
+    }
+
+    @Test
+    @DisplayName("fails if reviewComments is missing")
+    void receiveAiReviewTask_failsIfCommentsMissing() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        ReviewResult placeholder = new ReviewResult();
+        placeholder.setId(reviewId);
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(placeholder));
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-1")).thenReturn(List.of(new ReviewQuestionDto().id("q1").required(false)));
+        when(bedrockProxyClientService.generateReview(any(), any(), any(), any())).thenReturn("""
+                {
+                  "answers": [{"questionId": "q1", "answer": "1"}]
+                }
+                """);
+
+        AiReviewSqsListener listener = new AiReviewSqsListener(repository, bedrockProxyClientService, submissionReviewsApi, resultService, objectMapper, "");
+        listener.receiveAiReviewTask("{\"submissionId\":\"sub-1\",\"reviewResultId\":\"" + reviewId + "\",\"documentS3Key\":\"key\"}");
+
+        assertThat(placeholder.getAiStatus()).isEqualTo("FAILED");
+    }
 }

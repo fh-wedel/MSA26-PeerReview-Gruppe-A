@@ -407,4 +407,54 @@ class ChatServiceTest {
         assertEquals(4, participants.size());
         assertTrue(participants.containsAll(List.of("sub1", "sub2", "ex1", "ex2")));
     }
+    
+    @Test
+    void testListChats() {
+        ParticipantLinkItem link1 = ParticipantLinkItem.builder()
+                .chatId("chat1")
+                .chatType("SUBMISSION")
+                .submissionId("sub1")
+                .lastMessageAt("2023-01-01T00:00:00Z")
+                .build();
+                
+        ParticipantLinkItem link2 = ParticipantLinkItem.builder()
+                .chatId("chat2")
+                .chatType("GENERAL")
+                .otherParticipantId("userB")
+                .submissionId("GENERAL")
+                .lastMessageAt("2023-01-02T00:00:00Z")
+                .build();
+
+        ParticipantLinkItem link3 = ParticipantLinkItem.builder()
+                .chatId("chat3")
+                .chatType("GENERAL")
+                .otherParticipantId("userC")
+                .lastMessageAt("2023-01-03T00:00:00Z")
+                .build();
+                
+        when(chatRepository.findParticipantLinks("userA")).thenReturn(List.of(link1, link2, link3));
+        
+        ChatListResponse response = chatService.listChats("userA");
+        
+        assertNotNull(response);
+        assertEquals(3, response.getChats().size());
+        
+        ChatSummary summary1 = response.getChats().get(0);
+        assertEquals("chat1", summary1.getChatId());
+        assertEquals(ChatSummary.ChatTypeEnum.SUBMISSION, summary1.getChatType());
+        assertEquals("sub1", summary1.getSubmissionId());
+        assertNull(summary1.getOtherParticipantId());
+        
+        ChatSummary summary2 = response.getChats().get(1);
+        assertEquals("chat2", summary2.getChatId());
+        assertEquals(ChatSummary.ChatTypeEnum.GENERAL, summary2.getChatType());
+        assertNull(summary2.getSubmissionId()); // "GENERAL" is ignored
+        assertEquals("userB", summary2.getOtherParticipantId());
+
+        ChatSummary summary3 = response.getChats().get(2);
+        assertEquals("chat3", summary3.getChatId());
+        assertEquals(ChatSummary.ChatTypeEnum.GENERAL, summary3.getChatType());
+        assertNull(summary3.getSubmissionId());
+        assertEquals("userC", summary3.getOtherParticipantId());
+    }
 }

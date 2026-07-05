@@ -214,4 +214,157 @@ class ConfigurationControllerTest {
         ResponseEntity<SubmissionConfiguration> response = controller.createConfiguration(request, auth);
         assertEquals(201, response.getStatusCode().value());
     }
+
+    @Test
+    void testGetConfiguration_Found_Admin() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Admin");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        SubmissionConfiguration config = new SubmissionConfiguration();
+        when(configurationService.getConfiguration("sub1")).thenReturn(config);
+
+        ResponseEntity<SubmissionConfiguration> response = controller.getConfiguration("sub1", auth);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(config, response.getBody());
+    }
+
+    @Test
+    void testGetConfiguration_NotFound() {
+        Authentication auth = mock(Authentication.class);
+        when(configurationService.getConfiguration("sub1")).thenReturn(null);
+
+        ResponseEntity<SubmissionConfiguration> response = controller.getConfiguration("sub1", auth);
+        assertEquals(404, response.getStatusCode().value());
+    }
+
+    @Test
+    void testGetConfiguration_AuthorDenied() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Author");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        SubmissionConfiguration config = new SubmissionConfiguration();
+        config.setAuthorIds(List.of("54321"));
+        when(configurationService.getConfiguration("sub1")).thenReturn(config);
+
+        assertThrows(AccessDeniedException.class, () -> {
+            controller.getConfiguration("sub1", auth);
+        });
+    }
+
+    @Test
+    void testGetSubmissionDeadline_Found() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Admin");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        SubmissionConfiguration config = new SubmissionConfiguration();
+        config.setSubmissionDeadline(java.time.Instant.now());
+        when(configurationService.getConfiguration("sub1")).thenReturn(config);
+
+        ResponseEntity<java.time.Instant> response = controller.getSubmissionDeadline("sub1", auth);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(config.getSubmissionDeadline(), response.getBody());
+    }
+
+    @Test
+    void testGetSubmissionDeadline_NotFound() {
+        Authentication auth = mock(Authentication.class);
+        when(configurationService.getConfiguration("sub1")).thenReturn(null);
+
+        ResponseEntity<java.time.Instant> response = controller.getSubmissionDeadline("sub1", auth);
+        assertEquals(404, response.getStatusCode().value());
+    }
+
+    @Test
+    void testGetReviewDeadline_Found() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Admin");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        SubmissionConfiguration config = new SubmissionConfiguration();
+        config.setReviewDeadline(java.time.Instant.now());
+        when(configurationService.getConfiguration("sub1")).thenReturn(config);
+
+        ResponseEntity<java.time.Instant> response = controller.getReviewDeadline("sub1", auth);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(config.getReviewDeadline(), response.getBody());
+    }
+
+    @Test
+    void testGetReviewDeadline_NotFound() {
+        Authentication auth = mock(Authentication.class);
+        when(configurationService.getConfiguration("sub1")).thenReturn(null);
+
+        ResponseEntity<java.time.Instant> response = controller.getReviewDeadline("sub1", auth);
+        assertEquals(404, response.getStatusCode().value());
+    }
+
+    @Test
+    void testGetConfigurationsByAuthor_Success() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Author");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        List<SubmissionConfiguration> configs = List.of(new SubmissionConfiguration());
+        when(configurationService.getConfigurationsByAuthor("12345")).thenReturn(configs);
+
+        ResponseEntity<List<SubmissionConfiguration>> response = controller.getConfigurationsByAuthor("12345", auth);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(configs, response.getBody());
+    }
+
+    @Test
+    void testGetConfigurationsByAuthor_Denied() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Author");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        assertThrows(AccessDeniedException.class, () -> {
+            controller.getConfigurationsByAuthor("54321", auth);
+        });
+    }
+
+    @Test
+    void testListAllConfigurations() {
+        List<SubmissionConfiguration> configs = List.of(new SubmissionConfiguration());
+        when(configurationService.getAllConfigurations()).thenReturn(configs);
+
+        ResponseEntity<List<SubmissionConfiguration>> response = controller.listAllConfigurations();
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(configs, response.getBody());
+    }
+
+    @Test
+    void testCreateConfiguration_IllegalArgumentException() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getDetails()).thenReturn("12345");
+        GrantedAuthority authority = mock(GrantedAuthority.class);
+        when(authority.getAuthority()).thenReturn("ROLE_Admin");
+        when(auth.getAuthorities()).thenReturn((Collection) List.of(authority));
+
+        CreateConfigurationRequest request = new CreateConfigurationRequest();
+        request.setTitle("Title");
+        request.setNumberOfExaminers(1);
+        
+        when(configurationService.createConfiguration(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new IllegalArgumentException("Error"));
+
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> {
+            controller.createConfiguration(request, auth);
+        });
+    }
 }
