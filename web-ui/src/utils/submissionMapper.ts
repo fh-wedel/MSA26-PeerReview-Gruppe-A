@@ -1,6 +1,6 @@
 import { matchingApiClient, submissionApiClient, responseApiClient } from '../api/clients';
 
-const determineMatchStatus = (matchData: any, expectedHumanReviews: number) => {
+const determineMatchStatus = (matchData: any) => {
   let status = 'Created';
   let reviewerId: string | undefined = undefined;
   let matchedAt: string | undefined = undefined;
@@ -18,7 +18,7 @@ const determineMatchStatus = (matchData: any, expectedHumanReviews: number) => {
   return { status, reviewerId, matchedAt };
 };
 
-const getSubmissionStatusStr = (subData: any) => {
+export const getSubmissionStatusStr = (subData: any) => {
   if (subData.status === 'SUBMITTED') return 'Submitted';
   if (subData.status === 'READY_FOR_REVIEW') return 'Ready for Review';
   if (subData.status === 'WAITING_FOR_SUBMISSION') return 'Waiting for Submission';
@@ -74,7 +74,7 @@ export const mapConfigToDisplay = async (config: any) => {
     const matchData: any = (matchRes as any).data;
     if (matchData) {
       expectedHumanReviews = matchData.matches?.length || matchData.numberOfExaminers || 0;
-      const matchStatus = determineMatchStatus(matchData, expectedHumanReviews);
+      const matchStatus = determineMatchStatus(matchData);
       if (matchStatus.status !== 'Created') status = matchStatus.status;
       reviewerId = matchStatus.reviewerId;
       matchedAt = matchStatus.matchedAt;

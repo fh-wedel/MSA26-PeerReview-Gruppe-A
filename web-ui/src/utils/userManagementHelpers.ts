@@ -1,4 +1,4 @@
-import { UserProfile } from '../api/communication';
+import type { UserProfile } from '../api/generated/users';
 
 export const handleAddSubmitLogic = async (
   selectedUser: any,

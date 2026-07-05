@@ -1,4 +1,4 @@
-import { Message } from '../api/communication';
+import type { Message } from '../api/communication';
 
 export const handleChatSseMessage = (
   ev: any,

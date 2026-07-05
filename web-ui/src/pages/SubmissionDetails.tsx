@@ -26,7 +26,6 @@ import {useAuth} from '../contexts/AuthContext';
 import {fetchSubmissionMatch, fetchWorkflowRulesForSubmission} from '../api/communication';
 import {configApiClient, configurationApiClient, submissionApiClient, responseApiClient} from '../api/clients';
 import {ReviewFormModal} from '../components/ReviewFormModal';
-import { getSubmissionStatusStr } from '../utils/submissionMapper';
 import { uploadDocument } from '../utils/documentUpload';
 import { triggerAiReview } from '../utils/aiReviewHandler';
 import {getMockSubmissionById} from '../stubs/submissions';

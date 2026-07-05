@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   AppBar,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -10,7 +9,6 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemButton,
   ListItemText,
   Menu,
@@ -22,12 +20,9 @@ import {
 } from '@mui/material';
 import {
   AccountCircle,
-  Assignment,
   Brightness4,
   Brightness7,
   Close,
-  Description,
-  DoneAll,
   Mail,
   Menu as MenuIcon,
   Notifications,
@@ -45,7 +40,6 @@ import {
 } from '../api/notification';
 import { searchUsers } from '../api/communication';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
 import { MessagesMenu } from './MessagesMenu';
 import { NotificationMenu } from './NotificationMenu';
@@ -110,10 +104,6 @@ export const Navbar: React.FC = () => {
     markNotificationRead(id).catch(err => console.error('Failed to mark read', err));
   };
 
-  const handleMessageClick = () => {
-    setAnchorElMessages(null);
-    navigate('/chats');
-  };
 
   const handleDrawerNav = (path: string) => {
     navigate(path);

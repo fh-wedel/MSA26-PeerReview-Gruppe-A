@@ -1,7 +1,7 @@
 export const handleSubmissionModalSubmit = async (
   isSubmitDisabled: boolean,
   setHasAttemptedSubmit: (val: boolean) => void,
-  validateSubmission: (authors: any[], reviewers: any[], num: number, template: any) => string,
+  validateSubmission: (authors: any[], reviewers: any[], num: number, template: any) => string | null,
   selectedAuthors: any[],
   selectedCustomReviewers: any[],
   numberOfReviewers: number,

@@ -12,11 +12,10 @@ import {
   TableHead,
   TableRow,
   Typography,
-  IconButton,
-  TextField,
-  Button
+  
+  
 } from '@mui/material';
-import {Extension, Group, Tag, Delete, Add} from '@mui/icons-material';
+import {Extension, Group} from '@mui/icons-material';
 import {searchUsers} from '../api/communication';
 import { useWorkflowPlugins } from '../hooks/useWorkflowPlugins';
 import { useTopicTags } from '../hooks/useTopicTags';

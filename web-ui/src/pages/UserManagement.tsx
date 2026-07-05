@@ -4,29 +4,20 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  IconButton,
   Switch,
   Tab,
   Tabs,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
-  Paper,
   Autocomplete,
   CircularProgress
 } from '@mui/material';
-import { Delete, Edit, GroupAdd } from '@mui/icons-material';
+import { GroupAdd } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import {

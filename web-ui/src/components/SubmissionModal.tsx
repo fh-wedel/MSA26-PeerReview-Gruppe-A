@@ -1,17 +1,12 @@
 import React, {useEffect, useState} from "react";
 import {
   Alert,
-  Autocomplete,
   Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Snackbar,
   TextField,
   Typography,
@@ -23,10 +18,10 @@ import {useGroupMembers} from "../hooks/useGroupMembers";
 import {useWorkflowPlugins} from "../hooks/useWorkflowPlugins";
 import {useTopicTags} from "../hooks/useTopicTags";
 import {useAuth} from "../contexts/AuthContext";
-import {validateSubmission, checkIsSubmitDisabled, validateAuthorsChange} from "../utils/submissionValidation";
 import {calculateSubmissionDefaults} from "../utils/submissionDefaults";
 import {getSubmissionModalPermissions} from "../utils/submissionPermissions";
 import {handleSubmissionModalSubmit} from "../utils/submissionHandlers";
+import {validateSubmission, checkIsSubmitDisabled} from "../utils/submissionValidation";
 import {AuthorField} from "./submission-modal/AuthorField";
 import {ReviewTemplateField} from "./submission-modal/ReviewTemplateField";
 import {ReviewTypeField} from "./submission-modal/ReviewTypeField";

@@ -1,4 +1,4 @@
-import { UserSummary } from '../api/communication';
+import type { UserSummary } from '../api/communication';
 
 export const handleNewGeneralChatLogic = (
   selectedUser: UserSummary,

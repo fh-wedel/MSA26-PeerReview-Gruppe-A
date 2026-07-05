@@ -1,24 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import {
-    Avatar,
     Box,
-    Divider,
-    Fab,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemButton,
-    ListItemText,
-    Tab,
-    Tabs,
-    Typography
+    
 } from '@mui/material';
-import {AccountCircle, Add as AddIcon, Group} from '@mui/icons-material';
 import {useChat} from '../contexts/ChatContext';
-import {ChatWidget} from '../components/chat/ChatWidget';
 import {UserSearchDialog} from '../components/chat/UserSearchDialog';
 import {SubmissionChatDialog} from '../components/chat/SubmissionChatDialog';
-import {formatDistanceToNow} from 'date-fns';
 import type {UserSummary} from '../api/communication';
 import {searchUsers} from '../api/communication';
 import {useAuth} from '../contexts/AuthContext';

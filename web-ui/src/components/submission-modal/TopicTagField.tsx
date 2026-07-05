@@ -6,7 +6,7 @@ interface TopicTagFieldProps {
   setTopicTag: (val: string) => void;
   tagsLoading: boolean;
   submitting: boolean;
-  topicTags: string[];
+  topicTags: any[];
   hasAttemptedSubmit: boolean;
 }
 

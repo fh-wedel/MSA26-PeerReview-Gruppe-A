@@ -16,7 +16,7 @@ import {
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
-import {configApiClient, matchingApiClient, submissionApiClient, responseApiClient} from '../api/clients';
+import {configApiClient} from '../api/clients';
 import {filterByStatus, StatusFilter} from '../components/StatusFilter';
 import type {SortDirection, SortOption} from '../components/SortControl';
 import {SortControl, sortItems} from '../components/SortControl';
