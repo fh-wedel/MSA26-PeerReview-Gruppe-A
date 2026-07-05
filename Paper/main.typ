@@ -20,7 +20,7 @@
 
 // List of Abbreviations
 #heading(level: 1, numbering: none)[Abkürzungsverzeichnis]
-#print-glossary(acronyms, show-all: true)
+#print-glossary(acronyms, disable-back-references: true)
 #pagebreak()
 
 
