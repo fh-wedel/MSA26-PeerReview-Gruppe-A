@@ -56,7 +56,7 @@
 
 
 #statutory-declaration((
-  (name: "Matthias Matthies"),
+  (name: "Matthias Matthies", signature: "signaturen/matthias.png"),
   (name: "Marcel Ossig"),
   (name: "Erika Musterfrau"),
   (name: "John Doe"),
