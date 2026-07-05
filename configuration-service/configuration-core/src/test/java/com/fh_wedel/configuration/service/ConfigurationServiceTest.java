@@ -78,4 +78,110 @@ class ConfigurationServiceTest {
                 .contains("IN_APP")
                 .contains("author-sub");
     }
+
+    @Test
+    void createConfiguration_allowsCustomReviewersForTeacher() throws Exception {
+        ConfigurationService service = new ConfigurationService(
+                repository,
+                pluginService,
+                topicTagService,
+                sqsTemplate,
+                new ObjectMapper(),
+                "matching-request-queue",
+                "notification-request-queue");
+
+        org.mockito.Mockito.doNothing().when(repository).saveConfiguration(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+
+        com.fh_wedel.configuration.api.ReviewTemplatePlugin mockPlugin = org.mockito.Mockito.mock(com.fh_wedel.configuration.api.ReviewTemplatePlugin.class);
+        org.mockito.Mockito.when(mockPlugin.getMinAuthors()).thenReturn(1);
+        org.mockito.Mockito.when(mockPlugin.getMaxAuthors()).thenReturn(5);
+        org.mockito.Mockito.when(mockPlugin.getMinReviewers()).thenReturn(1);
+        org.mockito.Mockito.when(mockPlugin.getMaxReviewers()).thenReturn(5);
+        org.mockito.Mockito.when(pluginService.getReviewTemplate("STANDARD")).thenReturn(java.util.Optional.of(mockPlugin));
+
+        com.fh_wedel.configuration.model.SubmissionConfiguration config = service.createConfiguration(
+                "My Thesis",
+                "DOUBLE_BLIND",
+                "STANDARD",
+                2,
+                java.time.Instant.now().plusSeconds(3600),
+                java.time.Instant.now().plusSeconds(7200),
+                java.util.List.of("author-sub"),
+                "creator-sub",
+                "Teacher",
+                "Java",
+                java.util.List.of("reviewer1"));
+
+        org.assertj.core.api.Assertions.assertThat(config).isNotNull();
+    }
+
+    @Test
+    void createConfiguration_deniesCustomReviewersForAuthorWhenNotAllowed() throws Exception {
+        ConfigurationService service = new ConfigurationService(
+                repository,
+                pluginService,
+                topicTagService,
+                sqsTemplate,
+                new ObjectMapper(),
+                "matching-request-queue",
+                "notification-request-queue");
+
+        com.fh_wedel.configuration.api.ReviewTemplatePlugin mockPlugin = org.mockito.Mockito.mock(com.fh_wedel.configuration.api.ReviewTemplatePlugin.class);
+        org.mockito.Mockito.when(mockPlugin.getMinAuthors()).thenReturn(1);
+        org.mockito.Mockito.when(mockPlugin.getMaxAuthors()).thenReturn(5);
+        org.mockito.Mockito.when(mockPlugin.isAllowAuthorCustomReviewer()).thenReturn(false);
+        org.mockito.Mockito.when(pluginService.getReviewTemplate("STANDARD")).thenReturn(java.util.Optional.of(mockPlugin));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
+            service.createConfiguration(
+                    "My Thesis",
+                    "DOUBLE_BLIND",
+                    "STANDARD",
+                    2,
+                    java.time.Instant.now().plusSeconds(3600),
+                    java.time.Instant.now().plusSeconds(7200),
+                    java.util.List.of("author-sub"),
+                    "creator-sub",
+                    "Author",
+                    "Java",
+                    java.util.List.of("reviewer1"));
+        }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Authors are not allowed to specify custom reviewers");
+    }
+
+    @Test
+    void createConfiguration_allowsCustomReviewersForAuthorWhenAllowed() throws Exception {
+        ConfigurationService service = new ConfigurationService(
+                repository,
+                pluginService,
+                topicTagService,
+                sqsTemplate,
+                new ObjectMapper(),
+                "matching-request-queue",
+                "notification-request-queue");
+
+        org.mockito.Mockito.doNothing().when(repository).saveConfiguration(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+
+        com.fh_wedel.configuration.api.ReviewTemplatePlugin mockPlugin = org.mockito.Mockito.mock(com.fh_wedel.configuration.api.ReviewTemplatePlugin.class);
+        org.mockito.Mockito.when(mockPlugin.getMinAuthors()).thenReturn(1);
+        org.mockito.Mockito.when(mockPlugin.getMaxAuthors()).thenReturn(5);
+        org.mockito.Mockito.when(mockPlugin.getMinReviewers()).thenReturn(1);
+        org.mockito.Mockito.when(mockPlugin.getMaxReviewers()).thenReturn(5);
+        org.mockito.Mockito.when(mockPlugin.isAllowAuthorCustomReviewer()).thenReturn(true);
+        org.mockito.Mockito.when(pluginService.getReviewTemplate("STANDARD")).thenReturn(java.util.Optional.of(mockPlugin));
+
+        com.fh_wedel.configuration.model.SubmissionConfiguration config = service.createConfiguration(
+                "My Thesis",
+                "DOUBLE_BLIND",
+                "STANDARD",
+                2,
+                java.time.Instant.now().plusSeconds(3600),
+                java.time.Instant.now().plusSeconds(7200),
+                java.util.List.of("author-sub"),
+                "creator-sub",
+                "Author",
+                "Java",
+                java.util.List.of("reviewer1"));
+
+        org.assertj.core.api.Assertions.assertThat(config).isNotNull();
+    }
 }
