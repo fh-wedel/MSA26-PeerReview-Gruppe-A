@@ -19,8 +19,14 @@ Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (C
 === Agents.MD / Claude.MD <sec:agents-md>
 // (Gideon)
 
-=== AntiGravity <sec:antigravity>
-// (Matthias)
+=== Antigravity <sec:antigravity>
+Google's Antigravity #footnote[https://antigravity.google/] wird in drei grundlegend unterschiedlichen Versionen angeboten. Antigravity IDE #footnote[https://antigravity.google/product/antigravity-ide], welche die gewohnte VSCode #footnote[https://code.visualstudio.com/] Entwicklungsumgeben mit zahlreichen KI-Werkzeugen ergänzt.
+
+Antigravity 2.0 #footnote[https://antigravity.google/product/antigravity-2] welche eine Agentenorchestrierungsplattform darstellt und den Texteditor entfernt und die Möglichkeit liefert auf verschiedene Art und Weise mit KI Agenten zu interagieren. Mit Antigravity 2.0 lassen sich außerdem Routineaufgaben planen und automatisiert erledigen. So kann zum Beispiel stündlich verlangt werden, mögliche Pull Requests zu mergen. Sogenannte Skills liefern den Agenten verschiedene Beschreibungen wie bestimmte Aufgaben zu erledigen sind.
+
+Als letztes wird Antigravity, ähnlich zu Claude Code, auch als eine Kommandozeilenanwendung bereitgestellt #footnote[https://antigravity.google/product/antigravity-cli]. Diese bietet dem Nutzer ein ähnliches Erlebnis wie in Antigravity 2.0, beschränkt sich aber auf die Nutzung per Kommandozeile. Diese KI-Werkzeuge bieten den Sprachmodellen nicht nur Zugriff auf verschiedenste Kommandozeilenanwendungen und somit Zugriff auf bestimmte Bereiche der Hostmaschine, sondern ermöglichen es den Modellen weiter Subagenten zu erzeugen. Diese Subagenten werden für die Aufgabe als notwendig benannte Aufgaben zu erledigen.
+
+Für dieses Projekt haben wir Antigravity 2.0 genutzt, um den von Konzernen gewünschten State-of-the-Art zu erleben und erlernen. Für jeden Microservice konnte ein neuer Kontext erstellt werden. Bevor der Agent zu implementieren beginnt, wird ein Planungsmodus verwendet, um den notwendigen Kontext einzulesen und sicherzustellen dass das Implementieren Schritt für Schritt erfolgt. Hierzu stellt der Agent teilweise beeindruckende Grafiken zur Architektur bereit. Der Plan lässt sich außerdem iterativ überarbeiten. Wenn der Plan bestätigt wird, implementiert die KI alle notwendigen Teile, so zumindest die Idee.
 
 === Claude Code <sec:claude-code>
 // (Gideon)
@@ -28,8 +34,10 @@ Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (C
 === Open Code <sec:open-code>
 // (Luca)
 
-=== GitHub Reviewer <sec:github-reviewer>
-// (Matthias)
+=== GitHub Copilot Reviewer <sec:github-reviewer>
+Commit und Pull Requests von agentischer Entwicklung umfassen häufig große Mengen an Code - vorallem in Greenfield-Situationen wie in diesem Projekt. Um den Überblick über diese Änderungen behalten zu können, liefert GitHub mit GitHub Copilot Reviewer eine in die Platform integrierte KI-Unterstützung #footnote[https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review]. Dieses Produkt soll dabei helfen die Quellcodeänderungen zu verstehen, Fehler zu finden oder auch selbstdefinierte Anweisungen durchzuführen. Der KI Review kann in den CI/CD Arbeitsfluss eingebunden werden, was einen hohen Grad an Automatisierung erlaubt.
+
+Unsere Erfahrungen mit Copilot Review belaufen sich auf wenige Tests. In einem Drittel ($1/3$) Fällen wurde eine falsche Problemlösung vorgeschlagen.
 
 == CI / CD Integration <sec:cicd-integration>
 Als etabliertes Verfahren der modernen Softwareentwicklung wurde eine Continuous-Integration- und Continuous-Deployment-Pipeline eingerichtet. Diese erlaubt ein automatisiertes Deployment der aktuellen Softwareversion auf Knopfdruck. Hierdurch werden fehleranfällige manuelle Bereitstellungsprozesse eliminiert. Gleichzeitig stellt der Ansatz der kontinuierlichen Integration sicher, dass Modifikationen frühzeitig zusammengeführt werden, wodurch potenzielle Integrationskonflikte oder Laufzeitfehler in einem frühen Stadium sichtbar werden. Neben der Option, spezifische Feature-Branches manuell zu deployen, wird bei jedem Merge auf den geschützten Hauptzweig (`main` branch) automatisch das Deployment aller vom Commit betroffenen Microservices initiiert.
