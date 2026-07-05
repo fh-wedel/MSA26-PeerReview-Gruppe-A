@@ -1,6 +1,7 @@
 # MSA26-PeerReview Gruppe A
 
 [![CI](https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A/actions/workflows/ci.yml/badge.svg)](https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A/actions/workflows/ci.yml)
+![Coverage](.github/badges/jacoco.svg)
 
 Ein verteiltes System zum gegenseitigen Begutachten von wissenschaftlichen Arbeiten (Peer-Review).
 
