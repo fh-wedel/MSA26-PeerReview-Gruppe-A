@@ -66,22 +66,41 @@ Die Pipeline ist technologisch auf Basis von GitHub Actions realisiert. Der Work
 == Optimierung <sec:optimization>
 // (Luca)
 
-Während der Entwicklungsphase wurde mithilfe von ausführlichen KI-Prompts und entsprechend angepassten `AGENTS.md`-Dateien versucht, die Testabdeckung des Gesamtsystems sicherzustellen. Gleichzeitig wurde hierbei angestrebt, allgemeine Codestrukturen und Konventionen festzulegen. Schnell hat sich dies jedoch insbesondere durch die Verwendung von unterschiedlichen @LLM:pl als kein triviales Unterfangen herausgestellt, da die Modelle jeweils mit ihren spezifischen Präferenzen und Verhaltensmustern daherkamen. So wurden beispielsweise Regeln unterschiedlich stark eingehalten, wodurch es schließlich dazu gekommen ist, dass die Testabdeckung für einige Services entweder stark oder vollkommen vernachlässigt wurde. Insbesondere der Web-UI-Service verblieb eine lange Zeit ohne Tests. Dies verbesserte sich erst nachdem eine Codeabdeckung explizit gefordert wurde. Es ist davon auszugehen, dass besser ausformulierte `AGENTS.md`-Dateien diese Situation hätten verbessern können. Zeitgleich hätte dies bedeutet, dass bestenfalls bereits zu Anfang des Projekts fertige Architekturpläne, Ordnersturkturen und Konventionen hätten bereitstehen müssen. Dies war uns nicht möglich und erschien wenig praktikabel.
+Während der Entwicklungsphase wurde mithilfe von ausführlichen KI-Prompts und entsprechend angepassten `AGENTS.md`-Dateien versucht, die Testabdeckung des Gesamtsystems sicherzustellen. Gleichzeitig wurde hierbei angestrebt, allgemeine Codestrukturen und Konventionen festzulegen. Schnell hat sich dies jedoch insbesondere durch die Verwendung von unterschiedlichen @LLM:pl als kein triviales Unterfangen herausgestellt, da die Modelle jeweils mit ihren spezifischen Präferenzen und Verhaltensmustern daherkamen. So wurden beispielsweise Regeln unterschiedlich stark eingehalten, wodurch es schließlich dazu gekommen ist, dass die Testabdeckung für einige Services entweder stark oder vollkommen vernachlässigt wurde. Insbesondere der Web-UI-Service verblieb bis zu deren Fertigstellung ohne Tests. Dies verbesserte sich erst nachdem eine Codeabdeckung explizit gefordert wurde. Es ist davon auszugehen, dass besser ausformulierte `AGENTS.md`-Dateien diese Situation hätten verbessern können. Zeitgleich hätte dies bedeutet, dass bestenfalls bereits zu Anfang des Projekts fertige Architekturpläne, Ordnersturkturen und Konventionen hätten bereitstehen müssen. Dies war uns nicht möglich und erschien wenig praktikabel.
 
-Nach Fertigstellung der Implementierung des @MVP wurde die Testabdeckung der einzelnen Microservices des PeerReview-Systems ermittelt, um den jeweiligen #gls("CRAP")-Index zu berechnen. Für diesen wurde festgelegt, dass ein maximaler Wert von 30 zu akzeptieren ist. Beim Vergleich der Indexwerte mit dem Schwellwert wurden diverse Codestellen identifiziert, die basierend auf den geltenden Bedingungen als kritisch einzustufen waren und einer Optimierung bedurften.
+Dieser eben beschriebene negative Eindruck bezüglich der Testabdeckung wurde nach Fertigstellung der Implementierung des @MVP weiter untersucht. Hierzu wurde zunächst die Codeabdeckungder einzelnen Microservices des PeerReview-Systems ermittelt, um anschließend den jeweiligen #gls("CRAP")-Index zu berechnen. Für diesen wurde festgelegt, dass ein maximaler Wert von 30 zu akzeptieren ist. Beim Vergleich der Indexwerte mit dem Schwellwert wurden daraufhin diverse Codestellen identifiziert, die basierend auf den geltenden Bedingungen als kritisch einzustufen waren und einer Optimierung bedurften (siehe @fig:crap_before). 
 
 #figure(
-  caption: [Top CRAP-Index-Ausreißer vor der Optimierung],
+  caption: [Top CRAP-Index-Ausreißer vor Optimierungen],
   table(
     columns: 4,
-    [*Service*], [*Klasse / Komponente*], [*Methode*], [*CRAP-Score*],
+    [*Service*], [*Klasse*], [*Methode*], [*CRAP-Score*],
     [Web-UI], [Submissions.tsx], [mapConfigToDisplay], [407.1],
     [Web-UI], [Dashboard.tsx], [fetchTasks], [314.5],
     [Web-UI], [SubmissionModal.tsx], [SubmissionModal], [197.5],
     [Communication-Service], [ChatService], [getChat], [132.0],
     [Response-Service], [BedrockProxyClient], [generateReview], [132.0],
   )
-)
+) <fig:crap_before>
+
+Um diese identifizierten Ausreißer zu beheben, wurden KI-gestützte Refactoring-Maßnahmen durchgeführt. Im Backend-Bereich (z. B. im Communication-Service und Response-Service) lag der Fokus primär auf der Erhöhung der Testabdeckung durch die automatisierte Generierung von Mockito-Unit-Tests. Da die unzureichende Codeabdeckung eine zentrale Rolle in der CRAP-Formel spielt, führte eine Erhöhung der Testabdeckung zu einer drastischen Reduktion des Indexwertes auf die zugrundeliegende zyklomatische Komplexität. 
+
+In der Web-UI wurden komplexe React-Komponenten hingegen primär strukturell zerlegt. Verschachtelte JSX-Blöcke und umfangreiche Logikzweige wurden in kleinere Hilfsfunktionen mit einer zyklomatischen Komplexität von maximal 5 extrahiert. Dadurch konnte sichergestellt werden, dass der CRAP-Score dieser Methoden selbst bei einer Testabdeckung von 0 % mathematisch bedingt niemals den Grenzwert von 30 überschreitet. 
+
+Das Ergebnis dieser Optimierungsmaßnahmen ist in @fig:crap_after dargestellt. Sämtliche zuvor kritischen Methoden konnten erfolgreich auf oder unter den festgelegten Schwellwert von 30 gesenkt werden.
+
+#figure(
+  caption: [Höchste verbleibende CRAP-Index-Werte nach den Optimierungen],
+  table(
+    columns: 4,
+    [*Service*], [*Klasse*], [*Methode*], [*CRAP-Score*],
+    [User-Service], [CognitoService], [searchUsers], [30.0],
+    [Communication-Service], [ChatRepository], [findMessages], [30.0],
+    [Response-Service], [ResultService], [isAuthorOfSubmission], [30.0],
+    [Notification-Service], [NotificationSseService], [push], [20.0],
+    [Web-UI / Backend], [(Alle verbleibenden)], [(Diverse)], [< 20.0],
+  )
+) <fig:crap_after>
 
 == Dokumentation <sec:documentation>
 // (Claude, Matthias)
