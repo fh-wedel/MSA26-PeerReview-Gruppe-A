@@ -19,10 +19,12 @@ Auch der Einsatz des Monorepos wirkte sich im Hinblick auf das Kontextfenster (C
 Unter Agentic Coding versteht man den Einsatz autonomer Software-Agenten auf Basis von @LLM:pl, die über klassische Code-Vervollständigung hinausgehen. Im Gegensatz zu Assistenzsystemen versucht man mit Coding-Agenten einen kontinuierlichen Zyklus (Agentic Loop) aus Analyse, Planung, Umsetzung sowie anschließender Verifikation abzubilden. Hierfür werden orchestrierende Agentensysteme häufig in Form von CLI-Anwendungen oder IDE-Integrationen verwendet, die den Agenten eine strukturierte Ausführungsumgebung bieten. Dies soll die selbstständige Bearbeitung komplexer Entwicklungsaufgaben ermöglichen. Im Rahmen dieser Arbeit wurden verschiedene solcher agentischen Werkzeuge evaluiert, um deren Eignung für den Aufbau einer ereignisgesteuerten Microservice-Architektur festzustellen.
 
 === Agents.MD / Claude.MD <sec:agents-md>
-// (Gideon, Luca)
+// (Luca, Gideon)
 
-Ein wichtiger Aspekt guter Softwareentwicklung besteht darin, dass Architekturentscheidungen und Konventionen allen an der Software arbeitenden Entwicklern bekannt sein müssen, um diese anwenden zu können. Dieses Selbstverständnis führt zwangsweise dazu, dass auch autonom agierende Agenten die existierenden Regeln beachten müssen. Nur so kann Konsistenz gewährleistet werden. Um Coding-Agenten ebensolche projektbezogene Instruktionen und Kontext bereitzustellen, hat sich zunehmend die plattformübergreifende `AGENTS.md` als offener Standard @agents_md_website etabliert, der von Editoren wie Cursor und Agentensystemen wie Codex gelesen und respektiert wird. Im wesentlichen handelt es sich hierbei um eine Markdown-Datei, die ähnliche Funktionen wie die klassische `README.md` erfüllt, jedoch speziell für die Bereitstellung von Richtlinien, Konventionen und Projektinformationen für KI-Agenten konzipiert ist. Üblicherweise wird diese Datei im Wurzelverzeichnis eines Projekts abgelegt, um den Agenten einen zentralen Einstiegspunkt zu bieten. Oftmals ist es jedoch auch möglich, mehrere `AGENTS.md`-Dateien zu verwenden und diese in Unterverzeichnissen zu platzieren, um den Agenten kontextspezifische Informationen zu liefern. Hierzu sei angemerkt, dass durch die `AGENTS.md` zwar ein verbreiteter Standard existiert, es jedoch keine Garantie gibt, dass dieser stets eingehalten wird. So gibt es bis heute KI-Werkzeuge, die den Standard nicht respektieren. Dies führt zum Beispiel dazu, dass der Hersteller Anthropic mit Claude Code weiterhin ausschließlich sein proprietäres Dateiformat `CLAUDE.md` beachtet @claude_code_agents_issue_2025. // ¯\_(ツ)_/¯
+Ein wichtiger Aspekt guter Softwareentwicklung besteht darin, dass Architekturentscheidungen und Konventionen allen an der Software arbeitenden Entwicklern bekannt sein müssen, um diese anwenden zu können. Dieses Selbstverständnis führt zwangsweise dazu, dass auch autonom agierende Agenten die existierenden Regeln beachten müssen. Nur so kann Konsistenz gewährleistet werden. Um Coding-Agenten ebensolche projektbezogene Instruktionen und Kontext bereitzustellen, hat sich zunehmend die plattformübergreifende `AGENTS.md` als offener Standard @agents_md_website etabliert, der von Editoren wie Cursor und Agentensystemen wie Codex gelesen und respektiert wird. Im wesentlichen handelt es sich hierbei um eine Markdown-Datei, die ähnliche Funktionen wie die klassische `README.md` erfüllt, jedoch speziell für die Bereitstellung von Richtlinien, Konventionen und Projektinformationen für KI-Agenten konzipiert ist. Üblicherweise wird diese Datei im Wurzelverzeichnis eines Projekts abgelegt, um den Agenten einen zentralen Einstiegspunkt zu bieten. Oftmals ist es jedoch auch möglich, mehrere `AGENTS.md`-Dateien zu verwenden und diese in Unterverzeichnissen zu platzieren, um den Agenten kontextspezifische Informationen zu liefern. Hierzu sei angemerkt, dass durch die `AGENTS.md` zwar ein verbreiteter Standard existiert, es jedoch keine Garantie gibt, dass dieser stets eingehalten wird. So gibt es bis heute KI-Werkzeuge, die den Standard nicht respektieren. Dies führt zum Beispiel dazu, dass der Hersteller Anthropic mit Claude Code weiterhin ausschließlich sein proprietäres Dateiformat `CLAUDE.md` beachtet @claude_code_agents_issue_2025. Die Idee ist ansonsten identisch. // ¯\_(ツ)_/¯
 Da im Rahmen dieser Arbeit mit verschiedenen Agentensystemen gearbeitet werden sollte, war es aus diesem Grund erforderlich, ebendiesen Umstand zu beachten und zu adressieren. So wurde neben der `AGENTS.md` auch eine `CLAUDE.md` erstellt, wobei letztere mithilfe eines \@Agents.md-Ausdrucks auf die `AGENTS.md` verweist.
+
+Während des Projektverlaufs konnte immer wieder festgestellt werden, dass Agenten die `AGENTS.md`-Dateien erfolgreich gelesen hatten und deren Anweisungen bestmöglich befolgten. Zeitgleich wurde in Bezug auf die Dateien allerdings auch schnell ein Problem deutlich, Vorgaben können veralten oder im Konflikt stehen. Bei Änderungen an Architekturmustern ist es wiederholt dazu gekommen, dass `AGENTS.md`-Dateien nicht angepasst wurden, was zu späteren Zeitpunkten zu Problem geführt hat. Hierauf muss geachtet werden.
 
 === Antigravity <sec:antigravity>
 Google's Antigravity #footnote[https://antigravity.google/] wird in drei grundlegend unterschiedlichen Versionen angeboten. Antigravity IDE #footnote[https://antigravity.google/product/antigravity-ide], welche die gewohnte VSCode #footnote[https://code.visualstudio.com/] Entwicklungsumgeben mit zahlreichen KI-Werkzeugen ergänzt.
@@ -61,8 +63,51 @@ Die Pipeline ist technologisch auf Basis von GitHub Actions realisiert. Der Work
 == Testen (Manuell) <sec:manual-testing>
 // (Gideon)
 
+== Automatisierte Testabdeckung <sec:automated-testing>
+Neben der manuellen Qualitätssicherung wurde großer Wert auf eine fundierte automatisierte Testabdeckung gelegt. Da das System eine verteilte Microservice-Architektur aufweist, lag der Fokus auf der Isolation einzelner Domänen mittels Unit-Tests. Für die Backend-Services (Java/Spring Boot) wurde das Mockito-Framework eingesetzt, um externe Abhängigkeiten wie Datenbanken oder AWS-Dienste (z. B. S3, SQS) zuverlässig zu simulieren. Die Metriken zur Codeabdeckung wurden durch das JaCoCo-Plugin ermittelt und direkt als Qualitätsgate in den Build-Prozess (`mvn verify`) integriert. 
+
+Im Frontend (`web-ui`) erfolgte die automatisierte Prüfung mittels Vitest und der React Testing Library. Hierbei wurden sowohl funktionale Logik als auch komplexe UI-Interaktionen isoliert getestet. Auch im Frontend wurde die Metrikerfassung in den CI-Workflow eingebunden.
+
+Wie im nachfolgenden Abschnitt näher erläutert wird (siehe @sec:optimization), spielt die so ermittelte Testabdeckung eine tragende Rolle bei der qualitativen Bewertung des Quellcodes und bildete die mathematische Grundlage zur Berechnung des CRAP-Index, durch welchen besonders fehleranfällige und unzureichend getestete Bereiche identifiziert werden konnten.
+
 == Optimierung <sec:optimization>
 // (Luca)
+
+Während der Entwicklungsphase wurde mithilfe von ausführlichen KI-Prompts und entsprechend angepassten `AGENTS.md`-Dateien versucht, die Testabdeckung des Gesamtsystems sicherzustellen. Gleichzeitig wurde hierbei angestrebt, allgemeine Codestrukturen und Konventionen festzulegen. Schnell hat sich dies jedoch insbesondere durch die Verwendung von unterschiedlichen @LLM:pl als kein triviales Unterfangen herausgestellt, da die Modelle jeweils mit ihren spezifischen Präferenzen und Verhaltensmustern daherkamen. So wurden beispielsweise Regeln unterschiedlich stark eingehalten, wodurch es schließlich dazu gekommen ist, dass die Testabdeckung für einige Services entweder stark oder vollkommen vernachlässigt wurde. Insbesondere der Web-UI-Service verblieb bis zu deren Fertigstellung ohne Tests. Dies verbesserte sich erst nachdem eine Codeabdeckung explizit gefordert wurde. Es ist davon auszugehen, dass besser ausformulierte `AGENTS.md`-Dateien diese Situation hätten verbessern können. Zeitgleich hätte dies bedeutet, dass bestenfalls bereits zu Anfang des Projekts fertige Architekturpläne, Ordnersturkturen und Konventionen hätten bereitstehen müssen. Dies war uns nicht möglich und erschien wenig praktikabel.
+
+Dieser eben beschriebene erste negative Eindruck bezüglich der Testabdeckung wurde nach Fertigstellung der Implementierung des @MVP weiter untersucht. Hierzu wurde zunächst die Codeabdeckung der einzelnen Microservices des PeerReview-Systems ermittelt, um anschließend den jeweiligen #gls("CRAP")-Index zu berechnen. Für diesen wurde festgelegt, dass ein maximaler Wert von 30 zu akzeptieren ist. Beim Vergleich der Indexwerte mit dem Schwellwert wurden daraufhin diverse Codestellen identifiziert, die basierend auf den geltenden Bedingungen als kritisch einzustufen waren und einer Optimierung bedurften (siehe @fig:crap_before). 
+
+#figure(
+  caption: [Top CRAP-Index-Ausreißer vor Optimierungen],
+  table(
+    columns: 4,
+    [*Service*], [*Klasse*], [*Methode*], [*CRAP-Score*],
+    [Web-UI], [Submissions.tsx], [mapConfigToDisplay], [407.1],
+    [Web-UI], [Dashboard.tsx], [fetchTasks], [314.5],
+    [Web-UI], [SubmissionModal.tsx], [SubmissionModal], [197.5],
+    [Communication-Service], [ChatService], [getChat], [132.0],
+    [Response-Service], [BedrockProxyClient], [generateReview], [132.0],
+  )
+) <fig:crap_before>
+
+Um diese identifizierten Ausreißer zu beheben, wurden KI-gestützte Refactoring-Maßnahmen durchgeführt. Im Backend-Bereich (z. B. im Communication-Service und Response-Service) lag der Fokus primär auf der Erhöhung der Testabdeckung durch die automatisierte Generierung von Mockito-Unit-Tests. Da die unzureichende Codeabdeckung eine zentrale Rolle in der CRAP-Formel spielt, führte eine Erhöhung der Testabdeckung zu einer drastischen Reduktion des Indexwertes auf die zugrundeliegende zyklomatische Komplexität. 
+
+In der Web-UI wurden komplexe React-Komponenten hingegen primär strukturell zerlegt. Verschachtelte Codeblöcke und umfangreiche Logikzweige wurden in kleinere Hilfsfunktionen mit einer zyklomatischen Komplexität von maximal 5 extrahiert.
+
+Das Ergebnis dieser Optimierungsmaßnahmen ist in @fig:crap_after dargestellt. Sämtliche zuvor kritischen Methoden konnten erfolgreich auf oder unter den festgelegten Schwellwert von 30 gesenkt werden.
+
+#figure(
+  caption: [Höchste verbleibende CRAP-Index-Werte nach den Optimierungen],
+  table(
+    columns: 4,
+    [*Service*], [*Klasse*], [*Methode*], [*CRAP-Score*],
+    [User-Service], [CognitoService], [searchUsers], [30.0],
+    [Communication-Service], [ChatRepository], [findMessages], [30.0],
+    [Response-Service], [ResultService], [isAuthorOfSubmission], [30.0],
+    [Notification-Service], [NotificationSseService], [push], [20.0],
+    [Web-UI / Backend], [(Alle verbleibenden)], [(Diverse)], [< 20.0],
+  )
+) <fig:crap_after>
 
 == Dokumentation <sec:documentation>
 // (Claude, Matthias)
