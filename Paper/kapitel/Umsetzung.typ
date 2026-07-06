@@ -63,6 +63,13 @@ Die Pipeline ist technologisch auf Basis von GitHub Actions realisiert. Der Work
 == Testen (Manuell) <sec:manual-testing>
 // (Gideon)
 
+== Automatisierte Testabdeckung <sec:automated-testing>
+Neben der manuellen Qualitätssicherung wurde großer Wert auf eine fundierte automatisierte Testabdeckung gelegt. Da das System eine verteilte Microservice-Architektur aufweist, lag der Fokus auf der Isolation einzelner Domänen mittels Unit-Tests. Für die Backend-Services (Java/Spring Boot) wurde das Mockito-Framework eingesetzt, um externe Abhängigkeiten wie Datenbanken oder AWS-Dienste (z. B. S3, SQS) zuverlässig zu simulieren. Die Metriken zur Codeabdeckung wurden durch das JaCoCo-Plugin ermittelt und direkt als Qualitätsgate in den Build-Prozess (`mvn verify`) integriert. 
+
+Im Frontend (`web-ui`) erfolgte die automatisierte Prüfung mittels Vitest und der React Testing Library. Hierbei wurden sowohl funktionale Logik als auch komplexe UI-Interaktionen isoliert getestet. Auch im Frontend wurde die Metrikerfassung in den CI-Workflow eingebunden.
+
+Wie im nachfolgenden Abschnitt näher erläutert wird (siehe @sec:optimization), spielt die so ermittelte Testabdeckung eine tragende Rolle bei der qualitativen Bewertung des Quellcodes und bildete die mathematische Grundlage zur Berechnung des CRAP-Index, durch welchen besonders fehleranfällige und unzureichend getestete Bereiche identifiziert werden konnten.
+
 == Optimierung <sec:optimization>
 // (Luca)
 
