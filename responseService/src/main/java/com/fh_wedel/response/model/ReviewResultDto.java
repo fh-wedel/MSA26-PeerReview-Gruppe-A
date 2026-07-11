@@ -17,7 +17,9 @@ public record ReviewResultDto(
         List<ReviewAnswer> answers,
         boolean hasDocument,
         Instant completedAt,
-        Instant createdAt
+        Instant createdAt,
+        boolean isAiGenerated,
+        String aiStatus
 ) {
     public static ReviewResultDto from(ReviewResult entity) {
         return new ReviewResultDto(
@@ -33,7 +35,9 @@ public record ReviewResultDto(
                 entity.getAnswers(),
                 entity.getDocumentS3Key() != null && !entity.getDocumentS3Key().isBlank(),
                 entity.getCompletedAt(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.isAiGenerated(),
+                entity.getAiStatus()
         );
     }
 }

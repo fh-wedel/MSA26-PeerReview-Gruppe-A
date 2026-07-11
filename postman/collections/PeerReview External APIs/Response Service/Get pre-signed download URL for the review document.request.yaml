@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Get pre-signed download URL for the review document'
+description: |-
+  Summary: Get pre-signed download URL for the review document
+  
+  Note: This endpoint returns a download URL or binary response. Use the returned URL in a browser or a follow-up request.
+url: '{{base_url}}/api/response/results/{{submissionId}}/document'
+method: GET
+order: 4000

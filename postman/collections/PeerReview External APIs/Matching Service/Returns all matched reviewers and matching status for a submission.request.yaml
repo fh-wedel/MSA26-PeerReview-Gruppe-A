@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Returns all matched reviewers and matching status for a submission'
+description: |-
+  Summary: Returns all matched reviewers and matching status for a submission
+  
+  operationId: getMatchesBySubmission
+url: '{{base_url}}/api/matching/matches/submissions/{{submissionId}}'
+method: GET
+order: 2000

@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Get details of a specific review template'
+description: |-
+  Summary: Get details of a specific review template
+  
+  operationId: getReviewTemplate
+url: '{{base_url}}/api/configuration/review-templates/{{templateName}}'
+method: GET
+order: 2000

@@ -35,9 +35,11 @@ import java.util.Map;
 public class ResultController {
 
     private final ResultService resultService;
+    private final com.fh_wedel.response.service.AiReviewOrchestrator aiReviewOrchestrator;
 
-    public ResultController(ResultService resultService) {
+    public ResultController(ResultService resultService, com.fh_wedel.response.service.AiReviewOrchestrator aiReviewOrchestrator) {
         this.resultService = resultService;
+        this.aiReviewOrchestrator = aiReviewOrchestrator;
     }
 
     @PostMapping("/results")
@@ -47,16 +49,44 @@ public class ResultController {
             Authentication authentication) {
 
         String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
 
         if (callerSub == null || callerSub.isBlank()) {
             log.warn("Could not determine callerSub for caller '{}'",
                     authentication != null ? authentication.getName() : "anonymous");
             return ResponseEntity.badRequest().build();
         }
+        if (!isAdmin(authentication) && !resultService.isAssignedReviewer(request.getSubmissionId(), callerSub, callerUsername)) {
+            log.warn("Access denied: reviewer '{}' is not assigned to submission {}", callerSub, request.getSubmissionId());
+            return ResponseEntity.status(403).build();
+        }
 
         log.info("Submitting review for submission: {}", request.getSubmissionId());
         ReviewResult saved = resultService.submitReview(request, callerSub);
         return ResponseEntity.status(201).body(ReviewResultDto.from(saved));
+    }
+
+    @PostMapping("/results/{submissionId}/ai-review")
+    @PreAuthorize("hasAnyRole('Admin', 'Author', 'Reviewer')")
+    public ResponseEntity<ReviewResultDto> requestAiReview(
+            @PathVariable String submissionId,
+            Authentication authentication) {
+        String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
+        boolean hasAccess = isAdmin(authentication)
+                || resultService.isAuthorOfSubmission(submissionId, callerSub)
+                || resultService.isAssignedReviewer(submissionId, callerSub, callerUsername);
+
+        if (!hasAccess) {
+            log.warn("Access denied: caller '{}' cannot trigger AI review for submission {}",
+                    authentication != null ? authentication.getName() : "anonymous", submissionId);
+            return ResponseEntity.status(403).build();
+        }
+
+        log.info("Manual AI Review requested for submission: {}", submissionId);
+        // Manual trigger has no S3 key; the listener will fetch it via the submission service API
+        ReviewResult saved = aiReviewOrchestrator.requestReview(submissionId, null);
+        return ResponseEntity.status(202).body(ReviewResultDto.from(saved));
     }
 
     @GetMapping("/results")
@@ -83,23 +113,30 @@ public class ResultController {
 
     @GetMapping("/results/{submissionId}")
     @PreAuthorize("hasAnyRole('Admin', 'Author', 'Reviewer')")
-    public ResponseEntity<ReviewResultDto> getResultBySubmission(
+    public ResponseEntity<List<ReviewResultDto>> getResultBySubmission(
             @PathVariable String submissionId,
             Authentication authentication) {
 
         log.info("Fetching result for submission: {}", submissionId);
-        ReviewResultDto result = resultService.findBySubmission(submissionId);
+        List<ReviewResultDto> results = resultService.findResultsBySubmission(submissionId);
+        String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
 
-        if (!isAdmin(authentication) 
-            && !isCallerSub(authentication, result.authorId()) 
-            && !isCallerSub(authentication, result.reviewerId())
-            && !resultService.isAuthorOfSubmission(submissionId, extractSubFromDetails(authentication))) {
-            log.warn("Access Denied: caller '{}' (details: '{}') is neither the author '{}' nor reviewer '{}' of submission {}",
-                    authentication.getName(), authentication.getDetails(), result.authorId(), result.reviewerId(), submissionId);
-            return ResponseEntity.notFound().build();
+        if (isAdmin(authentication)) {
+            return ResponseEntity.ok(results);
         }
 
-        return ResponseEntity.ok(result);
+        if (resultService.isAssignedReviewer(submissionId, callerSub, callerUsername)) {
+            return ResponseEntity.ok(results);
+        }
+
+        if (resultService.isAuthorOfSubmission(submissionId, callerSub)) {
+            return buildAuthorVisibleResults(submissionId, results);
+        }
+
+        log.warn("Access Denied: caller '{}' (details: '{}') is neither the author nor an assigned reviewer of submission {}",
+                authentication.getName(), authentication.getDetails(), submissionId);
+        return ResponseEntity.status(403).build();
     }
 
     @GetMapping("/results/{submissionId}/document")
@@ -110,15 +147,16 @@ public class ResultController {
 
         log.info("Generating document URL for submission: {}", submissionId);
 
-        // Verify ownership before generating a pre-signed URL.
-        ReviewResultDto result = resultService.findBySubmission(submissionId);
-        if (!isAdmin(authentication) 
-            && !isCallerSub(authentication, result.authorId()) 
-            && !isCallerSub(authentication, result.reviewerId())
-            && !resultService.isAuthorOfSubmission(submissionId, extractSubFromDetails(authentication))) {
-            log.warn("Access Denied: caller '{}' (details: '{}') is neither the author '{}' nor reviewer '{}' of submission {}",
-                    authentication.getName(), authentication.getDetails(), result.authorId(), result.reviewerId(), submissionId);
-            return ResponseEntity.notFound().build();
+        String callerSub = extractSubFromDetails(authentication);
+        String callerUsername = authentication != null ? authentication.getName() : null;
+        boolean hasAccess = isAdmin(authentication) ||
+                resultService.isAssignedReviewer(submissionId, callerSub, callerUsername) ||
+                resultService.isAuthorOfSubmission(submissionId, callerSub);
+
+        if (!hasAccess) {
+            log.warn("Access Denied: caller '{}' (details: '{}') is neither the author nor an assigned reviewer of submission {}",
+                    authentication.getName(), authentication.getDetails(), submissionId);
+            return ResponseEntity.status(403).build();
         }
 
         String url = resultService.getDocumentDownloadUrl(submissionId);
@@ -172,5 +210,19 @@ public class ResultController {
             return inner.substring(pipeIndex + 1);
         }
         return inner;
+    }
+
+    private ResponseEntity<List<ReviewResultDto>> buildAuthorVisibleResults(String submissionId, List<ReviewResultDto> results) {
+        int submittedHumanReviewsCount = (int) results.stream()
+                .filter(r -> !r.isAiGenerated() && r.completedAt() != null)
+                .count();
+        if (resultService.isReviewComplete(submissionId, submittedHumanReviewsCount)) {
+            return ResponseEntity.ok(results);
+        } else {
+            List<ReviewResultDto> aiOnlyResults = results.stream()
+                    .filter(ReviewResultDto::isAiGenerated)
+                    .toList();
+            return ResponseEntity.ok(aiOnlyResults);
+        }
     }
 }

@@ -268,7 +268,9 @@
     "schemas": {
       "CreateSubmissionRequest": {
         "type": "object",
-        "required": ["configurationId"],
+        "required": [
+          "configurationId"
+        ],
         "properties": {
           "configurationId": {
             "type": "string"

@@ -37,15 +37,14 @@ class SubmissionServiceTest {
     private ConfigurationServiceClient configurationServiceClient;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-    private String submissionReadyQueueName = "test-submission-ready-queue";
+
     private String notificationQueueName = "test-notification-queue";
 
     private SubmissionService submissionService;
 
     @BeforeEach
     void setUp() {
-        submissionService = new SubmissionService(
-                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, submissionReadyQueueName, notificationQueueName);
+        submissionService = new SubmissionService(repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, notificationQueueName);
     }
 
     @Test
@@ -130,7 +129,7 @@ class SubmissionServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getStatus()).isEqualTo(SubmissionStatus.SUBMITTED.getDbValue());
         verify(repository).saveSubmission(submission);
-        verify(sqsTemplate).send(eq("test-submission-ready-queue"), anyString());
+
     }
 
     @Test
@@ -221,4 +220,79 @@ class SubmissionServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Document not found");
     }
+
+    @Test
+    @DisplayName("Should send review completed notification for all authors")
+    void sendReviewCompletedNotification_success() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1", "author-2"));
+        
+        submissionService.sendReviewCompletedNotification(submission);
+
+        org.mockito.ArgumentCaptor<String> payloadCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(sqsTemplate, org.mockito.Mockito.times(2)).send(eq(notificationQueueName), payloadCaptor.capture());
+        
+        List<String> payloads = payloadCaptor.getAllValues();
+        assertThat(payloads).anyMatch(p -> p.contains("author-1"));
+        assertThat(payloads).anyMatch(p -> p.contains("author-2"));
+    }
+
+    @Test
+    @DisplayName("Should skip sending review completed notification if queue name is missing")
+    void sendReviewCompletedNotification_noQueueName_skips() {
+        SubmissionService serviceWithoutQueue = new SubmissionService(
+                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, "");
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        
+        serviceWithoutQueue.sendReviewCompletedNotification(submission);
+
+        verify(sqsTemplate, org.mockito.Mockito.never()).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should skip sending review completed notification if queue name is null")
+    void sendReviewCompletedNotification_nullQueueName_skips() {
+        SubmissionService serviceWithoutQueue = new SubmissionService(
+                repository, s3Service, sqsTemplate, objectMapper, configurationServiceClient, null);
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        
+        serviceWithoutQueue.sendReviewCompletedNotification(submission);
+
+        verify(sqsTemplate, org.mockito.Mockito.never()).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should skip sending review completed notification if author list is null")
+    void sendReviewCompletedNotification_nullAuthors_skips() {
+        Submission submission = new Submission("sub-1", "config-1", null);
+        
+        submissionService.sendReviewCompletedNotification(submission);
+
+        verify(sqsTemplate, org.mockito.Mockito.never()).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should skip sending review completed notification if author list is empty")
+    void sendReviewCompletedNotification_emptyAuthors_skips() {
+        Submission submission = new Submission("sub-1", "config-1", Collections.emptyList());
+        
+        submissionService.sendReviewCompletedNotification(submission);
+
+        verify(sqsTemplate, org.mockito.Mockito.never()).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should handle JsonProcessingException gracefully when sending review completed notification")
+    void sendReviewCompletedNotification_jsonException() throws Exception {
+        ObjectMapper mockMapper = org.mockito.Mockito.mock(ObjectMapper.class);
+        org.mockito.Mockito.when(mockMapper.writeValueAsString(any())).thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("Test error") {});
+        
+        SubmissionService serviceWithMockMapper = new SubmissionService(
+                repository, s3Service, sqsTemplate, mockMapper, configurationServiceClient, notificationQueueName);
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        
+        serviceWithMockMapper.sendReviewCompletedNotification(submission);
+
+        verify(sqsTemplate, org.mockito.Mockito.never()).send(anyString(), anyString());
+    }
 }
+

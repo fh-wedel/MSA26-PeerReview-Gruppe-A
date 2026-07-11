@@ -5,6 +5,8 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 import {ImportedRessources} from '../../../infraLibrary/lib/importedRessources';
 import {EcsInfra} from '../../../infraLibrary/lib/ecs';
 import {SqsInfra} from '../../../infraLibrary/lib/sqs';
@@ -20,9 +22,10 @@ export interface ResponseServiceStackProps extends cdk.StackProps {
   minTaskCount: number;
   maxTaskCount: number;
   requestQueueName: string;
-  submissionReadyQueueName: string;
+  aiReviewQueueName: string;
   s3BucketName: string;
   dynamoDbTableName: string;
+  bedrockModelId: string;
 }
 
 export class ResponseServiceStack extends cdk.Stack {
@@ -65,6 +68,40 @@ export class ResponseServiceStack extends cdk.Stack {
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
+    const submissionDocumentsBucket = s3.Bucket.fromBucketName(
+      this,
+      'SubmissionDocumentsBucket',
+      `peerreview-submissions-${AWSConstants.AWS_ACCOUNT_ID}`,
+    );
+    const bedrockModelId = props.bedrockModelId;
+
+    const bedrockProxyLambda = new lambda.Function(this, 'BedrockProxyLambda', {
+      functionName: `${props.serviceName}-bedrock-proxy`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'bedrock_proxy.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
+      memorySize: 1024,
+      timeout: cdk.Duration.minutes(5),
+      environment: {
+        RESPONSE_DOCUMENTS_BUCKET: props.s3BucketName,
+        SUBMISSION_DOCUMENTS_BUCKET: submissionDocumentsBucket.bucketName,
+        // Can be either a foundation model ID or an inference profile ID/ARN.
+        BEDROCK_MODEL_ID: bedrockModelId,
+      },
+    });
+
+    documentBucket.grantRead(bedrockProxyLambda);
+    submissionDocumentsBucket.grantRead(bedrockProxyLambda);
+    bedrockProxyLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: [
+          'arn:aws:bedrock:*::foundation-model/*',
+          'arn:aws:bedrock:*:*:inference-profile/*',
+          'arn:aws:bedrock:*:*:application-inference-profile/*',
+        ],
+      }),
+    );
 
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       memoryLimitMiB: props.memory,
@@ -86,11 +123,12 @@ export class ResponseServiceStack extends cdk.Stack {
       portMappings: [{ containerPort, protocol: ecs.Protocol.TCP }],
       environment: {
         'SQS_REQUEST_QUEUE': props.requestQueueName,
-        'SQS_SUBMISSION_READY_QUEUE': props.submissionReadyQueueName,
+        'SQS_AI_REVIEW_QUEUE': props.aiReviewQueueName,
         'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
         'SERVER_PORT': containerPort.toString(),
         'AWS_REGION': AWSConstants.AWS_REGION,
         'S3_BUCKET_NAME': props.s3BucketName,
+        'SUBMISSION_DOCUMENTS_BUCKET_NAME': submissionDocumentsBucket.bucketName,
         'DYNAMODB_TABLE_NAME': props.dynamoDbTableName,
         // ECS-to-ECS targets via internal.services AAAA records (NOT sc.internal).
         // Used to enrich review results: grading schema (workflow), examiner
@@ -98,6 +136,7 @@ export class ResponseServiceStack extends cdk.Stack {
         'WORKFLOW_SERVICE_URL': `http://workflow.${cloudMapNamespace.namespaceName}:8081`,
         'MATCHING_SERVICE_URL': `http://matching.${cloudMapNamespace.namespaceName}:8081`,
         'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
+        'BEDROCK_PROXY_LAMBDA_NAME': bedrockProxyLambda.functionName,
       },
       healthCheck: EcsInfra.springBootHealthCheckCommand(containerPort, cdk.Duration.seconds(90)),
     });
@@ -147,11 +186,16 @@ export class ResponseServiceStack extends cdk.Stack {
     });
     SqsInfra.grantReadPermissions(requestQueues, ecsService.taskDefinition.taskRole);
 
-    const submissionReadyQueues = SqsInfra.createQueue(this, {
-      queueName: props.submissionReadyQueueName,
+
+
+    const aiReviewQueues = SqsInfra.createQueue(this, {
+      queueName: props.aiReviewQueueName,
       enableDeadLetterQueue: true,
+      visibilityTimeout: cdk.Duration.minutes(10), // Bedrock calls can take longer
     });
-    SqsInfra.grantReadPermissions(submissionReadyQueues, ecsService.taskDefinition.taskRole);
+    SqsInfra.grantReadPermissions(aiReviewQueues, ecsService.taskDefinition.taskRole);
+    SqsInfra.grantWritePermissions(aiReviewQueues, ecsService.taskDefinition.taskRole);
+    bedrockProxyLambda.grantInvoke(ecsService.taskDefinition.taskRole);
 
     // Grant S3 read access
     documentBucket.grantRead(ecsService.taskDefinition.taskRole);

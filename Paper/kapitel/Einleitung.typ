@@ -1,13 +1,30 @@
-= Introduction (Done for now)
+= Einleitung
 
-Also ich würde folgendes Vorschlagen:
+// Aufgabenstellung, was wir gemacht haben, inlusive Zielsetzung (Gideon)
 
-1. Einleitung (Aufgabenstellung, was wir gemacht haben)
-2. Features der App $<-$ MVP Feature set liste
-3. Architektur (Gesamtbild, Gedanken dahinter, Einschräkungen die getreoffen wurdem)
-4. Erklärung unserer Umsetzung / Workflow mit Antigravity / Claude Code
-5. Kritk bzw. Einordnung des Vibecoden ("Agentic Engineering")
-6. Kurze Zusammenfassung (Inklusive Ausblick)
+Hier muss die Einleitung hinein. Dazu gehören die Punkte:
 
-Ich habe mal 1 Teil eines Kaptiels aus meiner Seminararbeit in diesem template gelassen damit ihr gucken könnt, wie man etwas in Typst macht.
-Nachdem wir die Struktur abgeklärt haben, würde ich die dazugehörigen Dateien erstellen.
+1.1 Beschreibung des Kontextes
+1.2 Zielsetzung der Aufgabe (Auch schon KI anase wie gut das geht einbringen?)
+1.3 Umsetzung inklusive KI im Projekt bennen
+1.4 Darstellung der Aufgabenverteilung innerhalb des Teams, (durch eine Tabelle) 
+
+  Vorschlag von Marcel:
+    Architektur: Alle
+    Services:
+      Configurtion Service: Luca und Matthias 
+      Matching Service: Marcel
+      Submission Service: Matthias
+      Repsonse Service: Gideon
+      Web-UI: Luca
+      Communication Service: Marcel
+      Notification Service: Gideon
+      User Servcie: Marcel
+    AWS Infrastruktur: Marcel
+    Dokumentaton: Alle
+    Initale Baseline: Marcel
+    GitHub Action: Marcel
+    AI Setup in Form von AGENT.md etc.: Luca
+    Testen: Alle
+      Postman Testen: Luca
+    Optimieren des Codes mittels des CRAP index: Luca

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.matching.client.model.AssignmentEntry;
+import com.fh_wedel.matching.client.model.ExaminerMatchResponse;
 import com.fh_wedel.matching.client.model.MatchEntry;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.ReviewResult;
@@ -29,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,21 +62,6 @@ class ResultServiceTest {
                 submissionReviewsApi, matchesApi, submissionsApi);
     }
 
-    @Test
-    void emitsResultAvailableNotificationOnSave() {
-        ResultService service = buildService("notification-request-queue");
-
-        ReviewResult result = ReviewResult.builder()
-                .submissionId("sub-9").authorId("author-1").reviewerId("rev-1")
-                .completedAt(Instant.now()).build();
-        when(repository.save(any(ReviewResult.class))).thenReturn(result);
-
-        service.save(result);
-
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(sqsTemplate).send(eq("notification-request-queue"), body.capture());
-        assertThat(body.getValue()).contains("Review Result Available").contains("IN_APP").contains("author-1");
-    }
 
     @Test
     void enrichesResultFromNeighbouringServicesOnSave() throws Exception {
@@ -154,14 +142,14 @@ class ResultServiceTest {
     }
 
     @Test
-    void shouldThrowWhenSubmissionNotFound() {
+    void shouldReturnEmptyListWhenSubmissionNotFound() {
         ResultService service = buildService("");
 
-        when(repository.findBySubmissionId("nonexistent")).thenReturn(Optional.empty());
+        when(repository.findBySubmissionId("nonexistent")).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.findBySubmission("nonexistent"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No result found");
+        List<ReviewResultDto> results = service.findResultsBySubmission("nonexistent");
+
+        assertThat(results).isEmpty();
     }
 
     @Test
@@ -176,12 +164,191 @@ class ResultServiceTest {
                 .createdAt(Instant.now())
                 .build();
 
-        when(repository.findBySubmissionId("sub-1")).thenReturn(Optional.of(result));
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(result));
         when(documentStorageService.generatePresignedDownloadUrl("reviews/sub-1/final.pdf"))
                 .thenReturn("https://s3.presigned.url/...");
 
         String url = service.getDocumentDownloadUrl("sub-1");
 
         assertThat(url).isEqualTo("https://s3.presigned.url/...");
+    }
+
+    @Test
+    void isAssignedReviewer_returnsTrueWhenSubmissionMatchesContainCallerSub() throws Exception {
+        ResultService service = buildService("");
+
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerId("reviewer-sub").examinerUsername("reviewer-user"))));
+
+        boolean assigned = service.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user");
+
+        assertThat(assigned).isTrue();
+        verify(matchesApi, never()).getMatchesByExaminer(any());
+    }
+
+    @Test
+    void isAssignedReviewer_fallsBackToExaminerAssignmentsWhenIdsAreHidden() throws Exception {
+        ResultService service = buildService("");
+
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(
+                new SubmissionMatchResponse().matches(List.of(
+                        new MatchEntry().examinerId(null).examinerUsername(null))));
+        when(matchesApi.getMatchesByExaminer("reviewer-user")).thenReturn(
+                new ExaminerMatchResponse().assignments(List.of(
+                        new AssignmentEntry().submissionId("sub-1"))));
+
+        boolean assigned = service.isAssignedReviewer("sub-1", "reviewer-sub", "reviewer-user");
+
+        assertThat(assigned).isTrue();
+    }
+    @Test
+    void isAssignedReviewer_returnsFalseWhenCallerSubNull() {
+        ResultService service = buildService("");
+        assertThat(service.isAssignedReviewer("sub-1", null, "user")).isFalse();
+    }
+
+    @Test
+    void isAssignedReviewer_returnsFalseWhenMatchesNull() throws Exception {
+        ResultService service = buildService("");
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(null);
+        assertThat(service.isAssignedReviewer("sub-1", "user", null)).isFalse();
+    }
+
+    @Test
+    void getDocumentDownloadUrl_throwsIfNoResult() {
+        ResultService service = buildService("");
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
+        assertThatThrownBy(() -> service.getDocumentDownloadUrl("sub-1"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+    
+    @Test
+    void getDocumentDownloadUrl_throwsIfNoDoc() {
+        ResultService service = buildService("");
+        ReviewResult r = new ReviewResult();
+        r.setSubmissionId("sub-1");
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(r));
+        assertThatThrownBy(() -> service.getDocumentDownloadUrl("sub-1"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void submitReview_throwsConflictIfAlreadyReviewed() {
+        ResultService service = buildService("");
+        ReviewResult existing = new ReviewResult();
+        existing.setReviewerId("rev-1");
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(existing));
+
+        com.fh_wedel.response.model.SubmitReviewRequest req = new com.fh_wedel.response.model.SubmitReviewRequest();
+        req.setSubmissionId("sub-1");
+
+        assertThatThrownBy(() -> service.submitReview(req, "rev-1"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("A review by this reviewer for this submission already exists.");
+    }
+
+    @Test
+    void submitReview_savesResultAndSendsNotification() throws Exception {
+        ResultService service = buildService("test-queue");
+
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
+
+        ReviewQuestionDto q = new ReviewQuestionDto().id("q1").text("Score");
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-1")).thenReturn(List.of(q));
+        
+        when(submissionsApi.submissionsSubmissionIdGet("sub-1")).thenReturn(new ModelConfiguration().authorIds(List.of("author-1")));
+        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        com.fh_wedel.response.model.SubmitReviewRequest req = new com.fh_wedel.response.model.SubmitReviewRequest();
+        req.setSubmissionId("sub-1");
+        req.setFinalGrade("1.0");
+        com.fh_wedel.response.model.ReviewAnswer answer = new com.fh_wedel.response.model.ReviewAnswer();
+        answer.setQuestionId("q1");
+        answer.setAnswer("Great");
+        req.setAnswers(List.of(answer));
+
+        ReviewResult result = service.submitReview(req, "rev-1");
+
+        assertThat(result.getReviewerId()).isEqualTo("rev-1");
+        assertThat(result.getFinalGrade()).isEqualTo("1.0");
+        assertThat(result.getAuthorId()).isEqualTo("author-1");
+        assertThat(result.getGradingSchema()).hasSize(1);
+        assertThat(result.getGradingSchema().getFirst().getAnswer()).isEqualTo("Great");
+
+        verify(sqsTemplate).send(eq("test-queue"), any(String.class));
+    }
+
+    @Test
+    void submitReview_handlesMissingApiGracefully() throws Exception {
+        ResultService service = buildService("");
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of());
+        when(submissionReviewsApi.getFeedbackFormForSubmission("sub-1")).thenThrow(new RuntimeException("API error"));
+        when(submissionsApi.submissionsSubmissionIdGet("sub-1")).thenThrow(new RuntimeException("API error"));
+        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        com.fh_wedel.response.model.SubmitReviewRequest req = new com.fh_wedel.response.model.SubmitReviewRequest();
+        req.setSubmissionId("sub-1");
+
+        ReviewResult result = service.submitReview(req, "rev-1");
+
+        assertThat(result.getAuthorId()).isNull();
+    }
+
+    @Test
+    void findResultsBySubmission_backfillsAuthorId() throws Exception {
+        ResultService service = buildService("");
+        ReviewResult r = new ReviewResult();
+        r.setId(UUID.randomUUID());
+        r.setSubmissionId("sub-1");
+        // missing authorId
+        when(repository.findBySubmissionId("sub-1")).thenReturn(List.of(r));
+        when(submissionsApi.submissionsSubmissionIdGet("sub-1")).thenReturn(new ModelConfiguration().authorIds(List.of("author-2")));
+
+        List<ReviewResultDto> dtos = service.findResultsBySubmission("sub-1");
+        assertThat(dtos).hasSize(1);
+        assertThat(r.getAuthorId()).isEqualTo("author-2");
+        verify(repository).save(r); // verify save was called to backfill
+    }
+
+    @Test
+    void isAuthorOfSubmission_returnsTrueIfMatches() throws Exception {
+        ResultService service = buildService("");
+        when(submissionsApi.submissionsSubmissionIdGet("sub-1")).thenReturn(new ModelConfiguration().authorIds(List.of("author-1")));
+        assertThat(service.isAuthorOfSubmission("sub-1", "author-1")).isTrue();
+    }
+
+    @Test
+    void isAuthorOfSubmission_returnsFalseOnNull() {
+        ResultService service = buildService("");
+        assertThat(service.isAuthorOfSubmission("sub-1", null)).isFalse();
+    }
+
+    @Test
+    void isAuthorOfSubmission_returnsFalseOnError() throws Exception {
+        ResultService service = buildService("");
+        when(submissionsApi.submissionsSubmissionIdGet("sub-1")).thenThrow(new RuntimeException("API error"));
+        assertThat(service.isAuthorOfSubmission("sub-1", "author-1")).isFalse();
+    }
+
+    @Test
+    void isReviewComplete_returnsTrueWhenCountMatches() throws Exception {
+        ResultService service = buildService("");
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(new SubmissionMatchResponse().matches(List.of(new MatchEntry(), new MatchEntry())));
+        assertThat(service.isReviewComplete("sub-1", 2)).isTrue();
+    }
+
+    @Test
+    void isReviewComplete_returnsFalseWhenNotMatches() throws Exception {
+        ResultService service = buildService("");
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenReturn(new SubmissionMatchResponse().matches(List.of(new MatchEntry(), new MatchEntry())));
+        assertThat(service.isReviewComplete("sub-1", 1)).isFalse();
+    }
+
+    @Test
+    void isReviewComplete_returnsFalseOnError() throws Exception {
+        ResultService service = buildService("");
+        when(matchesApi.getMatchesBySubmission("sub-1")).thenThrow(new RuntimeException("API error"));
+        assertThat(service.isReviewComplete("sub-1", 2)).isFalse();
     }
 }

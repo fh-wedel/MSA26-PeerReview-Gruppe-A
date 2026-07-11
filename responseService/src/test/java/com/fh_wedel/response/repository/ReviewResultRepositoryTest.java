@@ -16,11 +16,17 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewResultRepositoryTest {
@@ -65,27 +71,51 @@ class ReviewResultRepositoryTest {
         ReviewResult stored = captor.getValue();
         assertThat(stored.getId()).isNotNull();
         assertThat(stored.getPk()).isEqualTo("SUBMISSION#sub-1");
-        assertThat(stored.getSk()).isEqualTo("RESULT");
+        assertThat(stored.getSk()).isEqualTo("RESULT#rev-1");
     }
 
     @Test
     @DisplayName("findBySubmissionId builds the primary key from the submission id")
+    @SuppressWarnings("unchecked")
     void findBySubmissionId_buildsKey() {
         ReviewResult expected = ReviewResult.builder().submissionId("sub-2").authorId("author-2").build();
-        when(table.getItem(any(Key.class))).thenReturn(expected);
+        PageIterable<ReviewResult> pageIterable = mock(PageIterable.class);
+        Page<ReviewResult> page = mock(Page.class);
+        when(page.items()).thenReturn(List.of(expected));
+        when(pageIterable.stream()).thenReturn(Stream.of(page));
+        when(table.query(any(Consumer.class))).thenReturn(pageIterable);
 
-        Optional<ReviewResult> found = repository.findBySubmissionId("sub-2");
+        List<ReviewResult> found = repository.findBySubmissionId("sub-2");
 
-        assertThat(found).containsSame(expected);
-        ArgumentCaptor<Key> keyCaptor = ArgumentCaptor.forClass(Key.class);
-        verify(table).getItem(keyCaptor.capture());
-        assertThat(keyCaptor.getValue().partitionKeyValue().s()).isEqualTo("SUBMISSION#sub-2");
+        assertThat(found).containsExactly(expected);
+        verify(table).query(any(Consumer.class));
     }
 
     @Test
     @DisplayName("findBySubmissionId returns empty when no item exists")
+    @SuppressWarnings("unchecked")
     void findBySubmissionId_empty() {
-        when(table.getItem(any(Key.class))).thenReturn(null);
+        PageIterable<ReviewResult> pageIterable = mock(PageIterable.class);
+        when(pageIterable.stream()).thenReturn(Stream.empty());
+        when(table.query(any(Consumer.class))).thenReturn(pageIterable);
+
         assertThat(repository.findBySubmissionId("missing")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("saveIfAbsent builds keys and writes with a conditional put request")
+    void saveIfAbsent_buildsKeys() {
+        ReviewResult result = ReviewResult.builder()
+                .submissionId("sub-conditional")
+                .reviewerId("AI-Reviewer")
+                .authorId("author-1")
+                .build();
+
+        repository.saveIfAbsent(result);
+
+        assertThat(result.getId()).isNotNull();
+        assertThat(result.getPk()).isEqualTo("SUBMISSION#sub-conditional");
+        assertThat(result.getSk()).isEqualTo("RESULT#AI-Reviewer");
+        verify(table).putItem(any(PutItemEnhancedRequest.class));
     }
 }

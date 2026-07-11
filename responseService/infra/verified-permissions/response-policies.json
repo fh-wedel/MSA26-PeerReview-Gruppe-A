@@ -73,6 +73,24 @@
             "groupName": "Reviewer",
             "actionId": "get /api/response/results/{submissionId}/document",
             "description": "Allow Reviewer to download review document"
+        },
+        {
+            "id": "AuthorRequestAiReview",
+            "groupName": "Author",
+            "actionId": "post /api/response/results/{submissionId}/ai-review",
+            "description": "Allow Author to trigger AI review manually"
+        },
+        {
+            "id": "AdminRequestAiReview",
+            "groupName": "Admin",
+            "actionId": "post /api/response/results/{submissionId}/ai-review",
+            "description": "Allow Admin to trigger AI review manually"
+        },
+        {
+            "id": "ReviewerRequestAiReview",
+            "groupName": "Reviewer",
+            "actionId": "post /api/response/results/{submissionId}/ai-review",
+            "description": "Allow Reviewer to trigger AI review manually"
         }
     ]
 }

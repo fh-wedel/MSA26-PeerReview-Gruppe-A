@@ -3,14 +3,26 @@
 // Load the JSON data into a variable
 #let metadata = json("metadata.json")
 #show: thesis.with(..metadata)
+#set par(justify: true)
+
+#import "@preview/glossarium:0.5.10": gls, glspl, make-glossary, print-glossary, register-glossary
+#import "abkuerzungen.typ": acronyms
+#show: make-glossary
+#register-glossary(acronyms)
 
 // Roman numbering for front matter
 #set page(numbering: "I")
 #counter(page).update(1)
 
 // Table of Contents
-#outline(title: "Table of Content", indent: 1.5em)
+#outline(title: "Inhaltsverzeichnis", indent: 1.5em)
 #pagebreak()
+
+// List of Abbreviations
+#heading(level: 1, numbering: none)[Abkürzungsverzeichnis]
+#print-glossary(acronyms, disable-back-references: true)
+#pagebreak()
+
 
 // List of Figures
 //#outline(title: "Abbildungsverzeichnis", target: figure.where(kind: image))
@@ -31,20 +43,21 @@
 // Include Chapters
 // #include "kapitel/Abstract.typ"
 #include "kapitel/Einleitung.typ"
-#include "kapitel/Grundlagen.typ"
-#include "kapitel/Hauptkapitel_1.typ"
-#include "kapitel/Hauptkapitel_2.typ"
+#include "kapitel/Features.typ"
+#include "kapitel/Architektur.typ"
+#include "kapitel/Umsetzung.typ"
+#include "kapitel/Kritik.typ"
 #include "kapitel/Zusammenfassung.typ"
 #include "kapitel/Anhang.typ"
 
 // Bibliography
 #pagebreak()
-#bibliography("sources.bib", style: "ieee", title: "Bibliography")
+#bibliography("sources.bib", style: "ieee", title: "Literaturverzeichnis")
 
 
 #statutory-declaration((
-  (name: "Matthias Matthies"),
+  (name: "Matthias Matthies", signature: "signaturen/matthias.png"),
   (name: "Marcel Ossig"),
-  (name: "Erika Musterfrau"),
+  (name: "Luca Jannsen", signature: "signaturen/luca.png"),
   (name: "John Doe"),
 ))

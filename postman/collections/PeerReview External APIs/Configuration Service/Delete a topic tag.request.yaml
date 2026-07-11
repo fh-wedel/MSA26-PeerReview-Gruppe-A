@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Delete a topic tag'
+description: |-
+  Summary: Delete a topic tag
+  
+  operationId: deleteTopicTag
+url: '{{base_url}}/api/configuration/topic-tags/{{tagName}}'
+method: DELETE
+order: 16000

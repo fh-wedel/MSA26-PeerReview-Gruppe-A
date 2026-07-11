@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'Get list of uploaded documents'
+description: |-
+  Summary: Get list of uploaded documents
+  
+  operationId: getDocuments
+  
+  Note: This endpoint returns a download URL or binary response. Use the returned URL in a browser or a follow-up request.
+url: '{{base_url}}/api/submission/submissions/{{id}}/documents'
+method: GET
+order: 5000

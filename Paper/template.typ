@@ -144,7 +144,7 @@
 
 #let statutory-declaration(authors) = {
   pagebreak()
-  heading(level: 1, numbering: none, outlined: true)[Declaration of Authorship]
+  heading(level: 1, numbering: none, outlined: true)[Eigenständigkeitserklärung]
   v(1em)
   [I hereby declare ... ja was declaren wir denn?]
   v(5cm)
@@ -153,6 +153,13 @@
     gutter: 2cm,
     row-gutter: 3em,
     ..authors.map(a => [
+      #box(height: 1.5cm, width: 100%)[
+        #align(bottom + center)[
+          #if "signature" in a [
+            #image(a.signature, height: 1.4cm)
+          ]
+        ]
+      ]
       #line(length: 80%, stroke: 0.5pt + rgb("555555"))
       #v(0.5em)
       #text(size: 10pt, font: "Liberation Sans")[#a.name]

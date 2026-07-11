@@ -120,7 +120,7 @@ export class ServiceStack extends cdk.Stack {
         'DYNAMODB_TABLE_NAME': dynamoTableName,
         'S3_BUCKET_NAME': submissionsBucket.bucketName,
         'SQS_REQUEST_QUEUE': requestQueues.queue.queueName,
-        'SQS_SUBMISSION_READY_QUEUE': 'submission-ready-queue',
+
         'SQS_NOTIFICATION_QUEUE': 'notification-request-queue',
         'CONFIGURATION_SERVICE_URL': `http://configuration.${cloudMapNamespace.namespaceName}:8080`,
       },
@@ -183,13 +183,12 @@ export class ServiceStack extends cdk.Stack {
     submissionsBucket.grantReadWrite(taskDefinition.taskRole);
     SqsInfra.grantReadPermissions(requestQueues, taskDefinition.taskRole);
 
-    // Grant write to submission-ready queue (owned by responseService stack)
+    // Grant write to notification queue
     taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['sqs:SendMessage', 'sqs:GetQueueAttributes', 'sqs:GetQueueUrl'],
         resources: [
-          `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:submission-ready-queue`,
           `arn:aws:sqs:${AWSConstants.AWS_REGION}:${AWSConstants.AWS_ACCOUNT_ID}:notification-request-queue`
         ]
       })

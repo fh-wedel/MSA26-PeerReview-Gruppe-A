@@ -1,0 +1,23 @@
+$kind: http-request
+name: 'Bulk resolve sub UUIDs to usernames'
+description: |-
+  Summary: Bulk resolve sub UUIDs to usernames
+  
+  Accepts a list of Cognito sub UUIDs and returns a map of sub → username.
+  Used by services to resolve multiple user identities in a single call.
+  All authenticated users may call this endpoint.
+  
+  operationId: bulkResolveUsers
+url: '{{base_url}}/api/users/bulk'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "subs": [
+        "sample-subs"
+      ]
+    }
+order: 1000

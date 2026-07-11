@@ -1,0 +1,6 @@
+$kind: http-request
+name: 'Get all configurations for a specific author'
+description: 'Summary: Get all configurations for a specific author'
+url: '{{base_url}}/api/configuration/submissions/author/{{authorId}}'
+method: GET
+order: 8000

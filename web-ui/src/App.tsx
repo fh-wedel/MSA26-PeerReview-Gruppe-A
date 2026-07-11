@@ -16,6 +16,7 @@ import {ChatPage} from './pages/ChatPage';
 import {Admin} from './pages/Admin';
 import {UserManagement} from './pages/UserManagement';
 import {NotificationProvider} from './contexts/NotificationContext';
+import {Notifications} from './pages/Notifications';
 
 export const App: React.FC = () => {
   return (
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
                 <Route path="/chats" element={<ChatPage />} />
                   <Route path="/admin" element={<Admin/>}/>
                   <Route path="/users" element={<UserManagement/>}/>
+                  <Route path="/notifications" element={<Notifications />}/>
               </Route>
             </Routes>
           </ChatProvider>

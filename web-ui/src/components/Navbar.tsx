@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   AppBar,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -10,7 +9,6 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemButton,
   ListItemText,
   Menu,
@@ -22,12 +20,9 @@ import {
 } from '@mui/material';
 import {
   AccountCircle,
-  Assignment,
   Brightness4,
   Brightness7,
   Close,
-  Description,
-  DoneAll,
   Mail,
   Menu as MenuIcon,
   Notifications,
@@ -45,8 +40,9 @@ import {
 } from '../api/notification';
 import { searchUsers } from '../api/communication';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
 import Logo from '../assets/Logo_Fachhochschule-Wedel.svg';
+import { MessagesMenu } from './MessagesMenu';
+import { NotificationMenu } from './NotificationMenu';
 
 export const Navbar: React.FC = () => {
   const { themeMode, setThemeMode, mode } = useThemeContext();
@@ -97,12 +93,6 @@ export const Navbar: React.FC = () => {
 
   const unreadNotifications = notifications.filter((n) => !n.read).length;
 
-  const displayMessages = [...chats].slice(0, 5);
-
-  const displayNotifications = [...notifications]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
-
   const handleMarkAllNotificationsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
     markAllNotificationsRead().catch(err => console.error('Failed to mark all read', err));
@@ -114,10 +104,6 @@ export const Navbar: React.FC = () => {
     markNotificationRead(id).catch(err => console.error('Failed to mark read', err));
   };
 
-  const handleMessageClick = () => {
-    setAnchorElMessages(null);
-    navigate('/chats');
-  };
 
   const handleDrawerNav = (path: string) => {
     navigate(path);
@@ -219,146 +205,28 @@ export const Navbar: React.FC = () => {
                   <Mail />
                 </Badge>
               </IconButton>
-              <Menu
+              <MessagesMenu
                 anchorEl={anchorElMessages}
-                open={Boolean(anchorElMessages)}
                 onClose={() => setAnchorElMessages(null)}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      width: { xs: 280, sm: 320 },
-                      maxHeight: 400,
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Messages</Typography>
-                </Box>
-                <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
-                  {displayMessages.length === 0 ? (
-                    <ListItem>
-                      <ListItemText primary="No messages" sx={{ textAlign: 'center', color: 'text.secondary' }} />
-                    </ListItem>
-                  ) : (
-                    displayMessages.map((msg, index) => (
-                      <React.Fragment key={msg.chatId}>
-                        <ListItem disablePadding>
-                          <ListItemButton alignItems="flex-start" onClick={handleMessageClick} sx={{ bgcolor: 'transparent' }}>
-                            <ListItemAvatar>
-                              <Avatar><AccountCircle /></Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Typography variant="subtitle2">
-                                    {msg.chatType === 'SUBMISSION'
-                                      ? `Submission: ${msg.submissionId?.slice(0, 8)}...`
-                                      : (msg.otherParticipantId ? (userMap[msg.otherParticipantId] || msg.otherParticipantId) : 'Unknown')}
-                                  </Typography>
-                                  <Typography variant="caption" color={'text.secondary'}>
-                                    {msg.lastMessageAt ? formatDistanceToNow(new Date(msg.lastMessageAt), { addSuffix: true }) : ''}
-                                  </Typography>
-                                </Box>
-                              }
-                              secondary={
-                                <Typography variant="body2" color={'text.secondary'} noWrap>
-                                  {msg.chatType === 'SUBMISSION' ? 'Submission Chat' : 'General Chat'}
-                                </Typography>
-                              }
-                            />
-                          </ListItemButton>
-                        </ListItem>
-                        {index < displayMessages.length - 1 && <Divider component="li" />}
-                      </React.Fragment>
-                    ))
-                  )}
-                </List>
-                <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
-                  <Button fullWidth onClick={handleMessageClick} sx={{
-                    textTransform: 'none',
-                    fontWeight: 'bold',
-                    color: mode === 'dark' ? 'primary.light' : 'primary.main'
-                  }}>
-                    View All Messages
-                  </Button>
-                </Box>
-              </Menu>
+                chats={chats}
+                userMap={userMap}
+                mode={mode}
+              />
 
               <IconButton color="inherit" onClick={(e) => setAnchorElNotifications(e.currentTarget)}>
                 <Badge badgeContent={unreadNotifications} color="secondary">
                   <Notifications />
                 </Badge>
               </IconButton>
-              <Menu
+              <NotificationMenu
                 anchorEl={anchorElNotifications}
-                open={Boolean(anchorElNotifications)}
                 onClose={() => setAnchorElNotifications(null)}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      width: { xs: 280, sm: 320 },
-                      maxHeight: 400,
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Notifications</Typography>
-                  <Button
-                    size="small"
-                    onClick={handleMarkAllNotificationsRead}
-                    disabled={unreadNotifications === 0}
-                    startIcon={<DoneAll fontSize="small" />}
-                    sx={{ color: mode === 'dark' ? 'primary.light' : 'primary.main', fontWeight: 'bold' }}
-                  >
-                    Mark all read
-                  </Button>
-                </Box>
-                <List sx={{ p: 0, flexGrow: 1, overflowY: 'auto' }}>
-                  {displayNotifications.length === 0 ? (
-                    <ListItem>
-                      <ListItemText primary="No notifications" sx={{ textAlign: 'center', color: 'text.secondary' }} />
-                    </ListItem>
-                  ) : (
-                    displayNotifications.map((notif, index) => (
-                      <React.Fragment key={notif.id}>
-                        <ListItem disablePadding>
-                          <ListItemButton alignItems="flex-start" onClick={() => handleNotificationClick(notif.id)} sx={{ bgcolor: !notif.read ? 'action.hover' : 'transparent' }}>
-                            <ListItemAvatar>
-                              <Badge color="secondary" variant="dot" invisible={notif.read}>
-                                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                                  {notif.title.includes('Review') ? <Assignment /> : <Description />}
-                                </Avatar>
-                              </Badge>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Typography variant="subtitle2" sx={{ fontWeight: !notif.read ? 'bold' : 'normal' }}>{notif.title}</Typography>
-                                  <Typography variant="caption" color={!notif.read ? 'text.primary' : 'text.secondary'} sx={{ fontWeight: !notif.read ? 'bold' : 'normal' }}>
-                                    {formatDistanceToNow(new Date(notif.date), { addSuffix: true })}
-                                  </Typography>
-                                </Box>
-                              }
-                              secondary={
-                                <Typography variant="body2" color={!notif.read ? 'text.primary' : 'text.secondary'} sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontWeight: !notif.read ? 500 : 400 }}>
-                                  {notif.message}
-                                </Typography>
-                              }
-                            />
-                          </ListItemButton>
-                        </ListItem>
-                        {index < displayNotifications.length - 1 && <Divider component="li" />}
-                      </React.Fragment>
-                    ))
-                  )}
-                </List>
-              </Menu>
+                notifications={notifications}
+                unreadNotifications={unreadNotifications}
+                handleMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+                handleNotificationClick={handleNotificationClick}
+                mode={mode}
+              />
 
               <IconButton color="inherit" onClick={(e) => setAnchorElProfile(e.currentTarget)}>
                 <AccountCircle />

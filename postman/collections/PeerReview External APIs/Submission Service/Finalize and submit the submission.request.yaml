@@ -1,0 +1,9 @@
+$kind: http-request
+name: 'Finalize and submit the submission'
+description: |-
+  Summary: Finalize and submit the submission
+  
+  operationId: submitSubmission
+url: '{{base_url}}/api/submission/submissions/{{id}}/submit'
+method: POST
+order: 8000

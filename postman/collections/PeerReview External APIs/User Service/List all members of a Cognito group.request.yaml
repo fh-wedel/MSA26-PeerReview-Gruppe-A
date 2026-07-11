@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'List all members of a Cognito group'
+description: |-
+  Summary: List all members of a Cognito group
+  
+  Returns a list of users who are members of the specified Cognito group.
+  Replaces GET /api/matching/examiners for the Reviewer group.
+  Restricted to Admin and ExaminationOfficer.
+  
+  operationId: listGroupMembers
+url: '{{base_url}}/api/users/groups/{{groupName}}/members'
+method: GET
+order: 3000

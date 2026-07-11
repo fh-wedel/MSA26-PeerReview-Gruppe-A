@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version='1.0' encoding='utf-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -28,7 +26,15 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        </dependencies>
+        
+        
+        <dependency>
+            <groupId>com.fh-wedel</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+    </dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -60,7 +66,19 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3-transfer-manager</artifactId>
         </dependency>
-        <!-- AWS SDK v2: DynamoDB Enhanced Client -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>bedrockruntime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>lambda</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>apache-client</artifactId>
+        </dependency>
+        
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb-enhanced</artifactId>
@@ -78,7 +96,7 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
-        <!-- OpenAPI generated client dependencies (workflow / matching / configuration) -->
+        
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
@@ -104,6 +122,14 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+    
+        
+        <dependency>
+            <groupId>com.fh-wedel</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -138,46 +164,62 @@
                 <version>${openapi-generator.version}</version>
                 <executions>
 
-                    <!-- Matching client: examiner per submission -->
+                    
+                    
+                    
+                    
+                </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration><excludes><exclude>**/model/api/**</exclude><exclude>**/model/events/**</exclude><exclude>**/api/generated/**</exclude><exclude>**/client/**</exclude></excludes></configuration><version>0.8.13</version>
+                <executions>
+                    
                     <execution>
-                        <id>generate-matching-client</id>
+                        <id>jacoco-prepare-agent</id>
                         <goals>
-                            <goal>generate</goal>
+                            <goal>prepare-agent</goal>
                         </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/matching.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-matching</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.matching.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.matching.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
-                        </configuration>
                     </execution>
-                    <!-- Configuration client: review deadline (end date) per submission -->
+                    
                     <execution>
-                        <id>generate-configuration-client</id>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
                         <goals>
-                            <goal>generate</goal>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/openapi/client/configuration.json</inputSpec>
-                            <output>${project.build.directory}/generated-sources/openapi-configuration</output>
-                            <generatorName>java</generatorName>
-                            <library>native</library>
-                            <apiPackage>com.fh_wedel.configuration.client.api</apiPackage>
-                            <modelPackage>com.fh_wedel.configuration.client.model</modelPackage>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <openApiNullable>false</openApiNullable>
-                                <useJakartaEe>true</useJakartaEe>
-                                <annotationLibrary>none</annotationLibrary>
-                            </configOptions>
+                            <rules>
+                                <rule>
+                                    <element>METHOD</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>COMPLEXITY</counter>
+                                            <value>TOTALCOUNT</value>
+                                            <maximum>30</maximum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <exclude>**/model/api/**</exclude>
+                                <exclude>**/model/events/**</exclude>
+                                <exclude>**/client/api/**</exclude>
+                                <exclude>**/client/model/**</exclude>
+                                <exclude>**/api/generated/**</exclude>
+                                <exclude>**/ApiClient.class</exclude>
+                                <exclude>**/ApiClient$*.class</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

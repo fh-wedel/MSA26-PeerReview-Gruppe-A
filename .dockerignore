@@ -1,0 +1,37 @@
+# Ignore everything by default
+**
+
+# Allow Maven wrapper and configuration
+!pom.xml
+!.mvn/
+!mvnw
+!mvnw.cmd
+
+# Allow source code for all microservices
+!api-client/
+!api-client/**
+!communicationService/
+!communicationService/**
+!configuration-service/
+!configuration-service/**
+!matchingService/
+!matchingService/**
+!notificationService/
+!notificationService/**
+!responseService/
+!responseService/**
+!submission-service/
+!submission-service/**
+!templateEcsService/
+!templateEcsService/**
+!userService/
+!userService/**
+
+# Explicitly ignore target directories and build artifacts
+**/target/
+**/node_modules/
+**/*.jar
+**/*.class
+**/.idea/
+**/.git/
+**/.github/

@@ -1,0 +1,6 @@
+$kind: http-request
+name: 'SSE stream of new in-app notifications for the caller'
+description: 'Summary: SSE stream of new in-app notifications for the caller'
+url: '{{base_url}}/api/notification/me/stream'
+method: GET
+order: 3000

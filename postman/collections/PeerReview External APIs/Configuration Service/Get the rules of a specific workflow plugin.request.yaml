@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'Get the rules of a specific workflow plugin'
+description: |-
+  Summary: Get the rules of a specific workflow plugin
+  
+  Returns the anonymity and communication rules for the workflow plugin identified by its name.
+  
+  operationId: getReviewTypeRules
+url: '{{base_url}}/api/configuration/review-types/{{typeName}}/rules'
+method: GET
+order: 5000

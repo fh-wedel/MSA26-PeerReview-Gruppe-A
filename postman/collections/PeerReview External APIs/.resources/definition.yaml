@@ -1,0 +1,8 @@
+$kind: collection
+description: Manual API testing collection generated from external OpenAPI specs.
+auth:
+  - id: 031c2224-4445-4501-934a-b91723d88727
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{access_token}}"

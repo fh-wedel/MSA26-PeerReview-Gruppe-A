@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'Create a new submission draft'
+description: |-
+  Summary: Create a new submission draft
+  
+  operationId: createSubmission
+url: '{{base_url}}/api/submission/submissions'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "configurationId": "00000000-0000-4000-8000-000000000000"
+    }
+order: 3000

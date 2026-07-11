@@ -30,16 +30,17 @@ export interface Submission {
   configurationId?: string;
   authorIds?: string[];
   status?:
-      | "DRAFT"
-      | "WAITING_FOR_SUBMISSION"
-      | "SUBMITTED"
-      | "READY_FOR_REVIEW";
+    | "DRAFT"
+    | "WAITING_FOR_SUBMISSION"
+    | "SUBMITTED"
+    | "READY_FOR_REVIEW";
   /** @format date-time */
   createdAt?: string;
   /** @format date-time */
   updatedAt?: string;
   /** @format date-time */
   submittedAt?: string;
+  requestAiReview?: boolean;
 }
 
 export type QueryParamsType = Record<string | number, any>;

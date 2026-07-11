@@ -1,6 +1,7 @@
 package com.fh_wedel.response.service;
 
 import org.springframework.http.HttpStatus;
+import java.util.stream.Collectors;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fh_wedel.configuration.client.api.SubmissionsApi;
 import com.fh_wedel.configuration.client.model.ModelConfiguration;
 import com.fh_wedel.matching.client.api.MatchesApi;
+import com.fh_wedel.matching.client.model.ExaminerMatchResponse;
 import com.fh_wedel.matching.client.model.SubmissionMatchResponse;
 import com.fh_wedel.response.model.GradingCriterion;
 import com.fh_wedel.response.model.NotificationEvent;
@@ -60,13 +62,20 @@ public class ResultService {
         log.info("Saving review result for submission: {}", result.getSubmissionId());
         enrichFromNeighbouringServices(result);
         ReviewResult saved = repository.save(result);
-        sendResultAvailableNotification(saved);
         return saved;
     }
 
+    private void enrichFromNeighbouringServices(ReviewResult result) {
+        String submissionId = result.getSubmissionId();
+        enrichGradingSchema(result, submissionId);
+        enrichExaminers(result, submissionId);
+        enrichReviewDeadline(result, submissionId);
+    }
+
     public ReviewResult submitReview(com.fh_wedel.response.model.SubmitReviewRequest request, String reviewerId) {
-        if (repository.findBySubmissionId(request.getSubmissionId()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A review for this submission already exists.");
+        List<ReviewResult> existingResults = repository.findBySubmissionId(request.getSubmissionId());
+        if (existingResults.stream().anyMatch(r -> reviewerId.equals(r.getReviewerId()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A review by this reviewer for this submission already exists.");
         }
 
         ReviewResult result = new ReviewResult();
@@ -99,41 +108,72 @@ public class ResultService {
         }
 
         // Fetch author
-        try {
-            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(request.getSubmissionId());
-            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
-                result.setAuthorId(config.getAuthorIds().get(0));
-            }
-        } catch (Exception e) {
-            log.warn("Could not fetch author for submission {}: {}", request.getSubmissionId(), e.getMessage());
+        String authorId = fetchAuthorIdFromConfig(request.getSubmissionId());
+        if (authorId != null) {
+            result.setAuthorId(authorId);
         }
 
         ReviewResult saved = save(result);
         // Also publish ReviewCompletedEvent
         sendReviewCompletedEvent(saved);
+        sendReviewSubmittedNotification(authorId, request.getSubmissionId());
         return saved;
     }
 
     private void sendReviewCompletedEvent(ReviewResult result) {
-        // Find if we have a queue configured, or maybe the workflow needs to know?
-        // Actually, there is ReviewCompletedEvent.
-        // It's not clear which queue it goes to, maybe a workflow event queue.
-        // I will log it for now as there isn't a specific queue property shown in ResultService
-        // But let's check if there is a queue for ReviewCompletedEvent.
         log.info("Review completed for submission {}", result.getSubmissionId());
     }
 
-    /**
-     * Enriches the result with data owned by neighbouring services, fetched over
-     * REST: the grading schema (workflow), the examiner (matching), and the
-     * review deadline / end date (configuration). Each call is best-effort — a
-     * failure is logged and the result is stored without that field rather than
-     * losing the whole result.
-     */
-    private void enrichFromNeighbouringServices(ReviewResult result) {
-        String submissionId = result.getSubmissionId();
+    private void sendReviewSubmittedNotification(String authorId, String submissionId) {
+        if (notificationQueueName == null || notificationQueueName.isBlank()) {
+            return;
+        }
+        com.fh_wedel.response.model.NotificationEvent event = new com.fh_wedel.response.model.NotificationEvent(
+                "REVIEW_SUBMITTED",
+                List.of("IN_APP"),
+                authorId,
+                "Review Submitted",
+                "An examiner has submitted their review for your submission.",
+                java.util.Map.of("submissionId", submissionId)
+        );
+        try {
+            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Failed to serialize REVIEW_SUBMITTED notification", e);
+        }
+    }
 
-        // Grading schema (what the submission was reviewed by) — configuration service.
+    private List<GradingCriterion> fetchGradingFormAndBuildCriteria(String submissionId, com.fh_wedel.response.model.SubmitReviewRequest request) {
+        try {
+            // Simplified logic: Using existing API instead of configurationServiceClient placeholder
+            List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(submissionId);
+            if (form != null) {
+                return form.stream()
+                        .map(q -> {
+                            GradingCriterion c = toGradingCriterion(q);
+                            return c;
+                        })
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch grading form template for submission {}", submissionId, e);
+        }
+        return List.of();
+    }
+
+    private String fetchAuthorIdFromConfig(String submissionId) {
+        try {
+            ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
+            if (config != null && config.getAuthorIds() != null && !config.getAuthorIds().isEmpty()) {
+                return config.getAuthorIds().get(0);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch author ID for submission {}", submissionId, e);
+        }
+        return null;
+    }
+
+    private void enrichGradingSchema(ReviewResult result, String submissionId) {
         if (result.getGradingSchema() == null || result.getGradingSchema().isEmpty()) {
             try {
                 List<ReviewQuestionDto> form = submissionReviewsApi.getFeedbackFormForSubmission(submissionId);
@@ -144,8 +184,9 @@ public class ResultService {
                 log.warn("Could not fetch grading schema for submission {}: {}", submissionId, e.getMessage());
             }
         }
+    }
 
-        // Examiners — matching service (a submission may have several examiners).
+    private void enrichExaminers(ReviewResult result, String submissionId) {
         try {
             SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
             if (matches != null && matches.getMatches() != null && !matches.getMatches().isEmpty()) {
@@ -157,8 +198,9 @@ public class ResultService {
         } catch (Exception e) {
             log.warn("Could not fetch examiners for submission {}: {}", submissionId, e.getMessage());
         }
+    }
 
-        // Review deadline / end date — configuration service.
+    private void enrichReviewDeadline(ReviewResult result, String submissionId) {
         try {
             ModelConfiguration config = submissionsApi.submissionsSubmissionIdGet(submissionId);
             if (config != null && config.getReviewDeadline() != null) {
@@ -179,37 +221,14 @@ public class ResultService {
                 .options(q.getOptions())
                 .build();
     }
-
-    private void sendResultAvailableNotification(ReviewResult result) {
-        if (notificationQueueName == null || notificationQueueName.isBlank()) {
-            log.warn("No notification queue configured. Skipping result-available notification for {}",
-                    result.getSubmissionId());
-            return;
-        }
-        NotificationEvent event = new NotificationEvent(
-                "REVIEW_RESULT_AVAILABLE",
-                List.of("IN_APP"),
-                result.getAuthorId(),
-                "Review Result Available",
-                "A review result is available for submission " + result.getSubmissionId() + ".",
-                Map.of("submissionId", result.getSubmissionId()));
-        try {
-            sqsTemplate.send(notificationQueueName, objectMapper.writeValueAsString(event));
-            log.info("Sent result-available notification to '{}' for submission {}",
-                    result.getAuthorId(), result.getSubmissionId());
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize result-available notification for {}", result.getSubmissionId(), e);
-        }
-    }
-
     public List<ReviewResultDto> findByAuthor(String authorId) {
         return repository.findByAuthorId(authorId).stream()
                 .map(ReviewResultDto::from)
                 .toList();
     }
 
-    public ReviewResultDto findBySubmission(String submissionId) {
-        return repository.findBySubmissionId(submissionId)
+    public List<ReviewResultDto> findResultsBySubmission(String submissionId) {
+        return repository.findBySubmissionId(submissionId).stream()
                 .map(r -> {
                     if (r.getAuthorId() == null || r.getAuthorId().isBlank()) {
                         try {
@@ -223,21 +242,21 @@ public class ResultService {
                         }
                     }
                     return ReviewResultDto.from(r);
-                })
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No result found for submission: " + submissionId));
+                }).toList();
     }
 
     public String getDocumentDownloadUrl(String submissionId) {
-        var result = repository.findBySubmissionId(submissionId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No result found for submission: " + submissionId));
-
-        if (result.getDocumentS3Key() == null || result.getDocumentS3Key().isBlank()) {
-            throw new IllegalArgumentException("No document attached to submission: " + submissionId);
+        List<ReviewResult> results = repository.findBySubmissionId(submissionId);
+        if (results.isEmpty()) {
+            throw new IllegalArgumentException("No result found for submission: " + submissionId);
         }
 
-        return documentStorageService.generatePresignedDownloadUrl(result.getDocumentS3Key());
+        ReviewResult resultWithDoc = results.stream()
+                .filter(r -> r.getDocumentS3Key() != null && !r.getDocumentS3Key().isBlank())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No document attached to submission: " + submissionId));
+
+        return documentStorageService.generatePresignedDownloadUrl(resultWithDoc.getDocumentS3Key());
     }
 
     public boolean isAuthorOfSubmission(String submissionId, String callerSub) {
@@ -247,6 +266,49 @@ public class ResultService {
             return config != null && config.getAuthorIds() != null && config.getAuthorIds().contains(callerSub);
         } catch (Exception e) {
             log.warn("Could not check authors for submission {}: {}", submissionId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isAssignedReviewer(String submissionId, String callerSub, String callerUsername) {
+        if (callerSub == null) return false;
+        boolean assignedBySubmissionLookup = false;
+        try {
+            SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
+            assignedBySubmissionLookup = matches != null && matches.getMatches() != null &&
+                    matches.getMatches().stream().anyMatch(m -> callerSub.equals(m.getExaminerId()));
+            if (assignedBySubmissionLookup) {
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("Could not check examiners for submission {}: {}", submissionId, e.getMessage());
+        }
+
+        if (callerUsername == null || callerUsername.isBlank()) {
+            return false;
+        }
+
+        try {
+            ExaminerMatchResponse examinerMatches = matchesApi.getMatchesByExaminer(callerUsername);
+            return examinerMatches != null && examinerMatches.getAssignments() != null &&
+                    examinerMatches.getAssignments().stream().anyMatch(a -> submissionId.equals(a.getSubmissionId()));
+        } catch (Exception e) {
+            // Fallback may fail for non-reviewer callers (e.g., Authors). Keep this at debug level.
+            log.debug("Could not fallback-check examiner assignments for username {} and submission {}: {}",
+                    callerUsername, submissionId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isReviewComplete(String submissionId, int submittedHumanReviewsCount) {
+        try {
+            SubmissionMatchResponse matches = matchesApi.getMatchesBySubmission(submissionId);
+            if (matches == null || matches.getMatches() == null || matches.getMatches().isEmpty()) {
+                return false;
+            }
+            return submittedHumanReviewsCount >= matches.getMatches().size();
+        } catch (Exception e) {
+            log.warn("Could not check match count for submission {}: {}", submissionId, e.getMessage());
             return false;
         }
     }

@@ -76,50 +76,10 @@ public class MatchingController {
             return ResponseEntity.notFound().build();
         }
 
-        boolean hideExaminer = false;
-        if (!isAdminOrOfficer(authentication)) {
-            try {
-                com.fh_wedel.configuration.client.model.ReviewRulesDto rules = configurationRulesApi.getRulesForSubmission(submissionId);
-                if (rules != null && Boolean.TRUE.equals(rules.getReviewerAnonymous())) {
-                    hideExaminer = true;
-                }
-            } catch (Exception e) {
-                log.warn("Failed to delete/fetch workflow rules for submission {}, defaulting to hiding examiner", submissionId, e);
-                hideExaminer = true;
-            }
-        }
-        
-        final boolean hide = hideExaminer;
+        final boolean hide = resolveAnonymityRule(submissionId, authentication);
 
-        Map<String, String> examinerIdToUserNameMap = new HashMap<>();
-        if (matches != null && !matches.isEmpty()) {
-            try {
-                List<String> examinerIds = matches.stream()
-                        .map(MatchRecord::getExaminerId)
-                        .distinct()
-                        .toList();
-
-                com.fh_wedel.user.client.model.BulkResolveRequest request = new com.fh_wedel.user.client.model.BulkResolveRequest();
-                request.setSubs(examinerIds);
-                var response = usersApi.bulkResolveUsers(request);
-                
-                if (response != null && response.getUsers() != null) {
-                    examinerIdToUserNameMap.putAll(response.getUsers());
-                }
-            } catch (Exception e) {
-                log.warn("Failed to fetch reviewer usernames", e);
-            }
-        }
-
-        List<MatchEntry> matchEntries = matches.stream()
-                .map(m -> {
-                    MatchEntry entry = new MatchEntry();
-                    entry.setExaminerId(hide ? null : m.getExaminerId());
-                    entry.setExaminerUsername(hide ? null : examinerIdToUserNameMap.get(m.getExaminerId()));
-                    entry.setAssignedAt(m.getTimestamp().atOffset(ZoneOffset.UTC));
-                    return entry;
-                })
-                .toList();
+        Map<String, String> examinerIdToUserNameMap = resolveExaminerUsernameMap(matches);
+        List<MatchEntry> matchEntries = buildMatchEntries(matches, hide, examinerIdToUserNameMap);
 
         SubmissionMatchResponse response = new SubmissionMatchResponse();
         response.setSubmissionId(status.getSubmissionId());
@@ -129,16 +89,7 @@ public class MatchingController {
         response.setNumberOfExaminers(status.getNumberOfExaminers());
         response.setSubmitterIds(submitterSubs);
         
-        List<String> usernames = new java.util.ArrayList<>();
-        if (submitterSubs != null) {
-            for (String sub : submitterSubs) {
-                try {
-                    usernames.add(usersApi.getUserBySub(sub).getUsername());
-                } catch (Exception e) {
-                    usernames.add("Unknown");
-                }
-            }
-        }
+        List<String> usernames = resolveSubmitterUsernames(submitterSubs);
         response.setSubmitterUsernames(usernames);
         
         response.setMatches(matchEntries);
@@ -230,5 +181,70 @@ public class MatchingController {
             return inner.substring(pipeIndex + 1);
         }
         return inner;
+    }
+
+    private boolean resolveAnonymityRule(String submissionId, Authentication authentication) {
+        if (isAdminOrOfficer(authentication)) {
+            return false;
+        }
+        try {
+            com.fh_wedel.configuration.client.model.ReviewRulesDto rules = configurationRulesApi.getRulesForSubmission(submissionId);
+            if (rules != null && Boolean.TRUE.equals(rules.getReviewerAnonymous())) {
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete/fetch workflow rules for submission {}, defaulting to hiding examiner", submissionId, e);
+            return true;
+        }
+        return false;
+    }
+
+    private Map<String, String> resolveExaminerUsernameMap(List<MatchRecord> matches) {
+        Map<String, String> examinerIdToUserNameMap = new HashMap<>();
+        if (matches != null && !matches.isEmpty()) {
+            try {
+                List<String> examinerIds = matches.stream()
+                        .map(MatchRecord::getExaminerId)
+                        .distinct()
+                        .toList();
+
+                com.fh_wedel.user.client.model.BulkResolveRequest request = new com.fh_wedel.user.client.model.BulkResolveRequest();
+                request.setSubs(examinerIds);
+                var response = usersApi.bulkResolveUsers(request);
+                
+                if (response != null && response.getUsers() != null) {
+                    examinerIdToUserNameMap.putAll(response.getUsers());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch reviewer usernames", e);
+            }
+        }
+        return examinerIdToUserNameMap;
+    }
+
+    private List<MatchEntry> buildMatchEntries(List<MatchRecord> matches, boolean hide, Map<String, String> examinerIdToUserNameMap) {
+        return matches.stream()
+                .map(m -> {
+                    MatchEntry entry = new MatchEntry();
+                    entry.setExaminerId(hide ? null : m.getExaminerId());
+                    entry.setExaminerUsername(hide ? null : examinerIdToUserNameMap.get(m.getExaminerId()));
+                    entry.setAssignedAt(m.getTimestamp().atOffset(ZoneOffset.UTC));
+                    return entry;
+                })
+                .toList();
+    }
+
+    private List<String> resolveSubmitterUsernames(List<String> submitterSubs) {
+        List<String> usernames = new java.util.ArrayList<>();
+        if (submitterSubs != null) {
+            for (String sub : submitterSubs) {
+                try {
+                    usernames.add(usersApi.getUserBySub(sub).getUsername());
+                } catch (Exception e) {
+                    usernames.add("Unknown");
+                }
+            }
+        }
+        return usernames;
     }
 }

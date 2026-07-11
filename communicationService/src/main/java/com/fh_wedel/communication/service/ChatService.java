@@ -255,58 +255,15 @@ public class ChatService {
         Optional<ChatMetaItem> metaOpt = chatRepository.findChatMeta(chatId);
 
         if (metaOpt.isEmpty()) {
-            ChatMetaItem meta = ChatMetaItem.builder()
-                    .pk("CHAT#" + chatId)
-                    .sk("META")
-                    .participantA(lowerSub)
-                    .participantB(upperSub)
-                    .chatType("GENERAL")
-                    .submissionId("GENERAL")
-                    .createdAt(now)
-                    .lastMessageAt(now)
-                    .build();
+            ChatMetaItem meta = buildGeneralChatMeta(chatId, lowerSub, upperSub, now);
 
-            ParticipantLinkItem link1 = ParticipantLinkItem.builder()
-                    .pk("USER#" + senderId)
-                    .sk("CHAT#" + chatId)
-                    .chatId(chatId)
-                    .otherParticipantId(recipientId)
-                    .chatType("GENERAL")
-                    .submissionId("GENERAL")
-                    .lastMessageAt(now)
-                    .build();
-
-            ParticipantLinkItem link2 = ParticipantLinkItem.builder()
-                    .pk("USER#" + recipientId)
-                    .sk("CHAT#" + chatId)
-                    .chatId(chatId)
-                    .otherParticipantId(senderId)
-                    .chatType("GENERAL")
-                    .submissionId("GENERAL")
-                    .lastMessageAt(now)
-                    .build();
+            ParticipantLinkItem link1 = buildGeneralParticipantLink(senderId, recipientId, chatId, now);
+            ParticipantLinkItem link2 = buildGeneralParticipantLink(recipientId, senderId, chatId, now);
 
             chatRepository.createChatWithFirstMessage(meta, link1, link2, messageItem);
         } else {
-            ParticipantLinkItem link1 = ParticipantLinkItem.builder()
-                    .pk("USER#" + senderId)
-                    .sk("CHAT#" + chatId)
-                    .chatId(chatId)
-                    .otherParticipantId(recipientId)
-                    .chatType("GENERAL")
-                    .submissionId("GENERAL")
-                    .lastMessageAt(now)
-                    .build();
-
-            ParticipantLinkItem link2 = ParticipantLinkItem.builder()
-                    .pk("USER#" + recipientId)
-                    .sk("CHAT#" + chatId)
-                    .chatId(chatId)
-                    .otherParticipantId(senderId)
-                    .chatType("GENERAL")
-                    .submissionId("GENERAL")
-                    .lastMessageAt(now)
-                    .build();
+            ParticipantLinkItem link1 = buildGeneralParticipantLink(senderId, recipientId, chatId, now);
+            ParticipantLinkItem link2 = buildGeneralParticipantLink(recipientId, senderId, chatId, now);
 
             chatRepository.addMessage(messageItem, link1, link2);
         }
@@ -330,11 +287,7 @@ public class ChatService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "submissionId is required for SUBMISSION chats");
         }
 
-        // Validate workflow rules
-        com.fh_wedel.configuration.client.model.ReviewRulesDto rules = configurationServiceClient.getSubmissionRules(submissionId);
-        if (Boolean.FALSE.equals(rules.getAuthorReviewerChatAllowed())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
-        }
+        validateChatRules(submissionId);
 
         // Deterministic chatId keyed by submission only (one group chat per submission)
         String seed = "SUBMISSION:" + submissionId;
@@ -353,44 +306,7 @@ public class ChatService {
 
         Optional<ChatMetaItem> metaOpt = chatRepository.findChatMeta(chatId);
 
-        List<String> allParticipants;
-
-        if (metaOpt.isEmpty()) {
-            // First message: fetch all participants from the Matching Service
-            com.fh_wedel.matching.client.model.SubmissionMatchResponse match = matchingServiceClient.getSubmissionMatch(submissionId);
-            allParticipants = buildParticipantList(match);
-
-            if (!allParticipants.contains(senderId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant in this submission");
-            }
-
-            ChatMetaItem meta = ChatMetaItem.builder()
-                    .pk("CHAT#" + chatId)
-                    .sk("META")
-                    .participants(allParticipants)
-                    .chatType("SUBMISSION")
-                    .submissionId(submissionId)
-                    .createdAt(now)
-                    .lastMessageAt(now)
-                    .build();
-
-            List<ParticipantLinkItem> links = buildParticipantLinks(allParticipants, chatId, submissionId, now);
-            chatRepository.createGroupChatWithFirstMessage(meta, links, messageItem);
-            
-            log.info("Created SUBMISSION group chat: chatId='{}' submissionId='{}' participants={}", 
-                    chatId, submissionId, allParticipants);
-        } else {
-            // Subsequent message: participants are already stored in the meta
-            ChatMetaItem meta = metaOpt.get();
-            allParticipants = meta.getParticipants();
-
-            if (allParticipants == null || !allParticipants.contains(senderId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant in this chat");
-            }
-
-            List<ParticipantLinkItem> links = buildParticipantLinks(allParticipants, chatId, submissionId, now);
-            chatRepository.addGroupMessage(messageItem, links);
-        }
+        List<String> allParticipants = handleGroupChatPersistence(submissionId, chatId, senderId, now, metaOpt, messageItem);
 
         ChatDetailResponse response = getChat(senderId, chatId, null, 1);
         Message actualMessage = response.getMessages().get(0);
@@ -433,5 +349,76 @@ public class ChatService {
                         .lastMessageAt(now)
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private ChatMetaItem buildGeneralChatMeta(String chatId, String lowerSub, String upperSub, String now) {
+        return ChatMetaItem.builder()
+                .pk("CHAT#" + chatId)
+                .sk("META")
+                .participantA(lowerSub)
+                .participantB(upperSub)
+                .chatType("GENERAL")
+                .submissionId("GENERAL")
+                .createdAt(now)
+                .lastMessageAt(now)
+                .build();
+    }
+
+    private ParticipantLinkItem buildGeneralParticipantLink(String userId, String otherParticipantId, String chatId, String now) {
+        return ParticipantLinkItem.builder()
+                .pk("USER#" + userId)
+                .sk("CHAT#" + chatId)
+                .chatId(chatId)
+                .otherParticipantId(otherParticipantId)
+                .chatType("GENERAL")
+                .submissionId("GENERAL")
+                .lastMessageAt(now)
+                .build();
+    }
+
+    private void validateChatRules(String submissionId) {
+        com.fh_wedel.configuration.client.model.ReviewRulesDto rules = configurationServiceClient.getSubmissionRules(submissionId);
+        if (Boolean.FALSE.equals(rules.getAuthorReviewerChatAllowed())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chat is not allowed for this review type");
+        }
+    }
+
+    private List<String> handleGroupChatPersistence(String submissionId, String chatId, String senderId, String now, Optional<ChatMetaItem> metaOpt, MessageItem messageItem) {
+        List<String> allParticipants;
+        if (metaOpt.isEmpty()) {
+            com.fh_wedel.matching.client.model.SubmissionMatchResponse match = matchingServiceClient.getSubmissionMatch(submissionId);
+            allParticipants = buildParticipantList(match);
+
+            if (!allParticipants.contains(senderId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant in this submission");
+            }
+
+            ChatMetaItem meta = ChatMetaItem.builder()
+                    .pk("CHAT#" + chatId)
+                    .sk("META")
+                    .participants(allParticipants)
+                    .chatType("SUBMISSION")
+                    .submissionId(submissionId)
+                    .createdAt(now)
+                    .lastMessageAt(now)
+                    .build();
+
+            List<ParticipantLinkItem> links = buildParticipantLinks(allParticipants, chatId, submissionId, now);
+            chatRepository.createGroupChatWithFirstMessage(meta, links, messageItem);
+            
+            log.info("Created SUBMISSION group chat: chatId='{}' submissionId='{}' participants={}", 
+                    chatId, submissionId, allParticipants);
+        } else {
+            ChatMetaItem meta = metaOpt.get();
+            allParticipants = meta.getParticipants();
+
+            if (allParticipants == null || !allParticipants.contains(senderId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant in this chat");
+            }
+
+            List<ParticipantLinkItem> links = buildParticipantLinks(allParticipants, chatId, submissionId, now);
+            chatRepository.addGroupMessage(messageItem, links);
+        }
+        return allParticipants;
     }
 }

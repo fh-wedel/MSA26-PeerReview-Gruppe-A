@@ -1,0 +1,21 @@
+$kind: http-request
+name: 'Send a notification via one or more channels'
+description: 'Summary: Send a notification via one or more channels'
+url: '{{base_url}}/api/notification/send'
+method: POST
+headers:
+  Content-Type: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "body": "sample-body",
+      "channels": [
+        "DISCORD"
+      ],
+      "recipients": [
+        "sample-recipients"
+      ],
+      "subject": "sample-subject"
+    }
+order: 4000
