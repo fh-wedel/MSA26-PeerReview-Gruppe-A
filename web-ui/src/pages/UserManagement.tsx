@@ -4,29 +4,20 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  IconButton,
   Switch,
   Tab,
   Tabs,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
-  Paper,
   Autocomplete,
   CircularProgress
 } from '@mui/material';
-import { Delete, Edit, GroupAdd } from '@mui/icons-material';
+import { GroupAdd } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import {
@@ -38,6 +29,8 @@ import {
   fetchUserDetails
 } from '../api/users';
 import { useTopicTags } from '../hooks/useTopicTags';
+import { handleAddSubmitLogic, handleEditSubmitLogic } from '../utils/userManagementHelpers';
+import { UserManagementTable } from '../components/user-management/UserManagementTable';
 import type { UserProfile, UserSummary } from '../api/generated/users';
 
 const GROUPS = ['All Users', 'Admin', 'ExaminationOfficer', 'Teacher', 'Reviewer', 'Author'];
@@ -111,25 +104,7 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleAddSubmit = async () => {
-    if (!selectedUser) return;
-    try {
-      const customAttrs: Record<string, string> = {};
-      if (currentGroup === 'Reviewer') {
-        customAttrs.isActive = isActive ? 'true' : 'false';
-        if (selectedTags.length > 0) {
-          customAttrs.topicTags = selectedTags.join(',');
-        }
-      }
-
-      const newUser = await addGroupMember(currentGroup, selectedUser.username, customAttrs);
-      setMembers(prev => prev.some(m => m.username === newUser.username) ? prev : [...prev, newUser]);
-      setAddDialogOpen(false);
-      setSelectedUser(null);
-      setIsActive(true);
-      setSelectedTags([]);
-    } catch (err) {
-      console.error('Failed to add member', err);
-    }
+    await handleAddSubmitLogic(selectedUser, currentGroup, isActive, selectedTags, addGroupMember, setMembers, setAddDialogOpen, setSelectedUser, setIsActive, setSelectedTags);
   };
 
   const handleEditOpen = (member: UserProfile) => {
@@ -144,20 +119,7 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleEditSubmit = async () => {
-    if (!editingUsername) return;
-    try {
-      const customAttrs: Record<string, string> = {};
-      if (currentGroup === 'Reviewer') {
-        customAttrs.isActive = isActive ? 'true' : 'false';
-        customAttrs.topicTags = selectedTags.join(',');
-      }
-      const updatedUser = await updateUserAttributes(currentGroup, editingUsername, customAttrs);
-      setMembers(prev => prev.map(m => m.username === editingUsername ? updatedUser : m));
-      setEditDialogOpen(false);
-      setEditingUsername(null);
-    } catch (err) {
-      console.error('Failed to update member attributes', err);
-    }
+    await handleEditSubmitLogic(editingUsername, currentGroup, isActive, selectedTags, updateUserAttributes, setMembers, setEditDialogOpen, setEditingUsername);
   };
 
   const handleRemove = async (username: string) => {
@@ -216,87 +178,13 @@ export const UserManagement: React.FC = () => {
             )}
           </Box>
 
-          <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-            <Table>
-              <TableHead sx={{ bgcolor: 'background.default' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Username</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  {currentGroup === 'All Users' && <TableCell sx={{ fontWeight: 'bold' }}>Groups</TableCell>}
-                  {currentGroup === 'Reviewer' && <TableCell sx={{ fontWeight: 'bold' }}>Active</TableCell>}
-                  {currentGroup === 'Reviewer' && <TableCell sx={{ fontWeight: 'bold' }}>Topics</TableCell>}
-                  {currentGroup !== 'All Users' && <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Actions</TableCell>}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loadingMembers ? (
-                  <TableRow>
-                    <TableCell colSpan={currentGroup === 'Reviewer' ? 6 : currentGroup === 'All Users' ? 4 : 4} align="center">
-                      <CircularProgress size={24} sx={{ my: 2 }} />
-                    </TableCell>
-                  </TableRow>
-                ) : members.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={currentGroup === 'Reviewer' ? 6 : currentGroup === 'All Users' ? 4 : 4} align="center">
-                      No users found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  members.map((member) => (
-                    <TableRow key={member.username} hover>
-                      <TableCell>{member.username}</TableCell>
-                      <TableCell>{member.email || '-'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={member.status}
-                          size="small"
-                          color={member.status === 'CONFIRMED' ? 'success' : 'default'}
-                        />
-                      </TableCell>
-                      {currentGroup === 'All Users' && (
-                        <TableCell>
-                          {(member.groups && member.groups.length > 0) ? member.groups.map(g => (
-                            <Chip key={g} label={g} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
-                          )) : (
-                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>No groups</Typography>
-                          )}
-                        </TableCell>
-                      )}
-                      {currentGroup === 'Reviewer' && (
-                        <TableCell>
-                          <Chip
-                            label={member.customAttributes?.isActive === 'true' ? 'Yes' : 'No'}
-                            size="small"
-                            color={member.customAttributes?.isActive === 'true' ? 'primary' : 'default'}
-                          />
-                        </TableCell>
-                      )}
-                      {currentGroup === 'Reviewer' && (
-                        <TableCell>
-                          {member.customAttributes?.topicTags?.split(',').map((tag) => (
-                            <Chip key={tag} label={tag} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
-                          ))}
-                        </TableCell>
-                      )}
-                      {currentGroup !== 'All Users' && (
-                        <TableCell align="right">
-                          {currentGroup === 'Reviewer' && (
-                            <IconButton color="primary" onClick={() => handleEditOpen(member)}>
-                              <Edit />
-                            </IconButton>
-                          )}
-                          <IconButton color="error" onClick={() => handleRemove(member.username)}>
-                            <Delete />
-                          </IconButton>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <UserManagementTable
+            currentGroup={currentGroup}
+            loadingMembers={loadingMembers}
+            members={members}
+            handleEditOpen={handleEditOpen}
+            handleRemove={handleRemove}
+          />
         </CardContent>
       </Card>
 

@@ -50,4 +50,9 @@
     long: "Large Language Model",
     longplural: "Large Language Models",
   ),
+  (
+    key: "CRAP",
+    short: "CRAP",
+    long: "Change Risk Anti-Patterns",
+  ),
 )

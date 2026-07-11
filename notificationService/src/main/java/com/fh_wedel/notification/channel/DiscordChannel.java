@@ -8,6 +8,8 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Component
 @Slf4j
 public class DiscordChannel implements NotificationChannel {
@@ -15,9 +17,14 @@ public class DiscordChannel implements NotificationChannel {
     private final SecretsConfig secretsConfig;
     private final RestClient restClient;
 
+    @Autowired
     public DiscordChannel(SecretsConfig secretsConfig) {
+        this(secretsConfig, RestClient.create());
+    }
+
+    DiscordChannel(SecretsConfig secretsConfig, RestClient restClient) {
         this.secretsConfig = secretsConfig;
-        this.restClient = RestClient.create();
+        this.restClient = restClient;
     }
 
     @Override

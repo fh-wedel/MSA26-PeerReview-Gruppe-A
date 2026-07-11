@@ -116,6 +116,14 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
+        
+        <!-- Shared API Client and Security Utils -->
+        <dependency>
+            <groupId>com.fh-wedel</groupId>
+            <artifactId>api-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -183,6 +191,62 @@
                                 <openApiNullable>false</openApiNullable>
                                 <documentationProvider>none</documentationProvider>
                             </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.13</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/model/api/**</exclude>
+                        <exclude>**/model/events/**</exclude>
+                        <exclude>**/client/api/**</exclude>
+                        <exclude>**/client/model/**</exclude>
+                        <exclude>**/api/generated/**</exclude>
+                        <exclude>**/ApiClient.class</exclude>
+                        <exclude>**/ApiClient$*.class</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <!-- Attach the JaCoCo Java agent before tests run -->
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- Generate HTML + XML report after tests -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <!-- Enforce CRAP quality gate: fail if any method has CRAP > 30 -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>METHOD</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>COMPLEXITY</counter>
+                                            <value>TOTALCOUNT</value>
+                                            <maximum>30</maximum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
                         </configuration>
                     </execution>
                 </executions>

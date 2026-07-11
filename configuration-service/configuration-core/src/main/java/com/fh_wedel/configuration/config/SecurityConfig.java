@@ -1,8 +1,9 @@
 package com.fh_wedel.configuration.config;
 
-import com.fh_wedel.configuration.security.AuthHeaderFilter;
+import com.fh_wedel.common.security.AuthHeaderFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -12,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@Import(AuthHeaderFilter.class)
 public class SecurityConfig {
 
     private final AuthHeaderFilter authHeaderFilter;

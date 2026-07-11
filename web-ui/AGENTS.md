@@ -27,3 +27,5 @@
 - **Silent 403s on Refresh:** When refreshing Cognito tokens on a 403 error, explicitly update `sessionStorage` with the
   new tokens and retry the request within the interceptor. Decouple this from `AuthContext` to prevent circular
   dependencies.
+- **CRAP Index Branch Coverage Trap:** The CRAP calculation uses `(1 - cov)^3` in the denominator. When extracting complex logic (like nested conditionals) from a large component to reduce its CC, the parent component's branch coverage percentage might drop. This can cause the parent's CRAP score to *increase* despite having lower complexity. Always ensure adequate tests exist for the parent or write tests for the newly extracted component.
+- **Vitest Coverage Metadata Warning:** Vitest/Istanbul can struggle to map coverage data to specific inline or anonymous functions in JSX props (e.g. warning: "Function coverage metadata could not be matched unambiguously"). Avoid complex inline functions to ensure accurate coverage reporting.

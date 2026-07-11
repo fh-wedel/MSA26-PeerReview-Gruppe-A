@@ -214,4 +214,82 @@ class SubmissionControllerSecurityTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(submission);
     }
+
+    @Test
+    @DisplayName("Get documents returns list")
+    void getDocuments_success() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
+        DocumentRecord doc = new DocumentRecord("sub-1", "doc-1", "file.pdf", "s3-key", "app/pdf");
+        when(submissionService.getDocuments("sub-1")).thenReturn(List.of(doc));
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<List<DocumentRecord>> response = controller.getDocuments("sub-1", auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1);
+        assertThat(response.getBody().get(0).getDocumentId()).isEqualTo("doc-1");
+    }
+
+    @Test
+    @DisplayName("Get documents returns not found if submission does not exist")
+    void getDocuments_notFound() {
+        when(submissionService.getSubmission("sub-1")).thenReturn(null);
+
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<List<DocumentRecord>> response = controller.getDocuments("sub-1", auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    @DisplayName("Author CANNOT fetch documents for other author's submission")
+    void getDocuments_authorOther_forbidden() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        when(submissionService.getSubmission("sub-1")).thenReturn(submission);
+
+        Authentication auth = createAuth("Author", "author-user", "author-2");
+        ResponseEntity<List<DocumentRecord>> response = controller.getDocuments("sub-1", auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    @DisplayName("List submissions for caller")
+    void listSubmissions_success() {
+        Submission submission = new Submission("sub-1", "config-1", List.of("author-1"));
+        when(submissionService.getSubmissionsByAuthor("author-1")).thenReturn(List.of(submission));
+
+        Authentication auth = createAuth("Author", "author-user", "author-1");
+        ResponseEntity<List<Submission>> response = controller.listSubmissions(auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Submit submission returns not found when submissionService returns null")
+    void submitSubmission_notFound() {
+        when(submissionService.getSubmission("sub-1")).thenReturn(new Submission("sub-1", "config-1", List.of("author-1")));
+        when(submissionService.submitSubmission("sub-1", "author-1")).thenReturn(null);
+
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<Submission> response = controller.submitSubmission("sub-1", auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    @DisplayName("Get submission returns not found when submission is missing")
+    void getSubmission_notFound() {
+        when(submissionService.getSubmission("sub-1")).thenReturn(null);
+
+        Authentication auth = createAuth("Admin", "admin-user", "admin-uuid");
+        ResponseEntity<Submission> response = controller.getSubmission("sub-1", auth);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNull();
+    }
 }

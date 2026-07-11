@@ -56,6 +56,182 @@ function ServerDay(props: PickerDayProps & { highlightedDays?: Date[] }) {
   );
 }
 
+const mapAuthorSubmission = (config: any, index: number): Task | null => {
+    const subId = (config as any).id || (config as any).submissionId || `sub-${index}`;
+    if (!config.submissionDeadline) return null;
+    return {
+        id: `sub-${subId}`,
+        title: config.title,
+        type: "Submission",
+        dueDate: new Date(config.submissionDeadline),
+        submissionId: subId,
+    };
+};
+
+const fetchAuthorSubmissions = async (userId: string): Promise<Task[]> => {
+    try {
+        const res = await configApiClient.submissions.authorDetail(userId);
+        if (res.data && Array.isArray(res.data)) {
+            return res.data.map(mapAuthorSubmission).filter((t): t is Task => t !== null);
+        }
+    } catch (e) {
+        console.error("Failed to fetch author configurations", e);
+    }
+    return [];
+};
+
+const fetchAssignmentConfig = async (assignment: any): Promise<Task | null> => {
+    try {
+        const configResponse = await configApiClient.submissions.submissionsDetail(assignment.submissionId);
+        if (configResponse.data && configResponse.data.reviewDeadline) {
+            return {
+                id: `ass-${assignment.submissionId}`,
+                title: configResponse.data.title,
+                type: "Assignment",
+                dueDate: new Date(configResponse.data.reviewDeadline),
+                submissionId: assignment.submissionId,
+            };
+        }
+    } catch (err) {
+        console.error(`Failed to fetch config for assignment ${assignment.submissionId}`, err);
+    }
+    return null;
+};
+
+const processAssignments = async (assignments: any[]): Promise<Task[]> => {
+    const tasks: Task[] = [];
+    for (const assignment of assignments) {
+        const task = await fetchAssignmentConfig(assignment);
+        if (task) tasks.push(task);
+    }
+    return tasks;
+};
+
+const fetchReviewerAssignments = async (username: string): Promise<Task[]> => {
+    try {
+        const res = await matchingApiClient.matches.getMatchesByExaminer(username);
+        if (!res.data || !res.data.assignments) return [];
+        return await processAssignments(res.data.assignments);
+    } catch (e) {
+        console.error("Failed to fetch assignments", e);
+        return [];
+    }
+};
+
+const isSubmissionIncomplete = async (submissionId: string): Promise<boolean> => {
+    try {
+        const subRes = await submissionApiClient.submissions.getSubmission(submissionId) as any;
+        const status = subRes?.data?.status;
+        if (!status) return true;
+        return status === 'WAITING_FOR_SUBMISSION' || status === 'DRAFT';
+    } catch (e) {
+        return true;
+    }
+};
+
+const isAssignmentIncomplete = async (submissionId: string, userId: string): Promise<boolean> => {
+    try {
+        const resResult = await responseApiClient.results.resultsDetail(submissionId);
+        if (!resResult.data || !Array.isArray(resResult.data)) return true;
+        const hasReviewed = resResult.data.some((r: any) => r.reviewerId === userId);
+        return !hasReviewed;
+    } catch (e) {
+        return true;
+    }
+};
+
+const filterIncompleteTasks = async (tasks: Task[], userId: string): Promise<Task[]> => {
+    const incompleteTasks: Task[] = [];
+    for (const task of tasks) {
+        let isIncomplete = false;
+        if (task.type === 'Submission') {
+            isIncomplete = await isSubmissionIncomplete(task.submissionId);
+        } else {
+            isIncomplete = await isAssignmentIncomplete(task.submissionId, userId);
+        }
+        if (isIncomplete) incompleteTasks.push(task);
+    }
+    return incompleteTasks;
+};
+
+const buildSubmissionPayload = (
+    title: string,
+    reviewType: string,
+    authorIds: string[],
+    reviewTemplateType: string,
+    numberOfExaminers: number,
+    submissionDeadline: Date,
+    reviewDeadline: Date,
+    topicTag: string,
+    customReviewerIds: string[],
+    userId?: string
+) => {
+    const finalAuthorIds = authorIds.length > 0 ? authorIds : [userId || ""];
+    return {
+        title,
+        reviewProcessType: reviewType,
+        authorIds: finalAuthorIds,
+        reviewTemplateType,
+        numberOfExaminers,
+        submissionDeadline: submissionDeadline.toISOString(),
+        reviewDeadline: reviewDeadline.toISOString(),
+        topicTag,
+        customReviewerIds,
+    };
+};
+
+const handleTaskClick = (task: Task, navigate: ReturnType<typeof useNavigate>) => {
+    navigate(
+        task.type === "Assignment"
+            ? `/assignments/${task.submissionId}`
+            : `/submissions/${task.submissionId}`
+    );
+};
+
+const TaskItem: React.FC<{ task: Task, navigate: ReturnType<typeof useNavigate> }> = ({ task, navigate }) => (
+    <ListItem key={task.id} disablePadding divider>
+        <ListItemButton onClick={() => handleTaskClick(task, navigate)}>
+            <ListItemText
+                primary={
+                    <Box sx={{display: "flex", alignItems: "center", gap: 1}}>
+                        {task.title}
+                        <Chip
+                            label={task.type}
+                            size="small"
+                            color={task.type === "Submission" ? "primary" : "secondary"}
+                        />
+                    </Box>
+                }
+                secondary={`Due: ${task.dueDate.toLocaleDateString()}`}
+            />
+        </ListItemButton>
+    </ListItem>
+);
+
+const TaskListContent: React.FC<{ tasks: Task[], loading: boolean, navigate: ReturnType<typeof useNavigate> }> = ({ tasks, loading, navigate }) => {
+    if (loading) {
+        return (
+            <Box sx={{display: "flex", justifyContent: "center", p: 4}}>
+                <CircularProgress/>
+            </Box>
+        );
+    }
+    if (tasks.length === 0) {
+        return (
+            <Typography variant="body1" color="text.secondary">
+                You have no upcoming tasks.
+            </Typography>
+        );
+    }
+    return (
+        <List>
+            {tasks.map((task) => (
+                <TaskItem key={task.id} task={task} navigate={navigate} />
+            ))}
+        </List>
+    );
+};
+
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -72,90 +248,21 @@ export const Dashboard: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const fetchedTasks: Task[] = [];
-      const now = startOfDay(new Date());
+      let fetchedTasks: Task[] = [];
 
-      // 1. Fetch own submissions
       if (hasAuthorOrAdminRole) {
-        try {
-            const submissionsResponse = await configApiClient.submissions.authorDetail(user.id);
-          if (submissionsResponse.data && Array.isArray(submissionsResponse.data)) {
-              submissionsResponse.data.forEach((config: any, index: number) => {
-              const subId = (config as any).id || (config as any).submissionId || `sub-${index}`;
-              if (config.submissionDeadline) {
-                fetchedTasks.push({
-                  id: `sub-${subId}`,
-                  title: config.title,
-                  type: "Submission",
-                  dueDate: new Date(config.submissionDeadline),
-                  submissionId: subId,
-                });
-              }
-            });
-          }
-        } catch (e) {
-          console.error("Failed to fetch author configurations", e);
-        }
+        const authorTasks = await fetchAuthorSubmissions(user.id);
+        fetchedTasks = fetchedTasks.concat(authorTasks);
       }
 
-      // 2. Fetch assignments
       if (roles.includes("reviewer")) {
-        try {
-          const assignmentsResponse = await matchingApiClient.matches.getMatchesByExaminer(user.username);
-          if (assignmentsResponse.data && assignmentsResponse.data.assignments) {
-            for (const assignment of assignmentsResponse.data.assignments) {
-              try {
-                  const configResponse = await configApiClient.submissions.submissionsDetail(assignment.submissionId);
-                if (configResponse.data && configResponse.data.reviewDeadline) {
-                  fetchedTasks.push({
-                    id: `ass-${assignment.submissionId}`,
-                    title: configResponse.data.title,
-                    type: "Assignment",
-                    dueDate: new Date(configResponse.data.reviewDeadline),
-                    submissionId: assignment.submissionId,
-                  });
-                }
-              } catch (err) {
-                console.error(`Failed to fetch config for assignment ${assignment.submissionId}`, err);
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Failed to fetch assignments", e);
-        }
+        const reviewerTasks = await fetchReviewerAssignments(user.username);
+        fetchedTasks = fetchedTasks.concat(reviewerTasks);
       }
 
-      // Filter out completed tasks
-      const incompleteTasks: Task[] = [];
-      for (const task of fetchedTasks) {
-        if (task.type === 'Submission') {
-            try {
-                const subRes = await submissionApiClient.submissions.getSubmission(task.submissionId);
-                if (subRes && (subRes as any).data && (subRes as any).data.status) {
-                    const status = (subRes as any).data.status;
-                    if (status !== 'WAITING_FOR_SUBMISSION' && status !== 'DRAFT') {
-                        continue; // Already submitted
-                    }
-                }
-            } catch (e) {
-                // If 404, it means not submitted yet, so it's incomplete.
-            }
-        } else if (task.type === 'Assignment') {
-            try {
-                const resResult = await responseApiClient.results.resultsDetail(task.submissionId);
-                if (resResult && resResult.data && Array.isArray(resResult.data)) {
-                    if (resResult.data.some((r: any) => r.reviewerId === user.id)) {
-                        continue; // Already reviewed by this user
-                    }
-                }
-            } catch (e) {
-                // Not reviewed yet
-            }
-        }
-        incompleteTasks.push(task);
-      }
+      const incompleteTasks = await filterIncompleteTasks(fetchedTasks, user.id);
 
-      // Filter by date and sort tasks
+      const now = startOfDay(new Date());
       const validTasks = incompleteTasks.filter((t) => t.dueDate >= now);
       validTasks.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
@@ -186,17 +293,11 @@ export const Dashboard: React.FC = () => {
     customReviewerIds: string[]
   ) => {
     try {
-        const response = await configApiClient.submissions.submissionsCreate({
-        title,
-        reviewProcessType: reviewType,
-        authorIds: authorIds.length > 0 ? authorIds : [user?.id || ""],
-        reviewTemplateType,
-        numberOfExaminers,
-        submissionDeadline: submissionDeadline.toISOString(),
-        reviewDeadline: reviewDeadline.toISOString(),
-        topicTag,
-        customReviewerIds,
-      });
+      const payload = buildSubmissionPayload(
+        title, reviewType, authorIds, reviewTemplateType, numberOfExaminers,
+        submissionDeadline, reviewDeadline, topicTag, customReviewerIds, user?.id
+      );
+      const response = await configApiClient.submissions.submissionsCreate(payload);
 
       if (!response.ok) {
         throw new Error(
@@ -249,46 +350,7 @@ export const Dashboard: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Your Tasks
             </Typography>
-            {loading ? (
-                <Box sx={{display: "flex", justifyContent: "center", p: 4}}>
-                  <CircularProgress/>
-                </Box>
-            ) : tasks.length === 0 ? (
-                <Typography variant="body1" color="text.secondary">
-                  You have no upcoming tasks.
-                </Typography>
-            ) : (
-                <List>
-                  {tasks.map((task) => (
-                      <ListItem key={task.id} disablePadding divider>
-                        <ListItemButton
-                            onClick={() =>
-                                navigate(
-                                    task.type === "Assignment"
-                                        ? `/assignments/${task.submissionId}`
-                                        : `/submissions/${task.submissionId}`
-                                )
-                            }
-                        >
-                          <ListItemText
-                              primary={
-                                <Box sx={{display: "flex", alignItems: "center", gap: 1}}>
-                                  {task.title}
-                                  <Chip
-                                      label={task.type}
-                                      size="small"
-                                      color={task.type === "Submission" ? "primary" : "secondary"}
-
-                                  />
-                                </Box>
-                              }
-                              secondary={`Due: ${task.dueDate.toLocaleDateString()}`}
-                          />
-                        </ListItemButton>
-                      </ListItem>
-                  ))}
-                </List>
-            )}
+            <TaskListContent tasks={tasks} loading={loading} navigate={navigate} />
           </Paper>
         </Box>
 

@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.5 Chrome/138.0.7204.251 Electron/37.6.1 Safari/537.36" pages="2">
   <diagram name="High Level" id="ID3RAyzOV6fLb8l5Ptma">
-    <mxGraphModel dx="2727" dy="2542" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1739" dy="1828" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -377,8 +377,8 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="slFzvp3YNuIOqwgEVRnD-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Framework/&lt;br&gt;Workflow" vertex="1">
-          <mxGeometry height="30" width="60" x="-5" y="394" as="geometry" />
+        <mxCell id="slFzvp3YNuIOqwgEVRnD-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Framework" vertex="1">
+          <mxGeometry height="30" width="65" x="-5" y="394" as="geometry" />
         </mxCell>
         <mxCell id="cuKvIMZ_K0Dogn1DT0qO-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="User Service" vertex="1">
           <mxGeometry height="60" width="120" x="1060" y="640" as="geometry" />
@@ -405,7 +405,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="5QttxB4BTeYqXKBh0CZs" name="AWS">
-    <mxGraphModel dx="633" dy="1627" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1425" dy="2199" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />

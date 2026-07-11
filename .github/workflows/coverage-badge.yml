@@ -1,0 +1,57 @@
+name: Update Coverage Badge
+
+on:
+  push:
+    branches:
+      - main
+      - crap-optimization
+
+permissions:
+  contents: write
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+
+      - name: Install shared api-client library
+        run: mvn -B -ntp clean install
+        working-directory: api-client
+
+      - name: Run all tests and generate JaCoCo reports
+        # Run verify to trigger the jacoco-report execution bound to the verify phase in the child POMs
+        run: mvn -B -ntp clean verify -DskipTests=false
+        # Continue on error so we still generate a badge even if a test fails (optional)
+        continue-on-error: true
+
+      - name: Generate JaCoCo Badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          generate-coverage-badge: true
+          jacoco-csv-file: >
+            userService/target/site/jacoco/jacoco.csv
+            submission-service/target/site/jacoco/jacoco.csv
+            configuration-service/configuration-core/target/site/jacoco/jacoco.csv
+            communicationService/target/site/jacoco/jacoco.csv
+            matchingService/target/site/jacoco/jacoco.csv
+            notificationService/target/site/jacoco/jacoco.csv
+            responseService/target/site/jacoco/jacoco.csv
+          badges-directory: .github/badges
+
+      - name: Commit and push badge
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/jacoco.svg
+          git commit -m "chore: update jacoco coverage badge" || echo "No changes to commit"
+          git push

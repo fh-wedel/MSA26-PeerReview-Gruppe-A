@@ -66,26 +66,11 @@ public class ConfigurationService {
         ReviewTemplatePlugin plugin = pluginService.getReviewTemplate(reviewTemplateType)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown review template type: " + reviewTemplateType));
 
-        if (plugin.getMinAuthors() != null && authorIds.size() < plugin.getMinAuthors()) {
-            throw new IllegalArgumentException("Template requires at least " + plugin.getMinAuthors() + " author(s).");
-        }
-        if (plugin.getMaxAuthors() != null && authorIds.size() > plugin.getMaxAuthors()) {
-            throw new IllegalArgumentException("Template allows at most " + plugin.getMaxAuthors() + " author(s).");
-        }
+        validateAuthorCount(plugin, authorIds);
 
-        if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
-            boolean isTeacherOrAdmin = "Teacher".equals(creatorRole) || "Admin".equals(creatorRole) || "ExaminationOfficer".equals(creatorRole);
-            if (!isTeacherOrAdmin && !plugin.isAllowAuthorCustomReviewer()) {
-                throw new IllegalArgumentException("Authors are not allowed to specify custom reviewers for this template type.");
-            }
-        }
+        validateCustomReviewerPermission(customReviewerIds, creatorRole, plugin);
 
-        if (plugin.getMinReviewers() != null && numberOfExaminers < plugin.getMinReviewers()) {
-            throw new IllegalArgumentException("Template requires at least " + plugin.getMinReviewers() + " reviewer(s).");
-        }
-        if (plugin.getMaxReviewers() != null && numberOfExaminers > plugin.getMaxReviewers()) {
-            throw new IllegalArgumentException("Template allows at most " + plugin.getMaxReviewers() + " reviewer(s).");
-        }
+        validateReviewerCount(plugin, numberOfExaminers);
 
         Instant actualSubmissionDeadline = submissionDeadline;
         Instant actualReviewDeadline = reviewDeadline;
@@ -190,6 +175,33 @@ public class ConfigurationService {
             log.info("Sent MatchingRequestEvent to queue '{}' for submission {}", matchingQueueName, submissionId);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize MatchingRequestEvent for submission {}", submissionId, e);
+        }
+    }
+
+    private void validateAuthorCount(ReviewTemplatePlugin plugin, List<String> authorIds) {
+        if (plugin.getMinAuthors() != null && authorIds.size() < plugin.getMinAuthors()) {
+            throw new IllegalArgumentException("Template requires at least " + plugin.getMinAuthors() + " author(s).");
+        }
+        if (plugin.getMaxAuthors() != null && authorIds.size() > plugin.getMaxAuthors()) {
+            throw new IllegalArgumentException("Template allows at most " + plugin.getMaxAuthors() + " author(s).");
+        }
+    }
+
+    private void validateCustomReviewerPermission(List<String> customReviewerIds, String creatorRole, ReviewTemplatePlugin plugin) {
+        if (customReviewerIds != null && !customReviewerIds.isEmpty()) {
+            boolean isTeacherOrAdmin = "Teacher".equals(creatorRole) || "Admin".equals(creatorRole) || "ExaminationOfficer".equals(creatorRole);
+            if (!isTeacherOrAdmin && !plugin.isAllowAuthorCustomReviewer()) {
+                throw new IllegalArgumentException("Authors are not allowed to specify custom reviewers for this template type.");
+            }
+        }
+    }
+
+    private void validateReviewerCount(ReviewTemplatePlugin plugin, int numberOfExaminers) {
+        if (plugin.getMinReviewers() != null && numberOfExaminers < plugin.getMinReviewers()) {
+            throw new IllegalArgumentException("Template requires at least " + plugin.getMinReviewers() + " reviewer(s).");
+        }
+        if (plugin.getMaxReviewers() != null && numberOfExaminers > plugin.getMaxReviewers()) {
+            throw new IllegalArgumentException("Template allows at most " + plugin.getMaxReviewers() + " reviewer(s).");
         }
     }
 }

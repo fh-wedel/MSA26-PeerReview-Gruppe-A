@@ -12,14 +12,14 @@ import {
   TableHead,
   TableRow,
   Typography,
-  IconButton,
-  TextField,
-  Button
+  
+  
 } from '@mui/material';
-import {Extension, Group, Tag, Delete, Add} from '@mui/icons-material';
+import {Extension, Group} from '@mui/icons-material';
 import {searchUsers} from '../api/communication';
-import {useWorkflowPlugins} from '../hooks/useWorkflowPlugins';
-import {useTopicTags} from '../hooks/useTopicTags';
+import { useWorkflowPlugins } from '../hooks/useWorkflowPlugins';
+import { useTopicTags } from '../hooks/useTopicTags';
+import { TopicTagsTable } from '../components/admin/TopicTagsTable';
 import {useAuth} from '../contexts/AuthContext';
 import {Navigate} from 'react-router-dom';
 
@@ -131,55 +131,14 @@ export const Admin: React.FC = () => {
                 </Box>
             </Box>
 
-            {/* Topic Tags Configuration */}
-            <Typography variant="h5" sx={{fontWeight: 'bold', mb: 2}}>
-                Topic Tags Management
-            </Typography>
-
-            <TableContainer component={Paper} elevation={3} sx={{borderRadius: 2, overflow: 'hidden', mb: 4}}>
-                <Box sx={{p: 2, bgcolor: 'background.default', display: 'flex', alignItems: 'center', gap: 2}}>
-                    <Tag />
-                    <Typography variant="h6" sx={{ flexGrow: 1 }}>Valid Topic Tags</Typography>
-                    <TextField 
-                        size="small" 
-                        placeholder="New Tag Name" 
-                        value={newTagName}
-                        onChange={(e) => setNewTagName(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                    />
-                    <Button variant="contained" startIcon={<Add />} onClick={handleAddTag} disabled={!newTagName.trim()}>
-                        Add Tag
-                    </Button>
-                </Box>
-                <Table>
-                    <TableHead sx={{bgcolor: 'background.default'}}>
-                        <TableRow>
-                            <TableCell sx={{fontWeight: 'bold', width: '40%'}}>Tag Name</TableCell>
-                            <TableCell sx={{fontWeight: 'bold', width: '40%'}}>Created At</TableCell>
-                            <TableCell sx={{fontWeight: 'bold', width: '20%', textAlign: 'right'}}>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {loadingTags ? (
-                            <TableRow><TableCell colSpan={3}><Skeleton variant="text"/></TableCell></TableRow>
-                        ) : topicTags && topicTags.length > 0 ? (
-                            topicTags.map((tag) => (
-                                <TableRow key={tag.tagName} hover>
-                                    <TableCell>{tag.tagName}</TableCell>
-                                    <TableCell>{new Date(tag.createdAt!).toLocaleString()}</TableCell>
-                                    <TableCell align="right">
-                                        <IconButton color="error" onClick={() => deleteTag(tag.tagName!)}>
-                                            <Delete />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow><TableCell colSpan={3} align="center">No topic tags found.</TableCell></TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            <TopicTagsTable
+                topicTags={topicTags}
+                loadingTags={loadingTags}
+                newTagName={newTagName}
+                setNewTagName={setNewTagName}
+                handleAddTag={handleAddTag}
+                deleteTag={deleteTag}
+            />
 
             {/* Active Workflow Plugins Table */}
             <Typography variant="h5" sx={{fontWeight: 'bold', mb: 2}}>

@@ -47,13 +47,7 @@ public class SubmissionController {
 
         log.info("Request received: POST /submissions/{}/presigned-url (fileName={})", id, request.getFileName());
 
-        String authorId = extractSubFromDetails(authentication);
-        if (isAdminOrOfficer(authentication)) {
-            Submission submission = submissionService.getSubmission(id);
-            if (submission != null && submission.getAuthorIds() != null && !submission.getAuthorIds().isEmpty()) {
-                authorId = submission.getAuthorIds().get(0);
-            }
-        }
+        String authorId = resolveEffectiveAuthorId(authentication, id);
         PresignedUrlResponse response = submissionService.generatePresignedUploadUrl(
                 id, authorId, request.getFileName(), request.getContentType());
 
@@ -69,13 +63,7 @@ public class SubmissionController {
         log.info("Request received: POST /submissions/{}/submit by user {}", id,
                 authentication != null ? authentication.getName() : "unknown");
 
-        String authorId = extractSubFromDetails(authentication);
-        if (isAdminOrOfficer(authentication)) {
-            Submission submission = submissionService.getSubmission(id);
-            if (submission != null && submission.getAuthorIds() != null && !submission.getAuthorIds().isEmpty()) {
-                authorId = submission.getAuthorIds().get(0);
-            }
-        }
+        String authorId = resolveEffectiveAuthorId(authentication, id);
         Submission submission = submissionService.submitSubmission(id, authorId);
 
         if (submission == null) {
@@ -100,9 +88,7 @@ public class SubmissionController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isOnlyAuthor(authentication)
-                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
-            log.warn("Access Denied: Author '{}' tried to access other author's submission {}", callerSub, id);
+        if (isAuthorNotOwner(authentication, submission, callerSub, id, "access other author's submission")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -133,10 +119,7 @@ public class SubmissionController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isOnlyAuthor(authentication)
-                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
-            log.warn("Access Denied: Author '{}' tried to access documents for other author's submission {}", callerSub,
-                    id);
+        if (isAuthorNotOwner(authentication, submission, callerSub, id, "access documents for other author's submission")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -160,10 +143,7 @@ public class SubmissionController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isOnlyAuthor(authentication)
-                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
-            log.warn("Access Denied: Author '{}' tried to download document for other author's submission {}",
-                    callerSub, id);
+        if (isAuthorNotOwner(authentication, submission, callerSub, id, "download document for other author's submission")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -212,5 +192,25 @@ public class SubmissionController {
             return inner.substring(pipeIndex + 1);
         }
         return inner;
+    }
+
+    private String resolveEffectiveAuthorId(Authentication authentication, String submissionId) {
+        String authorId = extractSubFromDetails(authentication);
+        if (isAdminOrOfficer(authentication)) {
+            Submission submission = submissionService.getSubmission(submissionId);
+            if (submission != null && submission.getAuthorIds() != null && !submission.getAuthorIds().isEmpty()) {
+                authorId = submission.getAuthorIds().get(0);
+            }
+        }
+        return authorId;
+    }
+
+    private boolean isAuthorNotOwner(Authentication authentication, Submission submission, String callerSub, String id, String actionMsg) {
+        if (isOnlyAuthor(authentication)
+                && (submission.getAuthorIds() == null || !submission.getAuthorIds().contains(callerSub))) {
+            log.warn("Access Denied: Author '{}' tried to {} {}", callerSub, actionMsg, id);
+            return true;
+        }
+        return false;
     }
 }

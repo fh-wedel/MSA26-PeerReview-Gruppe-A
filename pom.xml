@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.fh-wedel</groupId>
+    <artifactId>peer-review-aggregator</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>PeerReview Aggregator</name>
+    <description>Root POM for aggregating the PeerReview microservices</description>
+
+    <modules>
+        <module>api-client</module>
+        <module>communicationService</module>
+        <module>configuration-service/configuration-api</module>
+        <module>configuration-service/configuration-core</module>
+        <module>configuration-service/configuration-template-bachelor-thesis</module>
+        <module>configuration-service/configuration-template-group-work</module>
+        <module>configuration-service/configuration-template-individual-work</module>
+        <module>configuration-service/configuration-template-master-thesis</module>
+        <module>configuration-service/configuration-template-seminar</module>
+        <module>configuration-service/configuration-type-double-blind</module>
+        <module>configuration-service/configuration-type-open-review</module>
+        <module>configuration-service/configuration-type-single-blind</module>
+        <module>matchingService</module>
+        <module>notificationService</module>
+        <module>responseService</module>
+        <module>submission-service</module>
+        <module>templateEcsService</module>
+        <module>userService</module>
+    </modules>
+</project>
