@@ -2,6 +2,7 @@
 **/*.bkp
 .idea
 .playwright-mcp
+**/.DS_Store
 
 **/*.d.ts
 **/*.js
