@@ -1,4 +1,4 @@
-= Kritik und Einordnung des Vibecoding
+= Kritik und Einordnung des Vibecoding <ch:vibecoding-critique>
 Unter dem Begriff des „Vibe Coding“ beschreibt Andrej Karpathy im Februar 2025 eine neue Entwicklungsphilosophie, bei der das manuelle Code schreiben nahezu vollständig durch die Interaktion mit agentischen, auf großen Sprachmodellen basierenden Werkzeugen wie Antigravity oder Claude Code ersetzt wird #footnote[https://www.ibm.com/think/topics/vibe-coding].
 
 == Was lief gut
