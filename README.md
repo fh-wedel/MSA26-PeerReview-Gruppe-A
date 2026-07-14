@@ -93,7 +93,7 @@ Die Service-Verzeichnisse enthalten jeweils den Anwendungscode, automatisierte T
 
 | Mitglied | Schwerpunkte |
 | --- | --- |
-| Marcel Ossig | Projektleitung, Architektur, AWS-Infrastruktur, CI/CD, Matching-, Communication- und User-Service |
+| Marcel Ossig | Projektleitung, Architekturentwurf, AWS-Infrastruktur, CI/CD, Matching-, Communication- und User-Service |
 | Luca Jannsen | Web UI, Configuration Service, KI-Konfiguration und Code-Optimierung |
 | Matthias Matthies | Configuration- und Submission-Service |
 | Gideon Gyebi | Response- und Notification-Service |
