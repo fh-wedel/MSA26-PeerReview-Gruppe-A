@@ -15,18 +15,19 @@ Der vollständige Quellcode, die Infrastrukturdefinitionen und die begleitende D
   - `templateEcsService/` dient als Vorlage für die Anlage weiterer Services.
 
 - *Infrastruktur und Deployment:*
-  - `infrabaseline/` enthält die grundlegende AWS-Infrastruktur, die vor den Services bereitgestellt wird.
-  - `infraLibrary/` enthält wiederverwendbare CDK-Bausteine für die Service-Infrastruktur.
+  - `infrabaseline/` enthält die grundlegende Infrastruktur auf @AWS, die vor den Services bereitgestellt wird.
+  - `infraLibrary/` enthält wiederverwendbare Bausteine für @CDK zur Service-Infrastruktur.
   - `cloudfront/` enthält die zentrale Routing- und Auslieferungskonfiguration.
   - `.github/` enthält die GitHub-Actions-Workflows für Build, Tests und Deployment.
 
 - *Dokumentation und Tests:*
   - `Paper/` enthält den Projektbericht als Typst-Projekt inklusive Abbildungen und Literaturverzeichnis.
   - `doc/` enthält Aufgabenstellung und Architekturdiagramme
-  - `postman/` enthält Collections und Hilfsdateien für manuelle API-Tests.
+  - `postman/` enthält Collections und Hilfsdateien für manuelle Tests der API.
   - `Präsentation/` enthält die Präsentationsfolien.
 
 
 - *Entwicklungsunterstützung:*
   - `AGENTS.md` und weitere gleichnamige Dateien enthalten projektspezifische Hinweise für Coding-Agenten.
   - `.opencode/` enthält die Konfiguration der verwendeten OpenCode-Agenten.
+
