@@ -59,5 +59,5 @@
   (name: "Matthias Matthies", signature: "signaturen/matthias.png"),
   (name: "Marcel Ossig"),
   (name: "Luca Jannsen", signature: "signaturen/luca.png"),
-  (name: "John Doe"),
+  (name: "Gideon Gyebi"),
 ))
