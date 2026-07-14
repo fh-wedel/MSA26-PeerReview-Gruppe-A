@@ -26,7 +26,7 @@ Bei der eigentlichen Entwicklung wurde in großem Umfang auf agentische Coding-W
 
 == Aufgabenverteilung im Team
 
-Das Projekt wurde von einem vierköpfigen Team aus Marcel Ossig, Luca Jannsen, Matthias Matthies und Gideon Gyebi umgesetzt. Marcel übernahm die Rolle des Projektleiters und Architekten und verantwortete maßgeblich den Architekturentwurf sowie den Aufbau der grundlegenden AWS-Infrastruktur. Luca, Matthias und Gideon fungierten als Softwareentwickler und implementierten jeweils eigene, ihnen zugeordnete Services innerhalb der beschriebenen Microservice-Architektur. Testen und Dokumentation wurden als geteilte Verantwortung des gesamten Teams verstanden und liefen begleitend zur eigentlichen Implementierung.
+Wir, Marcel Ossig, Luca Jannsen, Matthias Matthies und Gideon Gyebi, setzten das Projekt als vierköpfiges Team um. Marcel übernahm die Rolle des Projektleiters und Architekten und verantwortete maßgeblich den Architekturentwurf sowie den Aufbau der grundlegenden AWS-Infrastruktur. Luca, Matthias und Gideon implementierten als Softwareentwickler jeweils eigene, ihnen zugeordnete Services innerhalb der beschriebenen Microservice-Architektur. Testen und Dokumentation verstanden wir als geteilte Verantwortung und führten sie begleitend zur eigentlichen Implementierung durch.
 
 @tab:task-distribution fasst die grobe Verteilung der Aufgabenbereiche innerhalb des Teams zusammen.
 
