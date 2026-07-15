@@ -178,7 +178,12 @@
   pagebreak()
   heading(level: 1, numbering: none, outlined: true)[Eigenständigkeitserklärung]
   v(1em)
-  [I hereby declare ... ja was declaren wir denn?]
+  [Ich erkläre hiermit an Eides statt, dass ich die vorliegende Arbeit selbstständig und ohne Benutzung anderer als der angegebenen Hilfsmittel angefertigt habe. Die aus fremden Quellen direkt oder indirekt übernommenen Gedanken sind als solche kenntlich gemacht.
+
+Darüber hinaus erkläre ich, dass die im Rahmen dieser Arbeit erstellte Software anforderungsgemäß unter Verwendung von Werkzeugen der künstlichen Intelligenz (KI) entwickelt wurde. Zudem wurden KI-Werkzeuge zur Grammatikkorrektur, zur Identifikation von Synonymen, zur Übersetzung einzelner Begriffe, zum Verständnis von Konzepten sowie zur Verbesserung der Lesbarkeit eingesetzt.
+
+Die Arbeit wurde bisher in gleicher oder ähnlicher Form keiner anderen Prüfungskommission vorgelegt und auch nicht veröffentlicht.]
+
   v(5cm)
   grid(
     columns: (1fr, 1fr),
