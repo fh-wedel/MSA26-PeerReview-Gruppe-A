@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { handleChatSseMessage } from '../utils/chatContextHelpers';
-import { useAuth } from './AuthContext';
-import { useNotification } from './NotificationContext';
-import { fetchChats } from '../api/communication';
-import type { ChatSummary, Message } from '../api/communication';
+import React, {createContext, useCallback, useContext, useEffect, useState} from 'react';
+import {fetchEventSource} from '@microsoft/fetch-event-source';
+import {handleChatSseMessage} from '../utils/chatContextHelpers';
+import {useAuth} from './AuthContext';
+import {useNotification} from './NotificationContext';
+import type {ChatSummary, Message} from '../api/communication';
+import {fetchChats} from '../api/communication';
 
 interface ChatContextType {
   chats: ChatSummary[];
@@ -89,17 +89,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const token = sessionStorage.getItem('access_token');
-    if (!token) return;
-
     const abortController = new AbortController();
 
     fetchEventSource(`/api/communication/chats/stream?t=${Date.now()}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
         'Cache-Control': 'no-cache',
+      },
+      fetch: async (input, init) => {
+        const currentToken = sessionStorage.getItem('access_token');
+        const headers = new Headers(init?.headers);
+        if (currentToken) {
+          headers.set('Authorization', `Bearer ${currentToken}`);
+        }
+        return fetch(input, {...init, headers});
       },
       signal: abortController.signal,
       openWhenHidden: true, // Prevents disconnection when the tab loses focus
