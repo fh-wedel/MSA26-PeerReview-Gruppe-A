@@ -73,10 +73,9 @@ Die Web-UI bietet jedoch die Möglichkeit, lokal gestartet zu werden und weiterh
 
 == Testen (Manuell) <sec:manual-testing>
 // (Gideon)
-// Manuell über die UI als ogroßer askpekt, inklusive portforawring der Web-UI sodass feautres lokal gestets werden konnten
-// Dann der Aspekt der CICD die das deployne von änderunge nautomatierst hat und dadurch sicehrgestellt war das nur die businesscode änderungen dort waren die man jetzt testet und nicht irgendwie flasche infrawsturktur
-// Postman um die APIs zu testen manuell um zu shcaune ob die ergebnisse so sind wie erwartet
-// Durch Schreiben und Lesen von Nachrichten über @SQS konnte die inter service kommunikation manuell getestet werden
+Neben der automatisierten Testabdeckung wurde das System während der gesamten Entwicklungszeit auch manuell überprüft. Im Vordergrund stand dabei ein klassischer Klicktest über die Web-UI, bei dem die zentralen Abläufe wie Einreichung, Zuweisung und Begutachtung wiederholt durchgespielt wurden. Ergänzend wurden einzelne REST-Endpunkte gezielt über Postman angesprochen, um Anfragen unabhängig von der Oberfläche zu prüfen. Da ein wesentlicher Teil der Kommunikation zwischen den Services über SQS erfolgt, wurden zudem Nachrichten manuell in die jeweiligen Queues geschrieben und die daraus resultierende Verarbeitung sowie die abgelegten Ergebnisse kontrolliert.
+
+Auffälligkeiten aus diesen Tests wurden nicht separat dokumentiert oder als Ticket erfasst, sondern direkt im Code behoben und über die bestehende CI/CD Pipeline (siehe @sec:cicd-integration) umgehend wieder ausgerollt. Dieses pragmatische Vorgehen war durch die geringe Teamgröße und die kurzen Deployment-Zyklen möglich und sorgte für eine schnelle Rückkopplung zwischen Testen und Implementierung.
 
 == Automatisierte Testabdeckung <sec:automated-testing>
 Neben der manuellen Qualitätssicherung wurde großer Wert auf eine fundierte automatisierte Testabdeckung gelegt. Da das System eine verteilte Microservice-Architektur aufweist, lag der Fokus auf der Isolation einzelner Domänen mittels Unit-Tests. Für die Backend-Services (Java/Spring Boot) wurde das Mockito-Framework eingesetzt, um externe Abhängigkeiten wie Datenbanken oder Dienste von @AWS (z. B. @S3 und @SQS) zuverlässig zu simulieren. Die Metriken zur Codeabdeckung wurden durch das JaCoCo-Plugin ermittelt und direkt als Qualitätsgate in den Build-Prozess (`mvn verify`) integriert.
