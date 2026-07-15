@@ -1,4 +1,4 @@
-import { fetchEventSource } from '@microsoft/fetch-event-source';
+import {fetchEventSource} from '@microsoft/fetch-event-source';
 
 export interface Notification {
   id: string;
@@ -46,14 +46,20 @@ export const markAllNotificationsRead = async (): Promise<void> => {
 export const streamNotifications = (
   onNotification: (n: Notification) => void,
 ): AbortController => {
-  const token = sessionStorage.getItem('access_token');
   const abortController = new AbortController();
 
   fetchEventSource('/api/notification/me/stream', {
     method: 'GET',
     headers: {
-      ...(token && { Authorization: `Bearer ${token}` }),
       Accept: 'text/event-stream',
+    },
+    fetch: async (input, init) => {
+      const currentToken = sessionStorage.getItem('access_token');
+      const headers = new Headers(init?.headers);
+      if (currentToken) {
+        headers.set('Authorization', `Bearer ${currentToken}`);
+      }
+      return fetch(input, {...init, headers});
     },
     signal: abortController.signal,
     openWhenHidden: true,
