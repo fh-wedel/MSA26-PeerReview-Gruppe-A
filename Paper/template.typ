@@ -126,8 +126,8 @@
   set par(justify: true, leading: 0.8em, spacing: 1.5em, first-line-indent: 0pt)
 
   show heading: it => {
-    set text(font: "Liberation Sans", weight: "bold")
-    let size = if it.level == 1 { 22pt } else if it.level == 2 { 16pt } else { 12pt }
+    let size = if it.level == 1 { 22pt } else if it.level == 2 { 16pt } else if it.level == 3 { 13pt } else { 12pt }
+    set text(font: "Liberation Sans", weight: "bold", size: size)
     block(width: 100%, above: 2em, below: 1em, it)
   }
 
@@ -135,9 +135,41 @@
     pagebreak(weak: true)
     it
   }
-  set heading(numbering: (..args) => { if args.pos().len() <= 3 { numbering("1.1", ..args) } })
+  set heading(numbering: (..args) => { if args.pos().len() <= 4 { numbering("1.1", ..args) } })
 
-  set page(margin: (inside: 2.5cm, outside: 2.0cm, top: 2.5cm, bottom: 2.5cm))
+  set page(
+    margin: (inside: 2.5cm, outside: 2.0cm, top: 2.5cm, bottom: 2.5cm),
+    header: context {
+      let loc = here()
+      let chapters = query(heading.where(level: 1))
+      let opens-here = chapters.any(h => h.location().page() == loc.page())
+      let matches = chapters.filter(h => h.location().page() < loc.page())
+      if not opens-here and matches.len() > 0 {
+        let h = matches.last()
+        let prefix = if h.numbering != none {
+          numbering(h.numbering, ..counter(heading).at(h.location())) + "  "
+        } else { "" }
+        let is-even = calc.even(loc.page())
+        block(width: 100%)[
+          #align(if is-even { left } else { right })[
+            #text(size: 9pt, font: "Liberation Sans")[#prefix#h.body]
+          ]
+          #v(-0.6em)
+          #line(length: 100%, stroke: 0.4pt + rgb("999999"))
+        ]
+      }
+    },
+    footer: context {
+      let pn = here().page-numbering()
+      if pn != none {
+        block(width: 100%)[
+          #line(length: 100%, stroke: 0.4pt + rgb("999999"))
+          #v(0.4em)
+          #align(center)[#text(size: 10pt, font: "Liberation Sans")[#counter(page).display(pn)]]
+        ]
+      }
+    },
+  )
 
   body
 }

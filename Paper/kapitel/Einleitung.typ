@@ -8,15 +8,15 @@ Ausgangspunkt des Projekts ist die von Prof. Dr. Ulrich Hoffmann gestellte Aufga
 
 Als denkbare Funktionen wurden in der Aufgabenstellung unter anderem die Einreichung von Dokumenten, eine regelbasierte oder manuelle Zuweisung von Gutachtern, strukturierte Bewertungsformulare, anonymisierte Begutachtung sowie eine Fristen- und Erinnerungsverwaltung genannt. Eine zentrale fachliche Anforderung besteht darin, über eine Plugin-Architektur unterschiedliche Begutachtungsworkflows wie Einfachblind, Doppelblind oder Open Review zu unterstützen, ohne dass die jeweilige Verfahrenslogik fest im Kern des Systems verankert wird. Die Aufgabenstellung legte hierbei einen starken Fokus auf die zugrunde liegende Architektur und warf explizit die Fragen auf, wie Workflow-Zustände zuverlässig verwaltet, Benachrichtigungen ereignisgesteuert ausgelöst und die einzelnen Komponenten geeignet skaliert werden können.
 
-Darüber hinaus wurde der Einsatz KI-basierter Werkzeuge wie GitHub Copilot, Claude oder ChatGPT bei Entwurf, Implementierung, Test und Dokumentation ausdrücklich erwünscht, verbunden mit der Anforderung, den jeweiligen Einsatz sowie dessen Nutzen und Grenzen im Rahmen der Projektdokumentation zu reflektieren. Als weitere Vorgaben galten die Programmierung isolierter Komponenten samt zugehöriger Test-Clients, die gemeinsame Orchestrierung und Bereitstellung des Gesamtsystems auf einem Server sowie eine abschließende Präsentation der Ergebnisse.
+Darüber hinaus wurde der Einsatz von Werkzeugen der KI wie GitHub Copilot, Claude oder ChatGPT bei Entwurf, Implementierung, Test und Dokumentation ausdrücklich erwünscht, verbunden mit der Anforderung, den jeweiligen Einsatz sowie dessen Nutzen und Grenzen im Rahmen der Projektdokumentation zu reflektieren. Als weitere Vorgaben galten die Programmierung isolierter Komponenten samt zugehöriger Test-Clients, die gemeinsame Orchestrierung und Bereitstellung des Gesamtsystems auf einem Server sowie eine abschließende Präsentation der Ergebnisse.
 
 == Zielsetzung <sec:goals>
 
 Aus der in @sec:context beschriebenen Aufgabenstellung wurden für dieses Projekt konkrete Umsetzungsziele abgeleitet. Die geforderte Plugin-Fähigkeit sowie die fachliche Zerlegung des Begutachtungsprozesses sollten dabei nicht nur erfüllt, sondern durch eine konsequente Microservice-Architektur mit eigenständigen, lose gekoppelten Services technisch untermauert werden; wie diese Architektur im Detail aussieht, wird im Kapitel zum Architekturentwurf (@ch:architecture) hergeleitet. Weiterhin sollte das gesamte System zunächst als @MVP realisiert werden, dessen Funktionsumfang gemeinsam im Team festgelegt und im weiteren Verlauf agil erweitert werden konnte.
 
-Auf infrastruktureller Ebene wurde das Ziel verfolgt, sämtliche Komponenten vollständig über @IaC zu beschreiben und automatisiert in eine öffentlich erreichbare Cloud-Umgebung auf Basis von @AWS auszurollen, ergänzt durch eine durchgängige Continuous-Integration- und Continuous-Deployment-Pipeline (CI/CD) für Build, Test und Deployment.
+Auf infrastruktureller Ebene wurde das Ziel verfolgt, sämtliche Komponenten vollständig über @IaC zu beschreiben und automatisiert in eine öffentlich erreichbare Cloud-Umgebung auf Basis von @AWS auszurollen, ergänzt durch eine durchgängige Pipeline für @CI und @CD für Build, Test und Deployment.
 
-Neben diesen technischen Zielen verfolgte das Team ein übergeordnetes, eher experimentelles Ziel: den geforderten Einsatz KI-gestützter Werkzeuge nicht nur pflichtgemäß umzusetzen, sondern bewusst zu untersuchen, in welchem Umfang sich eine verteilte, sicherheitsrelevante Microservice-Architektur auf @AWS mithilfe agentischer Coding-Werkzeuge realisieren lässt und wo die Grenzen eines solchen Vorgehens liegen. Diese Fragestellung wurde als fortlaufendes Experiment über die gesamte Projektlaufzeit begleitet. Die dabei gewonnenen Erkenntnisse werden in @ch:implementation-workflow beschrieben und in @ch:vibecoding-critique kritisch eingeordnet.
+Neben diesen technischen Zielen verfolgte das Team ein übergeordnetes, eher experimentelles Ziel: den geforderten Einsatz von Werkzeugen der KI nicht nur pflichtgemäß umzusetzen, sondern bewusst zu untersuchen, in welchem Umfang sich eine verteilte Microservice-Architektur auf @AWS mithilfe agentischer Coding-Werkzeuge realisieren lässt und wo die Grenzen eines solchen Vorgehens liegen. Diese Fragestellung wurde als fortlaufendes Experiment über die gesamte Projektlaufzeit begleitet. Die dabei gewonnenen Erkenntnisse werden in @ch:implementation-workflow beschrieben und in @ch:vibecoding-critique kritisch eingeordnet.
 
 == Umsetzung und Werkzeugeinsatz
 
@@ -26,7 +26,7 @@ Bei der eigentlichen Entwicklung wurde in großem Umfang auf agentische Coding-W
 
 == Aufgabenverteilung im Team
 
-Das Projekt wurde von einem vierköpfigen Team aus Marcel Ossig, Luca Jannsen, Matthias Matthies und Gideon Gyebi umgesetzt. Marcel übernahm die Rolle des Projektleiters und Architekten und verantwortete maßgeblich den Architekturentwurf sowie den Aufbau der grundlegenden AWS-Infrastruktur. Luca, Matthias und Gideon fungierten als Softwareentwickler und implementierten jeweils eigene, ihnen zugeordnete Services innerhalb der beschriebenen Microservice-Architektur. Testen und Dokumentation wurden als geteilte Verantwortung des gesamten Teams verstanden und liefen begleitend zur eigentlichen Implementierung.
+Wir, Marcel Ossig, Luca Jannsen, Matthias Matthies und Gideon Gyebi, setzten das Projekt als vierköpfiges Team um. Marcel übernahm die Rolle des Projektleiters und Architekten und verantwortete maßgeblich den Architekturentwurf sowie den Aufbau der grundlegenden Infrastruktur auf @AWS. Luca, Matthias und Gideon implementierten als Softwareentwickler jeweils eigene, ihnen zugeordnete Services innerhalb der beschriebenen Microservice-Architektur. Testen und Dokumentation verstanden wir als geteilte Verantwortung und führten sie begleitend zur eigentlichen Implementierung durch.
 
 @tab:task-distribution fasst die grobe Verteilung der Aufgabenbereiche innerhalb des Teams zusammen.
 
@@ -35,15 +35,16 @@ Das Projekt wurde von einem vierköpfigen Team aus Marcel Ossig, Luca Jannsen, M
   table(
     columns: 2,
     [*Aufgabenbereich*], [*Verantwortlich*],
-    [Projektleitung, Architekturentwurf und AWS-Infrastruktur (inkl. initialer Baseline und CI/CD)], [Marcel],
+    [Projektleitung, Architekturentwurf und Infrastruktur auf @AWS (inkl. initialer Baseline sowie @CI und @CD)], [Marcel],
     [Matching Service, Communication Service und User Service], [Marcel],
     [Configuration Service], [Luca, Matthias],
     [Submission Service], [Matthias],
     [Response Service und Notification Service], [Gideon],
     [Web-UI], [Luca],
-    [KI-Einrichtung (`AGENTS.md` / `CLAUDE.md`) und Code-Optimierung (CRAP-Index)], [Luca],
+    [Einrichtung für KI (`AGENTS.md` / `CLAUDE.md`) und Optimierung des Index @CRAP], [Luca],
     [Testen (u. a. Postman) und Dokumentation], [Alle],
   )
 ) <tab:task-distribution>
 
 Im folgenden Kapitel werden zunächst die Features des PeerReview-Systems aus Nutzersicht vorgestellt, bevor in den weiteren Kapiteln detailliert auf Architektur, Umsetzung und die kritische Reflexion des Projekts eingegangen wird.
+
