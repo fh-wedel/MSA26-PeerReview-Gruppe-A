@@ -1,7 +1,7 @@
 = Features der App
 
 Die Applikation (das "PeerReview"-System) umfasst eine interaktive Web-Oberfläche sowie sieben dedizierte Backend-Services.
-Im Folgenden werden alle im aktuellen @MVP implementierten Features aus Nutzersicht anhand von typischen Benutzergeschichten (User Stories) dargestellt.
+Im Folgenden werden alle im aktuellen @MVP implementierten Features aus Nutzersicht anhand eines einfachen Lastenheft und der Nutzung von typischen Benutzergeschichten (User Stories) dargestellt.
 
 == Lastenheft
 
