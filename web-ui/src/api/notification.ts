@@ -48,10 +48,11 @@ export const streamNotifications = (
 ): AbortController => {
   const abortController = new AbortController();
 
-  fetchEventSource('/api/notification/me/stream', {
+  fetchEventSource(`/api/notification/me/stream?t=${Date.now()}`, {
     method: 'GET',
     headers: {
       Accept: 'text/event-stream',
+      'Cache-Control': 'no-cache',
     },
     fetch: async (input, init) => {
       const currentToken = sessionStorage.getItem('access_token');
