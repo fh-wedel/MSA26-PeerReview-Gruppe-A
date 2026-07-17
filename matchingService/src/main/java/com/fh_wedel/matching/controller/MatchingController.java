@@ -65,10 +65,12 @@ public class MatchingController {
         List<String> submitterSubs = status.getSubmitterIds();
         List<MatchRecord> matches = matchingService.getMatchesBySubmission(submissionId);
 
-        boolean isExaminer = matches.stream()
-                .anyMatch(m -> m.getExaminerId().equals(extractSubFromDetails(authentication)));
+        String callerSub = extractSubFromDetails(authentication);
 
-        boolean isCallerSubmitter = submitterSubs != null && submitterSubs.contains(extractSubFromDetails(authentication));
+        boolean isExaminer = matches.stream()
+                .anyMatch(m -> m.getExaminerId().equals(callerSub));
+
+        boolean isCallerSubmitter = submitterSubs != null && submitterSubs.contains(callerSub);
 
         if (!isAdminOrOfficer(authentication) && !isCallerSubmitter && !isExaminer) {
             log.warn("Access Denied: caller '{}' (details: '{}') does not match submitter subs '{}' and is not an examiner for submission {}",
@@ -79,7 +81,7 @@ public class MatchingController {
         final boolean hide = resolveAnonymityRule(submissionId, authentication);
 
         Map<String, String> examinerIdToUserNameMap = resolveExaminerUsernameMap(matches);
-        List<MatchEntry> matchEntries = buildMatchEntries(matches, hide, examinerIdToUserNameMap);
+        List<MatchEntry> matchEntries = buildMatchEntries(matches, hide, examinerIdToUserNameMap, callerSub);
 
         SubmissionMatchResponse response = new SubmissionMatchResponse();
         response.setSubmissionId(status.getSubmissionId());
@@ -222,12 +224,13 @@ public class MatchingController {
         return examinerIdToUserNameMap;
     }
 
-    private List<MatchEntry> buildMatchEntries(List<MatchRecord> matches, boolean hide, Map<String, String> examinerIdToUserNameMap) {
+    private List<MatchEntry> buildMatchEntries(List<MatchRecord> matches, boolean hide, Map<String, String> examinerIdToUserNameMap, String callerSub) {
         return matches.stream()
                 .map(m -> {
                     MatchEntry entry = new MatchEntry();
-                    entry.setExaminerId(hide ? null : m.getExaminerId());
-                    entry.setExaminerUsername(hide ? null : examinerIdToUserNameMap.get(m.getExaminerId()));
+                    boolean hideForThisMatch = hide && !m.getExaminerId().equals(callerSub);
+                    entry.setExaminerId(hideForThisMatch ? null : m.getExaminerId());
+                    entry.setExaminerUsername(hideForThisMatch ? null : examinerIdToUserNameMap.get(m.getExaminerId()));
                     entry.setAssignedAt(m.getTimestamp().atOffset(ZoneOffset.UTC));
                     return entry;
                 })

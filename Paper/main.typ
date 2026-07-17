@@ -57,7 +57,7 @@
 
 #statutory-declaration((
   (name: "Matthias Matthies", signature: "signaturen/matthias.png"),
-  (name: "Marcel Ossig"),
+  (name: "Marcel Ossig", signature: "signaturen/marcel.png"),
   (name: "Luca Jannsen", signature: "signaturen/luca.png"),
-  (name: "Gideon Gyebi"),
+  (name: "Gideon Gyebi", signature: "signaturen/Gideon.png"),
 ))

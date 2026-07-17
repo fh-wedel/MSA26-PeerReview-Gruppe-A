@@ -67,7 +67,7 @@ describe('notification api wrappers', () => {
 
         expect(controller).toBeInstanceOf(AbortController);
         expect(fetchEventSource).toHaveBeenCalledWith(
-            '/api/notification/me/stream',
+            expect.stringMatching(/^\/api\/notification\/me\/stream\?t=\d+$/),
             expect.objectContaining({
                 method: 'GET',
                 openWhenHidden: true,

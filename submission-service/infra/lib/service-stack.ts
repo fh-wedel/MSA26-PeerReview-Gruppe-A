@@ -78,7 +78,10 @@ export class ServiceStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       cors: [{
         allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.GET],
-        allowedOrigins: [`https://${AWSConstants.APP_DOMAIN_NAME}`],
+        allowedOrigins: [
+          `https://${AWSConstants.APP_DOMAIN_NAME}`,
+          `https://${AWSConstants.APP_WWW_DOMAIN_NAME}`,
+        ],
         allowedHeaders: ['*'],
         maxAge: 3600,
       }],
