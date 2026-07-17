@@ -64,33 +64,32 @@ Die Anwendung ist unter **[msa26-peer-review.fh-wedel.dev](https://msa26-peer-re
 Die Bereitstellung erfolgt vollständig automatisiert über GitHub Actions. Bei Pull Requests und Änderungen auf `main` führt die Pipeline die relevanten Anwendungs- und Infrastrukturtests aus, erstellt ARM64-Containerimages, veröffentlicht diese in Amazon ECR und aktualisiert die betroffenen AWS-CDK-Stacks.
 
 ### Nutzung der Software
-- Am Anfnag einloggen. Dazu kann entweder ein neuer User angelegt werden und mit der Email die versendet wird bestätigen, dann ist man jedoch noch in keiner Usergruppe. Dafür muss man sich in der AWS Oberfläche des Accounts mit der ID 395982336633 anmelden, zu Cognito navigieren und dort links auf User Klicken. Dort den User anklicken und in den detials unten eine Gruppe zuweisen (Die beschreibungen der Gruppe sind in dem Paper geneauer zu entnehmne)
-- Alternativ kann man einen User nehmen der bereits exisitert und auch bereist CHats, Abgaben Reviews etc. hat. Die User sind in Cognito unter dem Account mit der ID 395982336633 zu finden, wo entweder die Passwörter auch über die Oberfläche zurückgestezt werden, oder es werden die folgenden verwendet:
-Username | Passwort | Usergruppe
+
+Melden Sie sich zunächst über das [Live-System](https://msa26-peer-review.fh-wedel.dev) an. Für einen schnellen Einstieg stehen vorbereitete Demo-Konten mit unterschiedlichen Rollen und Datenbeständen zur Verfügung:
+
+| Benutzername | Passwort | Rolle |
 | --- | --- | --- |
 | DemoStudent | DemoStudent | Autor |
 | DemoStudent2 | DemoStudent2 | Autor |
 | DemoReviewer | DemoReviewer | Reviewer |
 | DemoReviewer2 | DemoReviewer2 | Reviewer |
 | DemoTeacher | DemoTeacher | Teacher |
-| DemoExaminationOfficer | DemoExaminationOfficer | ExaminationOfficer |
+| DemoExaminationOfficer | DemoExaminationOfficer | Examination Officer |
 | Admin | AdminAdmin | Admin |
-| --- | -- | -- |
 
-Dabei haben die User brets folgende Abgabe/Reviews:
-DemoStudent: Hat drei Abgaben, eine Abgeschlossne (Inklusive Bewertung) und zwei noch laufende Abgaben, wo als nächstes die Ausarbeitungen hochgeladen werden müssten. (Daraufhin würde dann der zuständige Reviewer die Ausarbeitungen bewerten und Feedback geben, was dann wiederum der Autor einsehen kann -- Man könnte auch das AI Review anfordern bei allen arbeiten). Zusätzlih hat der der DemoStuden einen Chat mit dem DemoReviewer, wo er eine Frage gestellt hat (diese ist beim Demoreviewer dann in einem Chat sichtbar). Zusätzlich hat der DemoStudent in einer Gruppe über die Abgaben Meine Submission und auch Unsere Gruppenarbeit.
+Die Demo-Konten ermöglichen insbesondere folgende Einblicke in den Ablauf:
 
-DemoReviewer: Hat ein review Abgeschlossen (das vom DemoStudent) und zwei Reviews in dem Sattus das auf die Abgabe gewartet wird (die beiden vom DemoStudent). Auch hat der DemoReviewer einen Chat mit dem DemoStudent, wo er die Frage beantwortet kann. Zusätzlich hat der DemoReviewer die Chats in einer Gruppe über die Abgaben Meine Submission und auch Unsere Gruppenarbeit.
+| Konto | Vorbereiteter Datenbestand |
+| --- | --- |
+| `DemoStudent` | Drei Abgaben: eine abgeschlossene Abgabe mit Bewertung sowie zwei laufende Abgaben, für die noch Ausarbeitungen hochgeladen werden können. Nach dem Upload kann der zugeordnete Reviewer Feedback hinterlegen; zudem lässt sich ein KI-Review anfordern. Ein direkter Chat mit `DemoReviewer` und Gruppenunterhaltungen zu *Meine Submission* und *Unsere Gruppenarbeit* sind bereits vorhanden. |
+| `DemoReviewer` | Ein abgeschlossenes Review zu einer Abgabe von `DemoStudent` sowie zwei offene Reviews, die noch auf Einreichungen warten. Der zugehörige direkte Chat und die beiden Gruppenunterhaltungen sind ebenfalls vorhanden. |
+| `DemoStudent2` | Keine Einzelabgaben oder direkten Chats, aber Mitglied der Gruppenunterhaltungen zu *Meine Submission* und *Unsere Gruppenarbeit*. |
+| `DemoReviewer2` | Leeres Reviewer-Konto ohne Reviews, Abgaben oder Chats. |
+| `DemoTeacher` | Leeres Lehrenden-Konto ohne eigene Abgaben, Reviews oder Chats. |
+| `DemoExaminationOfficer` | Kann alle Abgaben und Reviews einsehen, Benutzerrollen zuweisen und die fachlichen Schwerpunkte von Reviewern verwalten. |
+| `Admin` | Kann alle Abgaben und Reviews einsehen, erhält einen Systemüberblick und kann neue Themengebiete für Abgaben anlegen. |
 
-DemoReviewer2: Hat keine Abgaben/Reviews und auch keine Chats.
-
-DemoStudent2: Hat keine einzelabgaben aber auch die beiden Gruppenabgaben Meine Submission und Unsere Gruppenarbeit. DemoStudent2 hat keine einzelchats aber auch die beiden Gruppenabgaben Meine Submission und Unsere Gruppenarbeit.
-
-DemoTeacher: Hat keine Abgaben/Review,weil er auch keine haben kann (siehe Rolle des Lehrenden) und hat auch keine Chats.
-
-DemoExaminationOfficer: Hat auch keine eigenen Abgaben/Reviews aber haben die Möglichkeit alle Abgaben/Reviews einzusehen. Zudem kann der ExaminationOfficer die Usergruppen zu den Usern zuweisen. Dazu gehört auch das verwarten der Schwerpunkte der Review Fachgebiete eines Reviewers. Der ExaminationOfficer hat auch keine Chats.
-
-Admin: Hat auch keine eigenen Abgaben/Reviews aber haben die Möglichkeit alle Abgaben/Reviews einzusehen. Zudem hat er einen Systemüberblich und kann neue Abgabe Themengebiete erstellen.
+Neue Benutzer registrieren sich direkt im Live-System und bestätigen ihre E-Mail-Adresse. Anschließend muss ihnen eine Rolle zugewiesen werden. Für die Demo-Verwaltung geschieht dies im AWS-Konto `395982336633` unter **Amazon Cognito** über die Benutzergruppe des jeweiligen Kontos. Alternativ kann die Rollenzuweisung im Live-System mit einem Admin- oder Examination-Officer-Konto erfolgen. Voraussetzung ist, dass der Nutzer zuvor registriert wurde und seine E-Mail-Adresse bestätigt hat. Eine Beschreibung der Rollen und ihrer Berechtigungen befindet sich im [Projektbericht](Paper/main.pdf).
 
 
 ## Repository-Navigation
@@ -128,4 +127,4 @@ Die Service-Verzeichnisse enthalten jeweils den Anwendungscode, automatisierte T
 | Matthias Matthies | Configuration- und Submission-Service |
 | Gideon Gyebi | Response- und Notification-Service |
 
-Testen und Dokumentation wurden gemeinschaftlich verantwortet. Weitere technische und organisatorische Details sind im [Projektbericht](Paper/main.typ) sowie in den [Agentenrichtlinien](AGENTS.md) dokumentiert.
+Testen und Dokumentation wurden gemeinschaftlich verantwortet. Weitere technische und organisatorische Details sind im [Projektbericht](Paper/main.pdf) sowie in den [Agentenrichtlinien](AGENTS.md) dokumentiert.
