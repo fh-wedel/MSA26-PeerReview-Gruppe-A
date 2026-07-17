@@ -63,6 +63,36 @@ Die Anwendung ist unter **[msa26-peer-review.fh-wedel.dev](https://msa26-peer-re
 
 Die Bereitstellung erfolgt vollständig automatisiert über GitHub Actions. Bei Pull Requests und Änderungen auf `main` führt die Pipeline die relevanten Anwendungs- und Infrastrukturtests aus, erstellt ARM64-Containerimages, veröffentlicht diese in Amazon ECR und aktualisiert die betroffenen AWS-CDK-Stacks.
 
+### Nutzung der Software
+- Am Anfnag einloggen. Dazu kann entweder ein neuer User angelegt werden und mit der Email die versendet wird bestätigen, dann ist man jedoch noch in keiner Usergruppe. Dafür muss man sich in der AWS Oberfläche des Accounts mit der ID 395982336633 anmelden, zu Cognito navigieren und dort links auf User Klicken. Dort den User anklicken und in den detials unten eine Gruppe zuweisen (Die beschreibungen der Gruppe sind in dem Paper geneauer zu entnehmne)
+- Alternativ kann man einen User nehmen der bereits exisitert und auch bereist CHats, Abgaben Reviews etc. hat. Die User sind in Cognito unter dem Account mit der ID 395982336633 zu finden, wo entweder die Passwörter auch über die Oberfläche zurückgestezt werden, oder es werden die folgenden verwendet:
+Username | Passwort | Usergruppe
+| --- | --- | --- |
+| DemoStudent | DemoStudent | Autor |
+| DemoStudent2 | DemoStudent2 | Autor |
+| DemoReviewer | DemoReviewer | Reviewer |
+| DemoReviewer2 | DemoReviewer2 | Reviewer |
+| DemoTeacher | DemoTeacher | Teacher |
+| DemoExaminationOfficer | DemoExaminationOfficer | ExaminationOfficer |
+| Admin | AdminAdmin | Admin |
+| --- | -- | -- |
+
+Dabei haben die User brets folgende Abgabe/Reviews:
+DemoStudent: Hat drei Abgaben, eine Abgeschlossne (Inklusive Bewertung) und zwei noch laufende Abgaben, wo als nächstes die Ausarbeitungen hochgeladen werden müssten. (Daraufhin würde dann der zuständige Reviewer die Ausarbeitungen bewerten und Feedback geben, was dann wiederum der Autor einsehen kann -- Man könnte auch das AI Review anfordern bei allen arbeiten). Zusätzlih hat der der DemoStuden einen Chat mit dem DemoReviewer, wo er eine Frage gestellt hat (diese ist beim Demoreviewer dann in einem Chat sichtbar). Zusätzlich hat der DemoStudent in einer Gruppe über die Abgaben Meine Submission und auch Unsere Gruppenarbeit.
+
+DemoReviewer: Hat ein review Abgeschlossen (das vom DemoStudent) und zwei Reviews in dem Sattus das auf die Abgabe gewartet wird (die beiden vom DemoStudent). Auch hat der DemoReviewer einen Chat mit dem DemoStudent, wo er die Frage beantwortet kann. Zusätzlich hat der DemoReviewer die Chats in einer Gruppe über die Abgaben Meine Submission und auch Unsere Gruppenarbeit.
+
+DemoReviewer2: Hat keine Abgaben/Reviews und auch keine Chats.
+
+DemoStudent2: Hat keine einzelabgaben aber auch die beiden Gruppenabgaben Meine Submission und Unsere Gruppenarbeit. DemoStudent2 hat keine einzelchats aber auch die beiden Gruppenabgaben Meine Submission und Unsere Gruppenarbeit.
+
+DemoTeacher: Hat keine Abgaben/Review,weil er auch keine haben kann (siehe Rolle des Lehrenden) und hat auch keine Chats.
+
+DemoExaminationOfficer: Hat auch keine eigenen Abgaben/Reviews aber haben die Möglichkeit alle Abgaben/Reviews einzusehen. Zudem kann der ExaminationOfficer die Usergruppen zu den Usern zuweisen. Dazu gehört auch das verwarten der Schwerpunkte der Review Fachgebiete eines Reviewers. Der ExaminationOfficer hat auch keine Chats.
+
+Admin: Hat auch keine eigenen Abgaben/Reviews aber haben die Möglichkeit alle Abgaben/Reviews einzusehen. Zudem hat er einen Systemüberblich und kann neue Abgabe Themengebiete erstellen.
+
+
 ## Repository-Navigation
 
 ```text
