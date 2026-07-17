@@ -31,7 +31,7 @@ Autoren verfolgen das Ziel, ihre wissenschaftlichen Arbeiten fristgerecht einzur
 
 === Funktionale Anforderungen
 
-Die funktionalen Anforderungen gliedern sich nach den fünf Zielgruppen und beschreiben die ihnen jeweils zur Verfügung stehenden Funktionen im MVP.
+Die funktionalen Anforderungen gliedern sich nach den fünf Zielgruppen und beschreiben die ihnen jeweils zur Verfügung stehenden Funktionen im @MVP.
 
 ==== Autoren / Studierende
 - *Abgaben selbstständig anlegen:* Erstellen eigener Arbeiten (z. B. Abschlussarbeiten) als Einzel- oder Gruppenarbeit unter Angabe von Mitautoren sowie (je nach Vorlage) Wunschprüfern und individuellen Fristen.
@@ -68,7 +68,7 @@ Die Zuweisung von Reviewern zu Abgaben erfolgt in der Regel automatisiert durch 
 - *Globale Benutzerverwaltung:* Umfassende Verwaltung aller Profile und Systemberechtigungen.
 - *Systemkomponenten einsehen:* Übersicht über registrierte Review-Typen (Plugins) und aktive Templates sowie Verwaltung globaler Themen-Tags.
 
-Für technische Störungen oder Zuweisungskonflikte existiert im MVP keine dedizierte, korrigierende Eingriffsmöglichkeit über die Anwendung. Weder Lehrende noch die System-Administration können fehlerhafte automatische Zuweisungen manuell übersteuern (siehe @sec:out-of-scope).
+Für technische Störungen oder Zuweisungskonflikte existiert im @MVP keine dedizierte, korrigierende Eingriffsmöglichkeit über die Anwendung. Weder Lehrende noch die System-Administration können fehlerhafte automatische Zuweisungen manuell übersteuern (siehe @sec:out-of-scope).
 
 === Nichtfunktionale Anforderungen
 
@@ -89,7 +89,7 @@ Die nichtfunktionalen Anforderungen umfassen allgemeine Qualitätsmerkmale der A
 - *Skalierbarkeit & Kostenoptimierung:* Die Services werden per Scheduled Application Auto Scaling an Werktagen zwischen 08:00 und 18:00 UTC hochskaliert; außerhalb dieser Zeiten sowie am Wochenende laufen sie mit 0 Instanzen, um Betriebskosten zu minimieren.
 
 == Out of scope <sec:out-of-scope>
-Für das MVP wurde sich bewusst gegen die Implementierung bestimmter Features entschieden oder diese wurden zugunsten eines reduzierten Scopes zurückgestellt:
+Für das @MVP wurde sich bewusst gegen die Implementierung bestimmter Features entschieden oder diese wurden zugunsten eines reduzierten Scopes zurückgestellt:
 - *Korrigieren Fehlerhafter Zusweisungen:* Es gibt keine Funktion, mit der Prüfungsamt, Lehrende oder System-Administration fehlerhafte Zuweisungen nachträglich korrigieren können.
 - *Annotationen in Dokumenten im Format PDF:* Direkte visuelle Markierungen, Kommentare oder Zeichnungen auf den Dokumenten im Format PDF im Browser wurden nicht implementiert. Die Begutachtung erfolgt stattdessen strukturiert über Bewertungsbögen und textuelles Gesamt-Feedback. (Begründung: Hohe Komplexität der UI bei geringem Mehrwert für das @MVP).
 - *Dateiformate abseits von PDF:* Es wird ausschließlich das `.pdf`-Format für Einreichungen unterstützt. Andere in der Aufgabenstellung denkbare Formate (z. B. `.zip`-Dateien für Quellcode-Abgaben) wurden nicht realisiert.
