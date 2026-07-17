@@ -1,7 +1,7 @@
 = Features der App
 
 Die Applikation (das "PeerReview"-System) umfasst eine interaktive Web-Oberfläche sowie sieben dedizierte Backend-Services.
-Im Folgenden werden alle im aktuellen @MVP implementierten Features aus Nutzersicht anhand eines einfachen Lastenheft und der Nutzung von typischen Benutzergeschichten (User Stories) dargestellt.
+Im Folgenden werden alle im aktuellen @MVP implementierten Features aus Nutzersicht anhand eines einfachen Lastenhefts und der Nutzung von typischen Benutzergeschichten (User Stories) dargestellt.
 
 == Lastenheft
 
@@ -45,7 +45,7 @@ Die funktionalen Anforderungen gliedern sich nach den fünf Zielgruppen und besc
 ==== Lehrende
 - *Abgaben anlegen und konfigurieren:* Erstellen neuer Arbeiten mit individuellen Titeln, Deadlines, Mitautoren und Themen-Tags, die von Autoren einzureichen sind.
 - *Review-Verfahren & Kriterien bestimmen:* Auswahl des Review-Prozesses (Doppelblind, Einfach-Blind, Open Review) sowie Definition des Bewertungsbogens und dessen Sichtbarkeit für Studierende.
-- *Automatische oder manuelle Definition des Reviewers*: Manuelle Auswahl eines Reviewers (sich selber, wenn Einsicht über Status anschließend erwünscht) oder nicht auswählen für das automatische Matchen.
+- *Automatische oder manuelle Definition des Reviewers*: Manuelle Auswahl eines Reviewers (sich selbst, wenn eine anschließende Einsicht über den Status erwünscht ist) oder Verzicht auf eine Auswahl für das automatische Matching.
 
 ==== Reviewer
 - *Zugewiesene Arbeiten einsehen:* Übersicht über alle Einreichungen, bei denen man als Gutachter eingeteilt ist.
