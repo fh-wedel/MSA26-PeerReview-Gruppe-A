@@ -58,7 +58,7 @@ Insbesondere der Service der Web-UI wurde maßgeblich mithilfe der eben beschrie
 
 === GitHub Copilot Reviewer <sec:github-reviewer>
 // (Matthias)
-Commit und Pull Requests von agentischer Entwicklung umfassen häufig große Mengen an Code - vor allem in Greenfield-Situationen wie in diesem Projekt. Um den Überblick über diese Änderungen behalten zu können, liefert GitHub mit GitHub Copilot Reviewer eine in die Plattform integrierte Unterstützung durch KI @github_copilot_review_2026. Dieses Produkt soll dabei helfen, die Quellcodeänderungen zu verstehen, Fehler zu finden oder auch selbstdefinierte Anweisungen durchzuführen. Der Review durch KI kann in den Arbeitsfluss für @CI und @CD eingebunden werden, was einen hohen Grad an Automatisierung erlaubt.
+Commit und Pull Requests von agentischer Entwicklung umfassen häufig große Mengen an Code - vor allem in Greenfield-Situationen wie in diesem Projekt. Um den Überblick über diese Änderungen behalten zu können, liefert GitHub mit GitHub Copilot Reviewer eine in die Plattform integrierte Unterstützung durch KI @github_copilot_review_2026. Dieses Produkt soll dabei helfen, die Quellcodeänderungen zu verstehen, Fehler zu finden oder auch selbstdefinierte Anweisungen durchzuführen. Die Review durch KI kann in den Arbeitsfluss für @CI und @CD eingebunden werden, was einen hohen Grad an Automatisierung erlaubt.
 
 Unsere Erfahrungen mit Copilot Review belaufen sich auf wenige Tests. In einem Drittel ($1/3$) der Fälle wurde eine falsche Problemlösung vorgeschlagen.
 
@@ -67,7 +67,7 @@ Als etabliertes Verfahren der modernen Softwareentwicklung wurde eine Pipeline f
 
 Die Pipeline ist technologisch auf Basis von GitHub Actions realisiert. Der Workflow umfasst das automatisierte Kompilieren des Java-Backend-Codes sowie die Ausführung der Unit-Tests für die Applikation und den TypeScript-basierten Code für @IaC. Nach erfolgreicher Verifikation wird das Docker-Image erstellt und in @ECR gepusht. Im anschließenden Schritt initiiert die Pipeline mittels des Befehls `cdk deploy` das infrastrukturelle Deployment, wodurch sowohl die modifizierten Cloud-Ressourcen aktualisiert als auch die neuen Applikations-Images auf Instanzen mit @ECS Fargate ausgerollt werden.
 
-Lokal lässt sich die Software nicht ausführen, weil eine hohe Abhängigkeit zu Cloud-Ressourcen besteht. Auch wenn einige Services, wie eine asynchrone Queue, lokal abgebildet werden, ist die Integration von Cognito, dem API Gateway, DynamoDB oder Verified Permissions auf @AWS sehr komplex und nicht Teil des @MVP.
+Lokal lässt sich die Software nicht ausführen, weil eine hohe Abhängigkeit zu Cloud-Ressourcen besteht. Auch wenn einige Services, wie eine asynchrone Queue, lokal abgebildet werden könnten, ist die Integration von Cognito, dem API Gateway, DynamoDB oder Verified Permissions auf @AWS sehr komplex und aus diesem Grundnicht Teil des @MVP.
 
 Die Web-UI bietet jedoch die Möglichkeit, lokal gestartet zu werden und weiterhin die Backend-Services zu nutzen. Dazu kommt ein Reverse Proxy zum Einsatz, der alle Anfragen der lokal instanziierten Web-UI an die Umgebung auf @AWS weiterleitet. Hierzu wird der Befehl `npm run dev` im Verzeichnis der Web-UI ausgeführt. Einige Features, wie beispielsweise Ereignisse über @SSE, sind hierbei zwar limitiert, was für eine Entwicklungsumgebung aber akzeptabel ist.
 
@@ -91,13 +91,13 @@ Wie im nachfolgenden Abschnitt näher erläutert wird (siehe @sec:optimization),
 
 Während der Entwicklungsphase wurde mithilfe von ausführlichen Prompts für KI und entsprechend angepassten `AGENTS.md`-Dateien versucht, die Testabdeckung des Gesamtsystems sicherzustellen. Gleichzeitig wurde hierbei angestrebt, allgemeine Codestrukturen und Konventionen festzulegen. Schnell hat sich dies jedoch insbesondere durch die Verwendung von unterschiedlichen @LLM:pl als kein triviales Unterfangen herausgestellt, da die Modelle jeweils mit ihren spezifischen Präferenzen und Verhaltensmustern daherkamen. So wurden beispielsweise Regeln unterschiedlich stark eingehalten, wodurch es schließlich dazu gekommen ist, dass die Testabdeckung für einige Services entweder stark oder vollkommen vernachlässigt wurde. Insbesondere der Service der Web-UI verblieb bis zu deren Fertigstellung ohne Tests. Dies verbesserte sich erst, nachdem eine Codeabdeckung explizit gefordert wurde. Es ist davon auszugehen, dass besser ausformulierte `AGENTS.md`-Dateien diese Situation hätten verbessern können. Zeitgleich hätte dies bedeutet, dass bestenfalls bereits zu Anfang des Projekts fertige Architekturpläne, Ordnerstrukturen und Konventionen hätten bereitstehen müssen. Dies war uns nicht möglich und erschien wenig praktikabel.
 
-Dieser eben beschriebene erste negative Eindruck bezüglich der Testabdeckung wurde nach Fertigstellung der Implementierung des @MVP weiter untersucht. Hierzu wurde zunächst die Codeabdeckung der einzelnen Microservices des PeerReview-Systems ermittelt, um anschließend den jeweiligen Index @CRAP zu berechnen. Für diesen wurde festgelegt, dass ein maximaler Wert von 30 zu akzeptieren ist. Beim Vergleich der Indexwerte mit dem Schwellwert wurden daraufhin diverse Codestellen identifiziert, die basierend auf den geltenden Bedingungen als kritisch einzustufen waren und einer Optimierung bedurften (siehe @fig:crap_before).
+Dieser eben beschriebene erste negative Eindruck bezüglich der Testabdeckung wurde nach Fertigstellung der Implementierung des @MVP weiter untersucht. Hierzu wurde zunächst die Codeabdeckung der einzelnen Microservices des PeerReview-Systems ermittelt, um anschließend den jeweiligen #gls("CRAP")-Index zu berechnen. Für diesen wurde festgelegt, dass ein maximaler Wert von 30 zu akzeptieren ist. Beim Vergleich der Indexwerte mit dem Schwellwert wurden daraufhin diverse Codestellen identifiziert, die basierend auf den geltenden Bedingungen als kritisch einzustufen waren und einer Optimierung bedurften (siehe @fig:crap_before).
 
 #figure(
   caption: [Top-Ausreißer beim Index @CRAP vor Optimierungen],
   table(
     columns: 4,
-    [*Service*], [*Klasse*], [*Methode*], [*Score für @CRAP*],
+    [*Service*], [*Klasse*], [*Methode*], [*#gls("CRAP")-Score*],
     [Web-UI], [Submissions.tsx], [mapConfigToDisplay], [407.1],
     [Web-UI], [Dashboard.tsx], [fetchTasks], [314.5],
     [Web-UI], [SubmissionModal.tsx], [SubmissionModal], [197.5],
@@ -116,7 +116,7 @@ Das Ergebnis dieser Optimierungsmaßnahmen ist in @fig:crap_after dargestellt. S
   caption: [Höchste verbleibende Werte für den Index @CRAP nach den Optimierungen],
   table(
     columns: 4,
-    [*Service*], [*Klasse*], [*Methode*], [*Score für @CRAP*],
+    [*Service*], [*Klasse*], [*Methode*], [*#gls("CRAP")-Score*],
     [User-Service], [CognitoService], [searchUsers], [30.0],
     [Communication-Service], [ChatRepository], [findMessages], [30.0],
     [Response-Service], [ResultService], [isAuthorOfSubmission], [30.0],
