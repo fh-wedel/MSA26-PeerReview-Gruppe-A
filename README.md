@@ -91,6 +91,12 @@ Die Demo-Konten ermöglichen insbesondere folgende Einblicke in den Ablauf:
 
 Neue Benutzer registrieren sich direkt im Live-System und bestätigen ihre E-Mail-Adresse. Anschließend muss ihnen eine Rolle zugewiesen werden. Für die Demo-Verwaltung geschieht dies im AWS-Konto `395982336633` unter **Amazon Cognito** über die Benutzergruppe des jeweiligen Kontos. Alternativ kann die Rollenzuweisung im Live-System mit einem Admin- oder Examination-Officer-Konto erfolgen. Voraussetzung ist, dass der Nutzer zuvor registriert wurde und seine E-Mail-Adresse bestätigt hat. Eine Beschreibung der Rollen und ihrer Berechtigungen befindet sich im [Projektbericht](Paper/main.pdf).
 
+### Verfügbarkeit des Live-Systems
+Um Kosten zu sparen, sind die ECS-Services werktags standardmäßig nur von 16:00 bis 22:00 Uhr (UTC+2) erreichbar. Am Wochenende stehen die Services von 11:00 bis 23:00 Uhr zur Verfügung.
+
+Falls eine längere Verfügbarkeit erforderlich ist, kann im GitHub-Projekt unter **Actions** die CI-Pipeline für den Branch `concurrent-lambda-for-performace` manuell gestartet werden. Dadurch werden die Services für 24 Stunden durchgehend betrieben. Dies führt jedoch zu deutlich höheren Kosten.
+
+Um anschließend wieder zum regulären Zeitplan zurückzukehren, kann der `main`-Branch erneut bereitgestellt werden. Die Services laufen dann wieder ausschließlich zu den oben genannten Standardzeiten.
 
 ## Repository-Navigation
 
