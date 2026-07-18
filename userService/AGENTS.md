@@ -1,3 +1,6 @@
-# templateEcsService Learnings
+# User Service Learnings
 
-- **Docker Build Target:** The `Dockerfile` dynamically targets this module using `ARG MODULE_DIR=templateEcsService` with Maven's `-pl` flag. When copying this template for a new service, this argument must be updated to the new directory name so Maven builds the correct child module from the root context.
+- **Cognito boundary:** Other services should resolve users, groups, and reviewer attributes through the User Service rather than calling Cognito directly.
+- **Cache invalidation:** Changes to users or group memberships must invalidate cached profiles through the configured SQS queue.
+- **Docker build context:** Build the module from the repository root with `docker build -f userService/Dockerfile .` so Maven can resolve `api-client` through the root aggregator.
+- **OpenAPI synchronization:** After changing `user.json`, regenerate the Web UI client with `npm run generate:api:users`.

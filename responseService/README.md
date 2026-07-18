@@ -29,7 +29,7 @@ This service relies on **Amazon DynamoDB** for persistence and **Amazon S3** for
 The service participates in the asynchronous event choreography:
 *   **Incoming SQS Events**:
     *   `SqsResultListener`: Listens to `aws.sqs.request.queue-name` to consume `ReviewCompletedEvent`s and store the finalized grading data.
-    *   `SqsSubmissionReadyListener`: Listens to `aws.sqs.submission-ready.queue-name` for `SubmissionReadyEvent`s (currently used for logging state transitions).
+    *   `AiReviewSqsListener`: Consumes AI review tasks and coordinates document processing and Bedrock-based feedback generation.
 
 ## Service-to-Service Communication
 

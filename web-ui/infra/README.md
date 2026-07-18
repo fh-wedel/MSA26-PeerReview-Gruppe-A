@@ -1,14 +1,17 @@
-# Welcome to your CDK TypeScript project
+# Web UI Infrastructure
 
-This is a blank project for CDK development with TypeScript.
+Dieser AWS-CDK-Stack stellt die Web UI als ARM64-Container auf ECS Fargate bereit und bindet sie über API Gateway an die zentrale CloudFront-Distribution an.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Zusätzlich aktualisiert eine Custom-Resource-Lambda den Cognito App Client um die aktuelle CloudFront Callback- und Logout-URL. Die benötigten Baseline-Ressourcen werden über CloudFormation-Exports importiert.
 
-## Useful commands
+## Prüfung
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+```bash
+cd web-ui/infra
+npm ci
+npm test
+npm run build
+npx cdk synth -c serviceName=web-ui
+```
+
+Die reguläre Bereitstellung übernimmt die zentrale GitHub-Actions-Pipeline.
