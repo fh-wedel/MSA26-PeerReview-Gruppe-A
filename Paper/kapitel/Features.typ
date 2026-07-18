@@ -82,7 +82,7 @@ Die nichtfunktionalen Anforderungen umfassen allgemeine Qualitätsmerkmale der A
 - *Microservice-Architektur:* Die sieben Backend-Services sind eigenständig deploybar und kommunizieren synchron über REST sowie asynchron über @SQS (siehe @ch:architecture).
 - *Database-per-Service:* Jeder Service verwaltet seine eigene, isolierte Datenbank; ein Datenaustausch zwischen Services erfolgt ausschließlich über APIs oder @SQS, nicht über direkte Datenbankzugriffe.
 - *Dokumentenablage:* Eingereichte Dokumente im Format PDF werden als Objekte in @S3 gespeichert.
-- *Plugin-Architektur im Workflow Service:* Unterschiedliche Begutachtungsverfahren (Doppelblind, Einfach-Blind, Open Review) müssen als austauschbare Plugins ohne Änderung der Kernlogik unterstützt werden.
+- *Plugin-Architektur im Workflow Service (nach Refactoring im Configuration Service):* Unterschiedliche Begutachtungsverfahren (Doppelblind, Einfach-Blind, Open Review) und Bewertungsverfahren müssen als austauschbare Plugins ohne Änderung der Kernlogik unterstützt werden.
 - *Cloud-Infrastruktur:* Betrieb auf @ECS Fargate (ARM64 / Graviton) mit @IaC über @CDK.
 - *Skalierbarkeit & Kostenoptimierung:* Die Services werden per Scheduled Application Auto Scaling an Werktagen zwischen 16:00 und 22:00 UTC+2 und am Wochenende zwischen 11:00 und 23:00 UTC+2 hochskaliert; außerhalb dieser Zeiten laufen sie mit 0 Instanzen, um Betriebskosten zu minimieren.
 
