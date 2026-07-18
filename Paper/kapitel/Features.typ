@@ -17,11 +17,11 @@ Das System unterscheidet fünf Zielgruppen mit jeweils eigenen Rollen und Berech
 
 *Autoren / Studierende*: Autoren bzw. Studierende nutzen das System als zentrale Plattform zur Abwicklung ihrer Einreichungen, wie beispielsweise Abschlussarbeiten oder Seminararbeiten.
 
-*Lehrende*: Dozierende legen Abgaben an, konfigurieren das gewünschte Begutachtungsverfahren sowie den Bewertungsbogen.
+*Lehrende*: Dozierende legen Abgaben für Autoren an, konfigurieren das gewünschte Begutachtungsverfahren sowie den Bewertungsbogen.
 
 *Reviewer*: Reviewer begutachten ihnen zugewiesene Arbeiten, vergeben Bewertungen anhand des vorgegebenen Bewertungsbogens und beantworten Rückfragen der Autoren.
 
-*Prüfungsamt*: Das Prüfungsamt nimmt eine administrative Rolle ein. Die Mitarbeiter pflegen den Gutachterpool, hinterlegen Fachgebiete und steuern Profile. 
+*Prüfungsamt*: Das Prüfungsamt nimmt eine administrative Rolle ein. Die Mitarbeiter pflegen den Gutachterpool, hinterlegen Fachgebiete und steuern Profile.
 
 *System-Administration*: Die System-Administration ist für die technische Überwachung und globale Konfiguration zuständig. Sie verwaltet Profile, Berechtigungen und globale Themen-Tags und behält den Überblick über registrierte Review-Typen (Plugins) und aktive Templates.
 
@@ -44,7 +44,7 @@ Die funktionalen Anforderungen gliedern sich nach den fünf Zielgruppen und besc
 
 ==== Lehrende
 - *Abgaben anlegen und konfigurieren:* Erstellen neuer Arbeiten mit individuellen Titeln, Deadlines, Mitautoren und Themen-Tags, die von Autoren einzureichen sind.
-- *Review-Verfahren & Kriterien bestimmen:* Auswahl des Review-Prozesses (Doppelblind, Einfach-Blind, Open Review) sowie Definition des Bewertungsbogens und dessen Sichtbarkeit für Studierende.
+- *Review-Verfahren & Kriterien bestimmen:* Auswahl des Review-Prozesses (Doppelblind, Einfach-Blind, Open Review) sowie Auswahl des Bewertungsbogens über die Art der Abgabe.
 - *Automatische oder manuelle Definition des Reviewers*: Manuelle Auswahl eines Reviewers (sich selbst, wenn eine anschließende Einsicht über den Status erwünscht ist) oder Verzicht auf eine Auswahl für das automatische Matching.
 
 ==== Reviewer
@@ -61,8 +61,6 @@ Die funktionalen Anforderungen gliedern sich nach den fünf Zielgruppen und besc
 - *Überwachung des Gesamtprozesses:* Uneingeschränkte Sicht auf den Status aller Abgaben, automatischen Zuweisungen, Deadlines und Korrekturfortschritte im System.
 - *Systemstatistiken einsehen:* Übersicht über globale Kennzahlen wie Benutzerzahlen, aktive Plugins und Templates im Admin-Bereich.
 - *Benutzer und Rollen verwalten:* Zuweisung von Berechtigungsgruppen (z. B. Lehrender, Reviewer, Autor, Prüfungsamt) für registrierte Benutzer.
-
-Die Zuweisung von Reviewern zu Abgaben erfolgt in der Regel automatisiert durch den Matching-Algorithmus. Sollte es jedoch innerhalb des Matching zu einem Fehler kommen, ist die Korrektur anschließend durch keine Rolle mehr möglich (siehe @sec:out-of-scope).
 
 ==== System-Administration
 - *Globale Benutzerverwaltung:* Umfassende Verwaltung aller Profile und Systemberechtigungen.
@@ -85,16 +83,16 @@ Die nichtfunktionalen Anforderungen umfassen allgemeine Qualitätsmerkmale der A
 - *Database-per-Service:* Jeder Service verwaltet seine eigene, isolierte Datenbank; ein Datenaustausch zwischen Services erfolgt ausschließlich über APIs oder @SQS, nicht über direkte Datenbankzugriffe.
 - *Dokumentenablage:* Eingereichte Dokumente im Format PDF werden als Objekte in @S3 gespeichert.
 - *Plugin-Architektur im Workflow Service:* Unterschiedliche Begutachtungsverfahren (Doppelblind, Einfach-Blind, Open Review) müssen als austauschbare Plugins ohne Änderung der Kernlogik unterstützt werden.
-- *Cloud-Infrastruktur:* Betrieb auf @ECS Fargate (ARM64 / Graviton) mit @IaC über @CDK v2.
-- *Skalierbarkeit & Kostenoptimierung:* Die Services werden per Scheduled Application Auto Scaling an Werktagen zwischen 08:00 und 18:00 UTC hochskaliert; außerhalb dieser Zeiten sowie am Wochenende laufen sie mit 0 Instanzen, um Betriebskosten zu minimieren.
+- *Cloud-Infrastruktur:* Betrieb auf @ECS Fargate (ARM64 / Graviton) mit @IaC über @CDK.
+- *Skalierbarkeit & Kostenoptimierung:* Die Services werden per Scheduled Application Auto Scaling an Werktagen zwischen 16:00 und 22:00 UTC+2 und am Wochenende zwischen 11:00 und 23:00 UTC+2 hochskaliert; außerhalb dieser Zeiten laufen sie mit 0 Instanzen, um Betriebskosten zu minimieren.
 
 == Out of scope <sec:out-of-scope>
 Für das @MVP wurde sich bewusst gegen die Implementierung bestimmter Features entschieden oder diese wurden zugunsten eines reduzierten Scopes zurückgestellt:
 - *Korrigieren Fehlerhafter Zusweisungen:* Es gibt keine Funktion, mit der Prüfungsamt, Lehrende oder System-Administration fehlerhafte Zuweisungen nachträglich korrigieren können.
 - *Annotationen in Dokumenten im Format PDF:* Direkte visuelle Markierungen, Kommentare oder Zeichnungen auf den Dokumenten im Format PDF im Browser wurden nicht implementiert. Die Begutachtung erfolgt stattdessen strukturiert über Bewertungsbögen und textuelles Gesamt-Feedback. (Begründung: Hohe Komplexität der UI bei geringem Mehrwert für das @MVP).
-- *Dateiformate abseits von PDF:* Es wird ausschließlich das `.pdf`-Format für Einreichungen unterstützt. Andere in der Aufgabenstellung denkbare Formate (z. B. `.zip`-Dateien für Quellcode-Abgaben) wurden nicht realisiert.
+- *Dateiformate abseits von PDF:* Es wird ausschließlich das `.pdf`-Format für Einreichungen unterstützt. Andere in der Aufgabenstellung denkbare Formate (z. B. `.zip`-Dateien für Quellcode-Abgaben) wurden nicht realisiert. Die Ausweitung auf weitere Datei-Formate ist zu einem möglichen späteren Zeitpunkt einfach umzusetzen.
 - *Erinnerungsverwaltung (Reminder Service):* Es gibt kein automatisiertes System, das Benutzer vor Ablauf von Deadlines (Abgabe- oder Review-Fristen) benachrichtigt oder an ausstehende Aufgaben erinnert.
 - *Externe Schnittstelle zur Anwendungsprogrammierung (z. B. zur Anbindung an ein LMS):* Eine Einbindung in externe Systeme wie Lernmanagementsysteme (z. B. Moodle, Canvas über LTI) wurde nicht umgesetzt. Die Endpunkte stehen jedoch zur Verfügung.
 - *Dedizierter Statistik- & Reporting-Service:* Statistische Auswertungen sind auf einfache Kennzahlen wie KPI im Admin-Dashboard (Nutzerzahlen, aktive Plugins) beschränkt. Ein eigenständiger Dienst zur Aggregation komplexer Kennzahlen (z. B. Notenverläufe) wurde nicht umgesetzt.
-- *Lokales Einzelkommando-Deployment:* Statt eines lokalen Aufbaus per einzelnem Kommando wie `docker compose up` wird das System vollautomatisiert über eine Pipeline für @CI und @CD (GitHub Actions) gebaut und auf @AWS bereitgestellt. (Begründung: Durchgängiges Cloud-natives Deployment mit @CD statt lokalem Docker-Compose-Stack; das System ist dauerhaft über eine öffentliche URL erreichbar.)
+- *Lokales Einzelkommando-Deployment:* Statt eines lokalen Aufbaus per `docker compose up` wird das System entweder vollautomatisiert über eine @CI/@CD\-Pipeline (GitHub Actions) oder manuell via `docker build` und `docker push` ins ECR geladen und anschließend per `cdk deploy` auf AWS bereitgestellt. (Begründung: Durchgängiges Cloud-natives Deployment mit @CD statt lokalem Docker-Compose-Stack; das System ist dauerhaft über eine öffentliche URL erreichbar.)
 

@@ -62,7 +62,7 @@ Commit und Pull Requests von agentischer Entwicklung umfassen häufig große Men
 
 Unsere Erfahrungen mit Copilot Review belaufen sich auf wenige Tests. In einem Drittel ($1/3$) der Fälle wurde eine falsche Problemlösung vorgeschlagen.
 
-== Integration von @CI und @CD sowie Deployment <sec:cicd-integration>
+== Integration von @CI und @CD <sec:cicd-integration>
 Als etabliertes Verfahren der modernen Softwareentwicklung wurde eine Pipeline für @CI und @CD eingerichtet. Diese erlaubt ein automatisiertes Deployment der aktuellen Softwareversion auf Knopfdruck. Hierdurch werden fehleranfällige manuelle Bereitstellungsprozesse eliminiert. Gleichzeitig stellt der Ansatz der kontinuierlichen Integration sicher, dass Modifikationen frühzeitig zusammengeführt werden, wodurch potenzielle Integrationskonflikte oder Laufzeitfehler in einem frühen Stadium sichtbar werden. Neben der Option, spezifische Feature-Branches manuell zu deployen, wird bei jedem Merge auf den geschützten Hauptzweig (`main` branch) automatisch das Deployment aller vom Commit betroffenen Microservices initiiert.
 
 Die Pipeline ist technologisch auf Basis von GitHub Actions realisiert. Der Workflow umfasst das automatisierte Kompilieren des Java-Backend-Codes sowie die Ausführung der Unit-Tests für die Applikation und den TypeScript-basierten Code für @IaC. Nach erfolgreicher Verifikation wird das Docker-Image erstellt und in @ECR gepusht. Im anschließenden Schritt initiiert die Pipeline mittels des Befehls `cdk deploy` das infrastrukturelle Deployment, wodurch sowohl die modifizierten Cloud-Ressourcen aktualisiert als auch die neuen Applikations-Images auf Instanzen mit @ECS Fargate ausgerollt werden.
@@ -71,7 +71,7 @@ Lokal lässt sich die Software nicht ausführen, weil eine hohe Abhängigkeit zu
 
 Die Web-UI bietet jedoch die Möglichkeit, lokal gestartet zu werden und weiterhin die Backend-Services zu nutzen. Dazu kommt ein Reverse Proxy zum Einsatz, der alle Anfragen der lokal instanziierten Web-UI an die Umgebung auf @AWS weiterleitet. Hierzu wird der Befehl `npm run dev` im Verzeichnis der Web-UI ausgeführt. Einige Features, wie beispielsweise Ereignisse über @SSE, sind hierbei zwar limitiert, was für eine Entwicklungsumgebung aber akzeptabel ist.
 
-== Testen (Manuell) <sec:manual-testing>
+== Manuelles Testen <sec:manual-testing>
 // (Gideon)
 Neben der automatisierten Testabdeckung wurde das System während der gesamten Entwicklungszeit auch manuell überprüft. Im Vordergrund stand dabei ein klassischer Klicktest über die Web-UI, bei dem die zentralen Abläufe wie Einreichung, Zuweisung und Begutachtung wiederholt durchgespielt wurden. Ergänzend wurden einzelne REST-Endpunkte gezielt über Postman angesprochen, um Anfragen unabhängig von der Oberfläche zu prüfen. Da ein wesentlicher Teil der Kommunikation zwischen den Services über @SQS erfolgt, wurden zudem Nachrichten manuell in die jeweiligen Queues geschrieben und die daraus resultierende Verarbeitung sowie die abgelegten Ergebnisse kontrolliert.
 
