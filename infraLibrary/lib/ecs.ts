@@ -126,36 +126,6 @@ export class EcsInfra {
             targetUtilizationPercent: cpuTargetUtilizationPercent,
         });
 
-        const timeZone = cdk.TimeZone.EUROPE_BERLIN
 
-        // Weekdays: 16:00 - 22:00
-        scalableTarget.scaleOnSchedule('ScaleDownWeekdaysMorning', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '22', weekDay: 'MON-FRI' }),
-            minCapacity: 0,
-            maxCapacity: 0,
-            timeZone: timeZone,
-        });
-
-        scalableTarget.scaleOnSchedule('ScaleUpWeekdaysAfternoon', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '16', weekDay: 'MON-FRI' }),
-            minCapacity: minTaskCount,
-            maxCapacity: maxTaskCount,
-            timeZone: timeZone,
-        });
-
-        // Weekends: 11:00 - 23:00
-        scalableTarget.scaleOnSchedule('ScaleDownWeekendMorning', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '23', weekDay: 'SAT,SUN' }),
-            minCapacity: 0,
-            maxCapacity: 0,
-            timeZone: timeZone,
-        });
-
-        scalableTarget.scaleOnSchedule('ScaleUpWeekendMorning', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '11', weekDay: 'SAT,SUN' }),
-            minCapacity: minTaskCount,
-            maxCapacity: maxTaskCount,
-            timeZone: timeZone,
-        });
     }
 }
