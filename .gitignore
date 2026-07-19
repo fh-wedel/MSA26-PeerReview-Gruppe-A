@@ -2,6 +2,8 @@
 **/*.bkp
 .idea
 .playwright-mcp
+/.postman/
+**/.DS_Store
 
 **/*.d.ts
 **/*.js

@@ -1,12 +1,6 @@
-# configuration-service Learnings
+# Configuration Service Learnings
 
-- **Cross-Module OpenAPI Dependencies:** The `configuration-service` relies on the `workflow-service` OpenAPI
-  specification for client generation. To ensure Docker builds succeed without requiring context manipulation, a copy of
-  `workflow.json` is maintained at `src/main/resources/openapi/workflow.json`. When the workflow service API changes,
-  this file must be manually synchronized.
-- **OpenAPI Schema Separation:** The POST `/` endpoint takes `CreateConfigurationRequest` while GET responses return
-  `Configuration`. Do not reuse the `Configuration` schema for the POST request body in `configuration.json`. The
-  service resolves fields like `numberOfExaminers` independently via workflow plugins and does not accept them from the
-  client.
-- **Frontend Code Sync:** Whenever `configuration.json` is modified, you must run `npm run generate:api:config` in the
-  `web-ui` directory to regenerate the frontend TypeScript clients.
+- **Plugin boundary:** Review types implement `ReviewTypePlugin`; submission templates implement `ReviewTemplatePlugin`. Keep workflow behavior out of the core service.
+- **Plugin discovery:** Runtime plugin JARs must provide the corresponding `META-INF/services/` registration and are loaded through `ServiceLoader` from `configuration.plugins.directory`.
+- **OpenAPI separation:** Creation requests and returned configuration objects are distinct schemas. Keep the API contract aligned with plugin-derived fields and validation rules.
+- **Frontend synchronization:** After changing `configuration.json`, run `npm run generate:api:config` in `web-ui/`.
