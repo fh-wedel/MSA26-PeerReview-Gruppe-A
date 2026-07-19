@@ -1,86 +1,34 @@
 # Matching Service
-## Service Allgemein
-Der Matching Service ist das Bindeglied zwischen der Erstellung einer Abgabe und deren finaler Einreichung. Er hat die Aufgabe, initial erstellte Abgaben (vom Creation Service) mit einem oder mehreren Prüfern zu matchen.
 
-Der Service agiert ereignisgesteuert (Event-Driven). Er empfängt asynchron Zuweisungsanfragen, ermittelt die zuständigen Prüfer aus dem zentralen Identity Provider (AWS Cognito), persistiert den Match und informiert den nachgelagerten Submission Service. Zusätzlich stellt er eine logische REST-Schnittstelle bereit, um als Proxy (Durchreiche) für Prüfer-Stammdaten zu fungieren und Matching-Informationen abzufragen.
+Der Matching Service ordnet Abgaben geeigneten Reviewern zu. Matching-Aufträge werden über Amazon SQS empfangen, Ergebnisse in DynamoDB gespeichert und anschließend an nachgelagerte Services weitergegeben.
 
-## MVP (Minimum Viable Product)
-Der MVP umfasst ausschließlich die Kernfunktionalität für einen funktionierenden "Happy Path"-Workflow:
-* Empfang einer SQS-Nachricht vom Creation Service, um eine neue Abgabe zu erfassen.
-* Zuweisung eines beliebigen (random) Users aus dem AWS Cognito User Pool (Gruppe "Prüfer") zur Abgabe.
-* Persistierung des erfolgreichen Matches in einer DynamoDB-Tabelle.
-* Versand einer SQS-Nachricht an den Submission Service, um den erfolgreichen Match zu melden.
-* Bereitstellung grundlegender REST-APIs zum Auslesen von Matches sowie zur Verwaltung von Prüfern in Cognito (Proxy-Funktion).
+## Matching-Ablauf
 
-## Business Regeln
-* **Dynamische Prüferanzahl:** Eine Abgabe kann von mehr als einem Prüfer geprüft werden. Die exakte Anzahl der benötigten Prüfer (`numberOfExaminers`) wird vom Creation Service dynamisch im Event-Payload mitgeliefert.
-* **Prüfer-Auswahl (MVP):** Für den MVP erfolgt die Auswahl der Prüfer zufällig aus dem Pool der vorhandenen Prüfer. Komplexeres Kapazitäts- und Fachgebiets-Routing ist im MVP noch nicht aktiv.
-* **Single Source of Truth:** Alle Stammdaten, Verfügbarkeiten und Metadaten der Prüfer liegen exklusiv in AWS Cognito. Der Matching Service hält keinen eigenen dauerhaften Zustand über die Prüfer selbst, sondern fragt diese zur Laufzeit ab.
+1. Der Service erhält Abgabe-ID, Autoren, gewünschte Reviewer-Anzahl, Themengebiet und optional vorgegebene Reviewer.
+2. Reviewer-Profile werden über den User Service geladen.
+3. Autoren, inaktive Nutzer und fachlich unpassende Reviewer werden ausgeschlossen.
+4. Vorgegebene Reviewer werden direkt verwendet; andernfalls wird die benötigte Anzahl aus dem geeigneten Pool ausgewählt.
+5. Status und einzelne Zuordnungen werden im DynamoDB-Single-Table-Design persistiert.
+6. Beteiligte Services und Nutzer werden über SQS-Ereignisse informiert.
 
-## Technische Umsetzung
+## API
 
-### SQS (Asynchrone Kommunikation)
-* **Input (Creation Service -> Matching Service):**
-    * Der Matching Service stellt eine `MatchingRequestQueue` bereit.
-    * **Payload (Event):** Enthält die `SubmissionID` sowie die `numberOfExaminers`.
-* **Output (Matching Service -> Submission Service):**
-    * Der Matching Service publiziert das Ergebnis in die `SubmissionRequestQueue` (bereitgestellt vom Submission Service).
-    * **Payload (Event):** Enthält die `SubmissionID` und ein Array der zugewiesenen `ExaminerIDs` (Cognito IDs).
+Die OpenAPI-Beschreibung liegt unter `src/main/resources/openapi/matching.json`.
 
-### REST API (Synchrone Kommunikation)
-Um das Prinzip der *Separation of Concerns* logisch einzuhalten, werden die Endpunkte in zwei fachliche Handler/Proxies unterteilt:
+- `GET /matches/submissions/{submissionId}` liefert Status und Reviewer einer Abgabe.
+- `GET /matches/examiners/{examinerUsername}` liefert die einem Reviewer zugeordneten Abgaben.
 
-**1. Matching API (Kern-Domäne):**
-* `GET /matches/submissions/{submissionId}`: Gibt alle gematchten Prüfer zu einer bestimmten Abgabe zurück.
-* `GET /matches/examiners/{examinerId}`: Gibt alle Abgaben zurück, die diesem Prüfer (identifiziert via Cognito ID oder E-Mail) zugewiesen wurden.
+## Datenhaltung
 
-**2. User Proxy API (Cognito-Durchreiche):**
-* `GET /examiners`: Gibt alle verfügbaren Prüfer aus Cognito zurück.
-* `GET /examiners/{examinerId}`: Gibt alle Details zu einem spezifischen Prüfer zurück.
-* `POST /examiners`: Legt einen neuen Prüfer in Cognito an (inkl. Custom Attributes für Fachgebiet, Verfügbarkeit, Aktiv-Status).
-* `PATCH /examiners/{examinerId}`: Aktualisiert die Metadaten/Custom Attributes eines Prüfers in Cognito.
-* `DELETE /examiners/{examinerId}`: Löscht einen Prüfer aus Cognito.
+Einträge einer Abgabe verwenden gemeinsam `PK = SUBMISSION#{id}`. Der Sort Key trennt den Status (`STATUS`) von den einzelnen Zuordnungen (`MATCH#{reviewerId}`). Ein sekundärer Index ermöglicht die Abfrage nach Reviewer.
 
-### Rollen- und Berechtigungskonzept
-Die Autorisierung erfolgt zentral über AWS Verified Permissions (Cedar Policies). Der Zugriff auf die APIs ist wie folgt geregelt:
-* **Admin**: Vollzugriff auf alle Endpunkte.
-* **ExaminationOfficer (Prüfungsamt)**: Lesezugriff auf Matches pro Abgabe (`/matches/submissions/*`) sowie Lese- und Schreibzugriff zur Prüferverwaltung (User Proxy API).
-* **Reviewer (Gutachter)**: Lesezugriff auf die *eigenen* zugewiesenen Abgaben (`/matches/examiners/*`).
-* **Author (Verfasser)**: Lesezugriff auf die Matches der *eigenen* Abgabe (`/matches/submissions/*`).
-* **Teacher (Dozent)**: Kein zusätzlicher Zugriff, da sowieso Berechtigung des Reviewers gegeben ist.
+## Lokale Prüfung
 
-### Datenbank (DynamoDB Single Table Design)
-Die Speicherung erfolgt in einer einzigen DynamoDB-Tabelle unter Anwendung des **Single-Table Design** Patterns. Anstatt relationale Tabellen mit Foreign Keys (JOINs) zu nutzen, werden verschiedene Entity-Typen in einer gemeinsamen Tabelle abgelegt. Dies ist Best Practice für DynamoDB, um extrem schnelle, vorhersehbare Abfragezeiten bei minimalen Kosten zu erzielen.
+Vom Repository-Wurzelverzeichnis aus:
 
-Alle Einträge zu einer spezifischen Abgabe werden über den gleichen **Partition Key (PK)** gruppiert. Der **Sort Key (SK)** unterscheidet dabei den Typ des Eintrags:
+```bash
+mvn test -pl matchingService -am
+docker build -f matchingService/Dockerfile -t peerreview/matching .
+```
 
-1. **Submission Status Eintrag (Metadaten):**
-   * **PK:** `SUBMISSION#{SubmissionID}`
-   * **SK:** `STATUS`
-   * *Attribute:* `status` (z.B. MATCHED), `submitterId`, `numberOfExaminers`, `timestamp`
-   * *Zweck:* Hält den übergreifenden Status und die Meta-Informationen (wer hat die Abgabe eingereicht, wie viele Prüfer werden gesucht).
-
-2. **Match Einträge (1-zu-N Beziehung):**
-   * **PK:** `SUBMISSION#{SubmissionID}`
-   * **SK:** `MATCH#{ExaminerID}`
-   * *Attribute:* `examinerId`, `submissionId`, `timestamp`
-   * *Zweck:* Repräsentiert die Zuweisung eines konkreten Prüfers. Da eine Abgabe mehrere Prüfer haben kann, existieren für eine Abgabe potenziell mehrere `MATCH#...` Einträge.
-
-**Warum dieses Format?**
-Durch diese Struktur können wir mit **einer einzigen Query-Operation** (`PK = SUBMISSION#123`) sowohl den aktuellen Status der Abgabe (`STATUS`) als auch alle zugewiesenen Prüfer (`MATCH#...`) abrufen. Die Trennung in einen Status-Eintrag und mehrere Match-Einträge verhindert, dass wir Arrays aktualisieren müssen, was Konflikte bei zeitgleichen Updates (Race Conditions) verhindert.
-
-* **Global Secondary Index / GSI (Für Abfragen pro Prüfer):**
-    Um effizient beantworten zu können, welche Abgaben einem bestimmten Prüfer zugewiesen sind (Inverted Query):
-    * **GSI-PK:** `{ExaminerID}`
-    * **GSI-SK:** `{SubmissionID}` (oder `Timestamp`)
-
-### AWS Cognito (User Management)
-* Ein dedizierter User Pool enthält alle Nutzer. Prüfer sind durch die Zuweisung zu einer spezifischen Gruppe ("Prüfer") gekennzeichnet.
-* Metadaten (Fachgebiet, Auslastung, Aktivitätsstatus) werden über *Custom Attributes* direkt am User-Objekt in Cognito verwaltet.
-
-## Out of Scope / Limitierungen
-Da dieser Service im Rahmen eines universitären Proof-of-Concepts (PoC) entwickelt wird und von einem geringen Traffic-Volumen auszugehen ist, werden folgende Aspekte für den MVP bewusst vernachlässigt:
-* **Idempotenz:** Es gibt keine Absicherung gegen mehrfach eintreffende SQS-Nachrichten (Exactly-Once-Processing).
-* **Fehlerbehandlung (DLQ):** Es werden keine Dead Letter Queues (DLQs) für nicht verarbeitbare Nachrichten oder fehlgeschlagene API-Aufrufe zum Submission Service implementiert.
-* **Transaktionssicherheit (Outbox Pattern):** Das Schreiben in die DynamoDB und das Absenden der nachgelagerten SQS-Nachricht erfolgen nicht in einer verteilten Transaktion. Schlägt der SQS-Versand fehl, verbleibt der Match dennoch in der Datenbank.
-* **Rate Limiting / Caching:** Die Live-Abfrage der Prüfer-Daten gegen AWS Cognito bei jedem Match verzichtet auf eine Caching-Schicht, da AWS-Quotas durch die erwartete Last nicht erreicht werden.
+Der CDK-Stack unter `infra/` stellt ECS Fargate, API Gateway, Verified Permissions, DynamoDB und die SQS-Integration bereit.

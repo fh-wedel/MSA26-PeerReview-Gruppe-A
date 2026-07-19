@@ -1,12 +1,12 @@
 # Communication ECS Service
 
-Der Communication Service ist Teil des PeerReview-Systems und verantwortlich für die Bereitstellung einer Chat-Funktionalität, über die Benutzer miteinander kommunizieren können. Er verwendet DynamoDB als Datenspeicher (Single-Table Design) und bietet REST-APIs zum Suchen von Benutzern (Proxy für Cognito), Listen von Chats und Senden/Abrufen von Nachrichten.
+Der Communication Service ist Teil des PeerReview-Systems und verantwortlich für die Bereitstellung einer Chat-Funktionalität, über die Benutzer miteinander kommunizieren können. Er verwendet DynamoDB als Datenspeicher (Single-Table Design), löst Teilnehmer über den User Service auf und bietet REST-APIs zum Auflisten von Chats sowie zum Senden und Abrufen von Nachrichten.
 
 ## Architektur & Entscheidungen
 
 Der Service basiert auf:
 - Java 25 & Spring Boot 4
-- AWS SDK v2 (DynamoDB Enhanced Client & Cognito Client)
+- AWS SDK v2 (DynamoDB Enhanced Client) und OpenAPI-generierte Service-Clients
 - AWS ECS Fargate
 - Amazon API Gateway mit Lambda Authorizer (Amazon Verified Permissions)
 
@@ -16,7 +16,7 @@ Der Service basiert auf:
    - `PK: CHAT#{chatId}`, `SK: MSG#{sentAt}#{messageId}` (Nachrichten sortiert nach Zeit)
    - `PK: USER#{userId}`, `SK: CHAT#{chatId}` (Bidirektionale Linking-Tabelle für effizientes Auflisten aller Chats eines Nutzers).
 2. **Deterministische Chat-IDs**: Um Race Conditions beim Erstellen eines neuen Chats (zwei Nutzer schreiben gleichzeitig die erste Nachricht) zu verhindern, wird die `chatId` deterministisch erzeugt: `UUID.nameUUIDFromBytes(lowerSub + ":" + upperSub + ":" + context)`.
-3. **Cognito Wrapper**: Der Service agiert als Wrapper um AWS Cognito (`listUsers`), damit die Web-UI Empfänger über Benutzernamen (Prefix-Suche) finden kann, ohne dass direkte Frontend-Cognito-Berechtigungen nötig sind.
+3. **User-Service-Integration**: Nutzerinformationen werden über den zentralen User Service aufgelöst. Dadurch benötigt die Web UI keine direkten Cognito-Berechtigungen und der Communication Service dupliziert keine Benutzerstammdaten.
 4. **Server-Sent Events (SSE)**: Für Echtzeitkommunikation liefert der Endpoint `/chats/stream` Spring `SseEmitter` Instanzen. Da das AWS API Gateway (REST API) Verbindungen jedoch nach 29 Sekunden hart trennt, muss der Client transparent neu verbinden (`@microsoft/fetch-event-source`). Bei einem Scale-out (mehrere ECS Tasks) ist zudem ein Pub/Sub-Broker nötig; aktuell wird der Zustand in-memory gehalten.
 5. **Kein Caching**: Da es sich um Echtzeit-Kommunikation handelt, ist das API Gateway Caching in CloudFront explizit für diesen Service deaktiviert.
 

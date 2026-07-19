@@ -128,7 +128,7 @@ export class EcsInfra {
 
         const timeZone = cdk.TimeZone.EUROPE_BERLIN
 
-        // Weekdays: 0:00 - 1:00 && 15:00 - 0:00
+        // Weekdays: 16:00 - 22:00
         scalableTarget.scaleOnSchedule('ScaleDownWeekdaysMorning', {
             schedule: appscaling.Schedule.cron({ minute: '0', hour: '22', weekDay: 'MON-FRI' }),
             minCapacity: 0,
@@ -137,13 +137,13 @@ export class EcsInfra {
         });
 
         scalableTarget.scaleOnSchedule('ScaleUpWeekdaysAfternoon', {
-            schedule: appscaling.Schedule.cron({ minute: '0', hour: '17', weekDay: 'MON-FRI' }),
+            schedule: appscaling.Schedule.cron({ minute: '0', hour: '16', weekDay: 'MON-FRI' }),
             minCapacity: minTaskCount,
             maxCapacity: maxTaskCount,
             timeZone: timeZone,
         });
 
-        // Weekends: 0:00 - 2:00 && 10:00 - 0:00
+        // Weekends: 11:00 - 23:00
         scalableTarget.scaleOnSchedule('ScaleDownWeekendMorning', {
             schedule: appscaling.Schedule.cron({ minute: '0', hour: '23', weekDay: 'SAT,SUN' }),
             minCapacity: 0,

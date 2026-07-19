@@ -1,5 +1,6 @@
-# templateEcsService Learnings
+# Communication Service Learnings
 
-- **Cognito User Proxy:** The `/api/communication/users?search=` endpoint acts as a proxy to AWS Cognito. It is
-  currently the only backend workaround to retrieve a list of users (used for frontend caching) since a dedicated User
-  Management Service does not yet exist.
+- **User resolution:** Resolve participant data through the User Service; do not access Cognito directly or duplicate user profiles.
+- **Deterministic chat IDs:** Create chat IDs from sorted participant Sub-UUIDs and the context to avoid duplicate threads during concurrent creation.
+- **DynamoDB layout:** Store chat metadata, participant links, and messages as separate PK/SK items rather than nested arrays.
+- **SSE scaling:** The in-memory `SseEmitter` registry only reaches clients connected to the same task. Multiple ECS tasks require a shared Pub/Sub backend.
