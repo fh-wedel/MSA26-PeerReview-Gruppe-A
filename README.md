@@ -4,7 +4,7 @@
 
 ### Eine cloud-native Plattform für die Begutachtung wissenschaftlicher Arbeiten
 
-[Live-System](https://msa26-peer-review.fh-wedel.dev) · [Projektbericht](Paper/main.typ) · [Architektur](#architektur-auf-einen-blick) · [Mitwirkende](#team)
+[Live-System](https://msa26-peer-review.fh-wedel.dev) · [Projektbericht](Paper/main.pdf) · [Architektur](#architektur-auf-einen-blick) · [Mitwirkende](#team)
 
 [![CI](https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A/actions/workflows/ci.yml/badge.svg)](https://github.com/fh-wedel/MSA26-PeerReview-Gruppe-A/actions/workflows/ci.yml)
 ![Coverage](.github/badges/jacoco.svg)
@@ -63,6 +63,41 @@ Die Anwendung ist unter **[msa26-peer-review.fh-wedel.dev](https://msa26-peer-re
 
 Die Bereitstellung erfolgt vollständig automatisiert über GitHub Actions. Bei Pull Requests und Änderungen auf `main` führt die Pipeline die relevanten Anwendungs- und Infrastrukturtests aus, erstellt ARM64-Containerimages, veröffentlicht diese in Amazon ECR und aktualisiert die betroffenen AWS-CDK-Stacks.
 
+### Nutzung der Software
+
+Melden Sie sich zunächst über das [Live-System](https://msa26-peer-review.fh-wedel.dev) an. Für einen schnellen Einstieg stehen vorbereitete Demo-Konten mit unterschiedlichen Rollen und Datenbeständen zur Verfügung:
+
+| Benutzername | Passwort | Rolle |
+| --- | --- | --- |
+| DemoStudent | DemoStudent | Autor |
+| DemoStudent2 | DemoStudent2 | Autor |
+| DemoReviewer | DemoReviewer | Reviewer |
+| DemoReviewer2 | DemoReviewer2 | Reviewer |
+| DemoTeacher | DemoTeacher | Teacher |
+| DemoExaminationOfficer | DemoExaminationOfficer | Examination Officer |
+| Admin | AdminAdmin | Admin |
+
+Die Demo-Konten ermöglichen insbesondere folgende Einblicke in den Ablauf:
+
+| Konto | Vorbereiteter Datenbestand |
+| --- | --- |
+| `DemoStudent` | Drei Abgaben: eine abgeschlossene Abgabe mit Bewertung sowie zwei laufende Abgaben, für die noch Ausarbeitungen hochgeladen werden können. Nach dem Upload kann der zugeordnete Reviewer Feedback hinterlegen; zudem lässt sich ein KI-Review anfordern. Ein direkter Chat mit `DemoReviewer` und Gruppenunterhaltungen zu *Meine Submission* und *Unsere Gruppenarbeit* sind bereits vorhanden. |
+| `DemoReviewer` | Ein abgeschlossenes Review zu einer Abgabe von `DemoStudent` sowie zwei offene Reviews, die noch auf Einreichungen warten. Der zugehörige direkte Chat und die beiden Gruppenunterhaltungen sind ebenfalls vorhanden. |
+| `DemoStudent2` | Keine Einzelabgaben oder direkten Chats, aber Mitglied der Gruppenunterhaltungen zu *Meine Submission* und *Unsere Gruppenarbeit*. |
+| `DemoReviewer2` | Leeres Reviewer-Konto ohne Reviews, Abgaben oder Chats. |
+| `DemoTeacher` | Leeres Lehrenden-Konto ohne eigene Abgaben, Reviews oder Chats. |
+| `DemoExaminationOfficer` | Kann alle Abgaben und Reviews einsehen, Benutzerrollen zuweisen und die fachlichen Schwerpunkte von Reviewern verwalten. |
+| `Admin` | Kann alle Abgaben und Reviews einsehen, erhält einen Systemüberblick und kann neue Themengebiete für Abgaben anlegen. |
+
+Neue Benutzer registrieren sich direkt im Live-System und bestätigen ihre E-Mail-Adresse. Anschließend muss ihnen eine Rolle zugewiesen werden. Für die Demo-Verwaltung geschieht dies im AWS-Konto `395982336633` unter **Amazon Cognito** über die Benutzergruppe des jeweiligen Kontos. Alternativ kann die Rollenzuweisung im Live-System mit einem Admin- oder Examination-Officer-Konto erfolgen. Voraussetzung ist, dass der Nutzer zuvor registriert wurde und seine E-Mail-Adresse bestätigt hat. Eine Beschreibung der Rollen und ihrer Berechtigungen befindet sich im [Projektbericht](Paper/main.pdf).
+
+### Verfügbarkeit des Live-Systems
+Um Kosten zu sparen, sind die ECS-Services werktags standardmäßig nur von 16:00 bis 22:00 Uhr in der Zeitzone `Europe/Berlin` erreichbar. Am Wochenende stehen die Services von 11:00 bis 23:00 Uhr zur Verfügung.
+
+Falls eine längere Verfügbarkeit erforderlich ist, kann im GitHub-Projekt unter **Actions** die CI-Pipeline für den Branch `infra/concurrent-lambda-for-performace` manuell gestartet werden. Dadurch werden die Services für 24 Stunden durchgehend betrieben. Dies führt jedoch zu deutlich höheren Kosten.
+
+Um anschließend wieder zum regulären Zeitplan zurückzukehren, kann der `main`-Branch erneut bereitgestellt werden. Die Services laufen dann wieder ausschließlich zu den oben genannten Standardzeiten.
+
 ## Repository-Navigation
 
 ```text
@@ -83,7 +118,7 @@ Die Bereitstellung erfolgt vollständig automatisiert über GitHub Actions. Bei 
 ├── .github/                 CI/CD-Workflows
 ├── postman/                 Collections für manuelle API-Tests
 ├── Paper/                   Projektbericht als Typst-Projekt
-├── doc/ und docs/           Aufgabenstellung, Diagramme und Notizen
+├── doc/                     Aufgabenstellung und bearbeitbares Architekturdiagramm
 └── Präsentation/            Präsentationsfolien
 ```
 
@@ -98,4 +133,4 @@ Die Service-Verzeichnisse enthalten jeweils den Anwendungscode, automatisierte T
 | Matthias Matthies | Configuration- und Submission-Service |
 | Gideon Gyebi | Response- und Notification-Service |
 
-Testen und Dokumentation wurden gemeinschaftlich verantwortet. Weitere technische und organisatorische Details sind im [Projektbericht](Paper/main.typ) sowie in den [Agentenrichtlinien](AGENTS.md) dokumentiert.
+Testen und Dokumentation wurden gemeinschaftlich verantwortet. Weitere technische und organisatorische Details sind im [Projektbericht](Paper/main.pdf) sowie in den [Agentenrichtlinien](AGENTS.md) dokumentiert.
